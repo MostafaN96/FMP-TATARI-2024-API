@@ -1,0 +1,520 @@
+const moment = require("moment")
+
+// Config
+const knex = require("../../db/config/connection").getConnection();
+
+// Service
+const wcReportQueries = require("../../db/queries/wc/wc-report");
+
+// Queries
+const fabricQueries = require("../../db/queries/general/fabric");
+const wcQueries = require("../../db/queries/wc/wc");
+const generalQueries = require("../../db/queries/general/general");
+const wbManufacturingOutputQueries = require("../../db/queries/wb/wb-manufacturing-output");
+const wcAddRequisitionDetailsQueries = require("../../db/queries/wc/wc-add-requisition-details");
+const wcSellRequisitionDetailsQueries = require("../../db/queries/wc/wc-sell-requisition-details");
+const wcReturnRequisitionDetailsQueries = require("../../db/queries/wc/wc-return-requisition-details");
+const wcReconciliationRequisitionDetailsQueries = require("../../db/queries/wc/wc-reconciliation-requisition-details");
+const wdTransportWcWdDetailsQueries = require("../../db/queries/wd/wd-transport-wc-wd-details");
+const wdTransportRequisitionWdWcDetailsQueries = require("../../db/queries/wd/wd-transport-requisition-wd-wc-details");
+const bussinessmanService = require("../../services/general/bussinessman");
+
+// Util
+const constantsPayloads = require("../../util/constants-payloads");
+const { wbManufacturingOutputTableName, wbManufacturingRequisitionTableName, wbManufacturingInputOutputTableName, warehouseTableName } = require("../../util/database-tables-name");
+const fabricTableName = require("../../util/database-tables-name").fabricTableName;
+const wcTableName = require("../../util/database-tables-name").wcTableName;
+const wcReconciliationRequisitionDetailsTableName = require("../../util/database-tables-name").wcReconciliationRequisitionDetailsTableName;
+const wcAddRequisitionTableName = require("../../util/database-tables-name").wcAddRequisitionTableName;
+const wcAddRequisitionDetailsTableName = require("../../util/database-tables-name").wcAddRequisitionDetailsTableName;
+
+exports.selectInventoryTotal = async (fabricReport) => {
+    let data = []
+
+    let fabricWhereCluse = {};
+    fabricWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    fabricWhereCluse[`${fabricTableName}.is_active`] = 1;
+    fabricWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    fabricWhereCluse[`${wcTableName}.is_active`] = 1;
+
+    let reconciliationWhereCluse = {};
+    reconciliationWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    reconciliationWhereCluse[`${fabricTableName}.is_active`] = 1;
+    reconciliationWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    reconciliationWhereCluse[`${wcTableName}.is_active`] = 1;
+    reconciliationWhereCluse[`${wcReconciliationRequisitionDetailsTableName}.input_output`] = 1;
+
+    let transportWdWcWhereCluse = {};
+    transportWdWcWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    transportWdWcWhereCluse[`${fabricTableName}.is_active`] = 1;
+    transportWdWcWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    transportWdWcWhereCluse[`${wcTableName}.is_active`] = 1;
+    transportWdWcWhereCluse[`${wcTableName}.type`] = constantsPayloads.transportFromBToAType;
+
+    let manufacturingOutputWhereCluse = {};
+    manufacturingOutputWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    manufacturingOutputWhereCluse[`${fabricTableName}.is_active`] = 1;
+    manufacturingOutputWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    manufacturingOutputWhereCluse[`${wcTableName}.is_active`] = 1;
+    manufacturingOutputWhereCluse[`${wcTableName}.type`] = constantsPayloads.manufactruingType;
+
+
+    let whereCluseArray = [fabricWhereCluse, reconciliationWhereCluse, transportWdWcWhereCluse, manufacturingOutputWhereCluse]
+
+    // select fabrics 
+    const fabrics = (fabricReport.isShowClosedBalances == 1) ? await fabricQueries.selectStoredWcFabrics(whereCluseArray, 0) : await fabricQueries.selectStoredWcFabrics(whereCluseArray)
+    if (fabrics[0] != null) {
+        for (let i = 0; i < fabrics.length; i++) {
+            let fabric = fabrics[i];
+            let callArray = []
+
+            // Select Max Added Date
+            let maxDateWhereCluse = {};
+            maxDateWhereCluse[`${wcAddRequisitionDetailsTableName}.fabric_id`] = fabric.id;
+            const selectMaxDate = await generalQueries.selectMaxValueWithJoinCondition(wcAddRequisitionTableName,
+                { date: 'date' }, maxDateWhereCluse,
+                wcAddRequisitionDetailsTableName,
+                `${wcAddRequisitionDetailsTableName}.wc_add_requisition_id`,
+                `${wcAddRequisitionTableName}.id`)
+            if (selectMaxDate[0] != null) {
+                // Select Latest Price
+                let wcAddRequisitionDetailsWhereCluse = {};
+                wcAddRequisitionDetailsWhereCluse[`${wcAddRequisitionDetailsTableName}.fabric_id`] = fabric.id;
+                wcAddRequisitionDetailsWhereCluse[`${wcAddRequisitionTableName}.date`] = selectMaxDate[0]?.date;
+                const latestPrice = await wcAddRequisitionDetailsQueries.selectLatestPrice(wcAddRequisitionDetailsWhereCluse)
+                fabric.latest_price = (latestPrice[0] == undefined) ? 0 : latestPrice[0]?.price
+            } else {
+                fabric.latest_price = 0
+            }
+            let manufacturingMaxDateWhereCluse = {};
+            manufacturingMaxDateWhereCluse[`${wbManufacturingOutputTableName}.fabric_id`] = fabric.id;
+            const selectManufacturingMaxDate = await knex(wbManufacturingOutputTableName)
+            .max({ date: 'date' })
+            .innerJoin(wbManufacturingInputOutputTableName,
+                `${wbManufacturingInputOutputTableName}.wb_manufacturing_output_id`,
+                `${wbManufacturingOutputTableName}.id`)
+                .innerJoin(wbManufacturingRequisitionTableName,
+                    `${wbManufacturingRequisitionTableName}.id`,
+                    `${wbManufacturingInputOutputTableName}.wb_manufacturing_requisition_id`)
+            .where(manufacturingMaxDateWhereCluse)
+            
+            if (selectManufacturingMaxDate[0].date != null) {
+                // Select Latest Manufacturing Price
+                let wbManufacturingOutputWhereCluse = {};
+                wbManufacturingOutputWhereCluse[`${wbManufacturingOutputTableName}.fabric_id`] = fabric.id;
+                wbManufacturingOutputWhereCluse[`${wbManufacturingRequisitionTableName}.date`] = selectManufacturingMaxDate[0]?.date;
+                const latestManufacturingPrice = await wbManufacturingOutputQueries.selectLatestPrice(wbManufacturingOutputWhereCluse)
+                fabric.latest_manufacturing_price = (latestManufacturingPrice[0] == undefined) ? 0 : latestManufacturingPrice[0]?.price
+            } else {
+                fabric.latest_manufacturing_price = 0
+            }
+            // Get Sum Current Quantity Of fabric 
+            // const sumCurrentQuantity = await waService.selectSumCurrentQuantityByYarnWa(fabric.id)
+            // fabric.current_quantity = sumCurrentQuantity[0].current_quantity
+
+            data.push(fabric)
+
+            callArray.push(wcAddRequisitionDetailsQueries.selectTotalByFabricId(fabric.id))
+            callArray.push(wcSellRequisitionDetailsQueries.selectTotalByFabricId(fabric.id))
+            callArray.push(wcReturnRequisitionDetailsQueries.selectTotalByFabricId(fabric.id))
+            callArray.push(wcReconciliationRequisitionDetailsQueries.selectTotalByFabricId(fabric.id))
+            callArray.push(wdTransportWcWdDetailsQueries.selectTotalByFabricId(fabric.id))
+            callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectTotalByFabricIdForInput(fabric.id))
+            callArray.push(wbManufacturingOutputQueries.selectTotalByFabricId(fabric.id))
+            const requisitions = await Promise.all(callArray)
+            const sortedAsc = [...requisitions[0], ...requisitions[1],
+            ...requisitions[2], ...requisitions[3], ...requisitions[4],
+            ...requisitions[5], ...requisitions[6]].sort(
+                (objA, objB) => moment(objA.date) - moment(objB.date)
+            );
+            data[i].details = sortedAsc
+
+        }
+    }
+
+    return data;
+};
+
+exports.selectInventoryTotalByFabric = async (fabricId) => {
+    let callArray = []
+
+    callArray.push(wcAddRequisitionDetailsQueries.selectTotalDetailsByFabricId(fabricId))
+    callArray.push(wcSellRequisitionDetailsQueries.selectTotalDetailsByFabricId(fabricId))
+    callArray.push(wcReturnRequisitionDetailsQueries.selectTotalDetailsByFabricId(fabricId))
+    callArray.push(wcReconciliationRequisitionDetailsQueries.selectTotalDetailsByFabricId(fabricId))
+    callArray.push(wdTransportWcWdDetailsQueries.selectTotalDetailsByFabricId(fabricId))
+    callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectTotalDetailsByFabricId(fabricId))
+    callArray.push(wbManufacturingOutputQueries.selectTotalDetailsByFabricId(fabricId))
+    const requisitions = await Promise.all(callArray)
+    const sortedAsc = [...requisitions[0], ...requisitions[1],
+    ...requisitions[2], ...requisitions[3], ...requisitions[4],
+    ...requisitions[5], ...requisitions[6]].sort(
+        (objA, objB) => moment(objA.date) - moment(objB.date)
+    );
+
+    // Select Max Added Date
+    let maxDateWhereCluse = {};
+    maxDateWhereCluse[`${wcAddRequisitionDetailsTableName}.fabric_id`] = fabricId;
+    const selectMaxDate = await generalQueries.selectMaxValueWithJoinCondition(wcAddRequisitionTableName,
+        { date: 'date' }, maxDateWhereCluse,
+        wcAddRequisitionDetailsTableName,
+        `${wcAddRequisitionDetailsTableName}.wc_add_requisition_id`,
+        `${wcAddRequisitionTableName}.id`)
+    if (selectMaxDate[0] != null) {
+        // Select Latest Price
+        let wcAddRequisitionDetailsWhereCluse = {};
+        wcAddRequisitionDetailsWhereCluse[`${wcAddRequisitionDetailsTableName}.fabric_id`] = fabricId;
+        wcAddRequisitionDetailsWhereCluse[`${wcAddRequisitionTableName}.date`] = selectMaxDate[0]?.date;
+        const latestPrice = await wcAddRequisitionDetailsQueries.selectLatestPrice(wcAddRequisitionDetailsWhereCluse)
+        sortedAsc[0].latest_price = latestPrice[0]?.price
+    } else {
+        sortedAsc[0].latest_price = 0
+    }
+    return sortedAsc;
+};
+
+exports.selectInventoryDetails = async (fabricReport) => {
+    let data = []
+
+    let fabricWhereCluse = {};
+    fabricWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    fabricWhereCluse[`${wcTableName}.is_active`] = 1;
+
+    let reconciliationWhereCluse = {};
+    reconciliationWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    reconciliationWhereCluse[`${wcTableName}.is_active`] = 1;
+    reconciliationWhereCluse[`${wcReconciliationRequisitionDetailsTableName}.input_output`] = 1;
+
+    let transportWdWcWhereCluse = {};
+    transportWdWcWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    transportWdWcWhereCluse[`${wcTableName}.is_active`] = 1;
+    transportWdWcWhereCluse[`${wcTableName}.type`] = constantsPayloads.transportFromBToAType;
+
+    let manufacturingOutputWhereCluse = {};
+    manufacturingOutputWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    manufacturingOutputWhereCluse[`${wcTableName}.is_active`] = 1;
+    manufacturingOutputWhereCluse[`${wcTableName}.type`] = constantsPayloads.manufactruingType;
+
+    let whereCluseArray = [fabricWhereCluse, reconciliationWhereCluse, transportWdWcWhereCluse, manufacturingOutputWhereCluse]
+
+    // select warehousesFabricsConsigmentsManufacturing 
+    const warehousesFabricsConsigmentsManufacturing = (fabricReport.isShowClosedBalances == 1) ? await wcQueries.selectStoredWarehouseAndFabricAndConsigmentManufacturing(whereCluseArray, 0) : await wcQueries.selectStoredWarehouseAndFabricAndConsigmentManufacturing(whereCluseArray)
+    if (warehousesFabricsConsigmentsManufacturing[0] != null) {
+        for (let i = 0; i < warehousesFabricsConsigmentsManufacturing.length; i++) {
+            let warehousesFabricConsigmentManufacturing = warehousesFabricsConsigmentsManufacturing[i];
+            let callArray = []
+
+            // Select Max Added Date
+            let maxDateWhereCluse = {};
+            maxDateWhereCluse[`${wcAddRequisitionDetailsTableName}.fabric_id`] = warehousesFabricConsigmentManufacturing.fabric_id;
+            maxDateWhereCluse[`${wcAddRequisitionDetailsTableName}.consigment_manufacturing_id`] = warehousesFabricConsigmentManufacturing.consigment_manufacturing_id;
+            const selectMaxDate = await generalQueries.selectMaxValueWithJoinCondition(wcAddRequisitionTableName,
+                { date: 'date' }, maxDateWhereCluse,
+                wcAddRequisitionDetailsTableName,
+                `${wcAddRequisitionDetailsTableName}.wc_add_requisition_id`,
+                `${wcAddRequisitionTableName}.id`)
+            if (selectMaxDate[0] != null) {
+                // Select Latest Price
+                let wcAddRequisitionDetailsWhereCluse = {};
+                wcAddRequisitionDetailsWhereCluse[`${wcAddRequisitionDetailsTableName}.fabric_id`] = warehousesFabricConsigmentManufacturing.fabric_id;
+                wcAddRequisitionDetailsWhereCluse[`${wcAddRequisitionTableName}.date`] = selectMaxDate[0]?.date;
+                const latestPrice = await wcAddRequisitionDetailsQueries.selectLatestPrice(wcAddRequisitionDetailsWhereCluse)
+                warehousesFabricConsigmentManufacturing.latest_price = latestPrice[0]?.price
+            } else {
+                warehousesFabricConsigmentManufacturing.latest_price = 0
+            }
+
+            let manufacturingMaxDateWhereCluse = {};
+            manufacturingMaxDateWhereCluse[`${wbManufacturingOutputTableName}.fabric_id`] = warehousesFabricConsigmentManufacturing.fabric_id;
+            const selectManufacturingMaxDate = await knex(wbManufacturingOutputTableName)
+            .max({ date: 'date' })
+            .innerJoin(wbManufacturingInputOutputTableName,
+                `${wbManufacturingInputOutputTableName}.wb_manufacturing_output_id`,
+                `${wbManufacturingOutputTableName}.id`)
+                .innerJoin(wbManufacturingRequisitionTableName,
+                    `${wbManufacturingRequisitionTableName}.id`,
+                    `${wbManufacturingInputOutputTableName}.wb_manufacturing_requisition_id`)
+            .where(manufacturingMaxDateWhereCluse)
+            
+            if (selectManufacturingMaxDate[0].date != null) {
+                // Select Latest Manufacturing Price
+                let wbManufacturingOutputWhereCluse = {};
+                wbManufacturingOutputWhereCluse[`${wbManufacturingOutputTableName}.fabric_id`] = warehousesFabricConsigmentManufacturing.fabric_id;
+                wbManufacturingOutputWhereCluse[`${wbManufacturingRequisitionTableName}.date`] = selectManufacturingMaxDate[0]?.date;
+                const latestManufacturingPrice = await wbManufacturingOutputQueries.selectLatestPrice(wbManufacturingOutputWhereCluse)
+                warehousesFabricConsigmentManufacturing.latest_manufacturing_price = latestManufacturingPrice[0]?.price
+            } else {
+                warehousesFabricConsigmentManufacturing.latest_manufacturing_price = 0
+            }
+
+            // Get Sum Current Quantity Of warehousesFabricConsigmentManufacturing 
+            // const sumCurrentQuantity = await waService.selectSumCurrentQuantityByYarnWa(warehousesFabricConsigmentManufacturing.id)
+            // warehousesFabricConsigmentManufacturing.current_quantity = sumCurrentQuantity[0].current_quantity
+
+            data.push(warehousesFabricConsigmentManufacturing)
+
+            callArray.push(wcAddRequisitionDetailsQueries.selectDetailsByWarehouseByFabricByConsigmentManufacturing(
+                warehousesFabricConsigmentManufacturing.warehouse_id, warehousesFabricConsigmentManufacturing.fabric_id, warehousesFabricConsigmentManufacturing.consigment_manufacturing_id
+            ))
+            callArray.push(wcSellRequisitionDetailsQueries.selectDetailsByWarehouseByFabricByConsigmentManufacturing(
+                warehousesFabricConsigmentManufacturing.warehouse_id, warehousesFabricConsigmentManufacturing.fabric_id, warehousesFabricConsigmentManufacturing.consigment_manufacturing_id
+            ))
+            callArray.push(wcReturnRequisitionDetailsQueries.selectDetailsByWarehouseByFabricByConsigmentManufacturing(
+                warehousesFabricConsigmentManufacturing.warehouse_id, warehousesFabricConsigmentManufacturing.fabric_id, warehousesFabricConsigmentManufacturing.consigment_manufacturing_id
+            ))
+            callArray.push(wcReconciliationRequisitionDetailsQueries.selectDetailsByWarehouseByFabricByConsigmentManufacturing(
+                warehousesFabricConsigmentManufacturing.warehouse_id, warehousesFabricConsigmentManufacturing.fabric_id, warehousesFabricConsigmentManufacturing.consigment_manufacturing_id
+            ))
+            callArray.push(wdTransportWcWdDetailsQueries.selectDetailsByWarehouseByFabricByConsigmentManufacturing(
+                warehousesFabricConsigmentManufacturing.warehouse_id, warehousesFabricConsigmentManufacturing.fabric_id, warehousesFabricConsigmentManufacturing.consigment_manufacturing_id
+            ))
+            callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectDetailsByWarehouseByFabricByConsigmentManufacturing(
+                warehousesFabricConsigmentManufacturing.warehouse_id, warehousesFabricConsigmentManufacturing.fabric_id, warehousesFabricConsigmentManufacturing.consigment_manufacturing_id
+            ))
+            callArray.push(wbManufacturingOutputQueries.selectDetailsByWarehouseByFabricByConsigmentManufacturing(
+                warehousesFabricConsigmentManufacturing.warehouse_id, warehousesFabricConsigmentManufacturing.fabric_id, warehousesFabricConsigmentManufacturing.consigment_manufacturing_id
+            ))
+            const requisitions = await Promise.all(callArray)
+            const sortedAsc = [...requisitions[0], ...requisitions[1],
+            ...requisitions[2], ...requisitions[3], ...requisitions[4],
+            ...requisitions[5], ...requisitions[6]].sort(
+                (objA, objB) => moment(objA.date) - moment(objB.date)
+            );
+            data[i].details = sortedAsc
+
+        }
+    }
+
+    return data;
+};
+
+exports.selectInventoryDetailsByWarehouseByFabricByConsigmentManufacturing = async (fabricId, warehouseId, consigmentManufacturingId) => {
+    let callArray = []
+
+    callArray.push(wcAddRequisitionDetailsQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId))
+    callArray.push(wcSellRequisitionDetailsQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId))
+    callArray.push(wcReturnRequisitionDetailsQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId))
+    callArray.push(wcReconciliationRequisitionDetailsQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId))
+    callArray.push(wdTransportWcWdDetailsQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId))
+    callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId))
+    callArray.push(wbManufacturingOutputQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId))
+    const requisitions = await Promise.all(callArray)
+    let sortedAsc = [...requisitions[0], ...requisitions[1],
+    ...requisitions[2], ...requisitions[3], ...requisitions[4],
+    ...requisitions[5], ...requisitions[6]].sort(
+        (objA, objB) => moment(objA.date) - moment(objB.date)
+    );
+
+    // Select Max Added Date
+    let maxDateWhereCluse = {};
+    maxDateWhereCluse[`${wcAddRequisitionDetailsTableName}.fabric_id`] = fabricId;
+    maxDateWhereCluse[`${wcAddRequisitionDetailsTableName}.consigment_manufacturing_id`] = consigmentManufacturingId;
+    const selectMaxDate = await generalQueries.selectMaxValueWithJoinCondition(wcAddRequisitionTableName,
+        { date: 'date' }, maxDateWhereCluse,
+        wcAddRequisitionDetailsTableName,
+        `${wcAddRequisitionDetailsTableName}.wc_add_requisition_id`,
+        `${wcAddRequisitionTableName}.id`)
+    if (selectMaxDate[0].date != null) {
+        // Select Latest Price
+        let wcAddRequisitionDetailsWhereCluse = {};
+        wcAddRequisitionDetailsWhereCluse[`${wcAddRequisitionDetailsTableName}.fabric_id`] = fabricId;
+        wcAddRequisitionDetailsWhereCluse[`${wcAddRequisitionTableName}.date`] = selectMaxDate[0]?.date;
+        const latestPrice = await wcAddRequisitionDetailsQueries.selectLatestPrice(wcAddRequisitionDetailsWhereCluse)
+        sortedAsc[0].latest_price = (latestPrice[0] != null) ? latestPrice[0].price : 0
+    } else {
+        sortedAsc[0].latest_price = 0
+    }
+    return sortedAsc;
+};
+
+exports.selectPriceWc = async (fabricId) => {
+    let callArray = []
+
+    callArray.push(wcAddRequisitionDetailsQueries.selectPriceByFabricId(fabricId))
+    callArray.push(wcSellRequisitionDetailsQueries.selectPriceByFabricId(fabricId))
+    callArray.push(wcReturnRequisitionDetailsQueries.selectPriceByFabricId(fabricId))
+    callArray.push(wcReconciliationRequisitionDetailsQueries.selectPriceByFabricId(fabricId))
+    callArray.push(wdTransportWcWdDetailsQueries.selectPriceByFabricId(fabricId))
+    callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectPriceByFabricId(fabricId))
+    callArray.push(wbManufacturingOutputQueries.selectPriceByFabricId(fabricId))
+    const requisitions = await Promise.all(callArray)
+    const sortedAsc = [...requisitions[0], ...requisitions[1],
+    ...requisitions[2], ...requisitions[3], ...requisitions[4],
+    ...requisitions[5], ...requisitions[6]].sort(
+        (objA, objB) => moment(objA.date) - moment(objB.date)
+    );
+
+    // Select Max Added Date
+    let maxDateWhereCluse = {};
+    maxDateWhereCluse[`${wcAddRequisitionDetailsTableName}.fabric_id`] = fabricId;
+    const selectMaxDate = await generalQueries.selectMaxValueWithJoinCondition(wcAddRequisitionTableName,
+        { date: 'date' }, maxDateWhereCluse,
+        wcAddRequisitionDetailsTableName,
+        `${wcAddRequisitionDetailsTableName}.wc_add_requisition_id`,
+        `${wcAddRequisitionTableName}.id`)
+    if (selectMaxDate[0] != null) {
+        // Select Latest Price
+        let wcAddRequisitionDetailsWhereCluse = {};
+        wcAddRequisitionDetailsWhereCluse[`${wcAddRequisitionDetailsTableName}.fabric_id`] = fabricId;
+        wcAddRequisitionDetailsWhereCluse[`${wcAddRequisitionTableName}.date`] = selectMaxDate[0]?.date;
+        const latestPrice = await wcAddRequisitionDetailsQueries.selectLatestPrice(wcAddRequisitionDetailsWhereCluse)
+        if(latestPrice[0] != null ) {
+            sortedAsc[0].latest_price = latestPrice[0].price
+        } else {
+            sortedAsc[0].latest_price = 0
+        }
+    } else {
+        sortedAsc[0].latest_price = 0
+    }
+    return sortedAsc;
+};
+
+exports.selectPriceByFabricByConsigmentManufacturingInWc = async (fabricId, consigmentManufacturingId) => {
+    let callArray = []
+    
+    callArray.push(wcAddRequisitionDetailsQueries.selectPriceByFabricIdByConsigmentManufacturingId(fabricId, consigmentManufacturingId))
+    callArray.push(wcSellRequisitionDetailsQueries.selectPriceByFabricIdByConsigmentManufacturingId(fabricId, consigmentManufacturingId))
+    callArray.push(wcReturnRequisitionDetailsQueries.selectPriceByFabricIdByConsigmentManufacturingId(fabricId, consigmentManufacturingId))
+    callArray.push(wcReconciliationRequisitionDetailsQueries.selectPriceByFabricIdByConsigmentManufacturingId(fabricId, consigmentManufacturingId))
+    callArray.push(wdTransportWcWdDetailsQueries.selectPriceByFabricIdByConsigmentManufacturingId(fabricId, consigmentManufacturingId))
+    callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectPriceByFabricIdByConsigmentManufacturingId(fabricId, consigmentManufacturingId))
+    callArray.push(wbManufacturingOutputQueries.selectPriceByFabricIdByConsigmentManufacturingId(fabricId, consigmentManufacturingId))
+    const requisitions = await Promise.all(callArray)
+    const sortedAsc = [...requisitions[0], ...requisitions[1],
+    ...requisitions[2], ...requisitions[3], ...requisitions[4],
+    ...requisitions[5], ...requisitions[6]].sort(
+        (objA, objB) => moment(objA.date) - moment(objB.date)
+    );
+
+    // Select Max Added Date
+    let maxDateWhereCluse = {};
+    maxDateWhereCluse[`${wcAddRequisitionDetailsTableName}.fabric_id`] = fabricId;
+    const selectMaxDate = await generalQueries.selectMaxValueWithJoinCondition(wcAddRequisitionTableName,
+        { date: 'date' }, maxDateWhereCluse,
+        wcAddRequisitionDetailsTableName,
+        `${wcAddRequisitionDetailsTableName}.wc_add_requisition_id`,
+        `${wcAddRequisitionTableName}.id`)
+    if (selectMaxDate[0] != null) {
+        // Select Latest Price
+        let wcAddRequisitionDetailsWhereCluse = {};
+        wcAddRequisitionDetailsWhereCluse[`${wcAddRequisitionDetailsTableName}.fabric_id`] = fabricId;
+        wcAddRequisitionDetailsWhereCluse[`${wcAddRequisitionTableName}.date`] = selectMaxDate[0]?.date;
+        const latestPrice = await wcAddRequisitionDetailsQueries.selectLatestPrice(wcAddRequisitionDetailsWhereCluse)
+        if(latestPrice[0] != null ) {
+            sortedAsc[0].latest_price = latestPrice[0].price
+        } else {
+            sortedAsc[0].latest_price = 0
+        }
+    } else {
+        sortedAsc[0].latest_price = 0
+    }
+    return sortedAsc;
+};
+
+exports.purchasesByFabric = async (fabricId) => {
+    let whereCluse = {};
+    whereCluse[`${wcAddRequisitionDetailsTableName}.fabric_id`] = fabricId;
+    const results = await wcReportQueries.purchasesYarns(whereCluse, "date");
+    return results;
+};
+
+exports.purchasesBySupplier = async (supplierId) => {
+    let whereCluse = {};
+    whereCluse[`${wcAddRequisitionTableName}.supplier_id`] = supplierId;
+    const results = await wcReportQueries.purchasesYarns(whereCluse, "fabric_id");
+    return results;
+};
+
+exports.purchasesBySuppliers = async () => {
+
+    const suppliers = await bussinessmanService.selectSuppliersBoughtFromWa()
+    for (let i = 0; i < suppliers.length; i++) {
+        const supplier = suppliers[i];
+
+        let whereCluse = {};
+        whereCluse[`${wcAddRequisitionTableName}.supplier_id`] = supplier.id;
+        const results = await wcReportQueries.purchasesBySuppliers(whereCluse);
+
+        if (results[0] != null) {
+            let data = Object.assign(suppliers[i], results[0]);
+            suppliers[i] = data
+        }
+    }
+    suppliers.sort(function (a, b) { return b.quantity - a.quantity });
+    return suppliers
+};
+
+exports.manufacturingReportByFabric = async (fabricId) => {
+
+    const manufacturingReportByFabricResult = await wcReportQueries.manufacturingReportByFabric(fabricId)
+    return manufacturingReportByFabricResult
+};
+
+exports.selectInventoryTotalByDate = async (bodyPaylod) => {
+    let callArray = []
+
+    callArray.push(wcAddRequisitionDetailsQueries.selectTotalDetailsByDate(bodyPaylod))
+    callArray.push(wcSellRequisitionDetailsQueries.selectTotalDetailsByDate(bodyPaylod))
+    callArray.push(wcReturnRequisitionDetailsQueries.selectTotalDetailsByDate(bodyPaylod))
+    callArray.push(wcReconciliationRequisitionDetailsQueries.selectTotalDetailsByDate(bodyPaylod))
+    callArray.push(wdTransportWcWdDetailsQueries.selectTotalDetailsByDate(bodyPaylod))
+    callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectTotalDetailsByDate(bodyPaylod))
+    callArray.push(wbManufacturingOutputQueries.selectTotalDetailsByDate(bodyPaylod))
+    const requisitions = await Promise.all(callArray)
+    const sortedAsc = [...requisitions[0], ...requisitions[1],
+    ...requisitions[2], ...requisitions[3], ...requisitions[4],
+    ...requisitions[5], ...requisitions[6]].sort(
+        (objA, objB) => moment(objA.date) - moment(objB.date)
+    );
+    return sortedAsc;
+};
+
+
+exports.inquireFabricAvilabilityReportWc = async (fabric) => {
+    
+    let warehouseWhereCluse = {};
+    warehouseWhereCluse[`${warehouseTableName}.is_stock`] = 1;
+    warehouseWhereCluse[`${warehouseTableName}.is_deleted`] = 0;
+    warehouseWhereCluse[`${warehouseTableName}.is_active`] = 1;
+
+
+    let wcFabricWhereCluse = {};
+    wcFabricWhereCluse[`${fabricTableName}.id`] = fabric.fabricId;
+    wcFabricWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    wcFabricWhereCluse[`${fabricTableName}.is_active`] = 1;
+    wcFabricWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    wcFabricWhereCluse[`${wcTableName}.is_active`] = 1;
+
+    let wcReconciliationWhereCluse = {};
+    wcReconciliationWhereCluse[`${fabricTableName}.id`] = fabric.fabricId;
+    wcReconciliationWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    wcReconciliationWhereCluse[`${fabricTableName}.is_active`] = 1;
+    wcReconciliationWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    wcReconciliationWhereCluse[`${wcTableName}.is_active`] = 1;
+    wcReconciliationWhereCluse[`${wcReconciliationRequisitionDetailsTableName}.input_output`] = 1;
+
+    let wcTransportWdWcWhereCluse = {};
+    wcTransportWdWcWhereCluse[`${fabricTableName}.id`] = fabric.fabricId;
+    wcTransportWdWcWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    wcTransportWdWcWhereCluse[`${fabricTableName}.is_active`] = 1;
+    wcTransportWdWcWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    wcTransportWdWcWhereCluse[`${wcTableName}.is_active`] = 1;
+    wcTransportWdWcWhereCluse[`${wcTableName}.type`] = constantsPayloads.transportFromBToAType;
+
+    let WcManufacturingOutputWhereCluse = {};
+    WcManufacturingOutputWhereCluse[`${fabricTableName}.id`] = fabric.fabricId;
+    WcManufacturingOutputWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    WcManufacturingOutputWhereCluse[`${fabricTableName}.is_active`] = 1;
+    WcManufacturingOutputWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    WcManufacturingOutputWhereCluse[`${wcTableName}.is_active`] = 1;
+    WcManufacturingOutputWhereCluse[`${wcTableName}.type`] = constantsPayloads.manufactruingType;
+
+    let wcWhereCluseArray = [
+        wcFabricWhereCluse, wcReconciliationWhereCluse, 
+        wcTransportWdWcWhereCluse, WcManufacturingOutputWhereCluse, 
+        warehouseWhereCluse]
+
+    // select wc Fabrics 
+    let wcFabrics = await fabricQueries.selectStoredWcFabricsForInquireFabricAvilability(wcWhereCluseArray)
+    return wcFabrics
+};

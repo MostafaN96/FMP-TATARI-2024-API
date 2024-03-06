@@ -1,0 +1,461 @@
+// Queries
+const wdTransportWcWdDetailsQueries = require("../../db/queries/wd/wd-transport-wc-wd-details");
+const wdTransportWcWdDetailsWcQueries = require("../../db/queries/wd/wd-transport-wc-wd-details-wc");
+const wdTransportWcWdQueries = require("../../db/queries/wd/wd-transport-wc-wd");
+const wdQueries = require("../../db/queries/wd/wd");
+const wcQueries = require("../../db/queries/wc/wc");
+const consigmentDyeingQueries = require("../../db/queries/general/consigment-dyeing");
+
+// Helper
+const trans = require("../../helpers/transform");
+
+// Util
+const constants = require("../../util/constants");
+const constantsPayloads = require("../../util/constants-payloads");
+
+// Services
+const wcService = require("../wc/wc");
+const wdTransportWcWdRequisitionDetailsWcService = require("./wd-transport-wc-wd-details-wc");
+const { wdTransportWcWdDetailsWcTableName, wdTransportWcWdDetailsTableName } = require("../../util/database-tables-name");
+
+exports.create = async (wdTransportWcWdRequisitionDetails) => {
+    for (let i = 0; i < wdTransportWcWdRequisitionDetails.items.length; i++) {
+        wdTransportWcWdRequisitionDetails.items[i].wdTransportWcWdDetailsId = trans.transform();
+        wdTransportWcWdRequisitionDetails.items[i].wdId = trans.transform();
+
+        // Check Consigment Dyeing Dupplication
+        const selectConsigmentDyeingOneResult = await consigmentDyeingQueries.selectOne({ number: wdTransportWcWdRequisitionDetails.items[i].consigmentDyeingNumber })
+        if (selectConsigmentDyeingOneResult[0] != null) {
+            wdTransportWcWdRequisitionDetails.items[i].consigmentDyeingId = selectConsigmentDyeingOneResult[0].id;
+        } else {
+            wdTransportWcWdRequisitionDetails.items[i].consigmentDyeingId = trans.transform();
+            await consigmentDyeingQueries.insertForTransport(wdTransportWcWdRequisitionDetails, wdTransportWcWdRequisitionDetails.items[i]);
+        }
+        
+        const results = await wdTransportWcWdDetailsQueries.insert(wdTransportWcWdRequisitionDetails, wdTransportWcWdRequisitionDetails.items[i]);
+        if (!results) {
+            return constants.insertError;
+        } else {
+            let newQuantity = parseFloat(wdTransportWcWdRequisitionDetails.items[i].quantity)
+
+            // select Wc for decrement current quantity
+            const fabricsStoredInWcResult = await wcService.selectByFabricForSell(
+                wdTransportWcWdRequisitionDetails.warehouseId,
+                wdTransportWcWdRequisitionDetails.items[i].fabricId,
+                wdTransportWcWdRequisitionDetails.items[i].consigmentManufacturingId)
+            if (fabricsStoredInWcResult[0] != null) {
+
+                for (let j = 0; j < fabricsStoredInWcResult.length; j++) {
+                    const fabricStoredInWc = fabricsStoredInWcResult[j];
+                    let currentQuantity = fabricStoredInWc.current_quantity
+                    let updatedQuantity = 0
+
+                    // decrement Wc CurrentQuantity
+                    let returnedQuantityObj = await wcService.decrementWcCurrentQuantity(newQuantity, currentQuantity, fabricStoredInWc, updatedQuantity);
+                    newQuantity = returnedQuantityObj.newQuantity
+                    updatedQuantity = returnedQuantityObj.updatedQuantity
+                    wdTransportWcWdRequisitionDetails.items[i].wcId = fabricStoredInWc.id
+                    wdTransportWcWdRequisitionDetails.items[i].updatedQuantity = updatedQuantity
+
+                    // Add wdTransportWcWdRequisitionDetailsWc
+                    await wdTransportWcWdRequisitionDetailsWcService.create(wdTransportWcWdRequisitionDetails, wdTransportWcWdRequisitionDetails.items[i])
+
+                    // Enter to if condition when stock runs out
+                    if (newQuantity == 0) {
+                        break;
+                    }
+                }
+                // Insert WD
+                await wdQueries.insert(wdTransportWcWdRequisitionDetails, wdTransportWcWdRequisitionDetails.items[i])
+            } else {
+                return {
+                    ...constants.wrongQuantity,
+                    spentQuantity: 0,
+                    newQuantity: newQuantity
+                }
+            }
+
+        }
+    }
+    return { ...constants.insertSuccess, ...{ id: wdTransportWcWdRequisitionDetails.id } };
+};
+
+exports.selectByRequisitionId = async (requisitionId) => {
+    // check is found
+    const isFound = await wdTransportWcWdQueries.selectOne({
+        ...constantsPayloads.deletePayload,
+        id: requisitionId,
+    });
+    if (isFound[0] != null) {
+
+        const results = await wdTransportWcWdDetailsQueries.selectByRequisitionId(requisitionId);
+        return results;
+    } else {
+        return constants.itemNotFound;
+    }
+};
+
+// exports.selectWithFabricManufacturedByRequisitionId = async (requisitionId) => {
+//     // check is found
+//     const isFound = await wdTransportWcWdQueries.selectOne({
+//         ...constantsPayloads.deletePayload,
+//         id: requisitionId,
+//     });
+//     if (isFound[0] != null) {
+
+//         const results = await wdTransportWcWdDetailsQueries.selectWithFabricManufacturedByRequisitionId(requisitionId);
+//         return results;
+//     } else {
+//         return constants.itemNotFound;
+//     }
+// };
+
+exports.update = async (wdTransportWcWdRequisitionDetails) => {
+    // Array for Promise
+    let callArray = []
+
+    // Check is found
+    let whereCluse = {};
+    whereCluse[`${wdTransportWcWdDetailsTableName}.id`] = wdTransportWcWdRequisitionDetails.id;
+    whereCluse[`${wdTransportWcWdDetailsTableName}.is_deleted`] = 0;
+    whereCluse[`${wdTransportWcWdDetailsTableName}.is_active`] = 1;
+    const isFound = await wdTransportWcWdDetailsQueries.selectOne(whereCluse);
+    if (isFound[0] != null) {
+        let updateResults = false
+
+        wdTransportWcWdRequisitionDetails.wdTransportWcWdId = isFound[0].wd_transport_wc_wd_id
+
+        // Update wd transport wc wd requisition Without Quantity
+        callArray.push(wdTransportWcWdQueries.update({
+            date: wdTransportWcWdRequisitionDetails.date,
+            note: wdTransportWcWdRequisitionDetails.note
+        },
+            {
+                id: wdTransportWcWdRequisitionDetails.wdTransportWcWdId
+            }))
+
+
+        // Update wd transport wc wd requisition details Without Quantity
+        callArray.push(
+            wdTransportWcWdDetailsQueries.update({
+                price: wdTransportWcWdRequisitionDetails.price,
+                document: wdTransportWcWdRequisitionDetails.document,
+                statement: wdTransportWcWdRequisitionDetails.statement
+            },
+                {
+                    id: wdTransportWcWdRequisitionDetails.id
+                })
+        )
+        await Promise.all(callArray)
+
+        let oldQuantity = isFound[0].quantity
+        let newQuantity = parseFloat(wdTransportWcWdRequisitionDetails.quantity)
+        let defferenceQuantity = 0
+
+        const selectOneWbRecord = await wdQueries.selectOne({
+            wd_transport_wc_wd_details_id: wdTransportWcWdRequisitionDetails.id
+        })
+
+        if (selectOneWbRecord[0] != null) {
+
+            // Check Quantity
+            if (newQuantity > oldQuantity) {
+                defferenceQuantity = parseFloat((newQuantity - oldQuantity).toFixed(3))
+
+                // we will decrement current quantity from store (wa) by following Steps :
+                // Step 1 => Check If has current quantity in store (wa)
+                const sumCurrentQuantityWc = await wcService.selectSumCurrentQuantityByWarehouseByFabricByConsigmentManufacturingLotWc(
+                    isFound[0].warehouse_id,
+                    isFound[0].fabric_id,
+                    isFound[0].consigment_manufacturing_id
+                )
+                if (sumCurrentQuantityWc[0] != null) {
+                    console.log("sumCurrentQuantityWc ::: ", sumCurrentQuantityWc);
+                    const sumCurrentQuantity = sumCurrentQuantityWc[0].current_quantity
+                    if (sumCurrentQuantity >= defferenceQuantity) {
+
+                        // Step 2 => Increment quantity in  wc_sell_requisition_details
+                        await wdTransportWcWdDetailsQueries.update({
+                            quantity: oldQuantity + defferenceQuantity
+                        }, {
+                            id: wdTransportWcWdRequisitionDetails.id
+                        })
+
+                        // Step 3 => select from (WC) Records for decrement current quantity
+                        const wcRecords = await wcService.selectByFabricForSell(
+                            isFound[0].warehouse_id,
+                            isFound[0].fabric_id,
+                            isFound[0].consigment_manufacturing_id
+                        )
+                        if (wcRecords[0] != null) {
+
+                            // Increment Wb current_quantity
+                            await wdQueries.update({
+                                current_quantity: selectOneWbRecord[0].current_quantity + defferenceQuantity
+                            }, {
+                                id: selectOneWbRecord[0].id
+                            })
+
+                            for (let i = 0; i < wcRecords.length; i++) {
+                                const wcRecord = wcRecords[i];
+                                let currentQuantity = wcRecord.current_quantity
+                                let updatedQuantity = 0
+
+                                // decrement Wc CurrentQuantity
+                                let returnedQuantityObj = await wcService.decrementWcCurrentQuantity(defferenceQuantity, currentQuantity, wcRecord, updatedQuantity);
+                                defferenceQuantity = returnedQuantityObj.newQuantity
+                                updatedQuantity = returnedQuantityObj.updatedQuantity
+
+                                // Step 4 => Check if wc_id existed in wd_transport_wc_wd_requisition_details_wc
+                                // that has same wd_transport_wc_wd_details_id
+                                const isExisitId = await wdTransportWcWdRequisitionDetailsWcService.select({
+                                    wd_transport_wc_wd_details_id: wdTransportWcWdRequisitionDetails.id,
+                                    wc_id: wcRecord.id
+                                })
+
+                                if (isExisitId[0] != null) {
+                                    // Step 4.1 => Update Quantity in wd_transport_wc_wd_requisition_details_wc
+                                    updateResults = await wdTransportWcWdDetailsWcQueries.update({
+                                        quantity: isExisitId[0].quantity + updatedQuantity
+                                    }, {
+                                        wd_transport_wc_wd_details_id: wdTransportWcWdRequisitionDetails.id,
+                                        wc_id: isExisitId[0].wc_id
+                                    })
+                                } else {
+                                    // Step 4.2 Add Record in wd_transport_wc_wd_requisition_details_wc
+                                    updateResults = await wdTransportWcWdRequisitionDetailsWcService.create(wdTransportWcWdRequisitionDetails, {
+                                        wdTransportWcWdDetailsId: wdTransportWcWdRequisitionDetails.id,
+                                        wcId: wcRecord.id,
+                                        updatedQuantity
+                                    })
+                                }
+
+                                // Enter to if condition when stock runs out
+                                if (defferenceQuantity == 0) {
+                                    break;
+                                }
+                            }
+                        } else {
+                            updateResults = false
+                        }
+                    } else {
+                        return {
+                            ...constants.wrongQuantity,
+                            spentQuantity: sumCurrentQuantity,
+                            newQuantity: defferenceQuantity
+                        }
+                    }
+                } else {
+                    return {
+                        ...constants.wrongQuantity,
+                        spentQuantity: 0,
+                        newQuantity: defferenceQuantity
+                    }
+                }
+
+            } else if (newQuantity < oldQuantity) {
+                defferenceQuantity = parseFloat((oldQuantity - newQuantity).toFixed(3))
+
+                if (selectOneWbRecord[0].current_quantity >= defferenceQuantity) {
+
+                    // Step 1 => Decrement quantity in  wb_transport_wa_wb_details
+                    await wdTransportWcWdDetailsQueries.update({
+                        quantity: oldQuantity - defferenceQuantity
+                    }, {
+                        id: wdTransportWcWdRequisitionDetails.id
+                    })
+
+                    // Decrement wb current_quantity
+                    await wdQueries.update({
+                        current_quantity: selectOneWbRecord[0].current_quantity - defferenceQuantity
+                    }, {
+                        id: selectOneWbRecord[0].id
+                    })
+
+                    // Step 2 => Select From wd_transport_wc_wd_details_wc Records
+                    let whereCluseDetailsWc = {};
+                    whereCluseDetailsWc[`${wdTransportWcWdDetailsWcTableName}.wd_transport_wc_wd_details_id`] = wdTransportWcWdRequisitionDetails.id;
+                    whereCluseDetailsWc[`${wdTransportWcWdDetailsWcTableName}.is_deleted`] = 0;
+                    whereCluseDetailsWc[`${wdTransportWcWdDetailsWcTableName}.is_active`] = 1;
+                    const wdTransportWcWdRequisitionDetailsWcRecords = await wdTransportWcWdRequisitionDetailsWcService.selectWithTwoCondition(whereCluseDetailsWc,
+                        ["quantity", ">", "0"])
+                    if (wdTransportWcWdRequisitionDetailsWcRecords[0] != null) {
+                        for (let j = 0; j < wdTransportWcWdRequisitionDetailsWcRecords.length; j++) {
+                            const wdTransportWcWdRequisitionDetailsWcRecord = wdTransportWcWdRequisitionDetailsWcRecords[j];
+                            let wbTransportWaWbRequisitionDetailsWaQuantity = wdTransportWcWdRequisitionDetailsWcRecord.quantity
+                            let updatedQuantity = 0
+
+                            if (wbTransportWaWbRequisitionDetailsWaQuantity >= defferenceQuantity) {
+                                // Decrement wd_transport_wc_wd_details_wc quantity
+                                await wdTransportWcWdDetailsWcQueries.update({
+                                    quantity: wbTransportWaWbRequisitionDetailsWaQuantity - defferenceQuantity
+                                }, {
+                                    wd_transport_wc_wd_details_id: wdTransportWcWdRequisitionDetails.id,
+                                    wc_id: wdTransportWcWdRequisitionDetailsWcRecord.wc_id
+                                })
+                                updatedQuantity = defferenceQuantity
+                                defferenceQuantity = 0
+                            } else {
+                                // Decrement wd_transport_wc_wd_details_wc quantity
+                                await wdTransportWcWdDetailsWcQueries.update({
+                                    quantity: 0
+                                }, {
+                                    wd_transport_wc_wd_details_id: wdTransportWcWdRequisitionDetails.id,
+                                    wc_id: wdTransportWcWdRequisitionDetailsWcRecord.wc_id
+                                })
+                                updatedQuantity = wbTransportWaWbRequisitionDetailsWaQuantity
+                                defferenceQuantity = parseFloat((defferenceQuantity - wbTransportWaWbRequisitionDetailsWaQuantity).toFixed(3))
+                            }
+
+                            // select wa record
+                            const wcRecord = await wcQueries.selectOne({
+                                id: wdTransportWcWdRequisitionDetailsWcRecord.wc_id
+                            })
+                            if (wcRecord[0] != null) {
+                                const oldCurrentQuantity = wcRecord[0].current_quantity
+
+                                // Increment wa current_quantity
+                                await wcQueries.update({
+                                    current_quantity: oldCurrentQuantity + updatedQuantity
+                                }, {
+                                    id: wcRecord[0].id
+                                })
+
+                            }
+
+                            if (defferenceQuantity == 0) {
+                                updateResults = true
+                                break;
+                            }
+                        }
+
+                    } else {
+                        updateResults = false
+                    }
+                } else {
+                    return {
+                        ...constants.wrongQuantity,
+                        spentQuantity: selectOneWbRecord[0].current_quantity,
+                        newQuantity: defferenceQuantity
+                    }
+                }
+            } else {
+                updateResults = true
+            }
+        }
+        if (updateResults) {
+            return constants.updateSuccess;
+        } else {
+            return constants.updateError;
+        }
+
+    } else {
+        return constants.itemNotFound;
+    }
+};
+
+// exports.updateDecrement = async (wdTransportWcWdRequisitionDetails) => {
+//     // Check is found
+//     let whereCluse = {};
+//     whereCluse[`${wdTransportWcWdDetailsTableName}.id`] = wdTransportWcWdRequisitionDetails.requisition_details_id;
+//     whereCluse[`${wdTransportWcWdDetailsTableName}.is_deleted`] = 0;
+//     whereCluse[`${wdTransportWcWdDetailsTableName}.is_active`] = 1;
+//     const isFound = await wdTransportWcWdDetailsQueries.selectOne(whereCluse);
+//     if (isFound[0] != null) {
+//         let updateResults = false
+
+//         // let currentQuantity = waCottonResult[0].current_quantity
+//         let oldQuantity = isFound[0].quantity
+//         let newQuantity = parseFloat(wdTransportWcWdRequisitionDetails.quantity)
+//         let defferenceQuantity = 0
+
+//             defferenceQuantity = newQuantity
+
+//             const selectOneWbRecord = await wdQueries.selectOne({
+//                 wd_transport_wc_wd_details_id: wdTransportWcWdRequisitionDetails.requisition_details_id
+//             })
+
+//                 // Step 1 => Decrement quantity in  wb_transport_wa_wb_details
+//                 await wdTransportWcWdDetailsQueries.update({
+//                     quantity: oldQuantity - defferenceQuantity
+//                 }, {
+//                     id: wdTransportWcWdRequisitionDetails.requisition_details_id
+//                 })
+
+//                 // Decrement wb current_quantity
+//                 await wdQueries.update({
+//                     current_quantity: selectOneWbRecord[0].current_quantity - defferenceQuantity
+//                 }, {
+//                     id: selectOneWbRecord[0].id
+//                 })
+
+//                 // Step 2 => Select From wd_transport_wc_wd_details_wc Records
+//                 let whereCluseDetailsWc = {};
+//                 whereCluseDetailsWc[`${wdTransportWcWdDetailsWcTableName}.wd_transport_wc_wd_details_id`] = wdTransportWcWdRequisitionDetails.requisition_details_id;
+//                 whereCluseDetailsWc[`${wdTransportWcWdDetailsWcTableName}.is_deleted`] = 0;
+//                 whereCluseDetailsWc[`${wdTransportWcWdDetailsWcTableName}.is_active`] = 1;
+//                 const wdTransportWcWdRequisitionDetailsWcRecords = await wdTransportWcWdRequisitionDetailsWcService.selectWithTwoCondition(whereCluseDetailsWc,
+//                     ["quantity", ">", "0"])
+//                 if (wdTransportWcWdRequisitionDetailsWcRecords[0] != null) {
+//                     for (let j = 0; j < wdTransportWcWdRequisitionDetailsWcRecords.length; j++) {
+//                         const wdTransportWcWdRequisitionDetailsWcRecord = wdTransportWcWdRequisitionDetailsWcRecords[j];
+//                         let wbTransportWaWbRequisitionDetailsWaQuantity = wdTransportWcWdRequisitionDetailsWcRecord.quantity
+//                         let updatedQuantity = 0
+
+//                         if (wbTransportWaWbRequisitionDetailsWaQuantity >= defferenceQuantity) {
+//                             // Decrement wd_transport_wc_wd_details_wc quantity
+//                             await wdTransportWcWdDetailsWcQueries.update({
+//                                 quantity: wbTransportWaWbRequisitionDetailsWaQuantity - defferenceQuantity
+//                             }, {
+//                                 wd_transport_wc_wd_details_id: wdTransportWcWdRequisitionDetails.requisition_details_id,
+//                                 wc_id: wdTransportWcWdRequisitionDetailsWcRecord.wc_id
+//                             })
+//                             updatedQuantity = defferenceQuantity
+//                             defferenceQuantity = 0
+//                         } else {
+//                             // Decrement wd_transport_wc_wd_details_wc quantity
+//                             await wdTransportWcWdDetailsWcQueries.update({
+//                                 quantity: 0
+//                             }, {
+//                                 wd_transport_wc_wd_details_id: wdTransportWcWdRequisitionDetails.requisition_details_id,
+//                                 wc_id: wdTransportWcWdRequisitionDetailsWcRecord.wc_id
+//                             })
+//                             updatedQuantity = wbTransportWaWbRequisitionDetailsWaQuantity
+//                             defferenceQuantity = parseFloat((defferenceQuantity - wbTransportWaWbRequisitionDetailsWaQuantity).toFixed(3))
+//                         }
+
+//                         // select wa record
+//                         const wcRecord = await wcQueries.selectOne({
+//                             id: wdTransportWcWdRequisitionDetailsWcRecord.wc_id
+//                         })
+//                         if (wcRecord[0] != null) {
+//                             const oldCurrentQuantity = wcRecord[0].current_quantity
+
+//                             // Increment wa current_quantity
+//                             await wcQueries.update({
+//                                 current_quantity: oldCurrentQuantity + updatedQuantity
+//                             }, {
+//                                 id: wcRecord[0].id
+//                             })
+
+//                         }
+
+//                         if (defferenceQuantity == 0) {
+//                             updateResults = true
+//                             break;
+//                         }
+//                     }
+
+//                 } else {
+//                     updateResults = false
+//                 }
+         
+//         if (updateResults) {
+//             return updateResults;
+//         } else {
+//             return updateResults;
+//         }
+//     } else {
+//         return updateResults;
+//     }
+// }

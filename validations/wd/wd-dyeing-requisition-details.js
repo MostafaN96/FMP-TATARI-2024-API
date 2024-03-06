@@ -1,0 +1,77 @@
+const joi = require("joi");
+const validations = require("../../helpers/validations");
+
+exports.isValid = (wdDyeingRequisitionDetails) => {
+    const wdDyeingRequisitionDetailsSchema = joi.object({
+        id: validations.joiText(15, 30),
+        personid: validations.joiText(3, 50),
+        ipaddress: validations.joiText(3, 50),
+        items: joi.array().items({
+            wdFormDyeingOrderRequisitionDetailsId: validations.joiNotRequiredText(0, 30),
+            wdFormRequisitionDetailsId: validations.joiText(15, 30),
+            dyedFabricId: validations.joiText(15, 30),
+            dyeingFee:validations.joiText(1, 60),
+            dyeingServices:joi.array(),
+            price: validations.joiNumber(1, 60),
+            costPrice: validations.joiNumber(1, 60),
+            quantity:validations.joiNumber(1, 60),
+            dyeingQuantity:validations.joiNumber(1, 60),
+            numberFabricPieces:validations.joiText(1, 60),
+            fabricWidth:validations.joiText(1, 60),
+            fabricQuantityM2:validations.joiText(1, 60),
+            workOrderNumber: validations.joiText(1, 60),
+            note1: validations.joiNotRequiredText(0, 10000),
+            note2: validations.joiNotRequiredText(0, 10000),
+            statement: validations.joiNotRequiredText(0, 10000),
+        })
+    });
+    const joiErrors = wdDyeingRequisitionDetailsSchema.validate(wdDyeingRequisitionDetails);
+
+    try {
+        if (joiErrors.error) {
+            console.log(joiErrors.error.details);
+            return false;
+        } else {
+            return true;
+        }
+    } catch (error) {
+        console.log(joiErrors.error.details);
+        return false;
+    }
+};
+
+exports.isValidUpdate = (wdDyeingRequisitionDetails) => {
+    const wdDyeingRequisitionDetailsSchema = joi.object({
+        wdFormDyeingOrderRequisitionDetailsId: validations.joiNotRequiredText(0, 100000),
+        dyeingColorsPricesId: validations.joiText(15, 30),
+        date: validations.joiText(5, 50),
+        note: validations.joiNotRequiredText(0, 100000),
+        price: validations.joiNotRequiredNumber(0, 50),
+        costPrice: validations.joiNumber(1, 60),
+        quantity: validations.joiNumber(1, 60),
+        dyeingQuantity:validations.joiNumber(1, 60),
+        fabricWidth:validations.joiText(1, 60),
+        fabricQuantityM2:validations.joiText(1, 60),
+        isCalcDyeingNet: validations.joiBoolean,
+        dyeingFee:validations.joiText(1, 60),
+        workOrderNumber: validations.joiText(1, 50),
+        releaseProcess: validations.joiNotRequiredText(0, 30),
+        numberFabricPieces:validations.joiText(1, 60),
+        statement: validations.joiNotRequiredText(0, 10000),
+        personid: validations.joiText(1, 90),
+        ipaddress: validations.joiText(1, 90)
+    });
+    const joiErrors = wdDyeingRequisitionDetailsSchema.validate(wdDyeingRequisitionDetails);
+
+    try {
+        if (joiErrors.error) {
+            console.log(joiErrors.error.details);
+            return false;
+        } else {
+            return true;
+        }
+    } catch (error) {
+        console.log(joiErrors.error.details);
+        return false;
+    }
+};
