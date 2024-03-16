@@ -6,6 +6,7 @@ const knex = require("../../db/config/connection").getConnection();
 // Service
 const wbManufacturingInputService = require("../../services/wb/wb-manufacturing-input");
 const wbManufacturingOutputService = require("../../services/wb/wb-manufacturing-output");
+const wcReportService = require("../../services/wc/wc-report");
 
 // Queries
 const wbReportQueries = require("../../db/queries/wb/wb-report");
@@ -19,6 +20,7 @@ const wbTransitionBetweenIndustriesRequisitionDetailsQueries = require("../../db
 const wbManufacturingInputQueries = require("../../db/queries/wb/wb-manufacturing-input");
 
 // Util
+const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
 const { wbTransportWaWbTableName, bussinessmanTableName } = require("../../util/database-tables-name");
 const yarnTableName = require("../../util/database-tables-name").yarnTableName;
@@ -471,3 +473,88 @@ exports.inquireYarnAvilabilityReportWb = async (fabric, yarnId) => {
     let wbYarns = await yarnQueries.selectStoredWbYarnsInManufacturersForInquireFabricAvilability(wbWhereCluseArray)
     return wbYarns
 };
+
+exports.inquireYarnAvilabilityTotalReportWb = async (fabric, yarnId) => {
+    
+    let bussinessmanWhereCluse = {};
+    bussinessmanWhereCluse[`${bussinessmanTableName}.is_stock`] = 1;
+    bussinessmanWhereCluse[`${bussinessmanTableName}.is_deleted`] = 0;
+    bussinessmanWhereCluse[`${bussinessmanTableName}.is_active`] = 1;
+
+    let wbYarnWhereCluse = {};
+    wbYarnWhereCluse[`${yarnTableName}.id`] = yarnId;
+    wbYarnWhereCluse[`${yarnTableName}.is_deleted`] = 0;
+    wbYarnWhereCluse[`${yarnTableName}.is_active`] = 1;
+    wbYarnWhereCluse[`${wbTableName}.is_deleted`] = 0;
+    wbYarnWhereCluse[`${wbTableName}.is_active`] = 1;
+    wbYarnWhereCluse[`${wbTableName}.fabric_to_be_manufactured_id`] = fabric.fabricId;
+
+    let wbReconciliationWhereCluse = {};
+    wbReconciliationWhereCluse[`${yarnTableName}.id`] = yarnId;
+    wbReconciliationWhereCluse[`${yarnTableName}.is_deleted`] = 0;
+    wbReconciliationWhereCluse[`${yarnTableName}.is_active`] = 1;
+    wbReconciliationWhereCluse[`${wbTableName}.is_deleted`] = 0;
+    wbReconciliationWhereCluse[`${wbTableName}.is_active`] = 1;
+    wbReconciliationWhereCluse[`${wbTableName}.fabric_to_be_manufactured_id`] = fabric.fabricId;
+    wbReconciliationWhereCluse[`${wbReconciliationRequisitionDetailsTableName}.input_output`] = 1;
+
+    let wbTransitionBetweenIndustriesWhereCluse = {};
+    wbTransitionBetweenIndustriesWhereCluse[`${yarnTableName}.id`] = yarnId;
+    wbTransitionBetweenIndustriesWhereCluse[`${yarnTableName}.is_deleted`] = 0;
+    wbTransitionBetweenIndustriesWhereCluse[`${yarnTableName}.is_active`] = 1;
+    wbTransitionBetweenIndustriesWhereCluse[`${wbTableName}.is_deleted`] = 0;
+    wbTransitionBetweenIndustriesWhereCluse[`${wbTableName}.is_active`] = 1;
+    wbTransitionBetweenIndustriesWhereCluse[`${wbTableName}.fabric_to_be_manufactured_id`] = fabric.fabricId;
+    wbTransitionBetweenIndustriesWhereCluse[`${wbTableName}.type`] = constantsPayloads.transportBetweenType;
+
+    let wbWhereCluseArray = [
+        wbYarnWhereCluse, wbReconciliationWhereCluse, 
+        wbTransitionBetweenIndustriesWhereCluse, bussinessmanWhereCluse
+    ]
+
+    // select wb Yarn 
+    let wbYarns = await yarnQueries.selectStoredWbYarnsInManufacturersForInquireFabricAvilabilityTotal(wbWhereCluseArray)
+    return wbYarns
+};
+
+
+exports.inquireFabricsByDyeingOrderForOrderWb = async (fabric) => {
+    let data = []
+    let calcQuantity = fabric.quantity
+
+    const myFirstPromise = new Promise(async (resolve, reject) => {
+        
+        ////////////////////////////////////////// WC ///////////////////////////////////////
+            // select wc fabrics 
+            const wcFabrics = await wcReportService.inquireFabricAvilabilityTotalReportWc(fabric)
+
+            if (wcFabrics[0] != null) {
+                for (let i = 0; i < wcFabrics.length; i++) {
+                    const wcFabric = wcFabrics[i];
+
+                    data.push(wcFabric)
+                    calcQuantity = parseFloat((((calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100))) ) - parseFloat((wcFabric.current_quantity).toFixed(3))).toFixed(3))
+                    if (calcQuantity > 0) {
+                        wcFabric.needed_quantity = (wcFabrics.length - 1 == i) ? calcQuantity : 0,
+                            data.pop()
+                        data.push(wcFabric)
+                    }
+                }
+            } else {
+                data.push(
+                    {
+                        id: fabric.fabricId,
+                        name: fabric.fabric_name,
+                        code: fabric.fabric_code,
+                        existed_quantity: 0,
+                        needed_quantity: parseFloat((((calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100))) ) ).toFixed(3)),
+                    }
+                )
+            }
+
+        resolve(data); // Yay! Everything went well!
+
+    })
+    return await myFirstPromise
+
+}

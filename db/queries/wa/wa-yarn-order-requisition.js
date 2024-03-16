@@ -53,6 +53,7 @@ exports.select = async (whereCluse, isOrder) => {
             `${waYarnOrderRequisitionTableName}.name`,
             `${waYarnOrderRequisitionTableName}.date`,
             `${waYarnOrderRequisitionTableName}.note`,
+            `${waYarnOrderRequisitionTableName}.is_order`,
             `${bussinessmanTableName}.name as seller_name`,
             `${bussinessmanTableName}.id as seller_id`,
         ])

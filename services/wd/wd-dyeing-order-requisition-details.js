@@ -1,6 +1,7 @@
 // QuerieswbManufacturingOrderRequisitionDetailsTableName
 const wdDyeingOrderRequisitionDetailsQueries = require("../../db/queries/wd/wd-dyeing-order-requisition-details");
 const wdDyeingOrderRequisitionQueries = require("../../db/queries/wd/wd-dyeing-order-requisition");
+const ordersRequisitionsQueries = require("../../db/queries/general/orders-requisitions");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -19,6 +20,8 @@ exports.create = async (wdDyeingOrderRequisitionDetails) => {
             return constants.insertError;
         }
     }
+    await ordersRequisitionsQueries.insertForDyeingOrder(wdDyeingOrderRequisitionDetails)
+
     return { ...constants.insertSuccess, ...{ id: wdDyeingOrderRequisitionDetails.id } };
 };
 

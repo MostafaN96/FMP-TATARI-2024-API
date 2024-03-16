@@ -4,7 +4,7 @@ const knex = require("../../config/connection").getConnection();
 
 // Util
 const constants = require("../../../util/constants");
-const { waAddRequisitionDetailsTableName, waTableName, wbTableName, wbTransportWaWbDetailsTableName, waAddRequisitionTableName, wbReconciliationRequisitionDetailsWbTableName, wbReconciliationRequisitionDetailsTableName, wbTransitionBetweenIndustriesRequisitionDetailsTableName, waReconciliationRequisitionDetailsWaTableName, waReconciliationRequisitionDetailsTableName, wbTransportRequisitionWbWaDetailsTableName, waReconciliationRequisitionTableName, wbTransportRequisitionWbWaTableName } = require("../../../util/database-tables-name");
+const { waAddRequisitionDetailsTableName, waTableName, wbTableName, wbTransportWaWbDetailsTableName, waAddRequisitionTableName, wbReconciliationRequisitionDetailsWbTableName, wbReconciliationRequisitionDetailsTableName, wbTransitionBetweenIndustriesRequisitionDetailsTableName, waReconciliationRequisitionDetailsWaTableName, waReconciliationRequisitionDetailsTableName, wbTransportRequisitionWbWaDetailsTableName, waReconciliationRequisitionTableName, wbTransportRequisitionWbWaTableName, waExecuteOrderRequisitionDetailsTableName, waExecuteOrderRequisitionTableName, waTransitionBetweenWHRequisitionDetailsTableName, waTransitionBetweenWHRequisitionTableName } = require("../../../util/database-tables-name");
 const yarnLotTableName = require("../../../util/database-tables-name").yarnLotTableName;
 const yarnTableName = require("../../../util/database-tables-name").yarnTableName;
 
@@ -36,6 +36,25 @@ exports.insertForYarn = async (yarnLot) => {
       code: yarnLot.lotCode,
       creator_id: yarnLot.creator_id,
       ip_address: yarnLot.ip_address,
+    })
+    .then((data) => {
+      queryResults = true;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+  return queryResults;
+};
+
+exports.insertForDynamic = async (yarnLot, items) => {
+  let queryResults = false;
+  await sqlFun
+    .insert(yarnLotTableName, {
+      id: items.yarnLotId,
+      yarn_id: items.yarnId,
+      code: items.yarnLotCode,
+      creator_id: yarnLot.personid,
+      ip_address: yarnLot.ipaddress,
     })
     .then((data) => {
       queryResults = true;
@@ -225,6 +244,42 @@ exports.selectByWarehouseByYarnWa = async (whereCluseArray) => {
             `${yarnLotTableName}.id`,
             `${wbTransportRequisitionWbWaDetailsTableName}.yarn_lot_id`)
           .where(whereCluseArray[3])
+     })
+      .union(function () {
+        this.select([
+          `${yarnLotTableName}.id`,
+          `${yarnLotTableName}.code`,
+            `${waTableName}.current_quantity`,
+        ])
+          .from(`${waTableName}`)
+          .innerJoin(`${waExecuteOrderRequisitionDetailsTableName}`,
+            `${waExecuteOrderRequisitionDetailsTableName}.id`,
+            `${waTableName}.wa_execute_order_requisition_details_id`)
+            .innerJoin(`${waExecuteOrderRequisitionTableName}`,
+              `${waExecuteOrderRequisitionTableName}.id`,
+              `${waExecuteOrderRequisitionDetailsTableName}.wa_execute_order_requisition_id`)
+          .innerJoin(`${yarnLotTableName}`,
+            `${yarnLotTableName}.id`,
+            `${waExecuteOrderRequisitionDetailsTableName}.yarn_lot_id`)
+          .where(whereCluseArray[4])
+     })
+      .union(function () {
+        this.select([
+          `${yarnLotTableName}.id`,
+          `${yarnLotTableName}.code`,
+            `${waTableName}.current_quantity`,
+        ])
+          .from(`${waTableName}`)
+          .innerJoin(`${waTransitionBetweenWHRequisitionDetailsTableName}`,
+            `${waTransitionBetweenWHRequisitionDetailsTableName}.id`,
+            `${waTableName}.wa_transition_between_wh_requisitions_details_id`)
+            .innerJoin(`${waTransitionBetweenWHRequisitionTableName}`,
+              `${waTransitionBetweenWHRequisitionTableName}.id`,
+              `${waTransitionBetweenWHRequisitionDetailsTableName}.wa_transition_between_wh_requisitions_id`)
+          .innerJoin(`${yarnLotTableName}`,
+            `${yarnLotTableName}.id`,
+            `${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_lot_id`)
+          .where(whereCluseArray[5])
      })
   }).as('temp')
     .sum(`current_quantity as current_quantity`)

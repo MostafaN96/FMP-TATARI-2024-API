@@ -13,6 +13,7 @@ const trans = require("../../helpers/transform");
 const wbTransportWaWbDetailsService = require("./wb-transport-wa-wb-details");
 const wbReconciliationRequisitionDetailsService = require("./wb-reconciliation-requisition-details");
 const wbTransitionBetweenIndustriesRequisitionDetailsService = require("./wb-transition-between-industries-requisition-details");
+const fabricYarnsService = require("../general/fabric-yarns");
 
 exports.createForReconciliation = async (wb, items) => {
     wb.wbId = trans.transform();
@@ -270,6 +271,19 @@ exports.selectQuantityByIndustryByFabricWb = async (industryId, fabricId) => {
     let whereCluseArray = [whereCluse, reconciliationWhereCluse, andWhereCluse, transitionBetweenIndustriesWhereCluse]
     const yarnLotResults = await wbQueries.selectQuantityByIndustryWb(whereCluseArray);
 
+    // get yarn ratio and wast ratio
+    for (let i = 0; i < yarnLotResults.length; i++) {
+        const element = yarnLotResults[i];
+        let fabricYarn = await fabricYarnsService.selectByFabricIdByYarnId(fabricId, element.yarn_id)
+        if (Array.isArray(fabricYarn) && fabricYarn.length > 0) {
+            element.ratio = fabricYarn[0].ratio
+        element.wast_ratio = fabricYarn[0].wast_ratio
+        } else {
+            element.ratio = 0
+        element.wast_ratio = 0
+        }
+
+    }
     return yarnLotResults;
 };
 

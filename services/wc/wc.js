@@ -4,11 +4,12 @@ const wcAddRequisitionDetailsQueries = require("../../db/queries/wc/wc-add-requi
 const wcReconciliationRequisitionDetailsQueries = require("../../db/queries/wc/wc-reconciliation-requisition-details");
 const wdTransportRequisitionWdWcDetailsQueries = require("../../db/queries/wd/wd-transport-requisition-wd-wc-details");
 const wbManufacturingOutputQueries = require("../../db/queries/wb/wb-manufacturing-output");
+const wcExecuteOrderRequisitionDetailsQueries = require("../../db/queries/wc/wc-execute-order-requisition-details");
 
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-const { wcTableName, wcAddRequisitionDetailsTableName, wdTransportRequisitionWdWcTableName, wdTransportRequisitionWdWcDetailsTableName, wcReconciliationRequisitionTableName, wcReconciliationRequisitionDetailsTableName, wcAddRequisitionTableName, wbManufacturingOutputTableName } = require("../../util/database-tables-name");
+const { wcTableName, wcAddRequisitionDetailsTableName, wdTransportRequisitionWdWcTableName, wdTransportRequisitionWdWcDetailsTableName, wcReconciliationRequisitionTableName, wcReconciliationRequisitionDetailsTableName, wcAddRequisitionTableName, wbManufacturingOutputTableName, wcExecuteOrderRequisitionTableName, wcExecuteOrderRequisitionDetailsTableName } = require("../../util/database-tables-name");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -79,8 +80,18 @@ exports.selectByFabricForSell = async (warehouseId, fabricId, consigmentManufact
     manufacturingOutputWhereCluse[`${wbManufacturingOutputTableName}.fabric_id`] = fabricId;
     manufacturingOutputWhereCluse[`${wbManufacturingOutputTableName}.consigment_manufacturing_id`] = consigmentManufacturingId;
 
+    let executeOrderWhereCluse = {};
+    executeOrderWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    executeOrderWhereCluse[`${wcTableName}.is_active`] = 1;
+    executeOrderWhereCluse[`${wcTableName}.type`] = constantsPayloads.executeOrderType;
+    executeOrderWhereCluse[`${wcExecuteOrderRequisitionTableName}.warehouse_id`] = warehouseId;
+    executeOrderWhereCluse[`${wcExecuteOrderRequisitionDetailsTableName}.fabric_id`] = fabricId;
+    executeOrderWhereCluse[`${wcExecuteOrderRequisitionDetailsTableName}.consigment_manufacturing_id`] = consigmentManufacturingId;
+
     let andWhereCluse = {whereTableName: `current_quantity`, operator: ">", value: "0"}
-    let whereCluseArray = [whereCluse, reconciliationWhereCluse, andWhereCluse, transportWdWcWhereCluse, manufacturingOutputWhereCluse]
+    let whereCluseArray = [whereCluse, reconciliationWhereCluse,
+         andWhereCluse, transportWdWcWhereCluse, 
+         manufacturingOutputWhereCluse, executeOrderWhereCluse]
     let orderByCluse = {attributeName: `date`, value: "desc"}
 
     const results = await wcQueries.selectByFabric(whereCluseArray, orderByCluse);
@@ -132,9 +143,19 @@ exports.selectConsigmentManufacturingQuantityByWarehouseByFabricWc = async (ware
     manufacturingOutputWhereCluse[`${wbManufacturingOutputTableName}.warehouse_id`] = warehouseId;
     manufacturingOutputWhereCluse[`${wbManufacturingOutputTableName}.fabric_id`] = fabricId;
 
+    let executeOrderWhereCluse = {};
+    executeOrderWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    executeOrderWhereCluse[`${wcTableName}.is_active`] = 1;
+    executeOrderWhereCluse[`${wcTableName}.type`] = constantsPayloads.executeOrderType;
+    executeOrderWhereCluse[`${wcExecuteOrderRequisitionTableName}.warehouse_id`] = warehouseId;
+    executeOrderWhereCluse[`${wcExecuteOrderRequisitionDetailsTableName}.fabric_id`] = fabricId;
+
     let andWhereCluse = {whereTableName: `current_quantity`, operator: ">", value: "0"}
 
-    let whereCluseArray = [addWhereCluse, reconciliationWhereCluse, andWhereCluse, transportWdWcWhereCluse, manufacturingOutputWhereCluse]
+    let whereCluseArray = [addWhereCluse, reconciliationWhereCluse, 
+        andWhereCluse, transportWdWcWhereCluse, 
+        manufacturingOutputWhereCluse, executeOrderWhereCluse
+    ]
 
     const results = await wcQueries.selectConsigmentManufacturingQuantityByWarehouseByFabricWc(whereCluseArray)
     return results;
@@ -179,11 +200,20 @@ exports.selectSumCurrentQuantityByWarehouseByFabricByConsigmentManufacturingLotW
     manufacturingOutputWhereCluse[`${wbManufacturingOutputTableName}.consigment_manufacturing_id`] = consigmentManufacturingId;
     callArray.push(await wbManufacturingOutputQueries.selectSumCurrentQuantityByWarehouseByFabricWc(manufacturingOutputWhereCluse));
 
+    let executeOrderWhereCluse = {};
+    executeOrderWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    executeOrderWhereCluse[`${wcTableName}.is_active`] = 1;
+    executeOrderWhereCluse[`${wcTableName}.type`] = constantsPayloads.executeOrderType;
+    executeOrderWhereCluse[`${wcExecuteOrderRequisitionTableName}.warehouse_id`] = warehouseId;
+    executeOrderWhereCluse[`${wcExecuteOrderRequisitionDetailsTableName}.fabric_id`] = fabricId;
+    executeOrderWhereCluse[`${wcExecuteOrderRequisitionDetailsTableName}.consigment_manufacturing_id`] = consigmentManufacturingId;
+    callArray.push(await wcExecuteOrderRequisitionDetailsQueries.selectSumCurrentQuantityByWarehouseByFabricWc(executeOrderWhereCluse));
+
     const requisitions = await Promise.all(callArray)
-    console.log("requisitions ::::::::::: ", requisitions);
 
     let data = [...requisitions[0], ...requisitions[1],
-    ...requisitions[2], ...requisitions[3]]
+    ...requisitions[2], ...requisitions[3], ...requisitions[4]
+]
     let sumCurrentQuantity = 0
     for (let i = 0; i < data.length && (data[i] != null); i++) {
         const element = data[i];

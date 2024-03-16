@@ -78,10 +78,24 @@ router.post(
 );
 
 router.post(
+  "/inquire-fabric-avilability-total-report-we",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  weReportController.inquireFabricAvilabilityTotalReportWe
+);
+
+router.post(
   "/inquire-fabric-avilability-by-dyeing-order-requisition-report-we",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   weReportController.inquireFabricAvilabilityByDyeingOrderRequisitionReportWe
+);
+
+router.post(
+  "/inquire-fabric-avilability-by-dyeing-order-requisition-total-report-we",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  weReportController.inquireFabricAvilabilityByDyeingOrderRequisitionTotalReportWe
 );
 
 module.exports = router;

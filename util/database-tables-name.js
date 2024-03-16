@@ -50,6 +50,18 @@ const waYarnOrderRequisitionTableName = 'wa_yarn_order_requisition'
 const waYarnOrderRequisitionDetailsTableName = 'wa_yarn_order_requisition_details'
 const waAddRequisitionDetailsYarnOrderTableName = 'wa_add_requisition_details_yarn_order'
 
+const waPurchaseOrderTableName = 'wa_add_purchase_order'
+const waPurchaseOrderDetailsTableName = 'wa_add_purchase_order_details'
+const waAddRequisitionDetailsPurchaseOrderTableName = 'wa_add_requisition_details_purchase_order'
+
+const waExecuteOrderRequisitionTableName = 'wa_execute_order_requisition'
+const waExecuteOrderRequisitionDetailsTableName = 'wa_execute_order_requisition_details'
+const waExecuteOrderRequisitionDetailsWaTableName = 'wa_execute_order_requisition_details_wa'
+
+const waTransitionBetweenWHRequisitionTableName = 'wa_transition_between_wh_requisitions'
+const waTransitionBetweenWHRequisitionDetailsTableName = 'wa_transition_between_wh_requisitions_details'
+const waTransitionBetweenWHRequisitionDetailsWaTableName = 'wa_transition_between_wh_req_details_wa'
+
 const wbTableName = 'wb'
 
 const wbTransportWaWbTableName = 'wb_transport_wa_wb'
@@ -88,6 +100,13 @@ const wcReturnRequisitionDetailsWcTableName = 'wc_return_requisition_details_wc'
 const wcReconciliationRequisitionTableName = 'wc_reconcilition_requisition'
 const wcReconciliationRequisitionDetailsTableName = 'wc_reconcilition_requisition_details'
 const wcReconciliationRequisitionDetailsWcTableName = 'wc_reconcilition_requisition_details_wc'
+
+const wcFabricOrderRequisitionTableName = 'wc_fabric_order_requisition'
+const wcFabricOrderRequisitionDetailsTableName = 'wc_fabric_order_requisition_details'
+
+const wcExecuteOrderRequisitionTableName = 'wc_execute_order_requisition'
+const wcExecuteOrderRequisitionDetailsTableName = 'wc_execute_order_requisition_details'
+const wcExecuteOrderRequisitionDetailsWcTableName = 'wc_execute_order_requisition_details_wc'
 
 const wdTableName = 'wd'
 const wdTransportWcWdTableName = 'wd_transport_wc_wd'
@@ -143,6 +162,13 @@ const weReturnSellRequisitionDetailsTableName = 'we_return_sell_requisition_deta
 const weReturnSellRequisitionDetailsReturnDetailsTableName = 'we_return_sell_requisition_details_return_details'
 const weReturnSellRequisitionDetailsWeTableName = 'we_return_sell_requisition_details_we'
 
+const weDyedFabricOrderRequisitionTableName = 'we_dyed_fabric_order_requisition'
+const weDyedFabricOrderRequisitionDetailsTableName = 'we_dyed_fabric_order_requisition_details'
+
+const weExecuteOrderRequisitionTableName = 'we_execute_order_requisition'
+const weExecuteOrderRequisitionDetailsTableName = 'we_execute_order_requisition_details'
+const weExecuteOrderRequisitionDetailsWeTableName = 'we_execute_order_requisition_details_we'
+
 module.exports = {
     userTableName,
     bussinessmanTableName,
@@ -196,6 +222,18 @@ module.exports = {
     waYarnOrderRequisitionDetailsTableName,
     waAddRequisitionDetailsYarnOrderTableName,
 
+    waExecuteOrderRequisitionTableName,
+    waExecuteOrderRequisitionDetailsTableName,
+    waExecuteOrderRequisitionDetailsWaTableName,
+
+    waTransitionBetweenWHRequisitionTableName,
+    waTransitionBetweenWHRequisitionDetailsTableName,
+    waTransitionBetweenWHRequisitionDetailsWaTableName,
+
+    waPurchaseOrderTableName,
+    waPurchaseOrderDetailsTableName,
+    waAddRequisitionDetailsPurchaseOrderTableName,
+
     wbTableName,
     wbTransportWaWbTableName,
     wbTransportWaWbDetailsTableName,
@@ -230,6 +268,12 @@ module.exports = {
     wcReconciliationRequisitionTableName,
     wcReconciliationRequisitionDetailsTableName,
     wcReconciliationRequisitionDetailsWcTableName,
+
+    wcFabricOrderRequisitionTableName,
+    wcFabricOrderRequisitionDetailsTableName,
+    wcExecuteOrderRequisitionTableName,
+    wcExecuteOrderRequisitionDetailsTableName,
+    wcExecuteOrderRequisitionDetailsWcTableName,
 
     wdTableName,
     wdTransportWcWdTableName,
@@ -276,4 +320,11 @@ module.exports = {
     weReturnSellRequisitionDetailsTableName,
     weReturnSellRequisitionDetailsReturnDetailsTableName,
     weReturnSellRequisitionDetailsWeTableName,
+
+    weDyedFabricOrderRequisitionTableName,
+    weDyedFabricOrderRequisitionDetailsTableName,
+
+    weExecuteOrderRequisitionTableName,
+    weExecuteOrderRequisitionDetailsTableName,
+    weExecuteOrderRequisitionDetailsWeTableName,
 }

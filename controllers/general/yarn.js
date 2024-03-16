@@ -148,7 +148,8 @@ exports.create = async (request, response) => {
   const yarn = new yarnModel(
     bodyPalod.name, 
     bodyPalod.code,
-    bodyPalod.lotCode,
+    // bodyPalod.lotCode,
+    "",
     bodyPalod.personid, 
     bodyPalod.ipaddress);
   // Validation

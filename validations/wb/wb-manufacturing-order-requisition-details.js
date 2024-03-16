@@ -7,7 +7,8 @@ exports.isValid = (wbManufacturingOrderRequisitionDetails) => {
         ipaddress: validations.joiText(3, 50),
         items:joi.array().items( {
             fabricId: validations.joiText(15, 30),
-            quantity: validations.joiNumber(1, 60),
+            fabricName: validations.joiNotRequiredText(0, 100000),
+            quantity: validations.joiText(1, 60),
             note: validations.joiNotRequiredNumber(0, 50),
         })
     });
@@ -32,7 +33,7 @@ exports.isValidUpdate = (wbManufacturingOrderRequisitionDetails) => {
         date: validations.joiText(5, 50),
         name: validations.joiText(1, 90),
         note: validations.joiNotRequiredText(0, 100000),
-        quantity: validations.joiNumber(1, 60),
+        quantity: validations.joiText(1, 60),
         note2: validations.joiNotRequiredText(0, 100000),
         personid: validations.joiText(3, 50),
         ipaddress: validations.joiText(3, 50),

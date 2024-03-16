@@ -24,6 +24,12 @@ router.get("/closed-orders",
     middleWeres.checkInt(),
     waYarnOrderRequisitionController.selectYarnsOfYarnOrderRequisition);
 
+  router.get("/inquire-yarns-by-yarn-order-requisition/:id",
+    middleWeres.checkAuth(),
+    middleWeres.checkIdentity(usersType.ADMIN_STR),
+    middleWeres.checkInt(),
+    waYarnOrderRequisitionController.inquireYarnsOfFabricForOrderWa);
+
 // Post Queries
 router.post(
   "",

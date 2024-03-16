@@ -100,6 +100,7 @@ exports.selectByRequisitionIds = async (whereCluse, requisitionsIds) => {
         `${wdDyeingOrderRequisitionDetailsTableName}.color_code as colorCode`,
         `${wdDyeingOrderRequisitionDetailsTableName}.fabric_width`,
         `${wdDyeingOrderRequisitionDetailsTableName}.fabric_quantity_m2`,
+        `${wdDyeingOrderRequisitionTableName}.name as order_name`,
         `${fabricTableName}.fabric_id as fabricId`,
         `${fabricTableName}.id as dyedFabricId`,
         `${fabricTableName}.name as dyed_fabric_name`,
@@ -115,6 +116,7 @@ exports.selectByRequisitionIds = async (whereCluse, requisitionsIds) => {
         `${colorCategoryTableName}.name as color_category_name`,
         `${colorTableName}.id as colorId`,
         `${colorTableName}.name as color_name`,
+        // knex.raw(`coalesce(${wdDyeingOrderRequisitionDetailsTableName}.form_current_quantity / ( (1 - ${fabricTableName}.waste_ratio) / 100 ), 0) as needed_row_fabric_quantity`),
     ])
     .sum(`${wdDyeingOrderRequisitionDetailsTableName}.quantity as quantity`)
     .sum(`${wdDyeingOrderRequisitionDetailsTableName}.form_current_quantity as form_current_quantity`)

@@ -9,7 +9,9 @@ const { waYarnOrderRequisitionTableName,
   bussinessmanTableName, 
   waAddRequisitionDetailsYarnOrderTableName, 
   waAddRequisitionDetailsTableName, 
-  warehouseTableName } = require("../../../util/database-tables-name");
+  warehouseTableName, 
+  waExecuteOrderRequisitionDetailsTableName,
+  waExecuteOrderRequisitionTableName} = require("../../../util/database-tables-name");
 
 exports.insert = async (waYarnOrderRequisitionDetails, items) => {
   let queryResults = false;
@@ -79,18 +81,21 @@ exports.selectOutputWarehouseByRequisitionDetailsId = async (whereCluse) => {
     `${warehouseTableName}.name as warehouse_name`,
     `${warehouseTableName}.is_grade`,
   ])
-  .sum(`${waAddRequisitionDetailsTableName}.quantity as quantity`)
-    .from(`${waAddRequisitionDetailsTableName}`)
-    .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`,
-      `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`,
-      `${waAddRequisitionDetailsTableName}.id`)
+  .sum(`${waExecuteOrderRequisitionDetailsTableName}.quantity as quantity`)
+    .from(`${waExecuteOrderRequisitionDetailsTableName}`)
+    .innerJoin(`${waYarnOrderRequisitionDetailsTableName}`,
+      `${waYarnOrderRequisitionDetailsTableName}.id`,
+      `${waExecuteOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_details_id`)
+      .innerJoin(`${waExecuteOrderRequisitionTableName}`,
+      `${waExecuteOrderRequisitionTableName}.id`,
+      `${waExecuteOrderRequisitionDetailsTableName}.wa_execute_order_requisition_id`)
     .innerJoin(`${warehouseTableName}`,
       `${warehouseTableName}.id`,
-      `${waAddRequisitionDetailsTableName}.warehouse_id`)
+      `${waExecuteOrderRequisitionTableName}.warehouse_id`)
     .where(whereCluse)
-    .andWhere(`${waAddRequisitionDetailsTableName}.quantity`, ">", 0)
-    .groupBy(`${waAddRequisitionDetailsTableName}.yarn_id`, 
-    `${waAddRequisitionDetailsTableName}.warehouse_id`)
+    .andWhere(`${waExecuteOrderRequisitionDetailsTableName}.quantity`, ">", 0)
+    .groupBy(`${waExecuteOrderRequisitionDetailsTableName}.yarn_id`, 
+    `${waExecuteOrderRequisitionTableName}.warehouse_id`)
     .then((data) => {
       console.log(data);
       queryResults = data;
@@ -106,13 +111,8 @@ exports.selectOne = async (whereCluse) => {
       `${waYarnOrderRequisitionDetailsTableName}.id`,
       `${waYarnOrderRequisitionDetailsTableName}.initial_quantity`,
       `${waYarnOrderRequisitionDetailsTableName}.current_quantity`,
-      `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`,
-      `${waAddRequisitionDetailsYarnOrderTableName}.quantity`,
   ])
     .from(`${waYarnOrderRequisitionDetailsTableName}`)
-    .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`,
-      `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_details_id`,
-      `${waYarnOrderRequisitionDetailsTableName}.id`)
     .where(whereCluse)
     .limit(1)
     .then((data) => {

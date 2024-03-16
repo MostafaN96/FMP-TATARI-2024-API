@@ -3,11 +3,11 @@ const yarnLotQueries = require("../../db/queries/general/yarn-lot");
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
 const trans = require("../../helpers/transform");
-const { wbTransportWaWbDetailsTableName, wbTableName, waAddRequisitionDetailsTableName, waTableName, wbReconciliationRequisitionTableName, wbTransportRequisitionWbWaTableName, waReconciliationRequisitionTableName, yarnTableName, waReconciliationRequisitionDetailsTableName, warehouseTableName } = require("../../util/database-tables-name");
+const { wbTransportWaWbDetailsTableName, wbTableName, waAddRequisitionDetailsTableName, waTableName, wbReconciliationRequisitionTableName, wbTransportRequisitionWbWaTableName, waReconciliationRequisitionTableName, yarnTableName, waReconciliationRequisitionDetailsTableName, warehouseTableName, waExecuteOrderRequisitionTableName, waTransitionBetweenWHRequisitionTableName } = require("../../util/database-tables-name");
 
 exports.create = async (yarn) => {
   yarn.id = trans.transform();
-  yarn.lotId = trans.transform();
+  // yarn.lotId = trans.transform();
   // check
   const selectOneResult = await yarnQueries.selectOne({ code: yarn.code });
   if (selectOneResult[0] != null) {
@@ -16,7 +16,7 @@ exports.create = async (yarn) => {
 
   const results = await yarnQueries.insert(yarn);
   if (results) {
-    await yarnLotQueries.insertForYarn(yarn);
+    // await yarnLotQueries.insertForYarn(yarn);
     return constants.insertSuccess;
   } else {
     return constants.insertError;
@@ -79,7 +79,16 @@ exports.selectStoredWaYarnsByYarnId = async (yarnId) => {
   transportWbWaWhereCluse[`${waTableName}.type`] = constantsPayloads.transportFromBToAType;
   transportWbWaWhereCluse[`${warehouseTableName}.is_stock`] = 1;
 
-  let whereCluseArray = [yarnWhereCluse, reconciliationWhereCluse, transportWbWaWhereCluse]
+  let transitionBetweenWhWhereCluse = {};
+  transitionBetweenWhWhereCluse[`${yarnTableName}.id`] = yarnId;
+  transitionBetweenWhWhereCluse[`${yarnTableName}.is_deleted`] = 0;
+  transitionBetweenWhWhereCluse[`${yarnTableName}.is_active`] = 1;
+  transitionBetweenWhWhereCluse[`${waTableName}.is_deleted`] = 0;
+  transitionBetweenWhWhereCluse[`${waTableName}.is_active`] = 1;
+  transitionBetweenWhWhereCluse[`${waTableName}.type`] = constantsPayloads.transportBetweenType;
+  transitionBetweenWhWhereCluse[`${warehouseTableName}.is_stock`] = 1;
+
+  let whereCluseArray = [yarnWhereCluse, reconciliationWhereCluse, transportWbWaWhereCluse, transitionBetweenWhWhereCluse]
 
   const results = await yarnQueries.selectStoredWaYarnsByYarnId(whereCluseArray);
   return results;
@@ -103,9 +112,22 @@ exports.selectByWarehouseWa = async (warehouseId) => {
     transportWbWaWhereCluse[`${waTableName}.type`] = constantsPayloads.transportFromBToAType;
     transportWbWaWhereCluse[`${wbTransportRequisitionWbWaTableName}.warehouse_id`] = warehouseId;
 
+    let executeOrderWaWhereCluse = {};
+    executeOrderWaWhereCluse[`${waTableName}.is_deleted`] = 0;
+    executeOrderWaWhereCluse[`${waTableName}.is_active`] = 1;
+    executeOrderWaWhereCluse[`${waTableName}.type`] = constantsPayloads.executeOrderType;
+    executeOrderWaWhereCluse[`${waExecuteOrderRequisitionTableName}.warehouse_id`] = warehouseId;
+
+    let transitionBetweenWhWhereCluse = {};
+    transitionBetweenWhWhereCluse[`${waTableName}.is_deleted`] = 0;
+    transitionBetweenWhWhereCluse[`${waTableName}.is_active`] = 1;
+    transitionBetweenWhWhereCluse[`${waTableName}.type`] = constantsPayloads.transportBetweenType;
+    transitionBetweenWhWhereCluse[`${waTransitionBetweenWHRequisitionTableName}.to_warehouse_id`] = warehouseId;
+
     let andWhereCluse = { whereTableName: `current_quantity`, operator: ">", value: "0" }
 
-    let whereCluseArray = [whereCluse, reconciliationWhereCluse, andWhereCluse, transportWbWaWhereCluse]
+    let whereCluseArray = [whereCluse, reconciliationWhereCluse, andWhereCluse, 
+      transportWbWaWhereCluse, executeOrderWaWhereCluse, transitionBetweenWhWhereCluse]
 
   const results = await yarnQueries.selectByWarehouseWa(whereCluseArray);
   return results;

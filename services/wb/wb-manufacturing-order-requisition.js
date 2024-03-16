@@ -1,10 +1,12 @@
 // Services
 const wbManufacturingOrderRequisitionDetailsService = require("./wb-manufacturing-order-requisition-details");
+const wbReportService = require("./wb-report");
 
 // Queries
 const wbManufacturingOrderRequisitionQueries = require("../../db/queries/wb/wb-manufacturing-order-requisition");
 const wbManufacturingOrderRequisitionDetailsQueries = require("../../db/queries/wb/wb-manufacturing-order-requisition-details");
 const generalQueries = require("../../db/queries/general/general");
+const wdDyeingOrderRequisitionDetailsQueries = require("../../db/queries/wd/wd-dyeing-order-requisition-details");
 
 // Util
 const constants = require("../../util/constants");
@@ -12,7 +14,7 @@ const wbManufacturingOrderRequisitionTableName = require("../../util/database-ta
 
 // Helper
 const trans = require("../../helpers/transform");
-const { wbManufacturingOrderRequisitionDetailsTableName } = require("../../util/database-tables-name");
+const { wbManufacturingOrderRequisitionDetailsTableName, wdDyeingOrderRequisitionDetailsTableName } = require("../../util/database-tables-name");
 
 exports.create = async (wbManufacturingOrderRequisition) => {
     wbManufacturingOrderRequisition.id = trans.transform();
@@ -111,4 +113,70 @@ exports.selectClosedOrders = async () => {
         result = constants.invalidDataResponse
     }
     return result
+}
+
+
+exports.inquireFabricsByDyeingOrderForOrderWb = async (dyeingOrderRequisitionId) => {
+    let data = []
+
+    let whereCluse = {};
+        whereCluse[`${wdDyeingOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+        whereCluse[`${wdDyeingOrderRequisitionDetailsTableName}.is_active`] = 1;
+        whereCluse[`${wdDyeingOrderRequisitionDetailsTableName}.is_order`] = 1;
+
+        let dyeingOrderRequisitions = await wdDyeingOrderRequisitionDetailsQueries.selectByRequisitionIds(whereCluse, [dyeingOrderRequisitionId])
+
+    for (let i = 0; i < dyeingOrderRequisitions.length; i++) {
+        const element = dyeingOrderRequisitions[i];
+        
+        let result = await wbReportService.inquireFabricsByDyeingOrderForOrderWb(element)
+
+        if(data.length > 0) {
+            data = [...result, ...data]
+        } else {
+            data = result
+        }
+
+    }
+
+    let resultData = await this.filterOrderYarnsArray(data, dyeingOrderRequisitions)
+
+    if (Array.isArray(resultData) && resultData.length > 0) {
+        resultData[0].dyeingOrderRequisition = dyeingOrderRequisitions[0]
+    }
+    return resultData
+   
+}
+
+exports.filterOrderYarnsArray = async (data) => {
+    // Declare a new array
+    let newArray = [];
+ 
+    // Declare an empty object
+    let uniqueObject = {};
+ 
+    // Loop for the array elements
+    for (let i in data) {
+ 
+        // Extract the title
+        objTitle = data[i]['id'];
+ 
+        // Use the title as the index
+        // console.log(data[i]);
+        if(uniqueObject[objTitle]) {
+            // console.log("uniqueObject[objTitle] :::::: ", uniqueObject[objTitle]);
+            data[i].needed_quantity = parseFloat((data[i]['needed_quantity'] + uniqueObject[objTitle].needed_quantity).toFixed(3))
+        }
+        uniqueObject[objTitle] = data[i];
+    }
+ 
+    // Loop to push unique object into array
+    for (i in uniqueObject) {
+        if(uniqueObject[i].needed_quantity > 0) {
+            newArray.push(uniqueObject[i]);
+        }
+    }
+
+    return newArray
+
 }

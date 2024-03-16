@@ -1,6 +1,7 @@
 // Services
 const wdDyeingOrderRequisitionDetailsService = require("./wd-dyeing-order-requisition-details");
 const wdsettlingFormService = require("./wd-settling-form");
+const ordersRequisitionsService = require("../general/orders-requisitions");
 
 // Queries
 const wdDyeingOrderRequisitionQueries = require("../../db/queries/wd/wd-dyeing-order-requisition");
@@ -50,6 +51,7 @@ exports.selectOpenedOrders = async () => {
             const element = results[i];
 
             element.requestionDetails = await wdDyeingOrderRequisitionDetailsService.selectByRequisitionIdOpenedOrder(element.id);
+            element.yarnOrders = await ordersRequisitionsService.selectByDyeingIdForYarnOrder(element.id);
         }
     }
     return results;

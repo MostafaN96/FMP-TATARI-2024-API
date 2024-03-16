@@ -22,6 +22,24 @@ exports.insertForWdTransportRequisitionWdWc = async (consigmentYarn, items) => {
   return queryResults;
 };
 
+exports.insertForAddByOrder = async (consigmentYarn, items) => {
+  let queryResults = false;
+  await sqlFun
+    .insert(consigmentYarnTableName, {
+      id: items.consigmentYarnId,
+      number: items.consigmentYarnNumber,
+      creator_id: consigmentYarn.personid,
+      ip_address: consigmentYarn.ipaddress
+    })
+    .then((data) => {
+      queryResults = true;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+  return queryResults;
+};
+
 
 exports.insert = async (consigmentYarn) => {
   let queryResults = false;
@@ -29,6 +47,24 @@ exports.insert = async (consigmentYarn) => {
     .insert(consigmentYarnTableName, {
       id: consigmentYarn.id,
       number: consigmentYarn.number,
+      creator_id: consigmentYarn.personid,
+      ip_address: consigmentYarn.ipaddress
+    })
+    .then((data) => {
+      queryResults = true;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+  return queryResults;
+};
+
+exports.insertForWaExecuteOrder = async (consigmentYarn, items) => {
+  let queryResults = false;
+  await sqlFun
+    .insert(consigmentYarnTableName, {
+      id: items.consigmentYarnId,
+      number: items.newConsigmentYarnNumber,
       creator_id: consigmentYarn.personid,
       ip_address: consigmentYarn.ipaddress
     })

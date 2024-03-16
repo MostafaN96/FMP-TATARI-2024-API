@@ -5,7 +5,7 @@ const joiName = joi.string().not().empty().trim().normalize().min(3).max(45).pat
 const joiPhone = joi.number().integer().required()
 const joiId = joi.number().integer().required()
 const joiText = (min, max) => joi.alternatives().try(
-    joi.number().integer().required(),
+    joi.number().required(),
     joi.string().not().empty().trim().normalize().min(min).max(max).pattern(patterns.text).required()
 )
 const joiHtmlText = (min, max) => joi.string().not().empty().trim().normalize().min(min).max(max).required()

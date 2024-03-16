@@ -56,6 +56,15 @@ const waReconciliationRequisitionDetailsRouter = require("./routers/wa/wa-reconc
 const waYarnOrderRequisitionRouter = require("./routers/wa/wa-yarn-order-requisition");
 const waYarnOrderRequisitionDetailsRouter = require("./routers/wa/wa-yarn-order-requisition-details");
 
+const waExcuteOrderRequisitionRouter = require("./routers/wa/wa-execute-order-requisition");
+const waExcuteOrderRequisitionDetailsRouter = require("./routers/wa/wa-execute-order-requisition-details");
+
+const waTransitionBetweenWhRequisitionRouter = require("./routers/wa/wa-transition-between-wh-requisition");
+const waTransitionBetweenWhRequisitionDetailsRouter = require("./routers/wa/wa-transition-between-wh-requisition-details");
+
+const waPurchaseOrderRouter = require("./routers/wa/wa-purchase-order");
+const waPurchaseOrderDetailsRouter = require("./routers/wa/wa-purchase-order-details");
+
 const waReportRouter = require("./routers/wa/wa-report");
 
 // WB
@@ -89,6 +98,12 @@ const wcReturnRequisitionDetailsRouter = require("./routers/wc/wc-return-requisi
 
 const wcReconciliationRequisitionRouter = require("./routers/wc/wc-reconciliation-requisition");
 const wcReconciliationRequisitionDetailsRouter = require("./routers/wc/wc-reconciliation-requisition-details");
+
+const wcFabricOrderRequisitionRouter = require("./routers/wc/wc-fabric-order-requisition");
+const wcFabricOrderRequisitionDetailsRouter = require("./routers/wc/wc-fabric-order-requisition-details");
+
+const wcExcuteOrderRequisitionRouter = require("./routers/wc/wc-execute-order-requisition");
+const wcExcuteOrderRequisitionDetailsRouter = require("./routers/wc/wc-execute-order-requisition-details");
 
 const wcReportRouter = require("./routers/wc/wc-report");
 
@@ -142,6 +157,9 @@ const weReturnRequisitionDetailsRouter = require("./routers/we/we-return-requisi
 
 const weReturnSellRequisitionRouter = require("./routers/we/we-return-sell-requisition");
 const weReturnSellRequisitionDetailsRouter = require("./routers/we/we-return-sell-requisition-details");
+
+const weDyedFabricOrderRequisitionRouter = require("./routers/we/we-dyed-fabric-order-requisition");
+const weDyedFabricOrderRequisitionDetailsRouter = require("./routers/we/we-dyed-fabric-order-requisition-details");
 
 const weReportRouter = require("./routers/we/we-report");
 
@@ -204,6 +222,15 @@ app.use("/api/wa-reconciliation-requisition-details", waReconciliationRequisitio
 app.use('/api/wa-yarn-order-requisition', waYarnOrderRequisitionRouter)
 app.use('/api/wa-yarn-order-requisition-details', waYarnOrderRequisitionDetailsRouter)
 
+app.use('/api/wa-purchase-order', waPurchaseOrderRouter)
+app.use('/api/wa-purchase-order-details', waPurchaseOrderDetailsRouter)
+
+app.use('/api/wa-execute-order-requisition', waExcuteOrderRequisitionRouter)
+app.use('/api/wa-execute-order-requisition-details', waExcuteOrderRequisitionDetailsRouter)
+
+app.use('/api/wa-transition-between-wh-requisition', waTransitionBetweenWhRequisitionRouter)
+app.use('/api/wa-transition-between-wh-requisition-details', waTransitionBetweenWhRequisitionDetailsRouter)
+
 app.use("/api/wa-report", waReportRouter);
 
 // WB
@@ -238,6 +265,12 @@ app.use("/api/wc-return-requisition-details", wcReturnRequisitionDetailsRouter);
 
 app.use("/api/wc-reconciliation-requisition", wcReconciliationRequisitionRouter);
 app.use("/api/wc-reconciliation-requisition-details", wcReconciliationRequisitionDetailsRouter);
+
+app.use('/api/wc-fabric-order-requisition', wcFabricOrderRequisitionRouter)
+app.use('/api/wc-fabric-order-requisition-details', wcFabricOrderRequisitionDetailsRouter)
+
+app.use('/api/wc-execute-order-requisition', wcExcuteOrderRequisitionRouter)
+app.use('/api/wc-execute-order-requisition-details', wcExcuteOrderRequisitionDetailsRouter)
 
 app.use("/api/wc-report", wcReportRouter);
 
@@ -291,6 +324,9 @@ app.use("/api/we-return-requisition-details", weReturnRequisitionDetailsRouter);
 
 app.use("/api/we-return-sell-requisition", weReturnSellRequisitionRouter);
 app.use("/api/we-return-sell-requisition-details", weReturnSellRequisitionDetailsRouter);
+
+app.use('/api/we-dyed-fabric-order-requisition', weDyedFabricOrderRequisitionRouter)
+app.use('/api/we-dyed-fabric-order-requisition-details', weDyedFabricOrderRequisitionDetailsRouter)
 
 app.use("/api/we-report", weReportRouter);
 

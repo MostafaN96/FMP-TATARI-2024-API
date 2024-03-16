@@ -1,0 +1,59 @@
+// Config
+const sqlFun = require("../../config/sql-fun");
+
+// Util
+const { waAddRequisitionDetailsPurchaseOrderTableName } = require("../../../util/database-tables-name");
+
+exports.insert = async (waAddRequisitionDetailsPurchaseOrder, item) => {
+    let queryResults = false;
+    await sqlFun
+        .insert(waAddRequisitionDetailsPurchaseOrderTableName, {
+          wa_add_requisition_details_id: waAddRequisitionDetailsPurchaseOrder.waRequisitionDetailsId,
+          wa_add_purchase_order_id: waAddRequisitionDetailsPurchaseOrder.orderId,
+          wa_add_purchase_order_details_id: item.orderDetailsId,
+            quantity: item.quantity,
+            creator_id: waAddRequisitionDetailsPurchaseOrder.personid,
+            ip_address: waAddRequisitionDetailsPurchaseOrder.ipaddress,
+        })
+        .then((data) => {
+            queryResults = true;
+        })
+        .catch((error) => {
+            console.log(error);
+        });
+    return queryResults;
+};
+
+exports.selectOne = async (whereCluse) => {
+  let queryResults = false;
+  await sqlFun
+      .limitedSelect(waAddRequisitionDetailsPurchaseOrderTableName, [
+        "wa_add_purchase_order_details_id", 
+        "wa_add_purchase_order_id", 
+        "wa_add_requisition_details_id", 
+        "quantity"
+      ], whereCluse, 1)
+      .then((data) => {
+          queryResults = data;
+      })
+      .catch((error) => {
+          console.log(error);
+      });
+
+  return queryResults;
+};
+
+exports.update = async (waAddRequisitionDetailsPurchaseOrder, whereCluse) => {
+    let queryResults = false;
+    await sqlFun
+      .update(
+        waAddRequisitionDetailsPurchaseOrderTableName,
+        waAddRequisitionDetailsPurchaseOrder,
+        whereCluse
+      )
+      .then((data) => {
+        queryResults = true;
+      })
+      .catch((err) => console.log(err));
+    return queryResults;
+  };

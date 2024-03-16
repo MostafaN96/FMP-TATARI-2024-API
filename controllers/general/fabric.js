@@ -141,6 +141,15 @@ exports.selectByWarehouseWc = async (request, response) => {
   response.status(200).json(results);
 };
 
+exports.selectStoredFabricsByFabricIdWc = async (request, response) => {
+  // logging
+  const { id } = request.params;
+
+  // call service
+  const results = await fabricService.selectStoredFabricsByFabricIdWc(id);
+  response.status(200).json(results);
+};
+
 
 exports.selectStoredWcFabricsBySupplierByWarehouse = async (request, response) => {
   // logging

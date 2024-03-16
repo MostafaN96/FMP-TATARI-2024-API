@@ -203,6 +203,39 @@ exports.update = async (wbTransportRequisitionWbWa, whereCluse) => {
   return queryResults;
 };
 
+
+exports.selectSumCurrentQuantityByWarehouseByYarnWa = async (whereCluse) => {
+  let queryResults = []
+
+  await knex(yarnLotTableName)
+      .select([
+        `${yarnLotTableName}.id`, 
+        `${yarnLotTableName}.code`, 
+        `${wbTransportRequisitionWbWaDetailsTableName}.quantity`,
+      ])
+      .innerJoin(`${wbTransportRequisitionWbWaDetailsTableName}`, 
+      `${wbTransportRequisitionWbWaDetailsTableName}.yarn_lot_id`, 
+      `${yarnLotTableName}.id`)
+      .innerJoin(`${wbTransportRequisitionWbWaTableName}`, 
+      `${wbTransportRequisitionWbWaTableName}.id`, 
+      `${wbTransportRequisitionWbWaDetailsTableName}.wb_transport_requisition_wb_wa_id`)
+      .innerJoin(`${waTableName}`, 
+      `${waTableName}.wb_transport_requisition_wb_wa_details_id`, 
+      `${wbTransportRequisitionWbWaDetailsTableName}.id`)
+      .where(`${waTableName}.current_quantity`, ">", "0")
+      .andWhere(whereCluse)
+      .groupBy(`${wbTransportRequisitionWbWaDetailsTableName}.yarn_lot_id`)
+      .sum(`${waTableName}.current_quantity as current_quantity`)
+      .then(data => {
+          queryResults = data
+      })
+      .catch(error => {
+        console.log(error);
+          queryResults = constants.errorPayload
+      })
+  return queryResults
+}
+
 exports.selectTotalByYarnIdByIndustryId = async (yarnId, manufacturerId) => {
   let queryResults = [];
   let whereCluse = {};

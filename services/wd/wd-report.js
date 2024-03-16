@@ -602,6 +602,41 @@ exports.inquireFabricAvilabilityReportWd = async (fabric) => {
     return wdFabrics
 };
 
+exports.inquireFabricAvilabilityTotalReportWd = async (fabric) => {
+    
+    let bussinessmanWhereCluse = {};
+    bussinessmanWhereCluse[`${bussinessmanTableName}.is_stock`] = 1;
+    bussinessmanWhereCluse[`${bussinessmanTableName}.is_deleted`] = 0;
+    bussinessmanWhereCluse[`${bussinessmanTableName}.is_active`] = 1;
+
+    let wdFabricWhereCluse = {};
+    wdFabricWhereCluse[`${fabricTableName}.id`] = fabric.fabricId;
+    wdFabricWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    wdFabricWhereCluse[`${fabricTableName}.is_active`] = 1;
+
+    let wdReconciliationWhereCluse = {};
+    wdReconciliationWhereCluse[`${fabricTableName}.id`] = fabric.fabricId;
+    wdReconciliationWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    wdReconciliationWhereCluse[`${fabricTableName}.is_active`] = 1;
+    wdReconciliationWhereCluse[`${wdTableName}.is_deleted`] = 0;
+    wdReconciliationWhereCluse[`${wdTableName}.is_active`] = 1;
+    wdReconciliationWhereCluse[`${wdReconciliationRequisitionDetailsTableName}.input_output`] = 1;
+
+    let wdTransitionBetweenDyersWhereCluse = {};
+    wdTransitionBetweenDyersWhereCluse[`${fabricTableName}.id`] = fabric.fabricId;
+    wdTransitionBetweenDyersWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    wdTransitionBetweenDyersWhereCluse[`${fabricTableName}.is_active`] = 1;
+    wdTransitionBetweenDyersWhereCluse[`${wdTableName}.is_deleted`] = 0;
+    wdTransitionBetweenDyersWhereCluse[`${wdTableName}.is_active`] = 1;
+    wdTransitionBetweenDyersWhereCluse[`${wdTableName}.type`] = constantsPayloads.transportBetweenType;
+
+    let wdWhereCluseArray = [wdFabricWhereCluse, wdReconciliationWhereCluse, wdTransitionBetweenDyersWhereCluse, bussinessmanWhereCluse]
+
+    // select wd Fabrics 
+    let wdFabrics = await fabricQueries.selectStoredWdFabricsForInquireFabricAvilabilityTotal(wdWhereCluseArray)
+    return wdFabrics
+};
+
 exports.inquireFabricFormAvilabilityReportWd = async (fabric) => {
     
     let bussinessmanWhereCluse = {};
@@ -640,5 +675,46 @@ exports.inquireFabricFormAvilabilityReportWd = async (fabric) => {
 
     // select wd Form Fabrics 
     let wdFormFabrics = await fabricQueries.selectStoredWdFormFabricsForInquireFabricAvilability(wdWhereCluseArray)
+    return wdFormFabrics
+};
+
+exports.inquireFabricFormAvilabilityTotalReportWd = async (fabric) => {
+
+    let bussinessmanWhereCluse = {};
+    bussinessmanWhereCluse[`${bussinessmanTableName}.is_stock`] = 1;
+    bussinessmanWhereCluse[`${bussinessmanTableName}.is_deleted`] = 0;
+    bussinessmanWhereCluse[`${bussinessmanTableName}.is_active`] = 1;
+
+    let wdFabricWhereCluse = {};
+    wdFabricWhereCluse[`${fabricTableName}.id`] = fabric.fabricId;
+    wdFabricWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    wdFabricWhereCluse[`${fabricTableName}.is_active`] = 1;
+    wdFabricWhereCluse[`${anointedColorsPricesTableName}.color_id`] = fabric.colorId;
+    wdFabricWhereCluse[`${anointedColorsPricesTableName}.code`] = fabric.colorCode;
+
+    // let wdReconciliationWhereCluse = {};
+    // wdReconciliationWhereCluse[`${fabricTableName}.id`] = fabric.fabricId;
+    // wdReconciliationWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    // wdReconciliationWhereCluse[`${fabricTableName}.is_active`] = 1;
+    // wdReconciliationWhereCluse[`${anointedColorsPricesTableName}.color_id`] = fabric.colorId;
+    // wdReconciliationWhereCluse[`${anointedColorsPricesTableName}.code`] = fabric.colorCode;
+    // wdReconciliationWhereCluse[`${wdTableName}.is_deleted`] = 0;
+    // wdReconciliationWhereCluse[`${wdTableName}.is_active`] = 1;
+    // wdReconciliationWhereCluse[`${wdReconciliationRequisitionDetailsTableName}.input_output`] = 1;
+
+    // let wdTransitionBetweenDyersWhereCluse = {};
+    // wdTransitionBetweenDyersWhereCluse[`${fabricTableName}.id`] = fabric.fabricId;
+    // wdTransitionBetweenDyersWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    // wdTransitionBetweenDyersWhereCluse[`${fabricTableName}.is_active`] = 1;
+    // wdTransitionBetweenDyersWhereCluse[`${anointedColorsPricesTableName}.color_id`] = fabric.colorId;
+    // wdTransitionBetweenDyersWhereCluse[`${anointedColorsPricesTableName}.code`] = fabric.colorCode;
+    // wdTransitionBetweenDyersWhereCluse[`${wdTableName}.is_deleted`] = 0;
+    // wdTransitionBetweenDyersWhereCluse[`${wdTableName}.is_active`] = 1;
+    // wdTransitionBetweenDyersWhereCluse[`${wdTableName}.type`] = constantsPayloads.transportBetweenType;
+
+    let wdWhereCluseArray = [wdFabricWhereCluse, bussinessmanWhereCluse]
+
+    // select wd Form Fabrics 
+    let wdFormFabrics = await fabricQueries.selectStoredWdFormFabricsForInquireFabricAvilabilityTotal(wdWhereCluseArray)
     return wdFormFabrics
 };

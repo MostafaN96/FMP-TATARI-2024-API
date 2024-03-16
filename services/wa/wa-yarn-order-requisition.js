@@ -1,9 +1,12 @@
 // Services
 const waYarnOrderRequisitionDetailsService = require("./wa-yarn-order-requisition-details");
+const waReportService = require("./wa-report");
 
 // Queries
 const waYarnOrderRequisitionQueries = require("../../db/queries/wa/wa-yarn-order-requisition");
 const waYarnOrderRequisitionDetailsQueries = require("../../db/queries/wa/wa-yarn-order-requisition-details");
+const wdDyeingOrderRequisitionDetailsQueries = require("../../db/queries/wd/wd-dyeing-order-requisition-details");
+const weDyedOrderRequisitionDetailsQueries = require("../../db/queries/we/we-dyed-fabric-order-requisition-details");
 const generalQueries = require("../../db/queries/general/general");
 
 // Util
@@ -11,7 +14,7 @@ const constants = require("../../util/constants");
 
 // Helper
 const trans = require("../../helpers/transform");
-const { waYarnOrderRequisitionTableName, waYarnOrderRequisitionDetailsTableName } = require("../../util/database-tables-name");
+const { waYarnOrderRequisitionTableName, waYarnOrderRequisitionDetailsTableName, wdDyeingOrderRequisitionDetailsTableName, weDyedFabricOrderRequisitionDetailsTableName } = require("../../util/database-tables-name");
 
 exports.create = async (waYarnOrderRequisition) => {
     waYarnOrderRequisition.id = trans.transform();
@@ -94,18 +97,18 @@ exports.selectClosedOrders = async () => {
             waYarnOrderRequisitionDetailsWhereCluse)
         }
 
-        // close requisition order
-        let waYarnOrderRequisitionWhereCluse = {};
-        waYarnOrderRequisitionWhereCluse[`${waYarnOrderRequisitionTableName}.id`] = requisitionId;
-        const waYarnOrderRequisitionResult = await waYarnOrderRequisitionQueries.update({
-            is_order : 0
-        },
-        waYarnOrderRequisitionWhereCluse)
-        if(waYarnOrderRequisitionResult) {
+        // close requisition order ??????????????????????????????
+        // let waYarnOrderRequisitionWhereCluse = {};
+        // waYarnOrderRequisitionWhereCluse[`${waYarnOrderRequisitionTableName}.id`] = requisitionId;
+        // const waYarnOrderRequisitionResult = await waYarnOrderRequisitionQueries.update({
+        //     is_order : 0
+        // },
+        // waYarnOrderRequisitionWhereCluse)
+        // if(waYarnOrderRequisitionResult) {
             result = constants.updateSuccess
-        } else {
-            result = constants.updateError
-        }
+        // } else {
+        //     result = constants.updateError
+        // }
     } else {
         result = constants.invalidDataResponse
     }
@@ -127,4 +130,70 @@ exports.selectClosedOrders = async () => {
         return constants.invalidDataResponse
     }
    
+}
+  
+  exports.inquireYarnsOfFabricForOrderWa = async (weDyedFabricOrderRequisition) => {
+    let data = []
+
+    let whereCluse = {};
+        whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+        whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+        whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_order`] = 1;
+
+        let weDyedFabricOrderRequisitions = await weDyedOrderRequisitionDetailsQueries.selectByRequisitionIds(whereCluse, [weDyedFabricOrderRequisition])
+
+    for (let i = 0; i < weDyedFabricOrderRequisitions.length; i++) {
+        const element = weDyedFabricOrderRequisitions[i];
+        
+        let result = await waReportService.yarnsOfFabricForOrderWa(element)
+
+        if(data.length > 0) {
+            data = [...result, ...data]
+        } else {
+            data = result
+        }
+
+    }
+
+    let resultData = await this.filterOrderYarnsArray(data, weDyedFabricOrderRequisitions)
+    // console.log("resultData ::::::::::::::: ", resultData);
+    if (Array.isArray(resultData) && resultData.length > 0) {
+        resultData[0].weDyedFabricOrderRequisition = weDyedFabricOrderRequisitions[0]
+    }
+    return resultData
+   
+}
+
+exports.filterOrderYarnsArray = async (data) => {
+    // Declare a new array
+    let newArray = [];
+ 
+    // Declare an empty object
+    let uniqueObject = {};
+ 
+    // Loop for the array elements
+    for (let i in data) {
+ 
+        // Extract the title
+        objTitle = data[i]['id'];
+ 
+        // Use the title as the index
+        // console.log(data[i]);
+        if(uniqueObject[objTitle]) {
+            // console.log("uniqueObject[objTitle] :::::: ", uniqueObject[objTitle]);
+            // console.log("data[i]['id'] :::::: ", data[i]['needed_quantity']);
+            data[i].needed_quantity = parseFloat((data[i]['needed_quantity'] + uniqueObject[objTitle].needed_quantity).toFixed(3))
+        }
+        uniqueObject[objTitle] = data[i];
+    }
+ 
+    // Loop to push unique object into array
+    for (i in uniqueObject) {
+        if(uniqueObject[i].needed_quantity > 0) {
+            newArray.push(uniqueObject[i]);
+        }
+    }
+
+    return newArray
+
 }

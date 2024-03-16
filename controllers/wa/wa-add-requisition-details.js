@@ -19,7 +19,27 @@ exports.create = async (request, response) => {
       return response.status(400).json(constants.invalidDataResponse);
   }
   //   send data to service
-  const results = await waAddRequisitionDetailsService.create(bodyPalod);
+  const results = await waAddRequisitionDetailsService.create(bodyPalod, 0);
+
+  if (results === constants.insertError) {
+      return response.status(500).json(results);
+  }  else if (results === constants.invalidDataResponse) {
+      return response.status(400).json(constants.invalidDataResponse);
+  } else {
+      return response.status(201).json(results);
+  }
+};
+
+exports.createByOrder = async (request, response) => {
+  const bodyPalod = request.body;
+
+  // Validation
+  if (!waAddRequisitionDetailsValidation.isValidOrder(bodyPalod)) {
+      // logging
+      return response.status(400).json(constants.invalidDataResponse);
+  }
+  //   send data to service
+  const results = await waAddRequisitionDetailsService.create(bodyPalod, 1);
 
   if (results === constants.insertError) {
       return response.status(500).json(results);

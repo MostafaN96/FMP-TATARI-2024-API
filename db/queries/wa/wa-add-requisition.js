@@ -77,6 +77,7 @@ exports.select = async () => {
         `${waAddRequisitionTableName}.number`,
         `${waAddRequisitionTableName}.date`,
         `${waAddRequisitionTableName}.note`,
+        `${waAddRequisitionTableName}.is_order`,
         `${bussinessmanTableName}.name as supplier_name`,
       ],
       whereCluse,

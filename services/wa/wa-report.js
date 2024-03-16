@@ -14,16 +14,22 @@ const waReturnRequisitionDetailsQueries = require("../../db/queries/wa/wa-return
 const waReconciliationRequisitionDetailsQueries = require("../../db/queries/wa/wa-reconciliation-requisition-details");
 const wbTransportWaWbDetailsQueries = require("../../db/queries/wb/wb-transport-wa-wb-details");
 const wbTransportRequisitionWbWaDetailsQueries = require("../../db/queries/wb/wb-transport-requisition-wb-wa-details");
+const waExecuteOrderRequisitionDetailsQueries = require("../../db/queries/wa/wa-execute-order-requisition-details");
+const waTransitionBetweenWHRequisitionDetailsQueries = require("../../db/queries/wa/wa-transition-between-wh-requisition-details");
 const bussinessmanService = require("../../services/general/bussinessman");
+const fabricYarnsService = require("../../services/general/fabric-yarns");
 
 // Util
+const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-const { warehouseTableName } = require("../../util/database-tables-name");
-const yarnTableName = require("../../util/database-tables-name").yarnTableName;
-const waTableName = require("../../util/database-tables-name").waTableName;
-const waReconciliationRequisitionDetailsTableName = require("../../util/database-tables-name").waReconciliationRequisitionDetailsTableName;
-const waAddRequisitionTableName = require("../../util/database-tables-name").waAddRequisitionTableName;
-const waAddRequisitionDetailsTableName = require("../../util/database-tables-name").waAddRequisitionDetailsTableName;
+const { warehouseTableName, 
+    yarnTableName,
+    waTableName,
+    waReconciliationRequisitionDetailsTableName,
+    waAddRequisitionTableName,
+    waAddRequisitionDetailsTableName
+
+} = require("../../util/database-tables-name");
 
 exports.selectInventoryTotal = async (yarnReport) => {
     let data = []
@@ -48,7 +54,25 @@ exports.selectInventoryTotal = async (yarnReport) => {
     transportWbWaWhereCluse[`${waTableName}.is_active`] = 1;
     transportWbWaWhereCluse[`${waTableName}.type`] = constantsPayloads.transportFromBToAType;
 
-    let whereCluseArray = [yarnWhereCluse, reconciliationWhereCluse, transportWbWaWhereCluse]
+    let executeOrderRequisitionWbWaWhereCluse = {};
+    executeOrderRequisitionWbWaWhereCluse[`${yarnTableName}.is_deleted`] = 0;
+    executeOrderRequisitionWbWaWhereCluse[`${yarnTableName}.is_active`] = 1;
+    executeOrderRequisitionWbWaWhereCluse[`${waTableName}.is_deleted`] = 0;
+    executeOrderRequisitionWbWaWhereCluse[`${waTableName}.is_active`] = 1;
+    executeOrderRequisitionWbWaWhereCluse[`${waTableName}.type`] = constantsPayloads.executeOrderType;
+
+    let transitionBetweenWhWhereCluse = {};
+    transitionBetweenWhWhereCluse[`${yarnTableName}.is_deleted`] = 0;
+    transitionBetweenWhWhereCluse[`${yarnTableName}.is_active`] = 1;
+    transitionBetweenWhWhereCluse[`${waTableName}.is_deleted`] = 0;
+    transitionBetweenWhWhereCluse[`${waTableName}.is_active`] = 1;
+    transitionBetweenWhWhereCluse[`${waTableName}.type`] = constantsPayloads.transportBetweenType;
+
+    let whereCluseArray = [yarnWhereCluse, 
+        reconciliationWhereCluse, 
+        transportWbWaWhereCluse, 
+        executeOrderRequisitionWbWaWhereCluse,
+        transitionBetweenWhWhereCluse]
 
     // select yarns 
     const yarns = (yarnReport.isShowClosedBalances == 1) ? await yarnQueries.selectStoredWaYarnsAndWarehouses(whereCluseArray, 0) : await yarnQueries.selectStoredWaYarnsAndWarehouses(whereCluseArray)
@@ -87,10 +111,16 @@ exports.selectInventoryTotal = async (yarnReport) => {
             callArray.push(waReconciliationRequisitionDetailsQueries.selectTotalByYarnByWarehouseId(yarn.id, yarn.warehouse_id))
             callArray.push(wbTransportWaWbDetailsQueries.selectTotalByYarnByWarehouseId(yarn.id, yarn.warehouse_id))
             callArray.push(wbTransportRequisitionWbWaDetailsQueries.selectTotalByYarnByWarehouseId(yarn.id, yarn.warehouse_id))
+            callArray.push(waExecuteOrderRequisitionDetailsQueries.selectFromWarehouseTotalByYarnIdByWarehouseId(yarn.id, yarn.warehouse_id))
+            callArray.push(waExecuteOrderRequisitionDetailsQueries.selectToWarehouseTotalByYarnIdByWarehouseId(yarn.id, yarn.warehouse_id))
+            callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectFromWarehouseTotalByYarnIdByWarehouseId(yarn.id, yarn.warehouse_id))
+            callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectToWarehouseTotalByYarnIdByWarehouseId(yarn.id, yarn.warehouse_id))
             const requisitions = await Promise.all(callArray)
             const sortedAsc = [...requisitions[0], ...requisitions[1],
-            ...requisitions[2], ...requisitions[3], ...requisitions[4], 
-            ...requisitions[5]].sort(
+            ...requisitions[2], ...requisitions[3], ...requisitions[4],
+            ...requisitions[5], ...requisitions[6], ...requisitions[7],
+            ...requisitions[8], ...requisitions[9]
+        ].sort(
                 (objA, objB) => moment(objA.date) - moment(objB.date)
             );
             data[i].details = sortedAsc
@@ -110,10 +140,16 @@ exports.selectInventoryTotalByYarnByWarehouse = async (yarnId, warehouseId) => {
     callArray.push(waReconciliationRequisitionDetailsQueries.selectTotalDetailsByYarnIdByWarehouseId(yarnId, warehouseId))
     callArray.push(wbTransportWaWbDetailsQueries.selectTotalDetailsByYarnIdByWarehouseId(yarnId, warehouseId))
     callArray.push(wbTransportRequisitionWbWaDetailsQueries.selectTotalDetailsByYarnIdByWarehouseId(yarnId, warehouseId))
+    callArray.push(waExecuteOrderRequisitionDetailsQueries.selectFromWarehouseTotalDetailsByYarnIdByWarehouseId(yarnId, warehouseId))
+    callArray.push(waExecuteOrderRequisitionDetailsQueries.selectToWarehouseTotalDetailsByYarnIdByWarehouseId(yarnId, warehouseId))
+    callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectFromWarehouseTotalDetailsByYarnIdByWarehouseId(yarnId, warehouseId))
+    callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectToWarehouseTotalDetailsByYarnIdByWarehouseId(yarnId, warehouseId))
     const requisitions = await Promise.all(callArray)
     const sortedAsc = [...requisitions[0], ...requisitions[1],
     ...requisitions[2], ...requisitions[3], ...requisitions[4],
-    ...requisitions[5]].sort(
+    ...requisitions[5], ...requisitions[6], ...requisitions[7],
+    ...requisitions[8], ...requisitions[9]
+].sort(
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );
 
@@ -159,7 +195,18 @@ exports.selectInventoryDetails = async (yarnReport) => {
     transportWbWaWhereCluse[`${waTableName}.is_active`] = 1;
     transportWbWaWhereCluse[`${waTableName}.type`] = constantsPayloads.transportFromBToAType;
 
-    let whereCluseArray = [yarnWhereCluse, reconciliationWhereCluse, transportWbWaWhereCluse]
+    let executeOrderRequisitionWbWaWhereCluse = {};
+    executeOrderRequisitionWbWaWhereCluse[`${waTableName}.is_deleted`] = 0;
+    executeOrderRequisitionWbWaWhereCluse[`${waTableName}.is_active`] = 1;
+
+    let transitionBetweenWhWhereCluse = {};
+    transitionBetweenWhWhereCluse[`${waTableName}.is_deleted`] = 0;
+    transitionBetweenWhWhereCluse[`${waTableName}.is_active`] = 1;
+    // executeOrderRequisitionWbWaWhereCluse[`${waTableName}.type`] = constantsPayloads.executeOrderType;
+
+    let whereCluseArray = [yarnWhereCluse, reconciliationWhereCluse, 
+        transportWbWaWhereCluse, executeOrderRequisitionWbWaWhereCluse,
+        transitionBetweenWhWhereCluse]
 
     // select warehousesYarnsLots 
     const warehousesYarnsLots = (yarnReport.isShowClosedBalances == 1) ? await waQueries.selectStoredWarehouseAndYarnAndYarnLot(whereCluseArray, 0) : await waQueries.selectStoredWarehouseAndYarnAndYarnLot(whereCluseArray)
@@ -211,10 +258,24 @@ exports.selectInventoryDetails = async (yarnReport) => {
             callArray.push(wbTransportRequisitionWbWaDetailsQueries.selectDetailsByWarehouseByYarnByLot(
                 warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id
             ))
+            callArray.push(waExecuteOrderRequisitionDetailsQueries.selectFromWarehouseDetailsByWarehouseByYarnByLot(
+                warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id,
+            ))
+            callArray.push(waExecuteOrderRequisitionDetailsQueries.selectToWarehouseDetailsByWarehouseByYarnByLot(
+                warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id
+            ))
+            callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectFromWarehouseDetailsByWarehouseByYarnByLot(
+                warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id,
+            ))
+            callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectToWarehouseDetailsByWarehouseByYarnByLot(
+                warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id
+            ))
             const requisitions = await Promise.all(callArray)
             const sortedAsc = [...requisitions[0], ...requisitions[1],
-            ...requisitions[2], ...requisitions[3], ...requisitions[4], 
-            ...requisitions[5]].sort(
+            ...requisitions[2], ...requisitions[3], ...requisitions[4],
+            ...requisitions[5], ...requisitions[6], ...requisitions[7],
+            ...requisitions[8], ...requisitions[9]
+        ].sort(
                 (objA, objB) => moment(objA.date) - moment(objB.date)
             );
             data[i].details = sortedAsc
@@ -234,10 +295,16 @@ exports.selectInventoryDetailsByWarehouseByYarnByLot = async (warehouseId, yarnI
     callArray.push(waReconciliationRequisitionDetailsQueries.selectDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId))
     callArray.push(wbTransportWaWbDetailsQueries.selectDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId))
     callArray.push(wbTransportRequisitionWbWaDetailsQueries.selectDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId))
+    callArray.push(waExecuteOrderRequisitionDetailsQueries.selectFromWarehouseDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId))
+    callArray.push(waExecuteOrderRequisitionDetailsQueries.selectToWarehouseDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId))
+    callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectFromWarehouseDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId))
+    callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectToWarehouseDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId))
     const requisitions = await Promise.all(callArray)
     const sortedAsc = [...requisitions[0], ...requisitions[1],
-    ...requisitions[2], ...requisitions[3], ...requisitions[4], 
-    ...requisitions[5]].sort(
+    ...requisitions[2], ...requisitions[3], ...requisitions[4],
+    ...requisitions[5], ...requisitions[6], ...requisitions[7],
+    ...requisitions[8], ...requisitions[9]
+].sort(
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );
 
@@ -274,7 +341,7 @@ exports.selectPriceWa = async (yarnId, consigmentYarnId) => {
     callArray.push(wbTransportRequisitionWbWaDetailsQueries.selectPriceByYarnId(yarnId))
     const requisitions = await Promise.all(callArray)
     const sortedAsc = [...requisitions[0], ...requisitions[1],
-    ...requisitions[2], ...requisitions[3], ...requisitions[4], 
+    ...requisitions[2], ...requisitions[3], ...requisitions[4],
     ...requisitions[5]].sort(
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );
@@ -359,10 +426,16 @@ exports.selectInventoryTotalByDate = async (bodyPalod) => {
     callArray.push(waReconciliationRequisitionDetailsQueries.selectTotalDetailsByDate(bodyPalod))
     callArray.push(wbTransportWaWbDetailsQueries.selectTotalDetailsByDate(bodyPalod))
     callArray.push(wbTransportRequisitionWbWaDetailsQueries.selectTotalDetailsByDate(bodyPalod))
+    callArray.push(waExecuteOrderRequisitionDetailsQueries.selectFromWarehouseTotalDetailsByDate(bodyPalod))
+    callArray.push(waExecuteOrderRequisitionDetailsQueries.selectToWarehouseTotalDetailsByDate(bodyPalod))
+    callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectFromWarehouseTotalDetailsByDate(bodyPalod))
+    callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectToWarehouseTotalDetailsByDate(bodyPalod))
     const requisitions = await Promise.all(callArray)
     const sortedAsc = [...requisitions[0], ...requisitions[1],
-    ...requisitions[2], ...requisitions[3], ...requisitions[4], 
-    ...requisitions[5]].sort(
+    ...requisitions[2], ...requisitions[3], ...requisitions[4],
+    ...requisitions[5], ...requisitions[6], ...requisitions[7],
+    ...requisitions[8], ...requisitions[9]
+].sort(
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );
 
@@ -399,12 +472,185 @@ exports.inquireYarnAvilabilityReportWa = async (yarnId) => {
     transportWbWaWhereCluse[`${waTableName}.is_active`] = 1;
     transportWbWaWhereCluse[`${waTableName}.type`] = constantsPayloads.transportFromBToAType;
 
+    let executeOrderWaWhereCluse = {};
+    executeOrderWaWhereCluse[`${yarnTableName}.id`] = yarnId;
+    executeOrderWaWhereCluse[`${yarnTableName}.is_deleted`] = 0;
+    executeOrderWaWhereCluse[`${yarnTableName}.is_active`] = 1;
+    executeOrderWaWhereCluse[`${waTableName}.is_deleted`] = 0;
+    executeOrderWaWhereCluse[`${waTableName}.is_active`] = 1;
+    executeOrderWaWhereCluse[`${waTableName}.type`] = constantsPayloads.executeOrderType;
+
+    let transitionBetweenWhWhereCluse = {};
+    transitionBetweenWhWhereCluse[`${yarnTableName}.id`] = yarnId;
+    transitionBetweenWhWhereCluse[`${yarnTableName}.is_deleted`] = 0;
+    transitionBetweenWhWhereCluse[`${yarnTableName}.is_active`] = 1;
+    transitionBetweenWhWhereCluse[`${waTableName}.is_deleted`] = 0;
+    transitionBetweenWhWhereCluse[`${waTableName}.is_active`] = 1;
+    transitionBetweenWhWhereCluse[`${waTableName}.type`] = constantsPayloads.transportBetweenType;
+
     let waWhereCluseArray = [
-        yarnWhereCluse, reconciliationWhereCluse, 
-        transportWbWaWhereCluse, warehouseWhereCluse
+        yarnWhereCluse, reconciliationWhereCluse,
+        transportWbWaWhereCluse, warehouseWhereCluse,
+        executeOrderWaWhereCluse, transitionBetweenWhWhereCluse
     ]
 
     // select wa Yarn 
     let waYarns = await yarnQueries.selectStoredWaYarnsAndWarehousesForInquireFabricAvilability(waWhereCluseArray)
     return waYarns
 };
+
+exports.inquireYarnAvilabilityTotalReportWa = async (yarnId) => {
+
+    let warehouseWhereCluse = {};
+    warehouseWhereCluse[`${warehouseTableName}.is_stock`] = 1;
+    warehouseWhereCluse[`${warehouseTableName}.is_deleted`] = 0;
+    warehouseWhereCluse[`${warehouseTableName}.is_active`] = 1;
+
+    let yarnWhereCluse = {};
+    yarnWhereCluse[`${yarnTableName}.id`] = yarnId;
+    yarnWhereCluse[`${yarnTableName}.is_deleted`] = 0;
+    yarnWhereCluse[`${yarnTableName}.is_active`] = 1;
+    yarnWhereCluse[`${waTableName}.is_deleted`] = 0;
+    yarnWhereCluse[`${waTableName}.is_active`] = 1;
+
+    let reconciliationWhereCluse = {};
+    reconciliationWhereCluse[`${yarnTableName}.id`] = yarnId;
+    reconciliationWhereCluse[`${yarnTableName}.is_deleted`] = 0;
+    reconciliationWhereCluse[`${yarnTableName}.is_active`] = 1;
+    reconciliationWhereCluse[`${waTableName}.is_deleted`] = 0;
+    reconciliationWhereCluse[`${waTableName}.is_active`] = 1;
+    reconciliationWhereCluse[`${waReconciliationRequisitionDetailsTableName}.input_output`] = 1;
+
+    let transportWbWaWhereCluse = {};
+    transportWbWaWhereCluse[`${yarnTableName}.id`] = yarnId;
+    transportWbWaWhereCluse[`${yarnTableName}.is_deleted`] = 0;
+    transportWbWaWhereCluse[`${yarnTableName}.is_active`] = 1;
+    transportWbWaWhereCluse[`${waTableName}.is_deleted`] = 0;
+    transportWbWaWhereCluse[`${waTableName}.is_active`] = 1;
+    transportWbWaWhereCluse[`${waTableName}.type`] = constantsPayloads.transportFromBToAType;
+
+    let executeOrderWaWhereCluse = {};
+    executeOrderWaWhereCluse[`${yarnTableName}.id`] = yarnId;
+    executeOrderWaWhereCluse[`${yarnTableName}.is_deleted`] = 0;
+    executeOrderWaWhereCluse[`${yarnTableName}.is_active`] = 1;
+    executeOrderWaWhereCluse[`${waTableName}.is_deleted`] = 0;
+    executeOrderWaWhereCluse[`${waTableName}.is_active`] = 1;
+    executeOrderWaWhereCluse[`${waTableName}.type`] = constantsPayloads.executeOrderType;
+
+    let transitionBetweenWhWhereCluse = {};
+    transitionBetweenWhWhereCluse[`${yarnTableName}.id`] = yarnId;
+    transitionBetweenWhWhereCluse[`${yarnTableName}.is_deleted`] = 0;
+    transitionBetweenWhWhereCluse[`${yarnTableName}.is_active`] = 1;
+    transitionBetweenWhWhereCluse[`${waTableName}.is_deleted`] = 0;
+    transitionBetweenWhWhereCluse[`${waTableName}.is_active`] = 1;
+    transitionBetweenWhWhereCluse[`${waTableName}.type`] = constantsPayloads.transportBetweenType;
+
+    let waWhereCluseArray = [
+        yarnWhereCluse, reconciliationWhereCluse,
+        transportWbWaWhereCluse, warehouseWhereCluse,
+        executeOrderWaWhereCluse, transitionBetweenWhWhereCluse
+    ]
+
+    // select wa Yarn 
+    let waYarns = await yarnQueries.selectStoredWaYarnsForInquireFabricAvilabilityTotal(waWhereCluseArray)
+    return waYarns
+};
+
+exports.inquireYarnsOfFabricForOrderWa = async (fabric) => {
+    let data = []
+    let calcQuantity = fabric.quantity
+
+    const myFirstPromise = new Promise(async (resolve, reject) => {
+        // select yarns of fabric
+        const yarnsOfFabricResult = await fabricYarnsService.selectByFabricId(fabric.fabricId)
+        if (yarnsOfFabricResult[0] != null) {
+
+            for (let i = 0; i < yarnsOfFabricResult.length; i++) {
+                const yarnOfFabric = yarnsOfFabricResult[i];
+
+                const waYarns = await this.inquireYarnAvilabilityReportWa(yarnOfFabric.yarn_id)
+                if (waYarns[0] != null) {
+                    let calcQuantityYarn = calcQuantity
+                    for (let j = 0; j < waYarns.length; j++) {
+                        const waYarn = waYarns[j];
+
+                        let neededYarnQuantity = 0
+                        neededYarnQuantity = parseFloat((((calcQuantityYarn / (1 - (constants.notZero(fabric.wasteRatio) / 100))) * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
+                        calcQuantityYarn = 0
+                        if (parseFloat(waYarn.current_quantity) >= neededYarnQuantity) {
+                            waYarn.existed_quantity = neededYarnQuantity
+                            waYarn.needed_quantity = 0
+                            neededYarnQuantity = 0
+                        } else {
+                            waYarn.existed_quantity = waYarn.current_quantity
+                            neededYarnQuantity = parseFloat((neededYarnQuantity - waYarn.current_quantity).toFixed(3))
+                            // data.push(waYarn)
+                        }
+
+                        if (neededYarnQuantity == 0) {
+                            // data.push(waYarn)
+                            continue;
+                        } else {
+                            data.push({
+                                    id: yarnOfFabric.yarn_id,
+                                    warehouse_id: '000',
+                                    warehouse_name: waYarn.warehouse_name,
+                                    name: yarnOfFabric.yarn_name,
+                                    code: yarnOfFabric.yarn_code,
+                                    existed_quantity: waYarn.existed_quantity,
+                                    needed_quantity: (waYarns.length - 1 == j) ? neededYarnQuantity : 0,
+                                })
+                        }
+                    }
+                } else {
+                    data.push(
+                        {
+                            id: yarnOfFabric.yarn_id,
+                            warehouse_id: '000',
+                            warehouse_name: '',
+                            name: yarnOfFabric.yarn_name,
+                            code: yarnOfFabric.yarn_code,
+                            existed_quantity: 0,
+                            needed_quantity: parseFloat(((calcQuantity * parseFloat(yarnOfFabric.total_ratio)) / 100).toFixed(3)),
+                        }
+                    )
+                }
+            }
+        }
+
+        resolve(data); // Yay! Everything went well!
+
+    })
+    return await myFirstPromise
+
+}
+
+exports.yarnsOfFabricForOrderWa = async (fabric) => {
+    let data = []
+    let calcQuantity = fabric.quantity
+
+    const myFirstPromise = new Promise(async (resolve, reject) => {
+        // select yarns of fabric
+        const yarnsOfFabricResult = await fabricYarnsService.selectByFabricId(fabric.fabricId)
+        if (yarnsOfFabricResult[0] != null) {
+
+            for (let i = 0; i < yarnsOfFabricResult.length; i++) {
+                const yarnOfFabric = yarnsOfFabricResult[i];
+
+                neededYarnQuantity = parseFloat((((calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100))) * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
+
+                data.push({
+                    id: yarnOfFabric.yarn_id,
+                    name: yarnOfFabric.yarn_name,
+                    code: yarnOfFabric.yarn_code,
+                    needed_quantity: neededYarnQuantity,
+                })
+            }
+        }
+
+        resolve(data); // Yay! Everything went well!
+
+    })
+    return await myFirstPromise
+
+}

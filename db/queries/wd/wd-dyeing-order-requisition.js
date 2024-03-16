@@ -54,17 +54,17 @@ exports.select = async (whereCluse, isOrder) => {
             `${wdDyeingOrderRequisitionTableName}.work_order_number`,
             `${bussinessmanTableName}.name as seller_name`,
             `${bussinessmanTableName}.id as seller_id`,
-            `${ordersRequisitionsTableName}.wa_yarn_order_requisition_id`,
-            `${ordersRequisitionsTableName}.wb_manufacturing_order_requisition_id`,
+            // `${ordersRequisitionsTableName}.wa_yarn_order_requisition_id`,
+            // `${ordersRequisitionsTableName}.wb_manufacturing_order_requisition_id`,
         ])
         .innerJoin(`${bussinessmanTableName}`,
             `${bussinessmanTableName}.id`,
             `${wdDyeingOrderRequisitionTableName}.seller_id`
         )
-        .leftOuterJoin(`${ordersRequisitionsTableName}`,
-            `${ordersRequisitionsTableName}.wd_form_dyeing_order_requisition_id`,
-            `${wdDyeingOrderRequisitionTableName}.id`
-        )
+        // .leftOuterJoin(`${ordersRequisitionsTableName}`,
+        //     `${ordersRequisitionsTableName}.wd_form_dyeing_order_requisition_id`,
+        //     `${wdDyeingOrderRequisitionTableName}.id`
+        // )
         .where(whereCluse)
         .orderBy(`${wdDyeingOrderRequisitionTableName}.number`, 'desc')
         .groupBy(`${wdDyeingOrderRequisitionTableName}.id`)

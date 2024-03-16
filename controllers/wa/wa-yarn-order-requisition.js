@@ -70,3 +70,12 @@ exports.selectYarnsOfYarnOrderRequisition = async (request, response) => {
     const results = await waYarnOrderRequisitionService.selectYarnsOfYarnOrderRequisition(id);
     response.status(200).json(results);
   };
+
+exports.inquireYarnsOfFabricForOrderWa = async (request, response) => {
+    // logging
+    const { id } = request.params;
+  
+    // call service
+    const results = await waYarnOrderRequisitionService.inquireYarnsOfFabricForOrderWa(id);
+    response.status(200).json(results);
+  };

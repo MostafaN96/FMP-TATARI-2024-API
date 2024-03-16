@@ -2,9 +2,10 @@
 const waAddRequisitionDetailsQueries = require("../../db/queries/wa/wa-add-requisition-details");
 const waAddRequisitionQueries = require("../../db/queries/wa/wa-add-requisition");
 const consigmentYarnQueries = require("../../db/queries/general/consigment-yarn");
+const yarnLotQueries = require("../../db/queries/general/yarn-lot");
 const waQueries = require("../../db/queries/wa/wa");
-const waYarnOrderRequisitionDetailsQueries = require("../../db/queries/wa/wa-yarn-order-requisition-details");
-const waAddRequisitionDetailsYarnOrderQueries = require("../../db/queries/wa/wa-add-requisition-details-yarn-order");
+const waPurchaseOrderDetailsQueries = require("../../db/queries/wa/wa-purchase-order-details");
+const waAddRequisitionDetailsPurchaseOrderQueries = require("../../db/queries/wa/wa-add-requisition-details-purchase-order");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -15,9 +16,11 @@ const constantsPayloads = require("../../util/constants-payloads");
 
 // Services
 const waService = require("./wa");
-const waAddRequisitionDetailsYarnOrderService = require("./wa-add-requisition-details-yarn-order");
+const waPurchaseOrderDetailsService = require("./wa-purchase-order-details");
+const waAddRequisitionDetailsPurchaseOrderService = require("./wa-add-requisition-details-purchase-order");
 
-const { waYarnOrderRequisitionDetailsTableName, waTableName, waAddRequisitionDetailsTableName } = require("../../util/database-tables-name");
+const { waPurchaseOrderDetailsTableName, waTableName, waAddRequisitionDetailsTableName, 
+  waAddRequisitionDetailsPurchaseOrderTableName } = require("../../util/database-tables-name");
 
 exports.create = async (waAddRequisitionDetails, isOrder) => {
     for (let i = 0; i < waAddRequisitionDetails.items.length; i++) {
@@ -29,7 +32,19 @@ exports.create = async (waAddRequisitionDetails, isOrder) => {
         if (selectConsigmentYarnOneResult[0] != null) {
             waAddRequisitionDetails.items[i].consigmentYarnId = selectConsigmentYarnOneResult[0].id;
         } else {
-            await consigmentYarnQueries.insertForWdTransportRequisitionWdWc(waAddRequisitionDetails, waAddRequisitionDetails.items[i]);
+            await consigmentYarnQueries.insertForAddByOrder(waAddRequisitionDetails, waAddRequisitionDetails.items[i]);
+        }
+
+        // Check Yarn Lot Dupplication
+        waAddRequisitionDetails.items[i].yarnLotId = trans.transform();
+        const selectYarnLotOneResult = await yarnLotQueries.selectOne({ 
+          code: waAddRequisitionDetails.items[i].yarnLotCode,
+          yarn_id: waAddRequisitionDetails.items[i].yarnId
+        })
+        if (selectYarnLotOneResult[0] != null) {
+            waAddRequisitionDetails.items[i].yarnLotId = selectYarnLotOneResult[0].id;
+        } else {
+            await yarnLotQueries.insertForDynamic(waAddRequisitionDetails, waAddRequisitionDetails.items[i]);
         }
 
         const results = await waAddRequisitionDetailsQueries.insert(waAddRequisitionDetails, waAddRequisitionDetails.items[i]);
@@ -38,7 +53,7 @@ exports.create = async (waAddRequisitionDetails, isOrder) => {
         } else {
             await waService.create(waAddRequisitionDetails, waAddRequisitionDetails.items[i])
             if (isOrder) {
-                await this.createOrder(waAddRequisitionDetails)
+                await this.createOrder(waAddRequisitionDetails, waAddRequisitionDetails.items[i])
             }
         }
     }
@@ -46,32 +61,29 @@ exports.create = async (waAddRequisitionDetails, isOrder) => {
 };
 
 // Order Function
-exports.createOrder = async (waAddRequisitionDetails) => {
-    for (let i = 0; i < waAddRequisitionDetails.itemsOrder.length; i++) {
-        const orderElement = waAddRequisitionDetails.itemsOrder[i];
-        await waAddRequisitionDetailsYarnOrderService.create(waAddRequisitionDetails, orderElement)
+exports.createOrder = async (waAddRequisitionDetails, item) => {
+        await waAddRequisitionDetailsPurchaseOrderService.create(waAddRequisitionDetails, item)
 
         let whereCluse = {};
-        whereCluse[`${waYarnOrderRequisitionDetailsTableName}.id`] = orderElement.yarnOrderRequisitionDetailsId;
-        let selectYarnOrderRequisitionDetailsOneResult = await waYarnOrderRequisitionDetailsQueries.selectOne(whereCluse)
+        whereCluse[`${waPurchaseOrderDetailsTableName}.id`] = item.orderDetailsId;
+        let selectPurchaseOrderDetailsOneResult = await waPurchaseOrderDetailsQueries.selectOne(whereCluse)
 
-        if (selectYarnOrderRequisitionDetailsOneResult[0].current_quantity >= parseFloat(orderElement.quantity)) {
-            await waYarnOrderRequisitionDetailsQueries.update({
-                current_quantity: selectYarnOrderRequisitionDetailsOneResult[0].current_quantity - parseFloat(orderElement.quantity)
+        if (selectPurchaseOrderDetailsOneResult[0].current_quantity >= parseFloat(item.quantity)) {
+            await waPurchaseOrderDetailsQueries.update({
+                current_quantity: selectPurchaseOrderDetailsOneResult[0].current_quantity - parseFloat(item.quantity)
             }, {
-                id: orderElement.yarnOrderRequisitionDetailsId
+                id: item.orderDetailsId
             })
         } else {
-            let excessQuantity = parseFloat((orderElement.quantity - selectYarnOrderRequisitionDetailsOneResult[0].current_quantity).toFixed(3))
-            await waYarnOrderRequisitionDetailsQueries.update({
-                initial_quantity: selectYarnOrderRequisitionDetailsOneResult[0].initial_quantity + excessQuantity,
+            let excessQuantity = parseFloat((item.quantity - selectPurchaseOrderDetailsOneResult[0].current_quantity).toFixed(3))
+            await waPurchaseOrderDetailsQueries.update({
+                initial_quantity: selectPurchaseOrderDetailsOneResult[0].initial_quantity + excessQuantity,
                 current_quantity: 0,
                 is_order: "0"
             }, {
-                id: orderElement.yarnOrderRequisitionDetailsId
+                id: item.orderDetailsId
             })
         }
-    }
     return
 };
 
@@ -92,12 +104,12 @@ exports.selectByRequisitionId = async (requisitionId) => {
 
 exports.selectByRequisitionIdForOrder = async (requisitionId) => {
     // check is found
-    const isFound = await waAddRequisitionDetailsQueries.selectOne({
+    const isFound = await waAddRequisitionQueries.selectOne({
       ...constantsPayloads.deletePayload,
       id: requisitionId,
     });
     if (isFound[0] != null) {
-  
+
       const results = await waAddRequisitionDetailsQueries.selectByRequisitionIdForOrder(requisitionId);
       return results;
     } else {
@@ -222,45 +234,52 @@ exports.update = async (waAddRequisitionDetails) => {
 };
 
 
-exports.updateForOrder = async (waYarnOutput) => {
+exports.updateForOrder = async (waAddRequisitionDetails) => {
 
     // Check is found
     let whereCluse = {};
-    whereCluse[`${waYarnOrderRequisitionDetailsTableName}.id`] = waYarnOutput.id;
-    whereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_deleted`] = 0;
-    whereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_active`] = 1;
-    const isFound = await waYarnOrderRequisitionDetailsQueries.selectOne(whereCluse);
+    whereCluse[`${waAddRequisitionDetailsTableName}.id`] = waAddRequisitionDetails.id;
+    whereCluse[`${waAddRequisitionDetailsTableName}.is_deleted`] = 0;
+    whereCluse[`${waAddRequisitionDetailsTableName}.is_active`] = 1;
+    const isFound = await waAddRequisitionDetailsQueries.selectOne(whereCluse);
     if (isFound[0] != null) {
       let updateResults = false
   
       // Update wa Add Requisition Details Without Quantity
       await waAddRequisitionDetailsQueries.update({
-        price: waYarnOutput.price,
-        document: waYarnOutput.document,
-        statement: waYarnOutput.statement
+        price: waAddRequisitionDetails.price,
+        document: waAddRequisitionDetails.document,
+        statement: waAddRequisitionDetails.statement
       },
         {
-          id: isFound[0].wa_add_requisition_details_id
+          id: waAddRequisitionDetails.id
         })
   
       // we will select current quantity from store (wa) by following Steps :
       let wcWhereCluse = {};
-      wcWhereCluse[`${waTableName}.wa_add_requisition_details_id`] = isFound[0].wa_add_requisition_details_id;
+      wcWhereCluse[`${waTableName}.wa_add_requisition_details_id`] = waAddRequisitionDetails.id;
       wcWhereCluse[`${waTableName}.is_deleted`] = 0;
       wcWhereCluse[`${waTableName}.is_active`] = 1;
       const selectWaOneResult = await waQueries.selectOne(wcWhereCluse)
       if (selectWaOneResult[0] != null) {
-        let waAddRequisitionDetailsWhereCluse = {};
-        waAddRequisitionDetailsWhereCluse[`${waAddRequisitionDetailsTableName}.id`] = isFound[0].wa_add_requisition_details_id;
-        waAddRequisitionDetailsWhereCluse[`${waAddRequisitionDetailsTableName}.is_deleted`] = 0;
-        waAddRequisitionDetailsWhereCluse[`${waAddRequisitionDetailsTableName}.is_active`] = 1;
-        const selectWaAddRequisitionDetailsOneResult = await waAddRequisitionDetailsQueries.selectOne(waAddRequisitionDetailsWhereCluse)
-        if (selectWaAddRequisitionDetailsOneResult[0] != null) {
+        let waAddRequisitionDetailsPurchaseOrderWhereCluse = {};
+        waAddRequisitionDetailsPurchaseOrderWhereCluse[`${waAddRequisitionDetailsPurchaseOrderTableName}.wa_add_requisition_details_id`] = waAddRequisitionDetails.id;
+        waAddRequisitionDetailsPurchaseOrderWhereCluse[`${waAddRequisitionDetailsPurchaseOrderTableName}.is_deleted`] = 0;
+        waAddRequisitionDetailsPurchaseOrderWhereCluse[`${waAddRequisitionDetailsPurchaseOrderTableName}.is_active`] = 1;
+        const selectWaAddRequisitionDetailsPurchaseOrderOneResult = await waAddRequisitionDetailsPurchaseOrderQueries.selectOne(waAddRequisitionDetailsPurchaseOrderWhereCluse)
+        if (selectWaAddRequisitionDetailsPurchaseOrderOneResult[0] != null) {
   
+          let waPurchaseOrderDetailsWhereCluse = {};
+          waPurchaseOrderDetailsWhereCluse[`${waPurchaseOrderDetailsTableName}.id`] = selectWaAddRequisitionDetailsPurchaseOrderOneResult[0].wa_add_purchase_order_details_id;
+          waPurchaseOrderDetailsWhereCluse[`${waPurchaseOrderDetailsTableName}.is_deleted`] = 0;
+          waPurchaseOrderDetailsWhereCluse[`${waPurchaseOrderDetailsTableName}.is_active`] = 1;
+        const selectWaPurchaseOrderDetailsOneResult = await waPurchaseOrderDetailsQueries.selectOne(waPurchaseOrderDetailsWhereCluse)
+        if (selectWaPurchaseOrderDetailsOneResult[0] != null) {
+
           const currentQuantity = selectWaOneResult[0].current_quantity
   
           let oldQuantity = isFound[0].quantity
-          let newQuantity = parseFloat(waYarnOutput.quantity)
+          let newQuantity = parseFloat(waAddRequisitionDetails.quantity)
           let defferenceQuantity = 0
   
           // Check Quantity
@@ -276,34 +295,34 @@ exports.updateForOrder = async (waYarnOutput) => {
   
             // Step 2 => Increment quantity in  wa Add Requisition Details
             await waAddRequisitionDetailsQueries.update({
-              quantity: selectWaAddRequisitionDetailsOneResult[0].quantity + defferenceQuantity
+              quantity: isFound[0].quantity + defferenceQuantity
             }, {
-              id: isFound[0].wa_add_requisition_details_id
+              id: waAddRequisitionDetails.id
             })
   
             // Step 3 => Increment quantity in wa_add_requisition_details_yarn_order
-            await waAddRequisitionDetailsYarnOrderQueries.update({
-              quantity: isFound[0].quantity + defferenceQuantity
+            await waAddRequisitionDetailsPurchaseOrderQueries.update({
+              quantity: selectWaAddRequisitionDetailsPurchaseOrderOneResult[0].quantity + defferenceQuantity
             }, {
-              wa_yarn_order_requisition_details_id: isFound[0].id,
-              wa_add_requisition_details_id: isFound[0].wa_add_requisition_details_id
+              wa_add_purchase_order_details_id: selectWaAddRequisitionDetailsPurchaseOrderOneResult[0].wa_add_purchase_order_details_id,
+              wa_add_requisition_details_id: waAddRequisitionDetails.id
             })
   
             // Check Valid Current Quantity
-            if (isFound[0].current_quantity >= defferenceQuantity) {
+            if (selectWaPurchaseOrderDetailsOneResult[0].current_quantity >= defferenceQuantity) {
               // Step 4 => Decrement current_quantity in wa_yarn_order_requisition_details
-              await waYarnOrderRequisitionDetailsQueries.update({
-                current_quantity: isFound[0].current_quantity - defferenceQuantity
+              await waPurchaseOrderDetailsQueries.update({
+                current_quantity: selectWaPurchaseOrderDetailsOneResult[0].current_quantity - defferenceQuantity
               }, {
-                id: waYarnOutput.id
+                id: selectWaPurchaseOrderDetailsOneResult[0].id
               })
             } else {
               // Step 4 => Increment initial_quantity and Decrement current_quantity in wa_yarn_order_requisition_details
-              await waYarnOrderRequisitionDetailsQueries.update({
-                initial_quantity: isFound[0].initial_quantity + defferenceQuantity,
-                current_quantity: isFound[0].current_quantity - defferenceQuantity
+              await waPurchaseOrderDetailsQueries.update({
+                initial_quantity: selectWaPurchaseOrderDetailsOneResult[0].initial_quantity + defferenceQuantity,
+                current_quantity: selectWaPurchaseOrderDetailsOneResult[0].current_quantity - defferenceQuantity
               }, {
-                id: waYarnOutput.id
+                id: selectWaPurchaseOrderDetailsOneResult[0].id
               })
             }
   
@@ -318,7 +337,7 @@ exports.updateForOrder = async (waYarnOutput) => {
               await waAddRequisitionDetailsQueries.update({
                 quantity: oldQuantity - defferenceQuantity
               }, {
-                id: isFound[0].wa_add_requisition_details_id
+                id: waAddRequisitionDetails.id
               })
   
               // Step 2 => Decrement quantity in  wa
@@ -329,17 +348,17 @@ exports.updateForOrder = async (waYarnOutput) => {
               })
   
               // Step 3 => Increment quantity in wa_add_requisition_details_yarn_order
-              await waAddRequisitionDetailsYarnOrderQueries.update({
-                quantity: isFound[0].quantity - defferenceQuantity
+              await waAddRequisitionDetailsPurchaseOrderQueries.update({
+                quantity: selectWaAddRequisitionDetailsPurchaseOrderOneResult[0].quantity - defferenceQuantity
               }, {
-                wa_yarn_order_requisition_details_id: isFound[0].id,
-                wa_add_requisition_details_id: isFound[0].wa_add_requisition_details_id
+                wa_add_purchase_order_details_id: selectWaAddRequisitionDetailsPurchaseOrderOneResult[0].wa_add_purchase_order_details_id,
+                wa_add_requisition_details_id: waAddRequisitionDetails.id
               })
               // Step 4 => Increment current_quantity in  wa_yarn_order_requisition_details
-              await waYarnOrderRequisitionDetailsQueries.update({
-                current_quantity: isFound[0].current_quantity + defferenceQuantity
+              await waPurchaseOrderDetailsQueries.update({
+                current_quantity: selectWaPurchaseOrderDetailsOneResult[0].current_quantity + defferenceQuantity
               }, {
-                id: waYarnOutput.id
+                id: selectWaPurchaseOrderDetailsOneResult[0].id
               })
   
               updateResults = true
@@ -353,6 +372,9 @@ exports.updateForOrder = async (waYarnOutput) => {
           } else {
             updateResults = true
           }
+        } else {
+          return constants.itemNotFound;
+        }
         } else {
           return constants.itemNotFound;
         }

@@ -18,15 +18,18 @@ const wcReconciliationRequisitionDetailsQueries = require("../../db/queries/wc/w
 const wdTransportWcWdDetailsQueries = require("../../db/queries/wd/wd-transport-wc-wd-details");
 const wdTransportRequisitionWdWcDetailsQueries = require("../../db/queries/wd/wd-transport-requisition-wd-wc-details");
 const bussinessmanService = require("../../services/general/bussinessman");
+const wdDyeingOrderRequisitionDetailsService = require("../../services/wd/wd-dyeing-order-requisition-details");
+const wcExecuteOrderRequisitionDetailsQueries = require("../../db/queries/wc/wc-execute-order-requisition-details");
 
 // Util
+const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-const { wbManufacturingOutputTableName, wbManufacturingRequisitionTableName, wbManufacturingInputOutputTableName, warehouseTableName } = require("../../util/database-tables-name");
-const fabricTableName = require("../../util/database-tables-name").fabricTableName;
-const wcTableName = require("../../util/database-tables-name").wcTableName;
-const wcReconciliationRequisitionDetailsTableName = require("../../util/database-tables-name").wcReconciliationRequisitionDetailsTableName;
-const wcAddRequisitionTableName = require("../../util/database-tables-name").wcAddRequisitionTableName;
-const wcAddRequisitionDetailsTableName = require("../../util/database-tables-name").wcAddRequisitionDetailsTableName;
+const { wbManufacturingOutputTableName, wbManufacturingRequisitionTableName, 
+    wbManufacturingInputOutputTableName, warehouseTableName,
+    fabricTableName, wcTableName, wcReconciliationRequisitionDetailsTableName,
+    wcAddRequisitionTableName, wcAddRequisitionDetailsTableName
+
+} = require("../../util/database-tables-name");
 
 exports.selectInventoryTotal = async (fabricReport) => {
     let data = []
@@ -58,8 +61,18 @@ exports.selectInventoryTotal = async (fabricReport) => {
     manufacturingOutputWhereCluse[`${wcTableName}.is_active`] = 1;
     manufacturingOutputWhereCluse[`${wcTableName}.type`] = constantsPayloads.manufactruingType;
 
+    let executeOrderWhereCluse = {};
+    executeOrderWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    executeOrderWhereCluse[`${fabricTableName}.is_active`] = 1;
+    executeOrderWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    executeOrderWhereCluse[`${wcTableName}.is_active`] = 1;
+    executeOrderWhereCluse[`${wcTableName}.type`] = constantsPayloads.executeOrderType;
 
-    let whereCluseArray = [fabricWhereCluse, reconciliationWhereCluse, transportWdWcWhereCluse, manufacturingOutputWhereCluse]
+    let whereCluseArray = [
+        fabricWhereCluse, reconciliationWhereCluse, 
+        transportWdWcWhereCluse, manufacturingOutputWhereCluse,
+        executeOrderWhereCluse
+    ]
 
     // select fabrics 
     const fabrics = (fabricReport.isShowClosedBalances == 1) ? await fabricQueries.selectStoredWcFabrics(whereCluseArray, 0) : await fabricQueries.selectStoredWcFabrics(whereCluseArray)
@@ -121,10 +134,14 @@ exports.selectInventoryTotal = async (fabricReport) => {
             callArray.push(wdTransportWcWdDetailsQueries.selectTotalByFabricId(fabric.id))
             callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectTotalByFabricIdForInput(fabric.id))
             callArray.push(wbManufacturingOutputQueries.selectTotalByFabricId(fabric.id))
+            callArray.push(wcExecuteOrderRequisitionDetailsQueries.selectFromTotalByFabricId(fabric.id))
+            callArray.push(wcExecuteOrderRequisitionDetailsQueries.selectToTotalByFabricId(fabric.id))
             const requisitions = await Promise.all(callArray)
             const sortedAsc = [...requisitions[0], ...requisitions[1],
             ...requisitions[2], ...requisitions[3], ...requisitions[4],
-            ...requisitions[5], ...requisitions[6]].sort(
+            ...requisitions[5], ...requisitions[6], ...requisitions[7],
+            ...requisitions[8]
+        ].sort(
                 (objA, objB) => moment(objA.date) - moment(objB.date)
             );
             data[i].details = sortedAsc
@@ -145,10 +162,14 @@ exports.selectInventoryTotalByFabric = async (fabricId) => {
     callArray.push(wdTransportWcWdDetailsQueries.selectTotalDetailsByFabricId(fabricId))
     callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectTotalDetailsByFabricId(fabricId))
     callArray.push(wbManufacturingOutputQueries.selectTotalDetailsByFabricId(fabricId))
+    callArray.push(wcExecuteOrderRequisitionDetailsQueries.selectFromTotalDetailsByFabricId(fabricId))
+    callArray.push(wcExecuteOrderRequisitionDetailsQueries.selectToTotalDetailsByFabricId(fabricId))
     const requisitions = await Promise.all(callArray)
     const sortedAsc = [...requisitions[0], ...requisitions[1],
     ...requisitions[2], ...requisitions[3], ...requisitions[4],
-    ...requisitions[5], ...requisitions[6]].sort(
+    ...requisitions[5], ...requisitions[6], ...requisitions[7],
+    ...requisitions[8]
+].sort(
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );
 
@@ -195,7 +216,15 @@ exports.selectInventoryDetails = async (fabricReport) => {
     manufacturingOutputWhereCluse[`${wcTableName}.is_active`] = 1;
     manufacturingOutputWhereCluse[`${wcTableName}.type`] = constantsPayloads.manufactruingType;
 
-    let whereCluseArray = [fabricWhereCluse, reconciliationWhereCluse, transportWdWcWhereCluse, manufacturingOutputWhereCluse]
+    let executeOrderWhereCluse = {};
+    executeOrderWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    executeOrderWhereCluse[`${wcTableName}.is_active`] = 1;
+    executeOrderWhereCluse[`${wcTableName}.type`] = constantsPayloads.executeOrderType;
+
+    let whereCluseArray = [
+        fabricWhereCluse, reconciliationWhereCluse, 
+        transportWdWcWhereCluse, manufacturingOutputWhereCluse,
+        executeOrderWhereCluse]
 
     // select warehousesFabricsConsigmentsManufacturing 
     const warehousesFabricsConsigmentsManufacturing = (fabricReport.isShowClosedBalances == 1) ? await wcQueries.selectStoredWarehouseAndFabricAndConsigmentManufacturing(whereCluseArray, 0) : await wcQueries.selectStoredWarehouseAndFabricAndConsigmentManufacturing(whereCluseArray)
@@ -274,10 +303,18 @@ exports.selectInventoryDetails = async (fabricReport) => {
             callArray.push(wbManufacturingOutputQueries.selectDetailsByWarehouseByFabricByConsigmentManufacturing(
                 warehousesFabricConsigmentManufacturing.warehouse_id, warehousesFabricConsigmentManufacturing.fabric_id, warehousesFabricConsigmentManufacturing.consigment_manufacturing_id
             ))
+            callArray.push(wcExecuteOrderRequisitionDetailsQueries.selectFromWarehouseDetailsByWarehouseByFabricByConsigmentManufacturing(
+                warehousesFabricConsigmentManufacturing.warehouse_id, warehousesFabricConsigmentManufacturing.fabric_id, warehousesFabricConsigmentManufacturing.consigment_manufacturing_id
+            ))
+            callArray.push(wcExecuteOrderRequisitionDetailsQueries.selectToWarehouseDetailsByWarehouseByFabricByConsigmentManufacturing(
+                warehousesFabricConsigmentManufacturing.warehouse_id, warehousesFabricConsigmentManufacturing.fabric_id, warehousesFabricConsigmentManufacturing.consigment_manufacturing_id
+            ))
             const requisitions = await Promise.all(callArray)
             const sortedAsc = [...requisitions[0], ...requisitions[1],
             ...requisitions[2], ...requisitions[3], ...requisitions[4],
-            ...requisitions[5], ...requisitions[6]].sort(
+            ...requisitions[5], ...requisitions[6], ...requisitions[7],
+            ...requisitions[8]
+        ].sort(
                 (objA, objB) => moment(objA.date) - moment(objB.date)
             );
             data[i].details = sortedAsc
@@ -298,10 +335,14 @@ exports.selectInventoryDetailsByWarehouseByFabricByConsigmentManufacturing = asy
     callArray.push(wdTransportWcWdDetailsQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId))
     callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId))
     callArray.push(wbManufacturingOutputQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId))
+    callArray.push(wcExecuteOrderRequisitionDetailsQueries.selectFromWarehouseDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId))
+    callArray.push(wcExecuteOrderRequisitionDetailsQueries.selectToWarehouseDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId))
     const requisitions = await Promise.all(callArray)
     let sortedAsc = [...requisitions[0], ...requisitions[1],
     ...requisitions[2], ...requisitions[3], ...requisitions[4],
-    ...requisitions[5], ...requisitions[6]].sort(
+    ...requisitions[5], ...requisitions[6], ...requisitions[7],
+    ...requisitions[8]
+].sort(
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );
 
@@ -460,10 +501,14 @@ exports.selectInventoryTotalByDate = async (bodyPaylod) => {
     callArray.push(wdTransportWcWdDetailsQueries.selectTotalDetailsByDate(bodyPaylod))
     callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectTotalDetailsByDate(bodyPaylod))
     callArray.push(wbManufacturingOutputQueries.selectTotalDetailsByDate(bodyPaylod))
+    callArray.push(wcExecuteOrderRequisitionDetailsQueries.selectFromWarehouseTotalDetailsByDate(bodyPaylod))
+    callArray.push(wcExecuteOrderRequisitionDetailsQueries.selectToWarehouseTotalDetailsByDate(bodyPaylod))
     const requisitions = await Promise.all(callArray)
     const sortedAsc = [...requisitions[0], ...requisitions[1],
     ...requisitions[2], ...requisitions[3], ...requisitions[4],
-    ...requisitions[5], ...requisitions[6]].sort(
+    ...requisitions[5], ...requisitions[6], ...requisitions[7],
+    ...requisitions[8]
+].sort(
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );
     return sortedAsc;
@@ -509,12 +554,105 @@ exports.inquireFabricAvilabilityReportWc = async (fabric) => {
     WcManufacturingOutputWhereCluse[`${wcTableName}.is_active`] = 1;
     WcManufacturingOutputWhereCluse[`${wcTableName}.type`] = constantsPayloads.manufactruingType;
 
+    let executeOrderWhereCluse = {};
+    executeOrderWhereCluse[`${fabricTableName}.id`] = fabric.fabricId;
+    executeOrderWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    executeOrderWhereCluse[`${fabricTableName}.is_active`] = 1;
+    executeOrderWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    executeOrderWhereCluse[`${wcTableName}.is_active`] = 1;
+    executeOrderWhereCluse[`${wcTableName}.type`] = constantsPayloads.executeOrderType;
+
     let wcWhereCluseArray = [
         wcFabricWhereCluse, wcReconciliationWhereCluse, 
         wcTransportWdWcWhereCluse, WcManufacturingOutputWhereCluse, 
-        warehouseWhereCluse]
+        warehouseWhereCluse, executeOrderWhereCluse
+    ]
 
     // select wc Fabrics 
     let wcFabrics = await fabricQueries.selectStoredWcFabricsForInquireFabricAvilability(wcWhereCluseArray)
     return wcFabrics
 };
+
+exports.inquireFabricAvilabilityTotalReportWc = async (fabric) => {
+    
+    let warehouseWhereCluse = {};
+    warehouseWhereCluse[`${warehouseTableName}.is_stock`] = 1;
+    warehouseWhereCluse[`${warehouseTableName}.is_deleted`] = 0;
+    warehouseWhereCluse[`${warehouseTableName}.is_active`] = 1;
+
+    let wcFabricWhereCluse = {};
+    wcFabricWhereCluse[`${fabricTableName}.id`] = fabric.fabricId;
+    wcFabricWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    wcFabricWhereCluse[`${fabricTableName}.is_active`] = 1;
+    wcFabricWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    wcFabricWhereCluse[`${wcTableName}.is_active`] = 1;
+
+    let wcReconciliationWhereCluse = {};
+    wcReconciliationWhereCluse[`${fabricTableName}.id`] = fabric.fabricId;
+    wcReconciliationWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    wcReconciliationWhereCluse[`${fabricTableName}.is_active`] = 1;
+    wcReconciliationWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    wcReconciliationWhereCluse[`${wcTableName}.is_active`] = 1;
+    wcReconciliationWhereCluse[`${wcReconciliationRequisitionDetailsTableName}.input_output`] = 1;
+
+    let wcTransportWdWcWhereCluse = {};
+    wcTransportWdWcWhereCluse[`${fabricTableName}.id`] = fabric.fabricId;
+    wcTransportWdWcWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    wcTransportWdWcWhereCluse[`${fabricTableName}.is_active`] = 1;
+    wcTransportWdWcWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    wcTransportWdWcWhereCluse[`${wcTableName}.is_active`] = 1;
+    wcTransportWdWcWhereCluse[`${wcTableName}.type`] = constantsPayloads.transportFromBToAType;
+
+    let WcManufacturingOutputWhereCluse = {};
+    WcManufacturingOutputWhereCluse[`${fabricTableName}.id`] = fabric.fabricId;
+    WcManufacturingOutputWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    WcManufacturingOutputWhereCluse[`${fabricTableName}.is_active`] = 1;
+    WcManufacturingOutputWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    WcManufacturingOutputWhereCluse[`${wcTableName}.is_active`] = 1;
+    WcManufacturingOutputWhereCluse[`${wcTableName}.type`] = constantsPayloads.manufactruingType;
+
+    let executeOrderWhereCluse = {};
+    executeOrderWhereCluse[`${fabricTableName}.id`] = fabric.fabricId;
+    executeOrderWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    executeOrderWhereCluse[`${fabricTableName}.is_active`] = 1;
+    executeOrderWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    executeOrderWhereCluse[`${wcTableName}.is_active`] = 1;
+    executeOrderWhereCluse[`${wcTableName}.type`] = constantsPayloads.executeOrderType;
+
+    let wcWhereCluseArray = [
+        wcFabricWhereCluse, wcReconciliationWhereCluse, 
+        wcTransportWdWcWhereCluse, WcManufacturingOutputWhereCluse, 
+        warehouseWhereCluse, executeOrderWhereCluse
+    ]
+
+    // select wc Fabrics 
+    let wcFabrics = await fabricQueries.selectStoredWcFabricsForInquireFabricAvilabilityTotal(wcWhereCluseArray)
+    return wcFabrics
+};
+
+
+exports.fabricsForOrderWc = async (dyeingOrderRequisitions) => {
+    let data = []
+
+    const myFirstPromise = new Promise(async (resolve, reject) => {
+        for (let i = 0; i < dyeingOrderRequisitions.length; i++) {
+            const element = dyeingOrderRequisitions[i];
+
+            let calcQuantity = element.quantity
+
+            neededFabricQuantity = parseFloat(((calcQuantity / (1 - (constants.notZero(element.wasteRatio) / 100)))).toFixed(3))
+
+            data.push({
+                id: element.fabricId,
+                name: element.fabric_name,
+                code: element.fabric_code,
+                needed_quantity: neededFabricQuantity,
+            })
+        }
+
+        resolve(data); // Yay! Everything went well!
+
+    })
+    return await myFirstPromise
+
+}

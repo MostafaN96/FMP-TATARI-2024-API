@@ -16,7 +16,7 @@ exports.create = async (request, response) => {
       return response.status(400).json(constants.invalidDataResponse);
   }
   //   send data to service
-  const results = await waYarnOrderRequisitionDetailsService.create(bodyPalod);
+  const results = await waYarnOrderRequisitionDetailsService.createDetails(bodyPalod);
 
   if (results === constants.insertError) {
       return response.status(500).json(results);

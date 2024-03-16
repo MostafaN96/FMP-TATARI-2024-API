@@ -18,6 +18,13 @@ router.get("/closed-orders",
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   wbManufacturingOrderRequisitionController.selectClosedOrders);
 
+  
+  router.get("/inquire-fabrics-by-dyeing-order-requisition/:id",
+    middleWeres.checkAuth(),
+    middleWeres.checkIdentity(usersType.ADMIN_STR),
+    middleWeres.checkInt(),
+    wbManufacturingOrderRequisitionController.inquireFabricsByDyeingOrderForOrderWb);
+
 // Post Queries
 router.post(
   "",

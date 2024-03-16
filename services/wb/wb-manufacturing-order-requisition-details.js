@@ -1,6 +1,7 @@
 // Queries
 const wbManufacturingOrderRequisitionDetailsQueries = require("../../db/queries/wb/wb-manufacturing-order-requisition-details");
 const wbManufacturingOrderRequisitionQueries = require("../../db/queries/wb/wb-manufacturing-order-requisition");
+const ordersRequisitionsQueries = require("../../db/queries/general/orders-requisitions");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -8,7 +9,7 @@ const trans = require("../../helpers/transform");
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-const { wbManufacturingOrderRequisitionTableName, wbManufacturingOutputOrderTableName } = require("../../util/database-tables-name");
+const { wbManufacturingOrderRequisitionTableName, wbManufacturingOutputOrderTableName, ordersRequisitionsTableName } = require("../../util/database-tables-name");
 const wbManufacturingOrderRequisitionDetailsTableName = require("../../util/database-tables-name").wbManufacturingOrderRequisitionDetailsTableName;
 
 exports.create = async (wbManufacturingOrderRequisitionDetails) => {
@@ -19,6 +20,13 @@ exports.create = async (wbManufacturingOrderRequisitionDetails) => {
         if (!results) {
             return constants.insertError;
         }
+    }
+    if(wbManufacturingOrderRequisitionDetails.orderId != "") {
+        let ordersRequisitionsWhereCluse = {}
+        ordersRequisitionsWhereCluse[`${ordersRequisitionsTableName}.wd_form_dyeing_order_requisition_id`] = wbManufacturingOrderRequisitionDetails.orderId;
+        await ordersRequisitionsQueries.update({
+            wb_manufacturing_order_requisition_id: wbManufacturingOrderRequisitionDetails.id
+        }, ordersRequisitionsWhereCluse)
     }
     return { ...constants.insertSuccess, ...{ id: wbManufacturingOrderRequisitionDetails.id } };
 };

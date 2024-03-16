@@ -1,5 +1,5 @@
 // Config
-const { yarnTableName, warehouseTableName, wbTransportRequisitionWbWaDetailsTableName, wbTransportRequisitionWbWaTableName, consigmentYarnTableName } = require("../../../util/database-tables-name");
+const { yarnTableName, warehouseTableName, wbTransportRequisitionWbWaDetailsTableName, wbTransportRequisitionWbWaTableName, consigmentYarnTableName, waExecuteOrderRequisitionDetailsTableName, waExecuteOrderRequisitionTableName, waExecuteOrderRequisitionDetailsWaTableName, waTransitionBetweenWHRequisitionDetailsTableName, waTransitionBetweenWHRequisitionTableName } = require("../../../util/database-tables-name");
 const sqlFun = require("../../config/sql-fun");
 const knex = require("../../config/connection").getConnection();
 const constantsPayloads = require("../../../util/constants-payloads");
@@ -71,6 +71,47 @@ exports.insertForTransportRequisitionWbWa = async (wa, items) => {
   return queryResults;
 };
 
+
+exports.insertForExecuteOrderRequisition = async (wa, items) => {
+  let queryResults = false;
+  await sqlFun
+    .insert(waTableName, {
+      id: wa.waId,
+      wa_execute_order_requisition_details_id: items.waExecuteOrderRequisitionDetailsId,
+      type: constantsPayloads.executeOrderType,
+      current_quantity: items.quantity,
+      creator_id: wa.personid,
+      ip_address: wa.ipaddress,
+    })
+    .then((data) => {
+      queryResults = true;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+  return queryResults;
+};
+
+exports.insertForTransitionBetweenWhRequisition = async (wa, items) => {
+  let queryResults = false;
+  await sqlFun
+    .insert(waTableName, {
+      id: wa.waId,
+      wa_transition_between_wh_requisitions_details_id: items.waTransitionBetweenWHRequisitionDetailsId,
+      type: constantsPayloads.transportBetweenType,
+      current_quantity: items.quantity,
+      creator_id: wa.personid,
+      ip_address: wa.ipaddress,
+    })
+    .then((data) => {
+      queryResults = true;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+  return queryResults;
+};
+
 exports.update = async (wa, whereCluse) => {
   let queryResults = false;
   await sqlFun
@@ -122,7 +163,8 @@ exports.selectByYarn = async (whereCluseArray, orderByCluse) => {
       .innerJoin(`${waAddRequisitionTableName}`,
         `${waAddRequisitionTableName}.id`,
         `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
-      .where(whereCluseArray[0]).as('t1')
+      .where(whereCluseArray[0])
+      .as('t1')
       .union(function () {
         this.select([
           `${waTableName}.id`,
@@ -157,6 +199,38 @@ exports.selectByYarn = async (whereCluseArray, orderByCluse) => {
             `${wbTransportRequisitionWbWaTableName}.id`,
             `${wbTransportRequisitionWbWaDetailsTableName}.wb_transport_requisition_wb_wa_id`)
           .where(whereCluseArray[3])
+      })
+      .union(function () {
+        this.select([
+          `${waTableName}.id`,
+          `${waTableName}.current_quantity`,
+          `${waExecuteOrderRequisitionDetailsTableName}.quantity`,
+          `${waExecuteOrderRequisitionTableName}.date`
+        ])
+          .from(`${waTableName}`)
+          .innerJoin(`${waExecuteOrderRequisitionDetailsTableName}`,
+            `${waExecuteOrderRequisitionDetailsTableName}.id`,
+            `${waTableName}.wa_execute_order_requisition_details_id`)
+          .innerJoin(`${waExecuteOrderRequisitionTableName}`,
+            `${waExecuteOrderRequisitionTableName}.id`,
+            `${waExecuteOrderRequisitionDetailsTableName}.wa_execute_order_requisition_id`)
+          .where(whereCluseArray[4])
+      })
+      .union(function () {
+        this.select([
+          `${waTableName}.id`,
+          `${waTableName}.current_quantity`,
+          `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
+          `${waTransitionBetweenWHRequisitionTableName}.date`
+        ])
+          .from(`${waTableName}`)
+          .innerJoin(`${waTransitionBetweenWHRequisitionDetailsTableName}`,
+            `${waTransitionBetweenWHRequisitionDetailsTableName}.id`,
+            `${waTableName}.wa_transition_between_wh_requisitions_details_id`)
+          .innerJoin(`${waTransitionBetweenWHRequisitionTableName}`,
+            `${waTransitionBetweenWHRequisitionTableName}.id`,
+            `${waTransitionBetweenWHRequisitionDetailsTableName}.wa_transition_between_wh_requisitions_id`)
+          .where(whereCluseArray[5])
       })
   }).as('temp')
     .andWhere(whereCluseArray[2].whereTableName, whereCluseArray[2].operator, whereCluseArray[2].value)
@@ -220,8 +294,8 @@ exports.selectYarnLotQuantityByWarehouseByYarnByLotWa = async (whereCluseArray) 
       .where(whereCluseArray[0])
       // .groupBy(`${waAddRequisitionDetailsTableName}.yarn_lot_id`)
       .as('t1')
-      .unionAll(
-        knex.select([
+      .union(function () {
+        this.select([
           `${consigmentYarnTableName}.id`,
           `${consigmentYarnTableName}.number`,
           `${waTableName}.current_quantity`,
@@ -240,10 +314,10 @@ exports.selectYarnLotQuantityByWarehouseByYarnByLotWa = async (whereCluseArray) 
           .innerJoin(`${consigmentYarnTableName}`,
             `${consigmentYarnTableName}.id`,
             `${waReconciliationRequisitionDetailsTableName}.consigment_yarn_id`)
-          .where(whereCluseArray[1]),
-        // .groupBy(`${waReconciliationRequisitionDetailsTableName}.yarn_lot_id`)
-        // .groupBy(`yarn_id`)
-        knex.select([
+          .where(whereCluseArray[1])
+      })
+      .union(function () {
+        this.select([
           `${consigmentYarnTableName}.id`,
           `${consigmentYarnTableName}.number`,
           `${waTableName}.current_quantity`,
@@ -259,12 +333,49 @@ exports.selectYarnLotQuantityByWarehouseByYarnByLotWa = async (whereCluseArray) 
             `${consigmentYarnTableName}.id`,
             `${wbTransportRequisitionWbWaDetailsTableName}.consigment_yarn_id`)
           .where(whereCluseArray[3])
-      )
+      })
+      .union(function () {
+        this.select([
+          `${consigmentYarnTableName}.id`,
+          `${consigmentYarnTableName}.number`,
+          `${waTableName}.current_quantity`,
+        ])
+          .from(`${waTableName}`)
+          .innerJoin(`${waExecuteOrderRequisitionDetailsTableName}`,
+            `${waExecuteOrderRequisitionDetailsTableName}.id`,
+            `${waTableName}.wa_execute_order_requisition_details_id`)
+          .innerJoin(`${waExecuteOrderRequisitionTableName}`,
+            `${waExecuteOrderRequisitionTableName}.id`,
+            `${waExecuteOrderRequisitionDetailsTableName}.wa_execute_order_requisition_id`)
+          .innerJoin(`${consigmentYarnTableName}`,
+            `${consigmentYarnTableName}.id`,
+            `${waExecuteOrderRequisitionDetailsTableName}.consigment_yarn_id`)
+          .where(whereCluseArray[4])
+      })
+      .union(function () {
+        this.select([
+          `${consigmentYarnTableName}.id`,
+          `${consigmentYarnTableName}.number`,
+          `${waTableName}.current_quantity`,
+        ])
+          .from(`${waTableName}`)
+          .innerJoin(`${waTransitionBetweenWHRequisitionDetailsTableName}`,
+            `${waTransitionBetweenWHRequisitionDetailsTableName}.id`,
+            `${waTableName}.wa_transition_between_wh_requisitions_details_id`)
+          .innerJoin(`${waTransitionBetweenWHRequisitionTableName}`,
+            `${waTransitionBetweenWHRequisitionTableName}.id`,
+            `${waTransitionBetweenWHRequisitionDetailsTableName}.wa_transition_between_wh_requisitions_id`)
+          .innerJoin(`${consigmentYarnTableName}`,
+            `${consigmentYarnTableName}.id`,
+            `${waTransitionBetweenWHRequisitionDetailsTableName}.consigment_yarn_id`)
+          .where(whereCluseArray[5])
+      })
   }).as('temp')
     .sum(`current_quantity as current_quantity`)
     .where(whereCluseArray[2].whereTableName, whereCluseArray[2].operator, whereCluseArray[2].value)
     .groupBy(`id`)
     .then((data) => {
+      console.log("data :::: ", data);
       queryResults = data;
     })
     .catch((error) => console.error(error));
@@ -457,6 +568,92 @@ exports.selectStoredWarehouseAndYarnAndYarnLot = async (whereCluseArray, isGreat
             `${consigmentYarnTableName}.id`,
             `${wbTransportRequisitionWbWaDetailsTableName}.consigment_yarn_id`)
           .where(whereCluseArray[2])
+          .andWhere(
+            (qb) => {
+              if (isGreaterThanZero) {
+                qb.where(`${waTableName}.current_quantity`, ">", "0")
+              } else {
+                qb.where(`${waTableName}.current_quantity`, ">=", "0")
+              }
+            })
+      })
+      .union(function () {
+        this.select([
+          `${yarnTableName}.id as yarn_id`,
+          `${yarnTableName}.name as yarn_name`,
+          `${yarnTableName}.code as yarn_code`,
+          `${yarnLotTableName}.id as yarn_lot_id`,
+          `${yarnLotTableName}.code as yarn_lot_code`,
+          `${consigmentYarnTableName}.id as consigment_yarn_id`,
+          `${consigmentYarnTableName}.number as consigment_yarn_number`,
+          `${warehouseTableName}.id as warehouse_id`,
+          `${warehouseTableName}.name as warehouse_name`,
+          `${waExecuteOrderRequisitionDetailsTableName}.quantity`,
+          `${waTableName}.current_quantity`
+        ])
+          .from(`${waExecuteOrderRequisitionDetailsTableName}`)
+          .innerJoin(`${waExecuteOrderRequisitionTableName}`,
+            `${waExecuteOrderRequisitionTableName}.id`,
+            `${waExecuteOrderRequisitionDetailsTableName}.wa_execute_order_requisition_id`)
+          .innerJoin(`${warehouseTableName}`,
+            `${warehouseTableName}.id`,
+            `${waExecuteOrderRequisitionTableName}.warehouse_id`)
+          .innerJoin(`${yarnTableName}`,
+            `${yarnTableName}.id`,
+            `${waExecuteOrderRequisitionDetailsTableName}.yarn_id`)
+          .innerJoin(`${yarnLotTableName}`,
+            `${yarnLotTableName}.id`,
+            `${waExecuteOrderRequisitionDetailsTableName}.yarn_lot_id`)
+          .innerJoin(`${waTableName}`,
+            `${waTableName}.wa_execute_order_requisition_details_id`,
+            `${waExecuteOrderRequisitionDetailsTableName}.id`)
+          .innerJoin(`${consigmentYarnTableName}`,
+            `${consigmentYarnTableName}.id`,
+            `${waExecuteOrderRequisitionDetailsTableName}.consigment_yarn_id`)
+          .where(whereCluseArray[3])
+          .andWhere(
+            (qb) => {
+              if (isGreaterThanZero) {
+                qb.where(`${waTableName}.current_quantity`, ">", "0")
+              } else {
+                qb.where(`${waTableName}.current_quantity`, ">=", "0")
+              }
+            })
+      })
+      .union(function () {
+        this.select([
+          `${yarnTableName}.id as yarn_id`,
+          `${yarnTableName}.name as yarn_name`,
+          `${yarnTableName}.code as yarn_code`,
+          `${yarnLotTableName}.id as yarn_lot_id`,
+          `${yarnLotTableName}.code as yarn_lot_code`,
+          `${consigmentYarnTableName}.id as consigment_yarn_id`,
+          `${consigmentYarnTableName}.number as consigment_yarn_number`,
+          `${warehouseTableName}.id as warehouse_id`,
+          `${warehouseTableName}.name as warehouse_name`,
+          `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
+          `${waTableName}.current_quantity`
+        ])
+          .from(`${waTransitionBetweenWHRequisitionDetailsTableName}`)
+          .innerJoin(`${waTransitionBetweenWHRequisitionTableName}`,
+            `${waTransitionBetweenWHRequisitionTableName}.id`,
+            `${waTransitionBetweenWHRequisitionDetailsTableName}.wa_transition_between_wh_requisitions_id`)
+          .innerJoin(`${warehouseTableName}`,
+            `${warehouseTableName}.id`,
+            `${waTransitionBetweenWHRequisitionTableName}.to_warehouse_id`)
+          .innerJoin(`${yarnTableName}`,
+            `${yarnTableName}.id`,
+            `${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_id`)
+          .innerJoin(`${yarnLotTableName}`,
+            `${yarnLotTableName}.id`,
+            `${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_lot_id`)
+          .innerJoin(`${waTableName}`,
+            `${waTableName}.wa_transition_between_wh_requisitions_details_id`,
+            `${waTransitionBetweenWHRequisitionDetailsTableName}.id`)
+          .innerJoin(`${consigmentYarnTableName}`,
+            `${consigmentYarnTableName}.id`,
+            `${waTransitionBetweenWHRequisitionDetailsTableName}.consigment_yarn_id`)
+          .where(whereCluseArray[4])
           .andWhere(
             (qb) => {
               if (isGreaterThanZero) {

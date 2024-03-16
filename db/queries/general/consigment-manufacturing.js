@@ -77,6 +77,24 @@ exports.insertForManufacturing = async (consigmentManufacturing) => {
   return queryResults;
 };
 
+exports.insertForWcExecuteOrder = async (consigmentManufacturing, items) => {
+  let queryResults = false;
+  await sqlFun
+    .insert(consigmentManufacturingTableName, {
+      id: items.consigmentManufacturingId,
+      number: items.newConsigmentManufacturingNumber,
+      creator_id: consigmentManufacturing.personid,
+      ip_address: consigmentManufacturing.ipaddress
+    })
+    .then((data) => {
+      queryResults = true;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+  return queryResults;
+};
+
 exports.update = async (consigmentManufacturing) => {
   let queryResults = false;
   await sqlFun

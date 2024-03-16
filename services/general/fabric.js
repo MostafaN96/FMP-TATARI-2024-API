@@ -8,7 +8,7 @@ const trans = require("../../helpers/transform");
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-const { wbTableName, fabricTableName, wbManufacturingOutputTableName } = require("../../util/database-tables-name");
+const { wbTableName, fabricTableName, wbManufacturingOutputTableName, wcTableName, wcReconciliationRequisitionDetailsTableName } = require("../../util/database-tables-name");
 
 // Services
 const fabricYarnsService = require("./fabric-yarns");
@@ -41,16 +41,6 @@ exports.select = async () => {
     const element = results[i];
     element.yarns = await fabricYarnsService.selectByFabricId(element.id)
 }
-  return results;
-};
-
-exports.selectStoredWaYarns = async (whereCluseArray) => {
-  const results = await fabricQueries.selectStoredWaYarns(whereCluseArray);
-  return results;
-};
-
-exports.selectStoredWaYarnsForReturn = async (whereCluse) => {
-  const results = await fabricQueries.selectStoredWaYarnsForReturn(whereCluse);
   return results;
 };
 
@@ -165,7 +155,55 @@ exports.selectManufacturedFabricWb = async () => {
 };
 
 exports.selectByWarehouseWc = async (warehouseId) => {
-  const results = await fabricQueries.selectByWarehouseWc(warehouseId);
+  
+  let whereCluse = {};
+  whereCluse[`${fabricTableName}.is_deleted`] = 0;
+  whereCluse[`${fabricTableName}.is_active`] = 1;
+
+  let wcWhereCluse = {};
+  wcWhereCluse[`${wcTableName}.is_deleted`] = 0;
+  wcWhereCluse[`${wcTableName}.is_active`] = 1;
+
+  const results = await fabricQueries.selectStoredFabricsWc(whereCluse, wcWhereCluse);
+  return results;
+};
+
+exports.selectStoredFabricsByFabricIdWc = async (fabricId) => {
+
+  let wcFabricWhereCluse = {};
+    wcFabricWhereCluse[`${fabricTableName}.id`] = fabricId;
+    wcFabricWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    wcFabricWhereCluse[`${fabricTableName}.is_active`] = 1;
+    wcFabricWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    wcFabricWhereCluse[`${wcTableName}.is_active`] = 1;
+
+    let wcReconciliationWhereCluse = {};
+    wcReconciliationWhereCluse[`${fabricTableName}.id`] = fabricId;
+    wcReconciliationWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    wcReconciliationWhereCluse[`${fabricTableName}.is_active`] = 1;
+    wcReconciliationWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    wcReconciliationWhereCluse[`${wcTableName}.is_active`] = 1;
+    wcReconciliationWhereCluse[`${wcReconciliationRequisitionDetailsTableName}.input_output`] = 1;
+
+    let wcTransportWdWcWhereCluse = {};
+    wcTransportWdWcWhereCluse[`${fabricTableName}.id`] = fabricId;
+    wcTransportWdWcWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    wcTransportWdWcWhereCluse[`${fabricTableName}.is_active`] = 1;
+    wcTransportWdWcWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    wcTransportWdWcWhereCluse[`${wcTableName}.is_active`] = 1;
+    wcTransportWdWcWhereCluse[`${wcTableName}.type`] = constantsPayloads.transportFromBToAType;
+
+    let WcManufacturingOutputWhereCluse = {};
+    WcManufacturingOutputWhereCluse[`${fabricTableName}.id`] = fabricId;
+    WcManufacturingOutputWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    WcManufacturingOutputWhereCluse[`${fabricTableName}.is_active`] = 1;
+    WcManufacturingOutputWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    WcManufacturingOutputWhereCluse[`${wcTableName}.is_active`] = 1;
+    WcManufacturingOutputWhereCluse[`${wcTableName}.type`] = constantsPayloads.manufactruingType;
+
+  let whereCluseArray = [wcFabricWhereCluse, wcReconciliationWhereCluse, wcTransportWdWcWhereCluse, WcManufacturingOutputWhereCluse]
+
+  const results = await fabricQueries.selectStoredFabricsForExecuteOrderWc(whereCluseArray);
   return results;
 };
 

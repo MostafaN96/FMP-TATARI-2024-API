@@ -8,6 +8,7 @@ const middleWeres = require("../../middlewares/middlewares");
 const usersType = require("../../util/user-types");
 
 // get Queries
+
 router.get("/:id",
     middleWeres.checkAuth(),
     middleWeres.checkIdentity(usersType.ADMIN_STR),
@@ -15,16 +16,32 @@ router.get("/:id",
     waAddRequisitionDetailsController.selectByRequisitionId);
 
     router.get("/for-order/:id",
-  middleWeres.checkAuth(),
-  middleWeres.checkIdentity(usersType.ADMIN_STR),
-  waAddRequisitionDetailsController.selectByRequisitionIdForOrder);
+    middleWeres.checkAuth(),
+    middleWeres.checkIdentity(usersType.ADMIN_STR),
+    waAddRequisitionDetailsController.selectByRequisitionIdForOrder);
 
+    
 // Post Queries
 router.post(
     "",
     middleWeres.checkAuth(),
     middleWeres.checkIdentity(usersType.ADMIN_STR),
     waAddRequisitionDetailsController.create
+);
+
+router.post(
+    "/by-order",
+    middleWeres.checkAuth(),
+    middleWeres.checkIdentity(usersType.ADMIN_STR),
+    waAddRequisitionDetailsController.createByOrder
+);
+
+router.put(
+    "/by-order/:id",
+    middleWeres.checkAuth(),
+    middleWeres.checkIdentity(usersType.ADMIN_STR),
+    middleWeres.checkInt(),
+    waAddRequisitionDetailsController.updateForOrder
 );
 
 router.put(

@@ -12,6 +12,7 @@ const reconcilitionType = "reconcilition";
 const transportFromAToBType = "transport_from_a_to_b";
 const transportFromBToAType = "transport_from_b_to_a";
 const transportBetweenType = "transport_between";
+const executeOrderType = "execute_order";
 const manufactruingType = "manufacturing";
 const dyeingType = "dyeing";
 const returnSellType = "return_sell";
@@ -25,6 +26,7 @@ module.exports = {
   transportFromBToAType,
   transportBetweenType,
   manufactruingType,
+  executeOrderType,
   dyeingType,
   returnSellType,
 };

@@ -71,6 +71,19 @@ exports.selectByFabricId = async (fabricId) => {
   return results;
 };
 
+exports.selectByFabricIdByYarnId = async (fabricId, yarnId) => {
+
+  let whereCluse = {}
+  whereCluse[`${fabricYarnsTableName}.fabric_id`] = fabricId;
+  whereCluse[`${fabricYarnsTableName}.yarn_id`] = yarnId;
+  whereCluse[`${fabricYarnsTableName}.is_deleted`] = 0;
+  whereCluse[`${fabricYarnsTableName}.is_active`] = 1;
+
+  const results = await fabricYarnsQueries.select(whereCluse);
+
+  return results;
+};
+
 
 exports.update = async (fabricYarns) => {
 

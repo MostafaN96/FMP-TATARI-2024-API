@@ -69,13 +69,14 @@ exports.selectAddedUsersPermissions = async (whereCluse) => {
         `${pagesTableName}.link as pages_link`,
         `${componentsTableName}.id as components_id`,
         `${componentsTableName}.name as components_name`,
+        `${componentsTableName}.order as components_order`,
         `${modulesTableName}.id as modules_id`,
         `${modulesTableName}.name as modules_name`,
         `${modulesTableName}.order`,
     ])
         .from(privilegesTableName)
         .where(whereCluse)
-        .orderBy([`order`, `components_id`, `pages_id`, `functions_id`])
+        .orderBy([`order`, `components_order`, `components_id`, `pages_id`, `functions_id`])
         .innerJoin(`${functionsTableName}`,
             `${functionsTableName}.id`,
             `${privilegesTableName}.functions_id`)

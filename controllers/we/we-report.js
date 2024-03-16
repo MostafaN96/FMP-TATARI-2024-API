@@ -74,11 +74,29 @@ exports.inquireFabricAvilabilityReportWe = async (request, response) => {
     response.status(200).json(results);
 };
 
+exports.inquireFabricAvilabilityTotalReportWe = async (request, response) => {
+  // logging
+  const bodyPalod = request.body;
+
+
+  const results = await weReportService.inquireFabricAvilabilityTotalReportWe(bodyPalod);
+    response.status(200).json(results);
+};
+
 exports.inquireFabricAvilabilityByDyeingOrderRequisitionReportWe = async (request, response) => {
   // logging
   const bodyPalod = request.body;
 
 
   const results = await weReportService.inquireFabricAvilabilityByDyeingOrderRequisitionReportWe(bodyPalod);
+    response.status(200).json(results);
+};
+
+exports.inquireFabricAvilabilityByDyeingOrderRequisitionTotalReportWe = async (request, response) => {
+  // logging
+  const bodyPalod = request.body;
+
+
+  const results = await weReportService.inquireFabricAvilabilityByDyeingOrderRequisitionTotalReportWe(bodyPalod);
     response.status(200).json(results);
 };

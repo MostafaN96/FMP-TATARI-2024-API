@@ -1,0 +1,93 @@
+// Config
+const sqlFun = require("../../config/sql-fun");
+const knex = require("../../config/connection").getConnection();
+
+// Util
+const { weDyedFabricOrderRequisitionTableName, bussinessmanTableName, 
+    weDyedFabricOrderRequisitionDetailsTableName } = require("../../../util/database-tables-name");
+
+exports.insert = async (weDyedFabricOrderRequisition) => {
+    let queryResults = false;
+    await sqlFun
+        .insert(weDyedFabricOrderRequisitionTableName, {
+            id: weDyedFabricOrderRequisition.id,
+            seller_id: weDyedFabricOrderRequisition.sellerId,
+            number: weDyedFabricOrderRequisition.number,
+            name: weDyedFabricOrderRequisition.name,
+            date: weDyedFabricOrderRequisition.date,
+            note: weDyedFabricOrderRequisition.note,
+            creator_id: weDyedFabricOrderRequisition.personid,
+            ip_address: weDyedFabricOrderRequisition.ipaddress,
+        })
+        .then((data) => {
+            queryResults = true;
+        })
+        .catch((error) => {
+            console.log(error);
+        });
+    return queryResults;
+};
+
+exports.selectOne = async (whereCluse) => {
+    let queryResults = false;
+    await sqlFun
+        .limitedSelect(weDyedFabricOrderRequisitionTableName, ["is_deleted"], whereCluse, 1)
+        .then((data) => {
+            queryResults = data;
+        })
+        .catch((error) => {
+            console.log(error);
+        });
+
+    return queryResults;
+};
+
+exports.select = async (whereCluse, isOrder) => {
+    let queryResults = [];
+
+    await knex(weDyedFabricOrderRequisitionTableName)
+        .select([
+            `${weDyedFabricOrderRequisitionTableName}.id`,
+            `${weDyedFabricOrderRequisitionTableName}.number`,
+            `${weDyedFabricOrderRequisitionTableName}.name`,
+            `${weDyedFabricOrderRequisitionTableName}.date`,
+            `${weDyedFabricOrderRequisitionTableName}.note`,
+            `${bussinessmanTableName}.name as seller_name`,
+            `${bussinessmanTableName}.id as seller_id`,
+            // `${ordersRequisitionsTableName}.wa_yarn_order_requisition_id`,
+            // `${ordersRequisitionsTableName}.wb_manufacturing_order_requisition_id`,
+        ])
+        .innerJoin(`${bussinessmanTableName}`,
+            `${bussinessmanTableName}.id`,
+            `${weDyedFabricOrderRequisitionTableName}.seller_id`
+        )
+        .where(whereCluse)
+        .orderBy(`${weDyedFabricOrderRequisitionTableName}.number`, 'desc')
+        .groupBy(`${weDyedFabricOrderRequisitionTableName}.id`)
+        .whereIn(`${weDyedFabricOrderRequisitionTableName}.id`, function() {
+            this.select(`${weDyedFabricOrderRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`)
+            .from(`${weDyedFabricOrderRequisitionDetailsTableName}`)
+            .where({"is_order": isOrder})
+          })
+        .then((data) => {
+            // console.log("weDyedFabricOrderRequisitionTableName => :::: data", data);
+            queryResults = data;
+        })
+        .catch((error) => console.error(error));
+    return queryResults;
+};
+
+exports.update = async (weDyedFabricOrderRequisition, whereCluse) => {
+    let queryResults = false;
+    await sqlFun
+        .update(
+            weDyedFabricOrderRequisitionTableName,
+            weDyedFabricOrderRequisition,
+            whereCluse
+        )
+        .then((data) => {
+            queryResults = true;
+        })
+        .catch((err) => console.log(err));
+    return queryResults;
+};
