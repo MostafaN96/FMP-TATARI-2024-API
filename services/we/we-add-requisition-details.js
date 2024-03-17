@@ -1,6 +1,7 @@
 // Queries
 const weAddRequisitionDetailsQueries = require("../../db/queries/we/we-add-requisition-details");
 const weAddRequisitionQueries = require("../../db/queries/we/we-add-requisition");
+const consigmentDyeingQueries = require("../../db/queries/general/consigment-dyeing");
 const weQueries = require("../../db/queries/we/we");
 
 // Helper
@@ -16,6 +17,15 @@ const weService = require("./we");
 exports.create = async (weAddRequisitionDetails) => {
     for (let i = 0; i < weAddRequisitionDetails.items.length; i++) {
         weAddRequisitionDetails.weRequisitionDetailsId = trans.transform();
+
+        // Check Consigment Dyeing Dupplication
+        const selectConsigmentDyeingOneResult = await consigmentDyeingQueries.selectOne({ number: weAddRequisitionDetails.items[i].consigmentDyeingNumber })
+        if (Array.isArray(selectConsigmentDyeingOneResult) && selectConsigmentDyeingOneResult.length > 0) {
+            weAddRequisitionDetails.items[i].consigmentDyeingId = selectConsigmentDyeingOneResult[0].id;
+        } else {
+            weAddRequisitionDetails.items[i].consigmentDyeingId = trans.transform();
+            await consigmentDyeingQueries.insertForAdd(weAddRequisitionDetails, weAddRequisitionDetails.items[i]);
+        }
 
         // Add weAddRequisitionDetails
         const results = await weAddRequisitionDetailsQueries.insert(weAddRequisitionDetails, weAddRequisitionDetails.items[i]);

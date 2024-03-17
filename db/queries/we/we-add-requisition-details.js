@@ -8,7 +8,7 @@ const fabricTableName = require("../../../util/database-tables-name").fabricTabl
 const warehouseTableName = require("../../../util/database-tables-name").warehouseTableName;
 const weAddRequisitionTableName = require("../../../util/database-tables-name").weAddRequisitionTableName;
 const bussinessmanTableName = require("../../../util/database-tables-name").bussinessmanTableName;
-const { consigmentManufacturingTableName, weTableName, colorTableName, colorCategoryTableName } = require("../../../util/database-tables-name");
+const { weTableName, colorTableName, colorCategoryTableName, consigmentDyeingTableName } = require("../../../util/database-tables-name");
 const constants = require("../../../util/constants");
 
 exports.insert = async (weAddRequisitionDetails, items) => {
@@ -20,7 +20,8 @@ exports.insert = async (weAddRequisitionDetails, items) => {
       dyed_fabric_id: items.dyedFabricId,
       warehouse_id: items.warehouseId,
       color_category_id: items.colorCategoryId,
-      color_id: items.colorId,
+      color_id: items.colorId,      
+      consigment_dyeing_id: items.consigmentDyeingId,
       price: items.price,
       color_code: items.colorCode,
       dyeing_code: items.dyeingCode,
@@ -73,6 +74,8 @@ exports.selectByRequisitionId = async (requisitionId) => {
         `${colorCategoryTableName}.id as color_category_id`,
         `${colorCategoryTableName}.name as color_category_name`,
         `${weTableName}.storage_place`,
+        `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+
       ],
     )
     .innerJoin(`${weAddRequisitionTableName}`, `${weAddRequisitionTableName}.id`, `${weAddRequisitionDetailsTableName}.we_add_requisition_id`)
@@ -82,6 +85,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
     .innerJoin(`${colorTableName}`, `${colorTableName}.id`, `${weAddRequisitionDetailsTableName}.color_id`)
     .innerJoin(`${colorCategoryTableName}`, `${colorCategoryTableName}.id`, `${weAddRequisitionDetailsTableName}.color_category_id`)
     .innerJoin(`${weTableName}`, `${weTableName}.we_add_requisition_details_id`, `${weAddRequisitionDetailsTableName}.id`)
+    .innerJoin(`${consigmentDyeingTableName}`, `${consigmentDyeingTableName}.id`, `${weAddRequisitionDetailsTableName}.consigment_dyeing_id`)
     .where(whereCluse)
     .andWhere(`${weAddRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -153,7 +157,7 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
         knex.raw('? as is_return_type', 'not_return'),
         `${colorCategoryTableName}.name as color_category_name`,
         `${colorTableName}.name as color_name`,
-        knex.raw('? as consigment_dyeing_number', ''),
+        `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
       ],
     )
     .innerJoin(`${weAddRequisitionTableName}`, `${weAddRequisitionTableName}.id`, `${weAddRequisitionDetailsTableName}.we_add_requisition_id`)
@@ -166,6 +170,9 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
     .innerJoin(`${colorTableName}`, 
     `${colorTableName}.id`, 
     `${weAddRequisitionDetailsTableName}.color_id`)
+    .innerJoin(`${consigmentDyeingTableName}`, 
+    `${consigmentDyeingTableName}.id`, 
+    `${weAddRequisitionDetailsTableName}.consigment_dyeing_id`)
     .where(whereCluse)
     .andWhere(`${weAddRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -238,7 +245,8 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, fabricId) 
         knex.raw('? as is_return_type', 'not_return'),
         `${colorCategoryTableName}.name as color_category_name`,
         `${colorTableName}.name as color_name`,
-        knex.raw('? as consigment_dyeing_number', ''),
+        `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+
       ],
     )
     .innerJoin(`${weAddRequisitionTableName}`, `${weAddRequisitionTableName}.id`, `${weAddRequisitionDetailsTableName}.we_add_requisition_id`)
@@ -250,6 +258,9 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, fabricId) 
     .innerJoin(`${colorTableName}`, 
     `${colorTableName}.id`, 
     `${weAddRequisitionDetailsTableName}.color_id`)
+    .innerJoin(`${consigmentDyeingTableName}`, 
+    `${consigmentDyeingTableName}.id`, 
+    `${weAddRequisitionDetailsTableName}.consigment_dyeing_id`)
     .where(whereCluse)
     .andWhere(`${weAddRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -365,6 +376,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
         knex.raw('? as is_return_type', 'not_return'),
         `${colorCategoryTableName}.name as color_category_name`,
         `${colorTableName}.name as color_name`,
+        `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
       ],
     )
     .innerJoin(`${weAddRequisitionTableName}`, `${weAddRequisitionTableName}.id`, `${weAddRequisitionDetailsTableName}.we_add_requisition_id`)
@@ -377,6 +389,9 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
     .innerJoin(`${colorTableName}`, 
     `${colorTableName}.id`, 
     `${weAddRequisitionDetailsTableName}.color_id`)
+    .innerJoin(`${consigmentDyeingTableName}`, 
+    `${consigmentDyeingTableName}.id`, 
+    `${weAddRequisitionDetailsTableName}.consigment_dyeing_id`)
     .where(`${weAddRequisitionTableName}.date`, `>=`, bodyPaylod.startDate)
     .andWhere(`${weAddRequisitionTableName}.date`, `<=`, bodyPaylod.endDate)
     .andWhere(`${weAddRequisitionDetailsTableName}.quantity`, ">", 0)

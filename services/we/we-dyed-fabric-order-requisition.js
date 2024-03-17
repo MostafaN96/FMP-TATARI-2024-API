@@ -4,6 +4,7 @@ const ordersRequisitionsService = require("../general/orders-requisitions");
 
 // Queries
 const weDyedFabricOrderRequisitionQueries = require("../../db/queries/we/we-dyed-fabric-order-requisition");
+const weDyedFabricOrderRequisitionDetailsQueries = require("../../db/queries/we/we-dyed-fabric-order-requisition-details");
 const generalQueries = require("../../db/queries/general/general");
 
 // Util
@@ -11,7 +12,7 @@ const constants = require("../../util/constants");
 
 // Helper
 const trans = require("../../helpers/transform");
-const { weDyedFabricOrderRequisitionTableName } = require("../../util/database-tables-name");
+const { weDyedFabricOrderRequisitionTableName, weDyedFabricOrderRequisitionDetailsTableName } = require("../../util/database-tables-name");
 
 exports.create = async (weDyedFabricOrderRequisition) => {
     weDyedFabricOrderRequisition.id = trans.transform();
@@ -120,3 +121,19 @@ exports.closedOrderByRequisition = async (requisitionId) => {
     return result;
   };
   
+  exports.selectDyedFabricsOrderRequisition = async (requisitionId) => {
+
+    let whereCluse = {};
+    whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`] = requisitionId;
+    whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+    whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+    whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_order`] = 1;
+
+    let weDyedFabricOrderRequisitionDetailsResult = await weDyedFabricOrderRequisitionDetailsQueries.selectByRequisitionId(whereCluse)
+    if (Array.isArray(weDyedFabricOrderRequisitionDetailsResult) && weDyedFabricOrderRequisitionDetailsResult.length > 0) {
+        return weDyedFabricOrderRequisitionDetailsResult
+    } else {
+        return constants.invalidDataResponse
+    }
+   
+}

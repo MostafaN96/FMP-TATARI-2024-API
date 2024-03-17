@@ -22,12 +22,48 @@ exports.insert = async (consigmentDyeing) => {
   return queryResults;
 };
 
+exports.insertForAdd = async (consigmentDyeing, items) => {
+  let queryResults = false;
+  await sqlFun
+    .insert(consigmentDyeingTableName, {
+      id: items.consigmentDyeingId,
+      number: items.consigmentDyeingNumber,
+      creator_id: consigmentDyeing.personid,
+      ip_address: consigmentDyeing.ipaddress
+    })
+    .then((data) => {
+      queryResults = true;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+  return queryResults;
+};
+
 exports.insertForTransport = async (consigmentDyeing, items) => {
   let queryResults = false;
   await sqlFun
     .insert(consigmentDyeingTableName, {
       id: items.consigmentDyeingId,
       number: items.consigmentDyeingNumber,
+      creator_id: consigmentDyeing.personid,
+      ip_address: consigmentDyeing.ipaddress
+    })
+    .then((data) => {
+      queryResults = true;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+  return queryResults;
+};
+
+exports.insertForWeExecuteOrder = async (consigmentDyeing, items) => {
+  let queryResults = false;
+  await sqlFun
+    .insert(consigmentDyeingTableName, {
+      id: items.consigmentDyeingId,
+      number: items.newConsigmentDyeingNumber,
       creator_id: consigmentDyeing.personid,
       ip_address: consigmentDyeing.ipaddress
     })

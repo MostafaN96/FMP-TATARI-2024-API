@@ -61,3 +61,12 @@ exports.closedOrderByRequisition = async (request, response) => {
         return response.status(201).json(constants.updateSuccess);
     }
 };
+
+exports.selectDyedFabricsOrderRequisition = async (request, response) => {
+    // logging
+    const { id } = request.params;
+  
+    // call service
+    const results = await weDyedFabricOrderRequisitionService.selectDyedFabricsOrderRequisition(id);
+    response.status(200).json(results);
+  };

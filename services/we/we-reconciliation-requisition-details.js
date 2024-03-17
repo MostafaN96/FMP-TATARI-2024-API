@@ -3,6 +3,7 @@ const weReconciliationRequisitionDetailsQueries = require("../../db/queries/we/w
 const weReconciliationRequisitionQueries = require("../../db/queries/we/we-reconciliation-requisition");
 const weReconciliationRequisitionDetailsWeQueries = require("../../db/queries/we/we-reconciliation-requisition-details-we");
 const weQueries = require("../../db/queries/we/we");
+const consigmentDyeingQueries = require("../../db/queries/general/consigment-dyeing");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -19,6 +20,15 @@ const weReconciliationRequisitionDetailsWeService = require("./we-reconciliation
 exports.create = async (weReconciliationRequisitionDetails) => {
     for (let i = 0; i < weReconciliationRequisitionDetails.items.length; i++) {
         weReconciliationRequisitionDetails.items[i].weReconciliationRequisitionDetailsId = trans.transform();
+
+        // Check Consigment Dyeing Dupplication
+        const selectConsigmentDyeingOneResult = await consigmentDyeingQueries.selectOne({ number: weReconciliationRequisitionDetails.items[i].consigmentDyeingNumber })
+        if (Array.isArray(selectConsigmentDyeingOneResult) && selectConsigmentDyeingOneResult.length > 0) {
+            weReconciliationRequisitionDetails.items[i].consigmentDyeingId = selectConsigmentDyeingOneResult[0].id;
+        } else {
+            weReconciliationRequisitionDetails.items[i].consigmentDyeingId = trans.transform();
+            await consigmentDyeingQueries.insertForAdd(weReconciliationRequisitionDetails, weReconciliationRequisitionDetails.items[i]);
+        }
 
         const results = await weReconciliationRequisitionDetailsQueries.insert(weReconciliationRequisitionDetails, weReconciliationRequisitionDetails.items[i]);
         if (!results) {
@@ -62,6 +72,7 @@ exports.create = async (weReconciliationRequisitionDetails) => {
                     }
                 }
             } else if (weReconciliationRequisitionDetails.items[i].inputOutput == 1) {
+
                 // Add Wc Fabric Result
                 const weResult = await weService.createForReconciliation(weReconciliationRequisitionDetails, weReconciliationRequisitionDetails.items[i])
                 if (weResult) {

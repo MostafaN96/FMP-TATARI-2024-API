@@ -2,7 +2,11 @@ const dyedFabricQueries = require("../../db/queries/general/dyed-fabric");
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
 const trans = require("../../helpers/transform");
-const { wdDyeingRequisitionDetailsTableName, fabricTableName } = require("../../util/database-tables-name");
+const { 
+  wdDyeingRequisitionDetailsTableName, fabricTableName, 
+  weTableName, weReconciliationRequisitionDetailsTableName, 
+  colorTableName, weAddRequisitionDetailsTableName, anointedColorsPricesTableName 
+} = require("../../util/database-tables-name");
 
 exports.create = async (fabric) => {
   fabric.id = trans.transform();
@@ -51,6 +55,50 @@ exports.selectDyedFabric = async () => {
   const results = await dyedFabricQueries.selectWhereInDyedFabric(whereInTableName, whereInAttr, whereInWhereCluse);
   return results;
 };
+
+
+exports.selectStoredDyedFabricsByDyedFabricByColorByColorCodeWe = async (dyedFabricId, colorId, colorCode) => {
+
+  let weFabricWhereCluse = {};
+    weFabricWhereCluse[`${fabricTableName}.id`] = dyedFabricId;
+    weFabricWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    weFabricWhereCluse[`${fabricTableName}.is_active`] = 1;
+    weFabricWhereCluse[`${weTableName}.is_deleted`] = 0;
+    weFabricWhereCluse[`${weTableName}.is_active`] = 1;
+    weFabricWhereCluse[`${weTableName}.type`] = constantsPayloads.addType;
+    weFabricWhereCluse[`${colorTableName}.id`] = colorId;
+    weFabricWhereCluse[`${weAddRequisitionDetailsTableName}.color_code`] = colorCode;
+
+    let weReconciliationWhereCluse = {};
+    weReconciliationWhereCluse[`${fabricTableName}.id`] = dyedFabricId;
+    weReconciliationWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    weReconciliationWhereCluse[`${fabricTableName}.is_active`] = 1;
+    weReconciliationWhereCluse[`${weTableName}.is_deleted`] = 0;
+    weReconciliationWhereCluse[`${weTableName}.is_active`] = 1;
+    weReconciliationWhereCluse[`${weReconciliationRequisitionDetailsTableName}.input_output`] = 1;
+    weReconciliationWhereCluse[`${weTableName}.type`] = constantsPayloads.reconcilitionType;
+    weReconciliationWhereCluse[`${colorTableName}.id`] = colorId;
+    weReconciliationWhereCluse[`${weReconciliationRequisitionDetailsTableName}.color_code`] = colorCode;
+
+    let WdDyeingRequisitionWhereCluse = {};
+    WdDyeingRequisitionWhereCluse[`${fabricTableName}.id`] = dyedFabricId;
+    WdDyeingRequisitionWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    WdDyeingRequisitionWhereCluse[`${fabricTableName}.is_active`] = 1;
+    WdDyeingRequisitionWhereCluse[`${weTableName}.is_deleted`] = 0;
+    WdDyeingRequisitionWhereCluse[`${weTableName}.is_active`] = 1;
+    WdDyeingRequisitionWhereCluse[`${weTableName}.type`] = constantsPayloads.dyeingType;
+    WdDyeingRequisitionWhereCluse[`${colorTableName}.id`] = colorId;
+    WdDyeingRequisitionWhereCluse[`${anointedColorsPricesTableName}.code`] = colorCode;
+
+  let whereCluseArray = [
+    weFabricWhereCluse, weReconciliationWhereCluse, 
+    WdDyeingRequisitionWhereCluse
+  ]
+
+  const results = await dyedFabricQueries.selectStoredDyedFabricsByDyedFabricIdWe(whereCluseArray);
+  return results;
+};
+
 
 exports.selectDeleted = async () => {
   const results = await dyedFabricQueries.selectDeleted();

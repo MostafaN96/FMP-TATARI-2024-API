@@ -13,6 +13,7 @@ exports.isValid = (weReconciliationRequisition) => {
             colorCategoryId: validations.joiText(15, 30),
             colorId: validations.joiText(15, 30),
             colorCode: validations.joiNumber(1, 60),
+            consigmentDyeingNumber: validations.joiNotRequiredText(0, 60),
             price: validations.joiNumber(1, 60),
             quantity: validations.joiNumber(1, 60),
             numberFabricPieces: validations.joiNumber(1, 60),

@@ -161,6 +161,9 @@ const weReturnSellRequisitionDetailsRouter = require("./routers/we/we-return-sel
 const weDyedFabricOrderRequisitionRouter = require("./routers/we/we-dyed-fabric-order-requisition");
 const weDyedFabricOrderRequisitionDetailsRouter = require("./routers/we/we-dyed-fabric-order-requisition-details");
 
+const weExcuteOrderRequisitionRouter = require("./routers/we/we-execute-order-requisition");
+const weExcuteOrderRequisitionDetailsRouter = require("./routers/we/we-execute-order-requisition-details");
+
 const weReportRouter = require("./routers/we/we-report");
 
 app.use((req, res, next) => {
@@ -327,6 +330,9 @@ app.use("/api/we-return-sell-requisition-details", weReturnSellRequisitionDetail
 
 app.use('/api/we-dyed-fabric-order-requisition', weDyedFabricOrderRequisitionRouter)
 app.use('/api/we-dyed-fabric-order-requisition-details', weDyedFabricOrderRequisitionDetailsRouter)
+
+app.use('/api/we-execute-order-requisition', weExcuteOrderRequisitionRouter)
+app.use('/api/we-execute-order-requisition-details', weExcuteOrderRequisitionDetailsRouter)
 
 app.use("/api/we-report", weReportRouter);
 

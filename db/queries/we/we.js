@@ -76,6 +76,26 @@ exports.insertForReconciliation = async (we, items) => {
   return queryResults;
 };
 
+exports.insertForExecuteOrderRequisitionWe = async (we, items) => {
+  let queryResults = false;
+  await sqlFun
+    .insert(weTableName, {
+      id: we.weId,
+      we_execute_order_requisition_details_id: items.weExecuteOrderRequisitionDetailsId,
+      type: constantsPayloads.executeOrderType,
+      current_quantity: items.quantity,
+      creator_id: we.personid,
+      ip_address: we.ipaddress,
+    })
+    .then((data) => {
+      queryResults = true;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+  return queryResults;
+};
+
 exports.createForReturnSell = async (we, items) => {
   let queryResults = false;
   await sqlFun
@@ -196,7 +216,7 @@ exports.selectStoreWe = async (whereCluseArray, orderByCluse) => {
       knex.raw('? as order_number', ''),
       knex.raw('? as order_customer_name', ''),
       knex.raw('? as wd_form_dyeing_order_requisition_id', ''),
-      knex.raw('? as consigment_dyeing_number', ''),
+      `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
 
     ])
       .from(`${weTableName}`)
@@ -221,6 +241,9 @@ exports.selectStoreWe = async (whereCluseArray, orderByCluse) => {
       .innerJoin(`${colorTableName}`,
         `${colorTableName}.id`,
         `${weAddRequisitionDetailsTableName}.color_id`)
+        .innerJoin(`${consigmentDyeingTableName}`, 
+            `${consigmentDyeingTableName}.id`, 
+            `${weAddRequisitionDetailsTableName}.consigment_dyeing_id`)
       .where(whereCluseArray[0]).as('t1')
       .union(function () {
         this.select([
@@ -257,7 +280,7 @@ exports.selectStoreWe = async (whereCluseArray, orderByCluse) => {
           knex.raw('? as order_number', ''),
       knex.raw('? as order_customer_name', ''),
       knex.raw('? as wd_form_dyeing_order_requisition_id', ''),
-      knex.raw('? as consigment_dyeing_number', ''),
+      `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
 
         ])
           .from(`${weTableName}`)
@@ -282,6 +305,9 @@ exports.selectStoreWe = async (whereCluseArray, orderByCluse) => {
           .innerJoin(`${colorTableName}`,
             `${colorTableName}.id`,
             `${weReconciliationRequisitionDetailsTableName}.color_id`)
+            .innerJoin(`${consigmentDyeingTableName}`, 
+            `${consigmentDyeingTableName}.id`, 
+            `${weReconciliationRequisitionDetailsTableName}.consigment_dyeing_id`)
           .where(whereCluseArray[1])
       })
       .union(function () {

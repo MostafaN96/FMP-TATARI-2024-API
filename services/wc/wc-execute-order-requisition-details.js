@@ -115,7 +115,7 @@ exports.update = async (wcExecuteOrderRequisitionDetails) => {
     const isFound = await wcExecuteOrderRequisitionDetailsQueries.selectOne(whereCluse);
     if (isFound[0] != null) {
         let updateResults = false
-        wcExecuteOrderRequisitionDetails.waExecuteOrderRequisitionId = isFound[0].wc_execute_order_requisition_id
+        wcExecuteOrderRequisitionDetails.wcExecuteOrderRequisitionId = isFound[0].wc_execute_order_requisition_id
 
         let wcExecuteOrderRequisitionDetailsWcWhereCluse = {}
         wcExecuteOrderRequisitionDetailsWcWhereCluse[`${wcExecuteOrderRequisitionDetailsWcTableName}.wc_execute_order_requisition_details_id`] = wcExecuteOrderRequisitionDetails.id
@@ -128,7 +128,7 @@ exports.update = async (wcExecuteOrderRequisitionDetails) => {
                 note: wcExecuteOrderRequisitionDetails.requisitionNote,
             },
                 {
-                    id: wcExecuteOrderRequisitionDetails.waExecuteOrderRequisitionId
+                    id: wcExecuteOrderRequisitionDetails.wcExecuteOrderRequisitionId
                 }))
 
             // Update wb transition between industries requisition details Without Quantity

@@ -60,6 +60,7 @@ exports.selectByRequisitionId = async (whereCluse) => {
         `${colorCategoryTableName}.name as color_category_name`,
         `${colorTableName}.id as color_id`,
         `${colorTableName}.name as color_name`,
+        knex.raw(`CONCAT(${colorTableName}.name, ' (كود: ', ${weDyedFabricOrderRequisitionDetailsTableName}.color_code, ')' ) as "color_name_code"`),
     ])
         .from(`${weDyedFabricOrderRequisitionDetailsTableName}`)
         .innerJoin(`${weDyedFabricOrderRequisitionTableName}`,
