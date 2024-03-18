@@ -108,6 +108,10 @@ const wcExecuteOrderRequisitionTableName = 'wc_execute_order_requisition'
 const wcExecuteOrderRequisitionDetailsTableName = 'wc_execute_order_requisition_details'
 const wcExecuteOrderRequisitionDetailsWcTableName = 'wc_execute_order_requisition_details_wc'
 
+const wcTransitionBetweenWHRequisitionTableName = 'wc_transition_between_wh_requisitions'
+const wcTransitionBetweenWHRequisitionDetailsTableName = 'wc_transition_between_wh_requisitions_details'
+const wcTransitionBetweenWHRequisitionDetailsWcTableName = 'wc_transition_between_wh_req_details_wc'
+
 const wdTableName = 'wd'
 const wdTransportWcWdTableName = 'wd_transport_wc_wd'
 const wdTransportWcWdDetailsTableName = 'wd_transport_wc_wd_details'
@@ -168,6 +172,11 @@ const weDyedFabricOrderRequisitionDetailsTableName = 'we_dyed_fabric_order_requi
 const weExecuteOrderRequisitionTableName = 'we_execute_order_requisition'
 const weExecuteOrderRequisitionDetailsTableName = 'we_execute_order_requisition_details'
 const weExecuteOrderRequisitionDetailsWeTableName = 'we_execute_order_requisition_details_we'
+
+const weTransitionBetweenWHRequisitionTableName = 'we_transition_between_wh_requisitions'
+const weTransitionBetweenWHRequisitionDetailsTableName = 'we_transition_between_wh_requisitions_details'
+const weTransitionBetweenWHRequisitionDetailsWeTableName = 'we_transition_between_wh_req_details_we'
+
 
 module.exports = {
     userTableName,
@@ -275,6 +284,10 @@ module.exports = {
     wcExecuteOrderRequisitionDetailsTableName,
     wcExecuteOrderRequisitionDetailsWcTableName,
 
+    wcTransitionBetweenWHRequisitionTableName,
+    wcTransitionBetweenWHRequisitionDetailsTableName,
+    wcTransitionBetweenWHRequisitionDetailsWcTableName,
+
     wdTableName,
     wdTransportWcWdTableName,
     wdTransportWcWdDetailsTableName,
@@ -327,4 +340,8 @@ module.exports = {
     weExecuteOrderRequisitionTableName,
     weExecuteOrderRequisitionDetailsTableName,
     weExecuteOrderRequisitionDetailsWeTableName,
+
+    weTransitionBetweenWHRequisitionTableName,
+    weTransitionBetweenWHRequisitionDetailsTableName,
+    weTransitionBetweenWHRequisitionDetailsWeTableName,
 }

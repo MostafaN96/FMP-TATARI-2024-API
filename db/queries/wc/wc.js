@@ -4,7 +4,7 @@ const knex = require("../../config/connection").getConnection();
 
 // Util
 const constantsPayloads = require("../../../util/constants-payloads");
-const { wcTableName, consigmentManufacturingTableName, wcAddRequisitionDetailsTableName, wcAddRequisitionTableName, wcReconciliationRequisitionDetailsWcTableName, wcReconciliationRequisitionDetailsTableName, wcReconciliationRequisitionTableName, wdTransportRequisitionWdWcDetailsTableName, wdTransportRequisitionWdWcTableName, fabricTableName, warehouseTableName, wbManufacturingOutputTableName, wbManufacturingRequisitionTableName, wbManufacturingInputOutputTableName, wcExecuteOrderRequisitionDetailsTableName, wcExecuteOrderRequisitionTableName } = require("../../../util/database-tables-name");
+const { wcTableName, consigmentManufacturingTableName, wcAddRequisitionDetailsTableName, wcAddRequisitionTableName, wcReconciliationRequisitionDetailsWcTableName, wcReconciliationRequisitionDetailsTableName, wcReconciliationRequisitionTableName, wdTransportRequisitionWdWcDetailsTableName, wdTransportRequisitionWdWcTableName, fabricTableName, warehouseTableName, wbManufacturingOutputTableName, wbManufacturingRequisitionTableName, wbManufacturingInputOutputTableName, wcExecuteOrderRequisitionDetailsTableName, wcExecuteOrderRequisitionTableName, wcTransitionBetweenWHRequisitionDetailsTableName, wcTransitionBetweenWHRequisitionTableName } = require("../../../util/database-tables-name");
 
 exports.insert = async (wc, items, id) => {
   let queryResults = false;
@@ -92,6 +92,26 @@ exports.insertForExecuteOrderRequisition = async (wc, items) => {
       id: wc.wcId,
       wc_execute_order_requisition_details_id: items.wcExecuteOrderRequisitionDetailsId,
       type: constantsPayloads.executeOrderType,
+      current_quantity: items.quantity,
+      creator_id: wc.personid,
+      ip_address: wc.ipaddress,
+    })
+    .then((data) => {
+      queryResults = true;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+  return queryResults;
+};
+
+exports.insertForTransitionBetweenWhRequisition = async (wc, items) => {
+  let queryResults = false;
+  await sqlFun
+    .insert(wcTableName, {
+      id: wc.wcId,
+      wc_transition_between_wh_requisitions_details_id: items.wcTransitionBetweenWHRequisitionDetailsId,
+      type: constantsPayloads.transportBetweenType,
       current_quantity: items.quantity,
       creator_id: wc.personid,
       ip_address: wc.ipaddress,
@@ -227,6 +247,22 @@ exports.selectByFabric = async (whereCluseArray, orderByCluse) => {
             `${wcExecuteOrderRequisitionTableName}.id`,
             `${wcExecuteOrderRequisitionDetailsTableName}.wc_execute_order_requisition_id`)
           .where(whereCluseArray[5])
+      })
+      .union(function () {
+        this.select([
+          `${wcTableName}.id`,
+          `${wcTableName}.current_quantity`,
+          `${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
+          `${wcTransitionBetweenWHRequisitionTableName}.date`
+        ])
+          .from(`${wcTableName}`)
+          .innerJoin(`${wcTransitionBetweenWHRequisitionDetailsTableName}`,
+            `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`,
+            `${wcTableName}.wc_transition_between_wh_requisitions_details_id`)
+          .innerJoin(`${wcTransitionBetweenWHRequisitionTableName}`,
+            `${wcTransitionBetweenWHRequisitionTableName}.id`,
+            `${wcTransitionBetweenWHRequisitionDetailsTableName}.wc_transition_between_wh_requisitions_id`)
+          .where(whereCluseArray[6])
       })
   }).as('temp')
     .andWhere(whereCluseArray[2].whereTableName, whereCluseArray[2].operator, whereCluseArray[2].value)
@@ -390,6 +426,24 @@ exports.selectConsigmentManufacturingQuantityByWarehouseByFabricWc = async (wher
             `${consigmentManufacturingTableName}.id`,
             `${wcExecuteOrderRequisitionDetailsTableName}.consigment_manufacturing_id`)
           .where(whereCluseArray[5])
+      })
+      .union(function () {
+        this.select([
+          `${consigmentManufacturingTableName}.id`,
+          `${consigmentManufacturingTableName}.number`,
+          `${wcTableName}.current_quantity`,
+        ])
+          .from(`${wcTableName}`)
+          .innerJoin(`${wcTransitionBetweenWHRequisitionDetailsTableName}`,
+            `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`,
+            `${wcTableName}.wc_transition_between_wh_requisitions_details_id`)
+          .innerJoin(`${wcTransitionBetweenWHRequisitionTableName}`,
+            `${wcTransitionBetweenWHRequisitionTableName}.id`,
+            `${wcTransitionBetweenWHRequisitionDetailsTableName}.wc_transition_between_wh_requisitions_id`)
+          .innerJoin(`${consigmentManufacturingTableName}`,
+            `${consigmentManufacturingTableName}.id`,
+            `${wcTransitionBetweenWHRequisitionDetailsTableName}.consigment_manufacturing_id`)
+          .where(whereCluseArray[6])
       })
   }).as('temp')
     .sum(`current_quantity as current_quantity`)
@@ -623,6 +677,45 @@ exports.selectStoredWarehouseAndFabricAndConsigmentManufacturing = async (whereC
             `${wcTableName}.wc_execute_order_requisition_details_id`,
             `${wcExecuteOrderRequisitionDetailsTableName}.id`)
           .where(whereCluseArray[4])
+          .andWhere(
+            (qb) => {
+              if (isGreaterThanZero) {
+                qb.where(`${wcTableName}.current_quantity`, ">", "0")
+              } else {
+                qb.where(`${wcTableName}.current_quantity`, ">=", "0")
+              }
+            })
+      })
+      .union(function () {
+        this.select([
+          `${fabricTableName}.id as fabric_id`,
+          `${fabricTableName}.name as fabric_name`,
+          `${fabricTableName}.dyeing_code`,
+          `${fabricTableName}.code as fabric_code`,
+          `${consigmentManufacturingTableName}.id as consigment_manufacturing_id`,
+          `${consigmentManufacturingTableName}.number as consigment_manufacturing_number`,
+          `${warehouseTableName}.id as warehouse_id`,
+          `${warehouseTableName}.name as warehouse_name`,
+          `${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
+          `${wcTableName}.current_quantity`
+        ])
+          .from(`${wcTransitionBetweenWHRequisitionDetailsTableName}`)
+          .innerJoin(`${wcTransitionBetweenWHRequisitionTableName}`,
+            `${wcTransitionBetweenWHRequisitionTableName}.id`,
+            `${wcTransitionBetweenWHRequisitionDetailsTableName}.wc_transition_between_wh_requisitions_id`)
+            .innerJoin(`${warehouseTableName}`,
+            `${warehouseTableName}.id`,
+            `${wcTransitionBetweenWHRequisitionTableName}.to_warehouse_id`)
+          .innerJoin(`${fabricTableName}`,
+            `${fabricTableName}.id`,
+            `${wcTransitionBetweenWHRequisitionDetailsTableName}.fabric_id`)
+            .innerJoin(`${consigmentManufacturingTableName}`,
+            `${consigmentManufacturingTableName}.id`,
+            `${wcTransitionBetweenWHRequisitionDetailsTableName}.consigment_manufacturing_id`)
+          .innerJoin(`${wcTableName}`,
+            `${wcTableName}.wc_transition_between_wh_requisitions_details_id`,
+            `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`)
+          .where(whereCluseArray[5])
           .andWhere(
             (qb) => {
               if (isGreaterThanZero) {

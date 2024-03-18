@@ -5,7 +5,7 @@ const knex = require("../../config/connection").getConnection();
 // Util
 const constants = require("../../../util/constants");
 const constantsPayloads = require("../../../util/constants-payloads");
-const { wcAddRequisitionDetailsTableName, wcTableName, waReconciliationRequisitionTableName, waReconciliationRequisitionDetailsTableName, waReconciliationRequisitionDetailsWaTableName, wbTransportRequisitionWbWaTableName, wbTransportRequisitionWbWaDetailsTableName, wcReconciliationRequisitionTableName, wcReconciliationRequisitionDetailsTableName, wcReconciliationRequisitionDetailsWcTableName, wdTransportRequisitionWdWcTableName, wdTransportRequisitionWdWcDetailsTableName, wcAddRequisitionTableName, weAddRequisitionDetailsTableName, weTableName, wdDyeingRequisitionDetailsTableName, wbManufacturingOutputTableName, weReconciliationRequisitionTableName, weReconciliationRequisitionDetailsTableName, weReconciliationRequisitionDetailsWeTableName, waExecuteOrderRequisitionTableName, waExecuteOrderRequisitionDetailsTableName, waTransitionBetweenWHRequisitionTableName, waTransitionBetweenWHRequisitionDetailsTableName, wdDyeingRequisitionTableName } = require("../../../util/database-tables-name");
+const { wcAddRequisitionDetailsTableName, wcTableName, waReconciliationRequisitionTableName, waReconciliationRequisitionDetailsTableName, waReconciliationRequisitionDetailsWaTableName, wbTransportRequisitionWbWaTableName, wbTransportRequisitionWbWaDetailsTableName, wcReconciliationRequisitionTableName, wcReconciliationRequisitionDetailsTableName, wcReconciliationRequisitionDetailsWcTableName, wdTransportRequisitionWdWcTableName, wdTransportRequisitionWdWcDetailsTableName, wcAddRequisitionTableName, weAddRequisitionDetailsTableName, weTableName, wdDyeingRequisitionDetailsTableName, wbManufacturingOutputTableName, weReconciliationRequisitionTableName, weReconciliationRequisitionDetailsTableName, weReconciliationRequisitionDetailsWeTableName, waExecuteOrderRequisitionTableName, waExecuteOrderRequisitionDetailsTableName, waTransitionBetweenWHRequisitionTableName, waTransitionBetweenWHRequisitionDetailsTableName, wdDyeingRequisitionTableName, wcTransitionBetweenWHRequisitionDetailsTableName, wcTransitionBetweenWHRequisitionTableName } = require("../../../util/database-tables-name");
 const warehouseTableName = require("../../../util/database-tables-name").warehouseTableName;
 const waTableName = require("../../../util/database-tables-name").waTableName;
 const waAddRequisitionDetailsTableName = require("../../../util/database-tables-name").waAddRequisitionDetailsTableName;
@@ -289,6 +289,17 @@ exports.selectWhereInWc = async () => {
         `${wcTableName}.wb_manufacturing_output_id`,
         `${wbManufacturingOutputTableName}.id`)
         .where(`${wcTableName}.current_quantity`, ">", "0")
+})
+.orWhereIn(`${warehouseTableName}.id`, function () {
+  this.select(`${wcTransitionBetweenWHRequisitionTableName}.to_warehouse_id as id`)
+      .from(`${wcTransitionBetweenWHRequisitionTableName}`)
+      .innerJoin(`${wcTransitionBetweenWHRequisitionDetailsTableName}`, 
+      `${wcTransitionBetweenWHRequisitionDetailsTableName}.wc_transition_between_wh_requisitions_id`,
+      `${wcTransitionBetweenWHRequisitionTableName}.id`)
+      .innerJoin(`${wcTableName}`, 
+      `${wcTableName}.wc_transition_between_wh_requisitions_details_id`,
+      `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`)
+      .where(`${wcTableName}.current_quantity`, ">", "0")
 })
       .andWhere(constantsPayloads.deletePayload)
       .then(data => {

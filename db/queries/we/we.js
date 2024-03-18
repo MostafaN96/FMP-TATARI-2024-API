@@ -10,7 +10,7 @@ const { weTableName, weAddRequisitionDetailsTableName, weAddRequisitionTableName
   wdDyeingRequisitionTableName, warehouseTableName, fabricTableName,
   bussinessmanTableName, colorCategoryTableName, colorTableName,
   wdFormDyeingRequisitionDetailsTableName, anointedColorsPricesTableName,
-  dyeingServicesTableName, wdFormDyeingRequisitionDetailsDyeingServicesTableName, anointedServicesPricesTableName, weSellRequisitionTableName, weSellRequisitionDetailsTableName, weSellRequisitionDetailsWeTableName, wdFormDyeingOrderDetailsTableName, wdDyeingOrderDetailsWdFormDyeingDetailsTableName, wdDyeingOrderRequisitionDetailsTableName, wdDyeingOrderRequisitionTableName, weSellRequisitionDirectDetailsTableName, consigmentDyeingTableName, weReturnSellRequisitionDetailsReturnDetailsTableName, weReturnSellRequisitionDetailsTableName } = require("../../../util/database-tables-name");
+  dyeingServicesTableName, wdFormDyeingRequisitionDetailsDyeingServicesTableName, anointedServicesPricesTableName, weSellRequisitionTableName, weSellRequisitionDetailsTableName, weSellRequisitionDetailsWeTableName, wdFormDyeingOrderDetailsTableName, wdDyeingOrderDetailsWdFormDyeingDetailsTableName, wdDyeingOrderRequisitionDetailsTableName, wdDyeingOrderRequisitionTableName, weSellRequisitionDirectDetailsTableName, consigmentDyeingTableName, weReturnSellRequisitionDetailsReturnDetailsTableName, weReturnSellRequisitionDetailsTableName, weTransitionBetweenWHRequisitionDetailsTableName, weTransitionBetweenWHRequisitionTableName } = require("../../../util/database-tables-name");
 
 exports.insert = async (we, items) => {
   let queryResults = false;
@@ -83,6 +83,26 @@ exports.insertForExecuteOrderRequisitionWe = async (we, items) => {
       id: we.weId,
       we_execute_order_requisition_details_id: items.weExecuteOrderRequisitionDetailsId,
       type: constantsPayloads.executeOrderType,
+      current_quantity: items.quantity,
+      creator_id: we.personid,
+      ip_address: we.ipaddress,
+    })
+    .then((data) => {
+      queryResults = true;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+  return queryResults;
+};
+
+exports.insertForTransitionBetweenWHRequisition = async (we, items) => {
+  let queryResults = false;
+  await sqlFun
+    .insert(weTableName, {
+      id: we.weId,
+      we_transition_between_wh_requisitions_details_id: items.weTransitionBetweenWHRequisitionDetailsId,
+      type: constantsPayloads.transportBetweenType,
       current_quantity: items.quantity,
       creator_id: we.personid,
       ip_address: we.ipaddress,
@@ -179,6 +199,7 @@ exports.selectStoreWe = async (whereCluseArray, orderByCluse) => {
     `order_number`,
     `order_customer_name`,
     `wd_form_dyeing_order_requisition_id`,
+    `consigment_dyeing_id`,
     `consigment_dyeing_number`,
   ]
   await knex.select(columns).from(function () {
@@ -216,6 +237,7 @@ exports.selectStoreWe = async (whereCluseArray, orderByCluse) => {
       knex.raw('? as order_number', ''),
       knex.raw('? as order_customer_name', ''),
       knex.raw('? as wd_form_dyeing_order_requisition_id', ''),
+      `${consigmentDyeingTableName}.id as consigment_dyeing_id`,
       `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
 
     ])
@@ -280,6 +302,7 @@ exports.selectStoreWe = async (whereCluseArray, orderByCluse) => {
           knex.raw('? as order_number', ''),
       knex.raw('? as order_customer_name', ''),
       knex.raw('? as wd_form_dyeing_order_requisition_id', ''),
+      `${consigmentDyeingTableName}.id as consigment_dyeing_id`,
       `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
 
         ])
@@ -345,6 +368,7 @@ exports.selectStoreWe = async (whereCluseArray, orderByCluse) => {
           `${wdDyeingOrderRequisitionTableName}.work_order_number as order_number`,
           `seller.name as order_customer_name`,
           `${wdDyeingOrderRequisitionDetailsTableName}.wd_form_dyeing_order_requisition_id`,
+          `${consigmentDyeingTableName}.id as consigment_dyeing_id`,
           `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
         ])
           .from(`${weTableName}`)
@@ -391,6 +415,68 @@ exports.selectStoreWe = async (whereCluseArray, orderByCluse) => {
             `seller.id`,
             `${wdDyeingOrderRequisitionTableName}.seller_id`)
           .where(whereCluseArray[3])
+      })
+      .union(function () {
+        this.select([
+          `${weTableName}.id as we_id`,
+          `${weTableName}.storage_place`,
+          `${weTableName}.current_quantity`,
+          `${weTableName}.file as fabric_image`,
+          `${weTableName}.note1`,
+          `${weTableName}.note2`,
+          `${weTransitionBetweenWHRequisitionTableName}.id as requisition_id`,
+          `${weTransitionBetweenWHRequisitionTableName}.number`,
+          `${weTransitionBetweenWHRequisitionTableName}.date`,
+          knex.raw('? as type_of_requisition', 'اذن نقل بين المخازن'),
+          `${weTransitionBetweenWHRequisitionDetailsTableName}.id as requisition_details_id`,
+          knex.raw('? as wd_form_dyeing_requisition_details_id', 'null'),
+          `${weTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
+          `${weTransitionBetweenWHRequisitionDetailsTableName}.work_order_number`,
+          `${weTransitionBetweenWHRequisitionDetailsTableName}.price`,
+          knex.raw('? as dyeing_code', '-'),
+          `${warehouseTableName}.id as warehouse_id`,
+          `${warehouseTableName}.name as warehouse_name`,
+          `${fabricTableName}.id as dyed_fabric_id`,
+          `${fabricTableName}.name as dyed_fabric_name`,
+          `${fabricTableName}.code as dyed_fabric_code`,
+          `${fabricTableName}.dyeing_code as dyed_fabric_dyeing_code`,
+          knex.raw('? as supplier_id', '-'),
+          knex.raw(`CONCAT(${warehouseTableName}.name, ' - رقم الاذن (', ${weTransitionBetweenWHRequisitionTableName}.number, ')') as supplier_name`),
+          `${colorCategoryTableName}.id as color_category_id`,
+          `${colorCategoryTableName}.name as color_category_name`,
+          `${colorTableName}.id as color_id`,
+          `${colorTableName}.name as color_name`,
+          `${weTransitionBetweenWHRequisitionDetailsTableName}.color_code`,
+          knex.raw('? as dyeing_colors_prices_id', 'null'),
+          knex.raw('? as order_number', ''),
+          knex.raw('? as order_customer_name', ''),
+          knex.raw('? as wd_form_dyeing_order_requisition_id', ''),
+          `${consigmentDyeingTableName}.id as consigment_dyeing_id`,
+          `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+        ])
+          .from(`${weTableName}`)
+          .innerJoin(`${weTransitionBetweenWHRequisitionDetailsTableName}`,
+            `${weTransitionBetweenWHRequisitionDetailsTableName}.id`,
+            `${weTableName}.we_transition_between_wh_requisitions_details_id`)
+            .innerJoin(`${weTransitionBetweenWHRequisitionTableName}`,
+            `${weTransitionBetweenWHRequisitionTableName}.id`,
+            `${weTransitionBetweenWHRequisitionDetailsTableName}.we_transition_between_wh_requisitions_id`)
+          .innerJoin(`${warehouseTableName}`,
+            `${warehouseTableName}.id`,
+            `${weTransitionBetweenWHRequisitionTableName}.to_warehouse_id`)
+          .innerJoin(`${fabricTableName}`,
+            `${fabricTableName}.id`,
+            `${weTransitionBetweenWHRequisitionDetailsTableName}.dyed_fabric_id`)
+            .innerJoin(`${colorCategoryTableName}`,
+        `${colorCategoryTableName}.id`,
+        `${weTransitionBetweenWHRequisitionDetailsTableName}.color_category_id`)
+            .innerJoin(`${colorTableName}`,
+            `${colorTableName}.id`,
+            `${weTransitionBetweenWHRequisitionDetailsTableName}.color_id`)
+            .innerJoin(`${consigmentDyeingTableName}`, 
+            `${consigmentDyeingTableName}.id`, 
+            `${weTransitionBetweenWHRequisitionDetailsTableName}.consigment_dyeing_id`)
+          .where(whereCluseArray[0])
       })
   }).as('temp')
     .distinct(`requisition_details_id`, `work_order_number`, `dyed_fabric_id`, `color_id`, `color_category_id`)
@@ -639,6 +725,52 @@ exports.selectStoreWeForSellDirect = async (whereCluseArray, orderByCluse) => {
             `seller.id`,
             `${wdDyeingOrderRequisitionTableName}.seller_id`)
           .where(whereCluseArray[3])
+      })
+      .union(function () {
+        this.select([
+          `${weTableName}.id as we_id`,
+          `${weTableName}.storage_place`,
+          `${weTableName}.file as fabric_image`,
+          `${weTableName}.note1`,
+          `${weTableName}.note2`,
+          `${weTransitionBetweenWHRequisitionTableName}.id as requisition_id`,
+          `${weTransitionBetweenWHRequisitionTableName}.number`,
+          `${weTransitionBetweenWHRequisitionTableName}.date`,
+          knex.raw('? as type_of_requisition', 'اذن تشكيل'),
+          `${weTransitionBetweenWHRequisitionDetailsTableName}.id as requisition_details_id`,
+          `${weTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
+          `${weTransitionBetweenWHRequisitionDetailsTableName}.work_order_number`,
+          `${weTransitionBetweenWHRequisitionDetailsTableName}.price`,
+          knex.raw('? as dyeing_code', '-'),
+          `${warehouseTableName}.id as warehouse_id`,
+          `${warehouseTableName}.name as warehouse_name`,
+          `${fabricTableName}.id as dyed_fabric_id`,
+          `${fabricTableName}.name as dyed_fabric_name`,
+          `${fabricTableName}.code as dyed_fabric_code`,
+          `${fabricTableName}.dyeing_code as dyed_fabric_dyeing_code`,
+          knex.raw('? as supplier_id', '-'),
+          knex.raw(`CONCAT(${warehouseTableName}.name, ' - رقم الاذن (', ${weTransitionBetweenWHRequisitionTableName}.number, ')') as supplier_name`),
+          `${colorCategoryTableName}.id as color_category_id`,
+          `${colorCategoryTableName}.name as color_category_name`,
+          `${colorTableName}.id as color_id`,
+          `${colorTableName}.name as color_name`,
+          `${weTransitionBetweenWHRequisitionDetailsTableName}.color_code`,
+          `${weTableName}.current_quantity`,
+        ])
+          .from(`${weTableName}`)
+          .innerJoin(`${weTransitionBetweenWHRequisitionDetailsTableName}`,
+            `${weTransitionBetweenWHRequisitionDetailsTableName}.id`,
+            `${weTableName}.we_transition_between_wh_requisitions_details_id`)
+          .innerJoin(`${warehouseTableName}`,
+            `${warehouseTableName}.id`,
+            `${weTransitionBetweenWHRequisitionTableName}.to_warehouse_id`)
+          .innerJoin(`${fabricTableName}`,
+            `${fabricTableName}.id`,
+            `${weTransitionBetweenWHRequisitionDetailsTableName}.dyed_fabric_id`)
+          .innerJoin(`${colorTableName}`,
+            `${colorTableName}.id`,
+            `${weTransitionBetweenWHRequisitionDetailsTableName}.color_id`)
+          .where(whereCluseArray[4])
       })
   }).as('temp')
   .sum(`current_quantity as current_quantity`)
@@ -897,6 +1029,64 @@ exports.selectSoldedBySellerForReturnSellWe = async (whereCluseArray, orderByClu
             `${colorTableName}.id`,
             `${anointedColorsPricesTableName}.color_id`)
           .where(whereCluseArray[1])
+      })
+      .union(function () {
+        this.select([
+          `${weTableName}.id as we_id`,
+          `${weTableName}.storage_place`,
+          `${weSellRequisitionDetailsTableName}.current_quantity`,
+          `${weTableName}.file as fabric_image`,
+          `${weSellRequisitionTableName}.id as requisition_id`,
+          `${weSellRequisitionTableName}.number`,
+          `${weSellRequisitionTableName}.date`,
+          knex.raw('? as type_of_requisition', 'اذن هالك'),
+          `${weSellRequisitionDetailsTableName}.id as requisition_details_id`,
+          `${weSellRequisitionDetailsTableName}.quantity`,
+          `${weTransitionBetweenWHRequisitionDetailsTableName}.work_order_number`,
+          `${weSellRequisitionDetailsTableName}.price`,
+          knex.raw('? as dyeing_code', '-'),
+          `${warehouseTableName}.id as warehouse_id`,
+          `${warehouseTableName}.name as warehouse_name`,
+          `${fabricTableName}.id as dyed_fabric_id`,
+          `${fabricTableName}.name as dyed_fabric_name`,
+          `${fabricTableName}.code as dyed_fabric_code`,
+          `${fabricTableName}.dyeing_code as dyed_fabric_dyeing_code`,
+          knex.raw(`CONCAT(${bussinessmanTableName}.name, ' - رقم الاذن (', ${weSellRequisitionTableName}.number, ')') as supplier_name`),
+          `${colorCategoryTableName}.id as color_category_id`,
+          `${colorCategoryTableName}.name as color_category_name`,
+          `${colorTableName}.id as color_id`,
+          `${colorTableName}.name as color_name`,
+          `${weTransitionBetweenWHRequisitionDetailsTableName}.color_code`,
+        ])
+          .from(`${weSellRequisitionDetailsTableName}`)
+          .innerJoin(`${warehouseTableName}`,
+            `${warehouseTableName}.id`,
+            `${weSellRequisitionDetailsTableName}.warehouse_id`)
+          .innerJoin(`${fabricTableName}`,
+            `${fabricTableName}.id`,
+            `${weSellRequisitionDetailsTableName}.dyed_fabric_id`)
+          .innerJoin(`${weSellRequisitionTableName}`,
+            `${weSellRequisitionTableName}.id`,
+            `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
+          .innerJoin(`${bussinessmanTableName}`,
+            `${bussinessmanTableName}.id`,
+            `${weSellRequisitionTableName}.seller_id`)
+          .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
+            `${weSellRequisitionDetailsWeTableName}.we_sell_requisition_details_id`,
+            `${weSellRequisitionDetailsTableName}.id`)
+          .innerJoin(`${weTableName}`,
+            `${weTableName}.id`,
+            `${weSellRequisitionDetailsWeTableName}.we_id`)
+          .innerJoin(`${weTransitionBetweenWHRequisitionDetailsTableName}`,
+            `${weTransitionBetweenWHRequisitionDetailsTableName}.id`,
+            `${weTableName}.we_transition_between_wh_requisitions_details_id`)
+            .innerJoin(`${colorCategoryTableName}`,
+        `${colorCategoryTableName}.id`,
+        `${weTransitionBetweenWHRequisitionDetailsTableName}.color_category_id`)
+          .innerJoin(`${colorTableName}`,
+            `${colorTableName}.id`,
+            `${weTransitionBetweenWHRequisitionDetailsTableName}.color_id`)
+          .where(whereCluseArray[3])
       })
   }).as('temp')
     .andWhere(whereCluseArray[2].whereTableName, whereCluseArray[2].operator, whereCluseArray[2].value)
@@ -1268,6 +1458,43 @@ exports.selectStoredWarehouseAndFabricForReport = async (whereCluseArray, isGrea
                 qb.where(`${weTableName}.current_quantity`, ">=", "0")
               }
             })
+      })
+      .union(function () {
+        this.select([
+          `${weTableName}.id as we_id`,
+          `${fabricTableName}.id as dyed_fabric_id`,
+          `${fabricTableName}.name as fabric_name`,
+          `${fabricTableName}.dyeing_code`,
+          `${fabricTableName}.code as fabric_code`,
+          knex.raw('? as dyeing_id', ''),
+          `${warehouseTableName}.id as warehouse_id`,
+          `${warehouseTableName}.name as warehouse_name`,
+          `${weTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
+          `${weTableName}.current_quantity`
+        ])
+          .from(`${weTransitionBetweenWHRequisitionDetailsTableName}`)
+          .innerJoin(`${fabricTableName}`,
+            `${fabricTableName}.id`,
+            `${weTransitionBetweenWHRequisitionDetailsTableName}.dyed_fabric_id`)
+          .innerJoin(`${weTransitionBetweenWHRequisitionTableName}`,
+          `${weTransitionBetweenWHRequisitionTableName}.id`,
+          `${weTransitionBetweenWHRequisitionDetailsTableName}.we_transition_between_wh_requisitions_id`)
+          .innerJoin(`${weTableName}`,
+            `${weTableName}.we_transition_between_wh_requisitions_details_id`,
+            `${weTransitionBetweenWHRequisitionDetailsTableName}.id`)
+            .innerJoin(`${warehouseTableName}`,
+            `${warehouseTableName}.id`,
+            `${weTransitionBetweenWHRequisitionTableName}.to_warehouse_id`)
+          .where(whereCluseArray[4])
+          .andWhere(
+            (qb) => {
+              if (isGreaterThanZero) {
+                qb.where(`${weTableName}.current_quantity`, ">", "0")
+              } else {
+                qb.where(`${weTableName}.current_quantity`, ">=", "0")
+              }
+            })
+        // .groupBy(`${wcReconciliationRequisitionDetailsTableName}.spinning_id`)
       })
   }).as('temp')
     .sum(`current_quantity as current_quantity`)

@@ -5,11 +5,12 @@ const wcReconciliationRequisitionDetailsQueries = require("../../db/queries/wc/w
 const wdTransportRequisitionWdWcDetailsQueries = require("../../db/queries/wd/wd-transport-requisition-wd-wc-details");
 const wbManufacturingOutputQueries = require("../../db/queries/wb/wb-manufacturing-output");
 const wcExecuteOrderRequisitionDetailsQueries = require("../../db/queries/wc/wc-execute-order-requisition-details");
+const wcTransitionBetweenWhRequisitionDetailsQueries = require("../../db/queries/wc/wc-transition-between-wh-requisition-details");
 
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-const { wcTableName, wcAddRequisitionDetailsTableName, wdTransportRequisitionWdWcTableName, wdTransportRequisitionWdWcDetailsTableName, wcReconciliationRequisitionTableName, wcReconciliationRequisitionDetailsTableName, wcAddRequisitionTableName, wbManufacturingOutputTableName, wcExecuteOrderRequisitionTableName, wcExecuteOrderRequisitionDetailsTableName } = require("../../util/database-tables-name");
+const { wcTableName, wcAddRequisitionDetailsTableName, wdTransportRequisitionWdWcTableName, wdTransportRequisitionWdWcDetailsTableName, wcReconciliationRequisitionTableName, wcReconciliationRequisitionDetailsTableName, wcAddRequisitionTableName, wbManufacturingOutputTableName, wcExecuteOrderRequisitionTableName, wcExecuteOrderRequisitionDetailsTableName, wcTransitionBetweenWHRequisitionTableName, wcTransitionBetweenWHRequisitionDetailsTableName } = require("../../util/database-tables-name");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -88,10 +89,22 @@ exports.selectByFabricForSell = async (warehouseId, fabricId, consigmentManufact
     executeOrderWhereCluse[`${wcExecuteOrderRequisitionDetailsTableName}.fabric_id`] = fabricId;
     executeOrderWhereCluse[`${wcExecuteOrderRequisitionDetailsTableName}.consigment_manufacturing_id`] = consigmentManufacturingId;
 
+    let transitionBetweenWhWhereCluse = {};
+    transitionBetweenWhWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    transitionBetweenWhWhereCluse[`${wcTableName}.is_active`] = 1;
+    transitionBetweenWhWhereCluse[`${wcTableName}.type`] = constantsPayloads.transportBetweenType;
+    transitionBetweenWhWhereCluse[`${wcTransitionBetweenWHRequisitionTableName}.to_warehouse_id`] = warehouseId;
+    transitionBetweenWhWhereCluse[`${wcTransitionBetweenWHRequisitionDetailsTableName}.fabric_id`] = fabricId;
+    transitionBetweenWhWhereCluse[`${wcTransitionBetweenWHRequisitionDetailsTableName}.consigment_manufacturing_id`] = consigmentManufacturingId;
+
+
     let andWhereCluse = {whereTableName: `current_quantity`, operator: ">", value: "0"}
-    let whereCluseArray = [whereCluse, reconciliationWhereCluse,
+    let whereCluseArray = [
+        whereCluse, reconciliationWhereCluse,
          andWhereCluse, transportWdWcWhereCluse, 
-         manufacturingOutputWhereCluse, executeOrderWhereCluse]
+         manufacturingOutputWhereCluse, executeOrderWhereCluse,
+         transitionBetweenWhWhereCluse
+        ]
     let orderByCluse = {attributeName: `date`, value: "desc"}
 
     const results = await wcQueries.selectByFabric(whereCluseArray, orderByCluse);
@@ -150,11 +163,19 @@ exports.selectConsigmentManufacturingQuantityByWarehouseByFabricWc = async (ware
     executeOrderWhereCluse[`${wcExecuteOrderRequisitionTableName}.warehouse_id`] = warehouseId;
     executeOrderWhereCluse[`${wcExecuteOrderRequisitionDetailsTableName}.fabric_id`] = fabricId;
 
+    let transitionBetweenWhWhereCluse = {};
+    transitionBetweenWhWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    transitionBetweenWhWhereCluse[`${wcTableName}.is_active`] = 1;
+    transitionBetweenWhWhereCluse[`${wcTableName}.type`] = constantsPayloads.transportBetweenType;
+    transitionBetweenWhWhereCluse[`${wcTransitionBetweenWHRequisitionTableName}.to_warehouse_id`] = warehouseId;
+    transitionBetweenWhWhereCluse[`${wcTransitionBetweenWHRequisitionDetailsTableName}.fabric_id`] = fabricId;
+
     let andWhereCluse = {whereTableName: `current_quantity`, operator: ">", value: "0"}
 
     let whereCluseArray = [addWhereCluse, reconciliationWhereCluse, 
         andWhereCluse, transportWdWcWhereCluse, 
-        manufacturingOutputWhereCluse, executeOrderWhereCluse
+        manufacturingOutputWhereCluse, executeOrderWhereCluse,
+        transitionBetweenWhWhereCluse
     ]
 
     const results = await wcQueries.selectConsigmentManufacturingQuantityByWarehouseByFabricWc(whereCluseArray)
@@ -209,10 +230,20 @@ exports.selectSumCurrentQuantityByWarehouseByFabricByConsigmentManufacturingLotW
     executeOrderWhereCluse[`${wcExecuteOrderRequisitionDetailsTableName}.consigment_manufacturing_id`] = consigmentManufacturingId;
     callArray.push(await wcExecuteOrderRequisitionDetailsQueries.selectSumCurrentQuantityByWarehouseByFabricWc(executeOrderWhereCluse));
 
+    let transitionBetweenWhWhereCluse = {};
+    transitionBetweenWhWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    transitionBetweenWhWhereCluse[`${wcTableName}.is_active`] = 1;
+    transitionBetweenWhWhereCluse[`${wcTableName}.type`] = constantsPayloads.transportBetweenType;
+    transitionBetweenWhWhereCluse[`${wcTransitionBetweenWHRequisitionTableName}.to_warehouse_id`] = warehouseId;
+    transitionBetweenWhWhereCluse[`${wcTransitionBetweenWHRequisitionDetailsTableName}.fabric_id`] = fabricId;
+    transitionBetweenWhWhereCluse[`${wcTransitionBetweenWHRequisitionDetailsTableName}.consigment_manufacturing_id`] = consigmentManufacturingId;
+    callArray.push(await wcTransitionBetweenWhRequisitionDetailsQueries.selectSumCurrentQuantityByWarehouseByFabricWc(transitionBetweenWhWhereCluse));
+
     const requisitions = await Promise.all(callArray)
 
     let data = [...requisitions[0], ...requisitions[1],
-    ...requisitions[2], ...requisitions[3], ...requisitions[4]
+    ...requisitions[2], ...requisitions[3], ...requisitions[4], 
+    ...requisitions[5]
 ]
     let sumCurrentQuantity = 0
     for (let i = 0; i < data.length && (data[i] != null); i++) {

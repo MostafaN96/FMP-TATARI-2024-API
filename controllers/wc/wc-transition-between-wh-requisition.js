@@ -1,8 +1,8 @@
 // Validation
-const waTransitionBetweenWHRequisitionValidation = require("../../validations/wa/wa-transition-between-wh-requisition");
+const wcTransitionBetweenWHRequisitionValidation = require("../../validations/wc/wc-transition-between-wh-requisition");
 
 // Services
-const waTransitionBetweenWHRequisitionService = require("../../services/wa/wa-transition-between-wh-requisition");
+const wcTransitionBetweenWHRequisitionService = require("../../services/wc/wc-transition-between-wh-requisition");
 
 // Util
 const constants = require("../../util/constants");
@@ -11,12 +11,12 @@ exports.create = async (request, response) => {
     const bodyPalod = request.body;
 
     // Validation
-    if (!waTransitionBetweenWHRequisitionValidation.isValid(bodyPalod)) {
+    if (!wcTransitionBetweenWHRequisitionValidation.isValid(bodyPalod)) {
         // logging
         return response.status(400).json(constants.invalidDataResponse);
     }
     //   send data to service
-    const results = await waTransitionBetweenWHRequisitionService.create(bodyPalod);
+    const results = await wcTransitionBetweenWHRequisitionService.create(bodyPalod);
 
     if (results === constants.insertError) {
         return response.status(500).json(results);
@@ -33,6 +33,6 @@ exports.select = async (request, response) => {
     // logging
   
     // call service
-    const results = await waTransitionBetweenWHRequisitionService.select();
+    const results = await wcTransitionBetweenWHRequisitionService.select();
     response.status(200).json(results);
   };

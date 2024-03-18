@@ -58,6 +58,24 @@ exports.insertForTransport = async (consigmentDyeing, items) => {
   return queryResults;
 };
 
+exports.insertForTransitionBetween = async (consigmentDyeing, items) => {
+  let queryResults = false;
+  await sqlFun
+    .insert(consigmentDyeingTableName, {
+      id: items.consigmentDyeingId,
+      number: items.newConsigmentDyeingNumber,
+      creator_id: consigmentDyeing.personid,
+      ip_address: consigmentDyeing.ipaddress
+    })
+    .then((data) => {
+      queryResults = true;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+  return queryResults;
+};
+
 exports.insertForWeExecuteOrder = async (consigmentDyeing, items) => {
   let queryResults = false;
   await sqlFun

@@ -114,7 +114,7 @@ exports.update = async (waTransitionBetweenWHRequisitionDetails) => {
     if (isFound[0] != null) {
         let updateResults = false
 
-            waTransitionBetweenWHRequisitionDetails.waSellRequisitionId = isFound[0].wa_transition_between_wh_requisitions_id
+            waTransitionBetweenWHRequisitionDetails.waTransitionBetweenWhRequisitionsId = isFound[0].wa_transition_between_wh_requisitions_id
 
             let waTransitionBetweenWHRequisitionDetailsWaWhereCluse = {}
         waTransitionBetweenWHRequisitionDetailsWaWhereCluse[`${waTransitionBetweenWHRequisitionDetailsWaTableName}.wa_transition_between_wh_requisitions_details_id`] = waTransitionBetweenWHRequisitionDetails.id
@@ -127,7 +127,7 @@ exports.update = async (waTransitionBetweenWHRequisitionDetails) => {
                 note: waTransitionBetweenWHRequisitionDetails.note
             },
                 {
-                    id: waTransitionBetweenWHRequisitionDetails.waSellRequisitionId
+                    id: waTransitionBetweenWHRequisitionDetails.waTransitionBetweenWhRequisitionsId
                 }))
 
 

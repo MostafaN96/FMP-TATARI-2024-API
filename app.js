@@ -105,6 +105,9 @@ const wcFabricOrderRequisitionDetailsRouter = require("./routers/wc/wc-fabric-or
 const wcExcuteOrderRequisitionRouter = require("./routers/wc/wc-execute-order-requisition");
 const wcExcuteOrderRequisitionDetailsRouter = require("./routers/wc/wc-execute-order-requisition-details");
 
+const wcTransitionBetweenWHRequisitionRouter = require("./routers/wc/wc-transition-between-wh-requisition");
+const wcTransitionBetweenWHRequisitionDetailsRouter = require("./routers/wc/wc-transition-between-wh-requisition-details");
+
 const wcReportRouter = require("./routers/wc/wc-report");
 
 // WD
@@ -163,6 +166,9 @@ const weDyedFabricOrderRequisitionDetailsRouter = require("./routers/we/we-dyed-
 
 const weExcuteOrderRequisitionRouter = require("./routers/we/we-execute-order-requisition");
 const weExcuteOrderRequisitionDetailsRouter = require("./routers/we/we-execute-order-requisition-details");
+
+const weTransitionBetweenWHRequisitionRouter = require("./routers/we/we-transition-between-wh-requisition");
+const weTransitionBetweenWHRequisitionDetailsRouter = require("./routers/we/we-transition-between-wh-requisition-details");
 
 const weReportRouter = require("./routers/we/we-report");
 
@@ -275,6 +281,9 @@ app.use('/api/wc-fabric-order-requisition-details', wcFabricOrderRequisitionDeta
 app.use('/api/wc-execute-order-requisition', wcExcuteOrderRequisitionRouter)
 app.use('/api/wc-execute-order-requisition-details', wcExcuteOrderRequisitionDetailsRouter)
 
+app.use('/api/wc-transition-between-wh-requisition', wcTransitionBetweenWHRequisitionRouter)
+app.use('/api/wc-transition-between-wh-requisition-details', wcTransitionBetweenWHRequisitionDetailsRouter)
+
 app.use("/api/wc-report", wcReportRouter);
 
 // WD
@@ -333,6 +342,9 @@ app.use('/api/we-dyed-fabric-order-requisition-details', weDyedFabricOrderRequis
 
 app.use('/api/we-execute-order-requisition', weExcuteOrderRequisitionRouter)
 app.use('/api/we-execute-order-requisition-details', weExcuteOrderRequisitionDetailsRouter)
+
+app.use("/api/we-transition-between-wh-requisition", weTransitionBetweenWHRequisitionRouter);
+app.use("/api/we-transition-between-wh-requisition-details", weTransitionBetweenWHRequisitionDetailsRouter);
 
 app.use("/api/we-report", weReportRouter);
 

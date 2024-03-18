@@ -10,7 +10,7 @@ const joiText = (min, max) => joi.alternatives().try(
 )
 const joiHtmlText = (min, max) => joi.string().not().empty().trim().normalize().min(min).max(max).required()
 const joiNotRequiredText = (min, max) => joi.alternatives().try(
-    joi.number().integer().allow(null),
+    joi.number().allow(null),
     joi.string().allow('').allow(null).not().empty().trim().normalize().min(min).max(max).pattern(patterns.text).not()
 )
 const joiBoolean =  joi.boolean().allow(0,1,'0','1',true,false).not().empty()
