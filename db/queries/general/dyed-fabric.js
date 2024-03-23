@@ -228,6 +228,7 @@ exports.selectStoredDyedFabricsByDyedFabricIdWe = async (whereCluseArray, isGrea
     `color_name_code`,
     `color_code`,
     `requisition_details_id`,
+    `price`,
     `quantity`,
     `we_id`
   ]
@@ -250,6 +251,7 @@ exports.selectStoredDyedFabricsByDyedFabricIdWe = async (whereCluseArray, isGrea
       knex.raw(`CONCAT(${colorTableName}.name, ' (كود: ', ${weAddRequisitionDetailsTableName}.color_code, ')' ) as "color_name_code"`),
       `${weAddRequisitionDetailsTableName}.color_code`,
       `${weAddRequisitionDetailsTableName}.id as requisition_details_id`,
+      `${weAddRequisitionDetailsTableName}.price`,
       `${weAddRequisitionDetailsTableName}.quantity`,
       `${weTableName}.id as we_id`,
       `${weTableName}.current_quantity`,
@@ -305,6 +307,7 @@ exports.selectStoredDyedFabricsByDyedFabricIdWe = async (whereCluseArray, isGrea
           knex.raw(`CONCAT(${colorTableName}.name, ' (كود: ', ${weReconciliationRequisitionDetailsTableName}.color_code, ')' ) as "color_name_code"`),
           `${weReconciliationRequisitionDetailsTableName}.color_code`,
           `${weReconciliationRequisitionDetailsTableName}.id as requisition_details_id`,
+          `${weReconciliationRequisitionDetailsTableName}.price`,
           `${weReconciliationRequisitionDetailsTableName}.quantity`,
           `${weTableName}.id as we_id`,
           `${weTableName}.current_quantity`
@@ -365,6 +368,7 @@ exports.selectStoredDyedFabricsByDyedFabricIdWe = async (whereCluseArray, isGrea
           knex.raw(`CONCAT(${colorTableName}.name, ' (كود: ', ${anointedColorsPricesTableName}.code, ')' ) as "color_name_code"`),
           `${anointedColorsPricesTableName}.code as color_code`,
           `${wdDyeingRequisitionDetailsTableName}.id as requisition_details_id`,
+          `${wdDyeingRequisitionDetailsTableName}.cost_price as price`,
           `${wdDyeingRequisitionDetailsTableName}.dyeing_quantity as quantity`,
           `${weTableName}.id as we_id`,
           `${weTableName}.current_quantity`

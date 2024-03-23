@@ -19,13 +19,24 @@ exports.create = async (orderRequisitions) => {
   }
 };
 
-exports.selectByDyeingIdForYarnOrder = async (dyeingOrderId) => {
+exports.selectByDyeingIdForYarnOrder = async (wedyedFabricOrderId) => {
   let whereCluse = {};
-  whereCluse[`${ordersRequisitionsTableName}.wd_form_dyeing_order_requisition_id`] = dyeingOrderId;
+  whereCluse[`${ordersRequisitionsTableName}.we_dyed_fabric_order_requisition_id`] = wedyedFabricOrderId;
   whereCluse[`${ordersRequisitionsTableName}.is_deleted`] = 0;
   whereCluse[`${ordersRequisitionsTableName}.is_active`] = 1;
 
     const results = await ordersRequisitionsQueries.selectByDyeingIdForYarnOrder(whereCluse);
+    return results;
+
+};
+
+exports.selectByDyeingIdForFabricOrderWc = async (wedyedFabricOrderId) => {
+  let whereCluse = {};
+  whereCluse[`${ordersRequisitionsTableName}.we_dyed_fabric_order_requisition_id`] = wedyedFabricOrderId;
+  whereCluse[`${ordersRequisitionsTableName}.is_deleted`] = 0;
+  whereCluse[`${ordersRequisitionsTableName}.is_active`] = 1;
+
+    const results = await ordersRequisitionsQueries.selectByDyeingIdForFabricOrderWc(whereCluse);
     return results;
 
 };

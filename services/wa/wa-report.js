@@ -1,8 +1,10 @@
 const moment = require("moment")
 
 // Service
-const waService = require("../../services/wa/wa");
 const waReportQueries = require("../../db/queries/wa/wa-report");
+const bussinessmanService = require("../../services/general/bussinessman");
+const fabricYarnsService = require("../../services/general/fabric-yarns");
+const weReportService = require("../../services/we/we-report");
 
 // Queries
 const yarnQueries = require("../../db/queries/general/yarn");
@@ -16,8 +18,6 @@ const wbTransportWaWbDetailsQueries = require("../../db/queries/wb/wb-transport-
 const wbTransportRequisitionWbWaDetailsQueries = require("../../db/queries/wb/wb-transport-requisition-wb-wa-details");
 const waExecuteOrderRequisitionDetailsQueries = require("../../db/queries/wa/wa-execute-order-requisition-details");
 const waTransitionBetweenWHRequisitionDetailsQueries = require("../../db/queries/wa/wa-transition-between-wh-requisition-details");
-const bussinessmanService = require("../../services/general/bussinessman");
-const fabricYarnsService = require("../../services/general/fabric-yarns");
 
 // Util
 const constants = require("../../util/constants");
@@ -556,9 +556,10 @@ exports.inquireYarnAvilabilityTotalReportWa = async (yarnId) => {
     return waYarns
 };
 
-exports.inquireYarnsOfFabricForOrderWa = async (fabric) => {
+exports.inquireYarnsOfFabricForOrderWa = async (fabric, addedData) => {
     let data = []
-    let calcQuantity = fabric.quantity
+    let calcQuantity = fabric.current_quantity
+    let isWaYarnsAdded = false
 
     const myFirstPromise = new Promise(async (resolve, reject) => {
         // select yarns of fabric
@@ -577,13 +578,43 @@ exports.inquireYarnsOfFabricForOrderWa = async (fabric) => {
                         let neededYarnQuantity = 0
                         neededYarnQuantity = parseFloat((((calcQuantityYarn / (1 - (constants.notZero(fabric.wasteRatio) / 100))) * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
                         calcQuantityYarn = 0
-                        if (parseFloat(waYarn.current_quantity) >= neededYarnQuantity) {
+
+                        // check if yarn added before for not calc same current quantity in all records
+                        isWaYarnsAdded = await weReportService.checkFoundObjectInArray1Attr(
+                            addedData, waYarn,
+                            'id')
+
+                        let getElementOf = (!isWaYarnsAdded) ?
+                            waYarn
+                            :
+                            addedData[await weReportService.getIndexOfElement1Attr(addedData, waYarn, 'id')]
+
+                        let currentQuantity = (!isWaYarnsAdded) ?
+                            waYarn.current_quantity
+                            :
+                            getElementOf.current_quantity
+
+                        getElementOf.current_quantity = (!isWaYarnsAdded) ?
+                            (waYarn.current_quantity >= neededYarnQuantity) ?
+                                waYarn.current_quantity - neededYarnQuantity
+                                :
+                                0
+                            :
+                            (getElementOf.current_quantity >= neededYarnQuantity) ?
+                                getElementOf.current_quantity - neededYarnQuantity :
+                                0
+
+                        if (parseFloat(currentQuantity) >= neededYarnQuantity) {
                             waYarn.existed_quantity = neededYarnQuantity
                             waYarn.needed_quantity = 0
                             neededYarnQuantity = 0
                         } else {
-                            waYarn.existed_quantity = waYarn.current_quantity
-                            neededYarnQuantity = parseFloat((neededYarnQuantity - waYarn.current_quantity).toFixed(3))
+                            waYarn.existed_quantity = currentQuantity
+                            
+                            neededYarnQuantity = (currentQuantity > 0) ?
+                                    parseFloat((neededYarnQuantity - currentQuantity).toFixed(3))
+                                    :
+                                    parseFloat((neededYarnQuantity).toFixed(3))
                             // data.push(waYarn)
                         }
 

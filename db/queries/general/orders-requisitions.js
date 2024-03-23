@@ -3,7 +3,7 @@ const sqlFun = require("../../config/sql-fun");
 const knex = require("../../config/connection").getConnection();
 
 // Util
-const { ordersRequisitionsTableName, waYarnOrderRequisitionTableName, waYarnOrderRequisitionDetailsTableName } = require("../../../util/database-tables-name");
+const { ordersRequisitionsTableName, waYarnOrderRequisitionTableName, waYarnOrderRequisitionDetailsTableName, wcFabricOrderRequisitionDetailsTableName, wcFabricOrderRequisitionTableName } = require("../../../util/database-tables-name");
 
 exports.insertForDyeingOrder = async (orderRequisitions) => {
     let queryResults = false;
@@ -109,6 +109,35 @@ exports.selectByDyeingIdForYarnOrder = async (whereCluse) => {
       `${waYarnOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_id`, 
       `${waYarnOrderRequisitionTableName}.id`)
       .groupBy(`${waYarnOrderRequisitionTableName}.id`)
+      .where(whereCluse)
+      .then((data) => {
+        queryResults = data;
+      })
+      .catch((error) => console.error(error));
+    return queryResults;
+  };
+  
+
+exports.selectByDyeingIdForFabricOrderWc = async (whereCluse) => {
+    let queryResults = [];
+
+  
+    await knex.from(ordersRequisitionsTableName)
+      .select(
+        [
+          `${ordersRequisitionsTableName}.wc_fabric_order_requisition_id`,
+          `${wcFabricOrderRequisitionTableName}.name as order_name`,
+          `${wcFabricOrderRequisitionTableName}.number as order_number`,
+        ],
+      )
+      .max(`${wcFabricOrderRequisitionDetailsTableName}.is_order as is_order`)
+      .innerJoin(`${wcFabricOrderRequisitionTableName}`, 
+      `${wcFabricOrderRequisitionTableName}.id`, 
+      `${ordersRequisitionsTableName}.wc_fabric_order_requisition_id`)
+      .innerJoin(`${wcFabricOrderRequisitionDetailsTableName}`, 
+      `${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, 
+      `${wcFabricOrderRequisitionTableName}.id`)
+      .groupBy(`${wcFabricOrderRequisitionTableName}.id`)
       .where(whereCluse)
       .then((data) => {
         queryResults = data;

@@ -311,6 +311,29 @@ exports.selectPriceByFabricId = async (dyedFabricId) => {
   return queryResults;
 };
 
+exports.selectPriceWe = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.from(weReturnRequisitionDetailsTableName)
+    .select(
+      [
+        `${weReturnRequisitionDetailsTableName}.price`,
+        `${weReturnRequisitionDetailsTableName}.quantity`,
+        `${weReturnRequisitionTableName}.date`,
+        knex.raw('? as type_of_requisition', 'اذن مرتجع'),
+        knex.raw('? as input_output', '0')
+      ],
+    )
+    .innerJoin(`${weReturnRequisitionTableName}`, `${weReturnRequisitionTableName}.id`, `${weReturnRequisitionDetailsTableName}.we_return_requisition_id`)
+    .where(whereCluse)
+    .andWhere(`${weReturnRequisitionDetailsTableName}.quantity`, ">", 0)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
 exports.selectOne = async (whereCluse) => {
   let queryResults = false;
 

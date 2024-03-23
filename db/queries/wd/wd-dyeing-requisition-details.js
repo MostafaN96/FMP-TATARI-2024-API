@@ -12,7 +12,8 @@ const { wdDyeingRequisitionTableName, wdDyeingRequisitionDetailsTableName, color
     consigmentManufacturingTableName,
     wdFormDyeingRequisitionDetailsDyeingServicesTableName,
     wdDyeingOrderDetailsWdFormDyeingDetailsTableName,
-    wdDyeingOrderRequisitionDetailsTableName} = require("../../../util/database-tables-name");
+    wdDyeingOrderRequisitionDetailsTableName,
+    anointedServicesPricesTableName} = require("../../../util/database-tables-name");
 
 // Services
 const wdService = require("../../../services/wd/wd");
@@ -476,6 +477,35 @@ exports.selectPriceByFabricIdByDyeingId = async (fabricId, dyeingId) => {
     )
     .innerJoin(`${wdDyeingRequisitionTableName}`, `${wdDyeingRequisitionTableName}.id`, `${wdDyeingRequisitionDetailsTableName}.wd_dyeing_requisition_id`)
     .innerJoin(`${wdFormDyeingRequisitionDetailsTableName}`, `${wdFormDyeingRequisitionDetailsTableName}.id`, `${wdDyeingRequisitionDetailsTableName}.wd_form_dyeing_requisition_details_id`)    
+    .where(whereCluse)
+    .andWhere(`${wdDyeingRequisitionDetailsTableName}.quantity`, ">", 0)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.selectPriceWe = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.from(wdDyeingRequisitionDetailsTableName)
+    .select(
+      [
+        `${wdDyeingRequisitionDetailsTableName}.price`,
+        `${wdDyeingRequisitionDetailsTableName}.quantity`,
+        `${wdDyeingRequisitionTableName}.date`,
+        knex.raw('? as type_of_requisition', 'اذن صباغة'),
+        knex.raw('? as input_output', '0')
+      ],
+    )
+    .innerJoin(`${wdDyeingRequisitionTableName}`, `${wdDyeingRequisitionTableName}.id`, `${wdDyeingRequisitionDetailsTableName}.wd_dyeing_requisition_id`)
+    .innerJoin(`${wdFormDyeingRequisitionDetailsTableName}`, 
+    `${wdFormDyeingRequisitionDetailsTableName}.id`, 
+    `${wdDyeingRequisitionDetailsTableName}.wd_form_dyeing_requisition_details_id`)
+    .innerJoin(`${anointedColorsPricesTableName}`, 
+    `${anointedColorsPricesTableName}.id`, 
+    `${wdFormDyeingRequisitionDetailsTableName}.dyeing_colors_prices_id`)
     .where(whereCluse)
     .andWhere(`${wdDyeingRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {

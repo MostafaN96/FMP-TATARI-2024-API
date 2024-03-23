@@ -5,7 +5,7 @@ const wcReportService = require("./wc-report");
 // Queries
 const wcFabricOrderRequisitionQueries = require("../../db/queries/wc/wc-fabric-order-requisition");
 const wcFabricOrderRequisitionDetailsQueries = require("../../db/queries/wc/wc-fabric-order-requisition-details");
-const wdDyeingOrderRequisitionDetailsQueries = require("../../db/queries/wd/wd-dyeing-order-requisition-details");
+const weDyedFabricOrderRequisitionDetailsQueries = require("../../db/queries/we/we-dyed-fabric-order-requisition-details");
 const generalQueries = require("../../db/queries/general/general");
 
 // Util
@@ -14,7 +14,8 @@ const constants = require("../../util/constants");
 // Helper
 const trans = require("../../helpers/transform");
 const { wcFabricOrderRequisitionTableName, wcFabricOrderRequisitionDetailsTableName, 
-    wdDyeingOrderRequisitionDetailsTableName } = require("../../util/database-tables-name");
+    wdDyeingOrderRequisitionDetailsTableName, 
+    weDyedFabricOrderRequisitionDetailsTableName} = require("../../util/database-tables-name");
 
 exports.create = async (wcFabricOrderRequisition) => {
     wcFabricOrderRequisition.id = trans.transform();
@@ -136,12 +137,12 @@ exports.inquireFabricsForOrderWc = async (dyeingOrderRequisitionId) => {
     let data = []
 
     let whereCluse = {};
-    whereCluse[`${wdDyeingOrderRequisitionDetailsTableName}.is_deleted`] = 0;
-    whereCluse[`${wdDyeingOrderRequisitionDetailsTableName}.is_active`] = 1;
-    whereCluse[`${wdDyeingOrderRequisitionDetailsTableName}.is_order`] = 1;
+    whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+    whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+    whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_order`] = 1;
 
-    let dyeingOrderRequisitions = await wdDyeingOrderRequisitionDetailsQueries.selectByRequisitionIds(whereCluse, [dyeingOrderRequisitionId])
-    console.log("dyeingOrderRequisitions ::: ", dyeingOrderRequisitions);
+    let dyeingOrderRequisitions = await weDyedFabricOrderRequisitionDetailsQueries.selectByRequisitionIds(whereCluse, [dyeingOrderRequisitionId])
+    // console.log("dyeingOrderRequisitions ::: ", dyeingOrderRequisitions);
 
     data = await wcReportService.fabricsForOrderWc(dyeingOrderRequisitions)
 
@@ -173,7 +174,7 @@ exports.filterOrderFabricsArray = async (data) => {
         // console.log(data[i]);
         if(uniqueObject[objTitle]) {
             // console.log("uniqueObject[objTitle] :::::: ", uniqueObject[objTitle]);
-            console.log("data[i]['id'] :::::: ", data[i]['needed_quantity']);
+            // console.log("data[i]['id'] :::::: ", data[i]['needed_quantity']);
             data[i].needed_quantity = parseFloat((data[i]['needed_quantity'] + uniqueObject[objTitle].needed_quantity).toFixed(3))
         }
         uniqueObject[objTitle] = data[i];

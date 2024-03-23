@@ -2,7 +2,7 @@ const joi = require("joi");
 const validations = require("../../helpers/validations");
 exports.isValid = (waPurchaseOrder) => {
     const waPurchaseOrderSchema = joi.object({
-        orderId: validations.joiText(15, 30),
+        orderId: validations.joiNotRequiredText(0, 100000),
         orderName: validations.joiNotRequiredText(0, 100000),
         date: validations.joiText(5, 50),
         name: validations.joiText(1, 90),

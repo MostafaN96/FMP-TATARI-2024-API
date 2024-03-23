@@ -1328,9 +1328,7 @@ exports.selectStoredWeFabrics = async (whereCluseArray, isGreaterThanZero = 1) =
           `${fabricTableName}.name as dyed_fabric_name`,
           `${fabricTableName}.dyeing_code`,
           `${fabricTableName}.code as dyed_fabric_code`,
-          `${weTransitionBetweenWHRequisitionDetailsTableName}.id as requisition_details_id`,
           `${weTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
-          `${weTransitionBetweenWHRequisitionTableName}.to_warehouse_id as warehouse_id`,
           knex.raw('? as dyeing_id', ''),
           `${weTableName}.current_quantity`
         ])
@@ -2420,6 +2418,9 @@ exports. selectStoredWeFabricsForInquireFabricAvilability = async (whereCluseArr
             .innerJoin(`${warehouseTableName}`,
             `${warehouseTableName}.id`,
             `${weTransitionBetweenWHRequisitionTableName}.to_warehouse_id`)
+            .innerJoin(`${colorTableName}`,
+        `${colorTableName}.id`,
+        `${weTransitionBetweenWHRequisitionDetailsTableName}.color_id`)
             .where(whereCluseArray[4])
             .andWhere(
               (qb) => {
@@ -2610,6 +2611,9 @@ exports. selectStoredWeFabricsForInquireFabricAvilabilityTotal = async (whereClu
             .innerJoin(`${warehouseTableName}`,
             `${warehouseTableName}.id`,
             `${weTransitionBetweenWHRequisitionTableName}.to_warehouse_id`)
+            .innerJoin(`${colorTableName}`,
+            `${colorTableName}.id`,
+            `${weTransitionBetweenWHRequisitionDetailsTableName}.color_id`)
             .where(whereCluseArray[4])
           .andWhere(
             (qb) => {

@@ -13,7 +13,7 @@ const weSellRequisitionDirectDetailsService = require("./we-sell-requisition-dir
 
 // Helper
 const trans = require("../../helpers/transform");
-const { weTableName, weReconciliationRequisitionDetailsTableName, weAddRequisitionDetailsTableName, wdDyeingRequisitionDetailsTableName, anointedColorsPricesTableName, weAddRequisitionTableName, weSellRequisitionTableName, wdFormDyeingRequisitionDetailsTableName, weTransitionBetweenWHRequisitionDetailsTableName } = require("../../util/database-tables-name");
+const { weTableName, weReconciliationRequisitionDetailsTableName, weAddRequisitionDetailsTableName, wdDyeingRequisitionDetailsTableName, anointedColorsPricesTableName, weAddRequisitionTableName, weSellRequisitionTableName, wdFormDyeingRequisitionDetailsTableName, weTransitionBetweenWHRequisitionDetailsTableName, weExecuteOrderRequisitionDetailsTableName } = require("../../util/database-tables-name");
 
 exports.create = async (we, items) => {
     we.weId = trans.transform();
@@ -74,8 +74,22 @@ exports.selectStoreWe = async () => {
     dyeingWhereCluse[`${weTableName}.is_active`] = 1;
     dyeingWhereCluse[`${weTableName}.type`] = constantsPayloads.dyeingType;
 
+    let transitionBetweenWhWhereCluse = {};
+    transitionBetweenWhWhereCluse[`${weTableName}.is_deleted`] = 0;
+    transitionBetweenWhWhereCluse[`${weTableName}.is_active`] = 1;
+    transitionBetweenWhWhereCluse[`${weTableName}.type`] = constantsPayloads.transportBetweenType;
+
+    let executeOrderWhereCluse = {};
+    executeOrderWhereCluse[`${weTableName}.is_deleted`] = 0;
+    executeOrderWhereCluse[`${weTableName}.is_active`] = 1;
+    executeOrderWhereCluse[`${weTableName}.type`] = constantsPayloads.executeOrderType;
+
     let andWhereCluse = {whereTableName: `current_quantity`, operator: ">", value: "0"}
-    let whereCluseArray = [whereCluse, reconciliationWhereCluse, andWhereCluse, dyeingWhereCluse]
+    let whereCluseArray = [
+        whereCluse, reconciliationWhereCluse, 
+        andWhereCluse, dyeingWhereCluse, 
+        transitionBetweenWhWhereCluse, executeOrderWhereCluse
+    ]
     let orderByCluse = {attributeName: `date`, value: "desc"}
 
     const results = await weQueries.selectStoreWe(whereCluseArray, orderByCluse);
@@ -162,10 +176,21 @@ exports.selectStoreForDirectSellWe = async (requisitionId) => {
         transitionBetweenWhWhereCluse[`${weTableName}.is_deleted`] = 0;
         transitionBetweenWhWhereCluse[`${weTableName}.is_active`] = 1;
         transitionBetweenWhWhereCluse[`${weTableName}.type`] = constantsPayloads.transportBetweenType;
+    
+        // let executeOrderWhereCluse = {};
+        // executeOrderWhereCluse[`${weExecuteOrderRequisitionDetailsTableName}.dyed_fabric_id`] = record.dyed_fabric_id;
+        // executeOrderWhereCluse[`${weExecuteOrderRequisitionDetailsTableName}.work_order_number`] = record.work_order_number;
+        // executeOrderWhereCluse[`${weExecuteOrderRequisitionDetailsTableName}.color_id`] = record.color_id;
+        // executeOrderWhereCluse[`${weTableName}.is_deleted`] = 0;
+        // executeOrderWhereCluse[`${weTableName}.is_active`] = 1;
+        // executeOrderWhereCluse[`${weTableName}.type`] = constantsPayloads.executeOrderType;
 
 
         let andWhereCluse = {whereTableName: `current_quantity`, operator: ">", value: "0"}
-        let whereCluseArray = [whereCluse, reconciliationWhereCluse, andWhereCluse, dyeingWhereCluse, transitionBetweenWhWhereCluse]
+        let whereCluseArray = [whereCluse, reconciliationWhereCluse, andWhereCluse, 
+            dyeingWhereCluse, transitionBetweenWhWhereCluse
+            // executeOrderWhereCluse
+        ]
         let orderByCluse = {attributeName: `date`, value: "desc"}
         let storeData = await weQueries.selectStoreWeForSellDirect(whereCluseArray, orderByCluse);
         if(storeData[0] != null) {

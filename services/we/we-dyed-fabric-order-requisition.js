@@ -51,6 +51,7 @@ exports.selectOpenedOrders = async () => {
 
             element.requestionDetails = await weDyedFabricOrderRequisitionDetailsService.selectByRequisitionIdOpenedOrder(element.id);
             element.yarnOrders = await ordersRequisitionsService.selectByDyeingIdForYarnOrder(element.id);
+            element.fabricOrders = await ordersRequisitionsService.selectByDyeingIdForFabricOrderWc(element.id);
         }
     }
     return results;
@@ -68,6 +69,8 @@ exports.selectClosedOrders = async () => {
             const element = results[i];
 
             element.requestionDetails = await weDyedFabricOrderRequisitionDetailsService.selectByRequisitionIdClosedOrder(element.id);
+            element.yarnOrders = await ordersRequisitionsService.selectByDyeingIdForYarnOrder(element.id);
+            element.fabricOrders = await ordersRequisitionsService.selectByDyeingIdForFabricOrderWc(element.id);
         }
     }
     return results;

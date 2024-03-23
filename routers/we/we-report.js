@@ -34,7 +34,7 @@ router.get(
 
 // Get Queries
 router.get(
-  "/select-price/:fabricId",
+  "/select-price/:fabricId/:colorId/:colorCode",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   weReportController.selectPriceWe

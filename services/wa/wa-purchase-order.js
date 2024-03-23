@@ -5,7 +5,7 @@ const waReportService = require("./wa-report");
 // Queries
 const waPurchaseOrderQueries = require("../../db/queries/wa/wa-purchase-order");
 const waPurchaseOrderDetailsQueries = require("../../db/queries/wa/wa-purchase-order-details");
-const wdDyeingOrderRequisitionDetailsQueries = require("../../db/queries/wd/wd-dyeing-order-requisition-details");
+const weDyedFabricOrderRequisitionDetailsQueries = require("../../db/queries/we/we-dyed-fabric-order-requisition-details");
 const generalQueries = require("../../db/queries/general/general");
 
 // Util
@@ -13,7 +13,7 @@ const constants = require("../../util/constants");
 
 // Helper
 const trans = require("../../helpers/transform");
-const { waPurchaseOrderTableName, waPurchaseOrderDetailsTableName, wdDyeingOrderRequisitionDetailsTableName } = require("../../util/database-tables-name");
+const { waPurchaseOrderTableName, waPurchaseOrderDetailsTableName, wdDyeingOrderRequisitionDetailsTableName, weDyedFabricOrderRequisitionDetailsTableName } = require("../../util/database-tables-name");
 
 exports.create = async (waPurchaseOrder) => {
     waPurchaseOrder.id = trans.transform();
@@ -132,20 +132,20 @@ exports.selectClosedOrders = async () => {
    
 }
   
-  exports.inquireYarnsOfFabricForOrderWa = async (dyeingOrderRequisitionId) => {
+  exports.inquireYarnsOfFabricForOrderWa = async (weDyedFabricOrderRequisitionId) => {
     let data = []
 
     let whereCluse = {};
-        whereCluse[`${wdDyeingOrderRequisitionDetailsTableName}.is_deleted`] = 0;
-        whereCluse[`${wdDyeingOrderRequisitionDetailsTableName}.is_active`] = 1;
-        whereCluse[`${wdDyeingOrderRequisitionDetailsTableName}.is_order`] = 1;
+        whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+        whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+        whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_order`] = 1;
 
-        let dyeingOrderRequisitions = await wdDyeingOrderRequisitionDetailsQueries.selectByRequisitionIds(whereCluse, [dyeingOrderRequisitionId])
+        let dyeingOrderRequisitions = await weDyedFabricOrderRequisitionDetailsQueries.selectByRequisitionIds(whereCluse, [weDyedFabricOrderRequisitionId])
 
     for (let i = 0; i < dyeingOrderRequisitions.length; i++) {
         const element = dyeingOrderRequisitions[i];
         
-        let result = await waReportService.inquireYarnsOfFabricForOrderWa(element)
+        let result = await waReportService.inquireYarnsOfFabricForOrderWa(element, data)
 
         if(data.length > 0) {
             data = [...result, ...data]
@@ -181,7 +181,7 @@ exports.filterOrderYarnsArray = async (data) => {
         // console.log(data[i]);
         if(uniqueObject[objTitle]) {
             // console.log("uniqueObject[objTitle] :::::: ", uniqueObject[objTitle]);
-            console.log("data[i]['id'] :::::: ", data[i]['needed_quantity']);
+            // console.log("data[i]['id'] :::::: ", data[i]['needed_quantity']);
             data[i].needed_quantity = parseFloat((data[i]['needed_quantity'] + uniqueObject[objTitle].needed_quantity).toFixed(3))
         }
         uniqueObject[objTitle] = data[i];

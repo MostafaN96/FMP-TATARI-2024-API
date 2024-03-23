@@ -45,9 +45,10 @@ exports.selectInventoryDetailsByWarehouseByFabric = async (request, response) =>
 exports.selectPriceWe = async (request, response) => {
   // logging
   const { fabricId } = request.params;
-  const { dyeingId } = request.params;
+  const { colorId } = request.params;
+  const { colorCode } = request.params;
 
-  const results = await weReportService.selectPriceWe(fabricId, dyeingId);
+  const results = await weReportService.selectPriceWe(fabricId, colorId, colorCode);
   response.status(200).json(results);
 };
 
