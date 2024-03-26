@@ -19,6 +19,7 @@ exports.insert = async (wcReturnRequisitionDetails, items) => {
       fabric_id: items.fabricId,
       consigment_manufacturing_id: items.consigmentManufacturingId,
       price: items.price,
+      price_dollar: items.priceDollar,
       quantity: items.quantity,
       statement: items.statement,
       creator_id: wcReturnRequisitionDetails.personid,
@@ -45,6 +46,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
       [
         `${wcReturnRequisitionDetailsTableName}.id`,
         `${wcReturnRequisitionDetailsTableName}.price`,
+        `${wcReturnRequisitionDetailsTableName}.price_dollar`,
         `${wcReturnRequisitionDetailsTableName}.quantity`,
         `${wcReturnRequisitionDetailsTableName}.statement`,
         `${wcReturnRequisitionTableName}.id as requisition_id`,
@@ -85,6 +87,7 @@ exports.selectTotalByFabricId = async (fabricId) => {
     .select(
       [
         `${wcReturnRequisitionDetailsTableName}.price`,
+        `${wcReturnRequisitionDetailsTableName}.price_dollar`,
         `${wcReturnRequisitionDetailsTableName}.quantity`,
         `${wcReturnRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن مرتجع'),
@@ -113,6 +116,7 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
       [
         `${wcReturnRequisitionDetailsTableName}.id`,
         `${wcReturnRequisitionDetailsTableName}.price`,
+        `${wcReturnRequisitionDetailsTableName}.price_dollar`,
         `${wcReturnRequisitionDetailsTableName}.quantity`,
         `${wcReturnRequisitionDetailsTableName}.statement`,
         `${wcReturnRequisitionTableName}.id as requisition_id`,
@@ -158,6 +162,7 @@ exports.selectDetailsByWarehouseByFabricByConsigmentManufacturing = async (wareh
     .select(
       [
         `${wcReturnRequisitionDetailsTableName}.price`,
+        `${wcReturnRequisitionDetailsTableName}.price_dollar`,
         `${wcReturnRequisitionDetailsTableName}.quantity`,
         `${wcReturnRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن مرتجع'),
@@ -188,6 +193,7 @@ exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async
       [
         `${wcReturnRequisitionDetailsTableName}.id`,
         `${wcReturnRequisitionDetailsTableName}.price`,
+        `${wcReturnRequisitionDetailsTableName}.price_dollar`,
         `${wcReturnRequisitionDetailsTableName}.quantity`,
         `${wcReturnRequisitionDetailsTableName}.statement`,
         `${wcReturnRequisitionTableName}.id as requisition_id`,
@@ -230,6 +236,7 @@ exports.selectPriceByFabricId = async (fabricId) => {
     .select(
       [
         `${wcReturnRequisitionDetailsTableName}.price`,
+        `${wcReturnRequisitionDetailsTableName}.price_dollar`,
         `${wcReturnRequisitionDetailsTableName}.quantity`,
         `${wcReturnRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن مرتجع'),
@@ -258,6 +265,7 @@ exports.selectPriceByFabricIdByConsigmentManufacturingId = async (fabricId, cons
     .select(
       [
         `${wcReturnRequisitionDetailsTableName}.price`,
+        `${wcReturnRequisitionDetailsTableName}.price_dollar`,
         `${wcReturnRequisitionDetailsTableName}.quantity`,
         `${wcReturnRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن مرتجع'),
@@ -324,6 +332,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
       [
         `${wcReturnRequisitionDetailsTableName}.id`,
         `${wcReturnRequisitionDetailsTableName}.price`,
+        `${wcReturnRequisitionDetailsTableName}.price_dollar`,
         `${wcReturnRequisitionDetailsTableName}.quantity`,
         `${wcReturnRequisitionDetailsTableName}.statement`,
         `${wcReturnRequisitionTableName}.id as requisition_id`,

@@ -17,6 +17,7 @@ exports.insert = async (wcReconciliationRequisitionDetails, items) => {
       fabric_id: items.fabricId,
       consigment_manufacturing_id: items.consigmentManufacturingId,
       price: items.price,
+      price_dollar: items.priceDollar,
       quantity: items.quantity,
       statement: items.statement,
       input_output: items.inputOutput,
@@ -44,6 +45,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
       [
         `${wcReconciliationRequisitionDetailsTableName}.id`,
         `${wcReconciliationRequisitionDetailsTableName}.price`,
+        `${wcReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wcReconciliationRequisitionDetailsTableName}.quantity`,
         `${wcReconciliationRequisitionDetailsTableName}.statement`,
         `${wcReconciliationRequisitionDetailsTableName}.input_output`,
@@ -84,6 +86,7 @@ exports.selectTotalByFabricId = async (fabricId) => {
     .select(
       [
         `${wcReconciliationRequisitionDetailsTableName}.price`,
+        `${wcReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wcReconciliationRequisitionDetailsTableName}.quantity`,
         `${wcReconciliationRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن تسوية'),
@@ -112,6 +115,7 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
       [
         `${wcReconciliationRequisitionDetailsTableName}.id`,
         `${wcReconciliationRequisitionDetailsTableName}.price`,
+        `${wcReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wcReconciliationRequisitionDetailsTableName}.quantity`,
         `${wcReconciliationRequisitionDetailsTableName}.statement`,
         `${wcReconciliationRequisitionTableName}.id as requisition_id`,
@@ -156,6 +160,7 @@ exports.selectDetailsByWarehouseByFabricByConsigmentManufacturing = async (wareh
     .select(
       [
         `${wcReconciliationRequisitionDetailsTableName}.price`,
+        `${wcReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wcReconciliationRequisitionDetailsTableName}.quantity`,
         `${wcReconciliationRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن تسوية'),
@@ -186,6 +191,7 @@ exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async
       [
         `${wcReconciliationRequisitionDetailsTableName}.id`,
         `${wcReconciliationRequisitionDetailsTableName}.price`,
+        `${wcReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wcReconciliationRequisitionDetailsTableName}.quantity`,
         `${wcReconciliationRequisitionDetailsTableName}.statement`,
         `${wcReconciliationRequisitionTableName}.id as requisition_id`,
@@ -227,6 +233,7 @@ exports.selectPriceByFabricId = async (fabricId) => {
     .select(
       [
         `${wcReconciliationRequisitionDetailsTableName}.price`,
+        `${wcReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wcReconciliationRequisitionDetailsTableName}.quantity`,
         `${wcReconciliationRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن تسوية'),
@@ -255,6 +262,7 @@ exports.selectPriceByFabricIdByConsigmentManufacturingId = async (fabricId, cons
     .select(
       [
         `${wcReconciliationRequisitionDetailsTableName}.price`,
+        `${wcReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wcReconciliationRequisitionDetailsTableName}.quantity`,
         `${wcReconciliationRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن تسوية'),
@@ -357,6 +365,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
       [
         `${wcReconciliationRequisitionDetailsTableName}.id`,
         `${wcReconciliationRequisitionDetailsTableName}.price`,
+        `${wcReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wcReconciliationRequisitionDetailsTableName}.quantity`,
         `${wcReconciliationRequisitionDetailsTableName}.statement`,
         `${wcReconciliationRequisitionTableName}.id as requisition_id`,

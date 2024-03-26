@@ -13,6 +13,7 @@ exports.isValid = (wdTransportWcWdRequisition) => {
             consigmentManufacturingId: validations.joiText(15, 30),
             consigmentDyeingNumber:validations.joiText(1, 60),
             price: validations.joiNumber(1, 60),
+            priceDollar: validations.joiNotRequiredText(0, 50),
             quantity: validations.joiNumber(1, 60),
             document: validations.joiNotRequiredNumber(0, 50),
             statement: validations.joiNotRequiredText(0, 10000),

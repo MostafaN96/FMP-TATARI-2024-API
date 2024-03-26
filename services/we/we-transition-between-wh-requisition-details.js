@@ -133,6 +133,7 @@ exports.update = async (weTransitionBetweenWHRequisitionDetails) => {
             callArray.push(
                 weTransitionBetweenWHRequisitionDetailsQueries.update({
                     price: weTransitionBetweenWHRequisitionDetails.price,
+                    price_dollar: weTransitionBetweenWHRequisitionDetails.priceDollar,
                     color_code: weTransitionBetweenWHRequisitionDetails.colorCode,
                     fabric_piece: weTransitionBetweenWHRequisitionDetails.numberFabricPieces,
                     document: weTransitionBetweenWHRequisitionDetails.document,

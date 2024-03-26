@@ -92,6 +92,7 @@ exports.update = async (weAddRequisitionDetails) => {
                     dyeing_code: weAddRequisitionDetails.dyeingCode,
                     fabric_piece: weAddRequisitionDetails.numberFabricPieces,
                     price: weAddRequisitionDetails.price,
+                    price_dollar: weAddRequisitionDetails.priceDollar,
                     work_order_number: weAddRequisitionDetails.workOrderNumber,
                     document: weAddRequisitionDetails.document,
                     statement: weAddRequisitionDetails.statement

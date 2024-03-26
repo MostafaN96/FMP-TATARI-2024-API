@@ -153,14 +153,17 @@ exports.createInputDetails = async (wbManufacturingInput, isOrder) => {
 
     // calc fabric price
     let fabricPrice = 0
+    let fabricPriceDollar = 0
     const selectInputManufacturingResult = await this.selectByRequisitionId(wbManufacturingInput.id)
     if (selectInputManufacturingResult[0] != null) {
 
         const selectOutputManufacturingOneResult = await wbManufacturingOutputQueries.selectByRequisitionId(wbManufacturingInput.id)
         if (selectOutputManufacturingOneResult[0] != null) {
             fabricPrice = await wbManufacturingOutputService.calcAvgFabricPrice(selectInputManufacturingResult, selectOutputManufacturingOneResult)
+            fabricPriceDollar = await wbManufacturingOutputService.calcAvgFabricPriceDollar(selectInputManufacturingResult, selectOutputManufacturingOneResult)
             await wbManufacturingOutputQueries.update({
-                price: fabricPrice
+                price: fabricPrice,
+                price_dollar: fabricPriceDollar
             }, {
                 id: selectOutputManufacturingOneResult[0].id
             })
@@ -263,6 +266,7 @@ exports.update = async (wbManufacturingInput) => {
         callArray.push(
             wbManufacturingInputQueries.update({
                 price: wbManufacturingInput.price,
+                price_dollar: wbManufacturingInput.priceDollar,
                 statement: wbManufacturingInput.statement
             },
                 {
@@ -453,14 +457,17 @@ exports.update = async (wbManufacturingInput) => {
 
             // calc fabric price
             let fabricPrice = 0
+            let fabricPriceDollar = 0
             const selectInputManufacturingResult = await this.selectByRequisitionId(isFound[0].wb_manufacturing_requisition_id)
             if (selectInputManufacturingResult[0] != null) {
 
                 const selectOutputManufacturingOneResult = await wbManufacturingOutputQueries.selectByRequisitionId(isFound[0].wb_manufacturing_requisition_id)
                 if (selectOutputManufacturingOneResult[0] != null) {
                     fabricPrice = await wbManufacturingOutputService.calcAvgFabricPrice(selectInputManufacturingResult, selectOutputManufacturingOneResult)
+                    fabricPriceDollar = await wbManufacturingOutputService.calcAvgFabricPriceDollar(selectInputManufacturingResult, selectOutputManufacturingOneResult)
                     await wbManufacturingOutputQueries.update({
-                        price: fabricPrice
+                        price: fabricPrice,
+                        price_dollar: fabricPriceDollar
                     }, {
                         id: selectOutputManufacturingOneResult[0].id
                     })

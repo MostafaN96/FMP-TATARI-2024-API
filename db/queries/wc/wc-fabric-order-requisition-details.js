@@ -49,7 +49,17 @@ exports.selectByRequisitionId = async (whereCluse) => {
     `${wcFabricOrderRequisitionDetailsTableName}.fabric_width`,
     `${wcFabricOrderRequisitionDetailsTableName}.fabric_quantity_m2`,
     `${wcFabricOrderRequisitionDetailsTableName}.initial_quantity  as quantity`,
-    `${wcFabricOrderRequisitionDetailsTableName}.current_quantity`,
+    // `${wcFabricOrderRequisitionDetailsTableName}.current_quantity`,
+    knex.raw(
+      `CASE WHEN ${wcFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
+      THEN ${0}
+      ELSE ${wcFabricOrderRequisitionDetailsTableName}.current_quantity
+      END as current_quantity`),
+    knex.raw(
+      `CASE WHEN ${wcFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
+      THEN coalesce( ${wcFabricOrderRequisitionDetailsTableName}.current_quantity * -1 )
+      ELSE ${0}
+      END as over_current_quantity`),
     `${fabricTableName}.id as fabric_id`,
     `${fabricTableName}.name as fabric_name`,
     `${fabricTableName}.code as fabric_code`,

@@ -12,6 +12,7 @@ exports.isValid = (waReconciliationRequisition) => {
             yarnLotId: validations.joiText(15, 30),
             consigmentYarnId: validations.joiText(15, 30),
             price: validations.joiNotRequiredNumber(0, 50),
+            priceDollar: validations.joiNotRequiredText(0, 50),
             quantity: validations.joiNumber(1, 60),
             statement: validations.joiNotRequiredText(0, 10000),
             inputOutput: validations.joiNumberStartByZero(1, 60),

@@ -25,6 +25,7 @@ exports.insert = async (wdFormDyeingRequisitionDetails, items) => {
       dyed_fabric_id: items.dyedFabricId,
       dyeing_colors_prices_id: items.dyeingColorsPricesId,
       price: items.price,
+      price_dollar: items.priceDollar,
       quantity: items.quantity,
       current_quantity: items.quantity,
       fabric_width: items.fabricWidth,
@@ -56,6 +57,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
         `${wdFormDyeingRequisitionDetailsTableName}.id`,
         `${wdFormDyeingRequisitionDetailsTableName}.id as wd_form_dyeing_requisition_details_id`,
         `${wdFormDyeingRequisitionDetailsTableName}.price`,
+        `${wdFormDyeingRequisitionDetailsTableName}.price_dollar`,
         `${wdFormDyeingRequisitionDetailsTableName}.quantity`,
         `${wdFormDyeingRequisitionDetailsTableName}.current_quantity`,
         `${wdFormDyeingRequisitionDetailsTableName}.fabric_width`,
@@ -131,6 +133,7 @@ exports.selectByDyeing = async (dyeingId) => {
       [
         `${wdFormDyeingRequisitionDetailsTableName}.id`,
         `${wdFormDyeingRequisitionDetailsTableName}.price`,
+        `${wdFormDyeingRequisitionDetailsTableName}.price_dollar`,
         `${wdFormDyeingRequisitionDetailsTableName}.quantity`,
         `${wdFormDyeingRequisitionDetailsTableName}.current_quantity`,
         `${wdFormDyeingRequisitionDetailsTableName}.fabric_width`,
@@ -218,6 +221,7 @@ exports.selectOrderByRequisitionId = async (requisitionId) => {
         `${wdFormDyeingRequisitionDetailsTableName}.id`,
         `${wdFormDyeingRequisitionDetailsTableName}.id as wd_form_dyeing_requisition_details_id`,
         `${wdFormDyeingRequisitionDetailsTableName}.price`,
+        `${wdFormDyeingRequisitionDetailsTableName}.price_dollar`,
         `${wdFormDyeingRequisitionDetailsTableName}.quantity`,
         `${wdFormDyeingRequisitionDetailsTableName}.current_quantity`,
         `${wdFormDyeingRequisitionDetailsTableName}.fabric_width`,
@@ -345,6 +349,7 @@ exports.selectTotalByFabricIdByDyeingId = async (fabricId, dyeingId) => {
     .select(
       [
         `${wdFormDyeingRequisitionDetailsTableName}.price`,
+        `${wdFormDyeingRequisitionDetailsTableName}.price_dollar`,
         knex.raw('? as dyeing_quantity', '0'),
         knex.raw('? as quantity', '0'),
         `${wdFormDyeingRequisitionDetailsTableName}.quantity as form_quantity`,
@@ -379,6 +384,7 @@ exports.selectTotalDetailsByFabricIdByDyeingId = async (fabricId, dyeingId) => {
       [
         `${wdFormDyeingRequisitionDetailsTableName}.id`,
         `${wdFormDyeingRequisitionDetailsTableName}.price`,
+        `${wdFormDyeingRequisitionDetailsTableName}.price_dollar`,
         `${wdFormDyeingRequisitionDetailsTableName}.document`,
         `${wdFormDyeingRequisitionDetailsTableName}.statement`,
         `${wdFormDyeingRequisitionTableName}.id as requisition_id`,
@@ -434,6 +440,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
       [
         `${wdFormDyeingRequisitionDetailsTableName}.id`,
         `${wdFormDyeingRequisitionDetailsTableName}.price`,
+        `${wdFormDyeingRequisitionDetailsTableName}.price_dollar`,
         `${wdFormDyeingRequisitionDetailsTableName}.document`,
         `${wdFormDyeingRequisitionDetailsTableName}.statement`,
         `${wdFormDyeingRequisitionTableName}.id as requisition_id`,
@@ -487,6 +494,7 @@ exports.selectDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId, fabri
     .select(
       [
         `${wdFormDyeingRequisitionDetailsTableName}.price`,
+        `${wdFormDyeingRequisitionDetailsTableName}.price_dollar`,
         knex.raw('? as quantity', '0'),
         knex.raw('? as dyeing_quantity', '0'),
         `${wdFormDyeingRequisitionDetailsTableName}.quantity as form_quantity`,
@@ -524,6 +532,7 @@ exports.selectDetailsDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId
       [
         `${wdFormDyeingRequisitionDetailsTableName}.id`,
         `${wdFormDyeingRequisitionDetailsTableName}.price`,
+        `${wdFormDyeingRequisitionDetailsTableName}.price_dollar`,
         `${wdFormDyeingRequisitionDetailsTableName}.document`,
         `${wdFormDyeingRequisitionDetailsTableName}.statement`,
         `${wdFormDyeingRequisitionTableName}.id as requisition_id`,
@@ -579,6 +588,7 @@ exports.selectTotalByFabricId = async (fabricId) => {
     .select(
       [
         `${wdFormDyeingRequisitionDetailsTableName}.price`,
+        `${wdFormDyeingRequisitionDetailsTableName}.price_dollar`,
         knex.raw('? as dyeing_quantity', '0'),
         knex.raw('? as quantity', '0'),
         `${wdFormDyeingRequisitionDetailsTableName}.quantity as form_quantity`,

@@ -78,7 +78,7 @@ exports.selectClosedOrders = async () => {
 
     let result = false
     let whereCluse = {};
-    whereCluse[`${waPurchaseOrderDetailsTableName}.wa_yarn_order_requisition_id`] = requisitionId;
+    whereCluse[`${waPurchaseOrderDetailsTableName}.wa_add_purchase_order_id`] = requisitionId;
     whereCluse[`${waPurchaseOrderDetailsTableName}.is_deleted`] = 0;
     whereCluse[`${waPurchaseOrderDetailsTableName}.is_active`] = 1;
     whereCluse[`${waPurchaseOrderDetailsTableName}.is_order`] = 1;
@@ -118,7 +118,7 @@ exports.selectClosedOrders = async () => {
   exports.selectYarnsOfYarnOrderRequisition = async (requisitionId) => {
 
     let whereCluse = {};
-    whereCluse[`${waPurchaseOrderDetailsTableName}.wa_yarn_order_requisition_id`] = requisitionId;
+    whereCluse[`${waPurchaseOrderDetailsTableName}.wa_add_purchase_order_id`] = requisitionId;
     whereCluse[`${waPurchaseOrderDetailsTableName}.is_deleted`] = 0;
     whereCluse[`${waPurchaseOrderDetailsTableName}.is_active`] = 1;
     whereCluse[`${waPurchaseOrderDetailsTableName}.is_order`] = 1;

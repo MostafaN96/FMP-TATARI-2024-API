@@ -32,6 +32,7 @@ exports.insert = async (weSellRequisitionDetails, items) => {
       dyed_fabric_id: items.dyedFabricId,
       warehouse_id: items.warehouseId,
       price: items.price,
+      price_dollar: items.priceDollar,
       quantity: items.quantity,
       current_quantity: items.quantity,
       fabric_piece: items.numberFabricPieces,
@@ -59,6 +60,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
   let columns = [
     `id`,
     `price`,
+    `price_dollar`,
     `quantity`,
     `fabric_piece`,
     `document`,
@@ -83,6 +85,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
     this.select([
       `${weSellRequisitionDetailsTableName}.id`,
       `${weSellRequisitionDetailsTableName}.price`,
+      `${weSellRequisitionDetailsTableName}.price_dollar`,
       `${weSellRequisitionDetailsTableName}.quantity`,
       `${weSellRequisitionDetailsTableName}.fabric_piece`,
       `${weSellRequisitionDetailsTableName}.document`,
@@ -135,6 +138,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
         this.select([
           `${weSellRequisitionDetailsTableName}.id`,
           `${weSellRequisitionDetailsTableName}.price`,
+          `${weSellRequisitionDetailsTableName}.price_dollar`,
           `${weSellRequisitionDetailsTableName}.quantity`,
           `${weSellRequisitionDetailsTableName}.fabric_piece`,
           `${weSellRequisitionDetailsTableName}.document`,
@@ -191,6 +195,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
         this.select([
           `${weSellRequisitionDetailsTableName}.id`,
           `${weSellRequisitionDetailsTableName}.price`,
+          `${weSellRequisitionDetailsTableName}.price_dollar`,
           `${weSellRequisitionDetailsTableName}.quantity`,
           `${weSellRequisitionDetailsTableName}.fabric_piece`,
           `${weSellRequisitionDetailsTableName}.document`,
@@ -249,6 +254,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
         this.select([
           `${weSellRequisitionDetailsTableName}.id`,
           `${weSellRequisitionDetailsTableName}.price`,
+          `${weSellRequisitionDetailsTableName}.price_dollar`,
           `${weSellRequisitionDetailsTableName}.quantity`,
           `${weSellRequisitionDetailsTableName}.fabric_piece`,
           `${weSellRequisitionDetailsTableName}.document`,
@@ -301,6 +307,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
         this.select([
           `${weSellRequisitionDetailsTableName}.id`,
           `${weSellRequisitionDetailsTableName}.price`,
+          `${weSellRequisitionDetailsTableName}.price_dollar`,
           `${weSellRequisitionDetailsTableName}.quantity`,
           `${weSellRequisitionDetailsTableName}.fabric_piece`,
           `${weSellRequisitionDetailsTableName}.document`,
@@ -371,6 +378,7 @@ exports.selectTotalByFabricId = async (fabricId) => {
     .select(
       [
         `${weSellRequisitionDetailsTableName}.price`,
+        `${weSellRequisitionDetailsTableName}.price_dollar`,
         `${weSellRequisitionDetailsTableName}.quantity`,
         `${weSellRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن بيع'),
@@ -397,6 +405,7 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
   let columns = [
     `id`,
     `price`,
+    `price_dollar`,
     `quantity`,
     `document`,
     `statement`,
@@ -425,6 +434,7 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
     this.select([
       `${weSellRequisitionDetailsTableName}.id`,
       `${weSellRequisitionDetailsTableName}.price`,
+      `${weSellRequisitionDetailsTableName}.price_dollar`,
       `${weSellRequisitionDetailsTableName}.quantity`,
       `${weSellRequisitionDetailsTableName}.document`,
       `${weSellRequisitionDetailsTableName}.statement`,
@@ -477,6 +487,7 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
         this.select([
           `${weSellRequisitionDetailsTableName}.id`,
           `${weSellRequisitionDetailsTableName}.price`,
+          `${weSellRequisitionDetailsTableName}.price_dollar`,
           `${weSellRequisitionDetailsTableName}.quantity`,
           `${weSellRequisitionDetailsTableName}.document`,
           `${weSellRequisitionDetailsTableName}.statement`,
@@ -531,6 +542,7 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
         this.select([
           `${weSellRequisitionDetailsTableName}.id`,
           `${weSellRequisitionDetailsTableName}.price`,
+          `${weSellRequisitionDetailsTableName}.price_dollar`,
           `${weSellRequisitionDetailsTableName}.quantity`,
           `${weSellRequisitionDetailsTableName}.document`,
           `${weSellRequisitionDetailsTableName}.statement`,
@@ -590,6 +602,7 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
         this.select([
           `${weSellRequisitionDetailsTableName}.id`,
           `${weSellRequisitionDetailsTableName}.price`,
+          `${weSellRequisitionDetailsTableName}.price_dollar`,
           `${weSellRequisitionDetailsTableName}.quantity`,
           `${weSellRequisitionDetailsTableName}.document`,
           `${weSellRequisitionDetailsTableName}.statement`,
@@ -644,6 +657,7 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
         this.select([
           `${weSellRequisitionDetailsTableName}.id`,
           `${weSellRequisitionDetailsTableName}.price`,
+          `${weSellRequisitionDetailsTableName}.price_dollar`,
           `${weSellRequisitionDetailsTableName}.quantity`,
           `${weSellRequisitionDetailsTableName}.document`,
           `${weSellRequisitionDetailsTableName}.statement`,
@@ -714,6 +728,7 @@ exports.selectDetailsByWarehouseByFabric = async (warehouseId, fabricId) => {
   let columns = [
     `id`,
     `price`,
+    `price_dollar`,
     `quantity`,
     `document`,
     `statement`,
@@ -742,6 +757,7 @@ exports.selectDetailsByWarehouseByFabric = async (warehouseId, fabricId) => {
     this.select([
       `${weSellRequisitionDetailsTableName}.id`,
       `${weSellRequisitionDetailsTableName}.price`,
+      `${weSellRequisitionDetailsTableName}.price_dollar`,
       `${weSellRequisitionDetailsTableName}.quantity`,
       `${weSellRequisitionDetailsTableName}.document`,
       `${weSellRequisitionDetailsTableName}.statement`,
@@ -794,6 +810,7 @@ exports.selectDetailsByWarehouseByFabric = async (warehouseId, fabricId) => {
         this.select([
           `${weSellRequisitionDetailsTableName}.id`,
           `${weSellRequisitionDetailsTableName}.price`,
+          `${weSellRequisitionDetailsTableName}.price_dollar`,
           `${weSellRequisitionDetailsTableName}.quantity`,
           `${weSellRequisitionDetailsTableName}.document`,
           `${weSellRequisitionDetailsTableName}.statement`,
@@ -848,6 +865,7 @@ exports.selectDetailsByWarehouseByFabric = async (warehouseId, fabricId) => {
         this.select([
           `${weSellRequisitionDetailsTableName}.id`,
           `${weSellRequisitionDetailsTableName}.price`,
+          `${weSellRequisitionDetailsTableName}.price_dollar`,
           `${weSellRequisitionDetailsTableName}.quantity`,
           `${weSellRequisitionDetailsTableName}.document`,
           `${weSellRequisitionDetailsTableName}.statement`,
@@ -908,6 +926,7 @@ exports.selectDetailsByWarehouseByFabric = async (warehouseId, fabricId) => {
         this.select([
           `${weSellRequisitionDetailsTableName}.id`,
           `${weSellRequisitionDetailsTableName}.price`,
+          `${weSellRequisitionDetailsTableName}.price_dollar`,
           `${weSellRequisitionDetailsTableName}.quantity`,
           `${weSellRequisitionDetailsTableName}.document`,
           `${weSellRequisitionDetailsTableName}.statement`,
@@ -962,6 +981,7 @@ exports.selectDetailsByWarehouseByFabric = async (warehouseId, fabricId) => {
         this.select([
           `${weSellRequisitionDetailsTableName}.id`,
           `${weSellRequisitionDetailsTableName}.price`,
+          `${weSellRequisitionDetailsTableName}.price_dollar`,
           `${weSellRequisitionDetailsTableName}.quantity`,
           `${weSellRequisitionDetailsTableName}.document`,
           `${weSellRequisitionDetailsTableName}.statement`,
@@ -1032,6 +1052,7 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, fabricId) 
   let columns = [
     `id`,
     `price`,
+    `price_dollar`,
     `quantity`,
     `document`,
     `statement`,
@@ -1060,6 +1081,7 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, fabricId) 
     this.select([
       `${weSellRequisitionDetailsTableName}.id`,
       `${weSellRequisitionDetailsTableName}.price`,
+      `${weSellRequisitionDetailsTableName}.price_dollar`,
       `${weSellRequisitionDetailsTableName}.quantity`,
       `${weSellRequisitionDetailsTableName}.document`,
       `${weSellRequisitionDetailsTableName}.statement`,
@@ -1112,6 +1134,7 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, fabricId) 
         this.select([
           `${weSellRequisitionDetailsTableName}.id`,
           `${weSellRequisitionDetailsTableName}.price`,
+          `${weSellRequisitionDetailsTableName}.price_dollar`,
           `${weSellRequisitionDetailsTableName}.quantity`,
           `${weSellRequisitionDetailsTableName}.document`,
           `${weSellRequisitionDetailsTableName}.statement`,
@@ -1166,6 +1189,7 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, fabricId) 
         this.select([
           `${weSellRequisitionDetailsTableName}.id`,
           `${weSellRequisitionDetailsTableName}.price`,
+          `${weSellRequisitionDetailsTableName}.price_dollar`,
           `${weSellRequisitionDetailsTableName}.quantity`,
           `${weSellRequisitionDetailsTableName}.document`,
           `${weSellRequisitionDetailsTableName}.statement`,
@@ -1227,6 +1251,7 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, fabricId) 
         this.select([
           `${weSellRequisitionDetailsTableName}.id`,
           `${weSellRequisitionDetailsTableName}.price`,
+          `${weSellRequisitionDetailsTableName}.price_dollar`,
           `${weSellRequisitionDetailsTableName}.quantity`,
           `${weSellRequisitionDetailsTableName}.document`,
           `${weSellRequisitionDetailsTableName}.statement`,
@@ -1297,6 +1322,7 @@ exports.selectPriceByFabricId = async (fabricId) => {
     .select(
       [
         `${weSellRequisitionDetailsTableName}.price`,
+        `${weSellRequisitionDetailsTableName}.price_dollar`,
         `${weSellRequisitionDetailsTableName}.quantity`,
         `${weSellRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن بيع'),
@@ -1320,6 +1346,7 @@ exports.selectPriceWe = async (whereCluse) => {
     .select(
       [
         `${weSellRequisitionDetailsTableName}.price`,
+        `${weSellRequisitionDetailsTableName}.price_dollar`,
         `${weSellRequisitionDetailsTableName}.quantity`,
         `${weSellRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن بيع'),
@@ -1387,6 +1414,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
   let columns = [
     `id`,
     `price`,
+    `price_dollar`,
     `quantity`,
     `document`,
     `statement`,
@@ -1414,6 +1442,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
     this.select([
       `${weSellRequisitionDetailsTableName}.id`,
       `${weSellRequisitionDetailsTableName}.price`,
+      `${weSellRequisitionDetailsTableName}.price_dollar`,
       `${weSellRequisitionDetailsTableName}.quantity`,
       `${weSellRequisitionDetailsTableName}.document`,
       `${weSellRequisitionDetailsTableName}.statement`,
@@ -1466,6 +1495,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
         this.select([
           `${weSellRequisitionDetailsTableName}.id`,
           `${weSellRequisitionDetailsTableName}.price`,
+          `${weSellRequisitionDetailsTableName}.price_dollar`,
           `${weSellRequisitionDetailsTableName}.quantity`,
           `${weSellRequisitionDetailsTableName}.document`,
           `${weSellRequisitionDetailsTableName}.statement`,
@@ -1520,6 +1550,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
         this.select([
           `${weSellRequisitionDetailsTableName}.id`,
           `${weSellRequisitionDetailsTableName}.price`,
+          `${weSellRequisitionDetailsTableName}.price_dollar`,
           `${weSellRequisitionDetailsTableName}.quantity`,
           `${weSellRequisitionDetailsTableName}.document`,
           `${weSellRequisitionDetailsTableName}.statement`,
@@ -1577,6 +1608,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
         this.select([
           `${weSellRequisitionDetailsTableName}.id`,
           `${weSellRequisitionDetailsTableName}.price`,
+          `${weSellRequisitionDetailsTableName}.price_dollar`,
           `${weSellRequisitionDetailsTableName}.quantity`,
           `${weSellRequisitionDetailsTableName}.document`,
           `${weSellRequisitionDetailsTableName}.statement`,
@@ -1628,6 +1660,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
         this.select([
           `${weSellRequisitionDetailsTableName}.id`,
           `${weSellRequisitionDetailsTableName}.price`,
+          `${weSellRequisitionDetailsTableName}.price_dollar`,
           `${weSellRequisitionDetailsTableName}.quantity`,
           `${weSellRequisitionDetailsTableName}.document`,
           `${weSellRequisitionDetailsTableName}.statement`,

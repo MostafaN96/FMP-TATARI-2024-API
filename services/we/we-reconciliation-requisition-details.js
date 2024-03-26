@@ -140,6 +140,7 @@ exports.update = async (weReconciliationRequisitionDetails) => {
                     fabric_piece: weReconciliationRequisitionDetails.numberFabricPieces,
                     work_order_number: weReconciliationRequisitionDetails.workOrderNumber,
                     price: weReconciliationRequisitionDetails.price,
+                    price_dollar: weReconciliationRequisitionDetails.priceDollar,
                     statement: weReconciliationRequisitionDetails.statement
                 },
                     {

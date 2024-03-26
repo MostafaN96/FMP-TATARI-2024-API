@@ -148,8 +148,10 @@ exports.updateForExecuteOrder = async (objectOrderData) => {
             // here will increase needed quantity if excuted quantity greater than needed quantity
             let excessQuantity = parseFloat((objectOrderData.quantity - selectWeDyedFabricOrderRequisitionDetailsQueriesOneResult[0].current_quantity).toFixed(3))
             await weDyedFabricOrderRequisitionDetailsQueries.update({
-                initial_quantity: selectWeDyedFabricOrderRequisitionDetailsQueriesOneResult[0].initial_quantity + excessQuantity,
-                current_quantity: 0,
+                // initial_quantity: selectWeDyedFabricOrderRequisitionDetailsQueriesOneResult[0].initial_quantity + excessQuantity,
+                // current_quantity: 0,
+                // is_order: "0"
+                current_quantity: selectWeDyedFabricOrderRequisitionDetailsQueriesOneResult[0].current_quantity - parseFloat(objectOrderData.quantity),
                 is_order: "0"
             }, {
                 id: objectOrderData.weDyedFabricOrderRequisitionDetailsId

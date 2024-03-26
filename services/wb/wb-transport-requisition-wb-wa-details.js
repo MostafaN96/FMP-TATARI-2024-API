@@ -130,6 +130,7 @@ exports.update = async (wbTransportRequisitionWbWaDetails) => {
         callArray.push(
             wbTransportRequisitionWbWaDetailsQueries.update({
                 price: wbTransportRequisitionWbWaDetails.price,
+                price_dollar: wbTransportRequisitionWbWaDetails.priceDollar,
                 document: wbTransportRequisitionWbWaDetails.document,
                 statement: wbTransportRequisitionWbWaDetails.statement
             },

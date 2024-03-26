@@ -15,6 +15,7 @@ exports.insert = async (wbTransportWaWb, items) => {
       yarn_lot_id: items.yarnLotId,
       consigment_yarn_id: items.consigmentYarnId,
       price: items.price,
+      price_dollar: items.priceDollar,
       quantity: items.quantity,
       document: items.document ?? '',
       statement: items.statement ?? '',
@@ -53,6 +54,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
     `${wbTransportWaWbDetailsTableName}.document`,
     `${wbTransportWaWbDetailsTableName}.statement`,
     `${wbTransportWaWbDetailsTableName}.price`,
+    `${wbTransportWaWbDetailsTableName}.price_dollar`,
     `${consigmentYarnTableName}.number as consigment_yarn_number`,
     `${bussinessmanTableName}.name as manufacturer_name`,
     `${wbTableName}.current_quantity`,
@@ -107,6 +109,7 @@ exports.selectWithFabricManufacturedByRequisitionId = async (requisitionId) => {
     `${wbTransportWaWbDetailsTableName}.document`,
     `${wbTransportWaWbDetailsTableName}.statement`,
     `${wbTransportWaWbDetailsTableName}.price`,
+    `${wbTransportWaWbDetailsTableName}.price_dollar`,
     `${wbTransportWaWbTableName}.id as requisition_id`,
     `${wbTransportWaWbTableName}.date`,
     `${wbTransportWaWbTableName}.number`,
@@ -190,7 +193,11 @@ exports.selectOne = async (whereCluse) => {
 exports.selectLatestPrice = async (whereCluse) => {
   let queryResults = false;
   await knex(wbTransportWaWbDetailsTableName)
-    .select(["wb_transport_wa_wb_details.id", "wb_transport_wa_wb_details.price"])
+    .select([
+      "wb_transport_wa_wb_details.id", 
+    "wb_transport_wa_wb_details.price",
+    "wb_transport_wa_wb_details.price_dollar",
+  ])
     .innerJoin(wbTransportWaWbTableName,
       `${wbTransportWaWbTableName}.id`,
       `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
@@ -236,6 +243,7 @@ exports.selectTotalByYarnIdByIndustryId = async (yarnId, manufacturerId) => {
     .select(
       [
         `${wbTransportWaWbDetailsTableName}.price`,
+        `${wbTransportWaWbDetailsTableName}.price_dollar`,
         `${wbTransportWaWbDetailsTableName}.quantity`,
         `${wbTransportWaWbTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل من (A) الى (B)'),
@@ -266,6 +274,7 @@ exports.selectTotalDetailsByYarnIdByIndustryId = async (yarnId, manufacturerId) 
       [
         `${wbTransportWaWbDetailsTableName}.id`,
         `${wbTransportWaWbDetailsTableName}.price`,
+        `${wbTransportWaWbDetailsTableName}.price_dollar`,
         `${wbTransportWaWbDetailsTableName}.quantity`,
         `${wbTransportWaWbDetailsTableName}.document`,
         `${wbTransportWaWbDetailsTableName}.statement`,
@@ -323,6 +332,7 @@ exports.selectDetailsByIndustryByYarnByLot = async (manufacturerId, yarnId, yarn
     .select(
       [
         `${wbTransportWaWbDetailsTableName}.price`,
+        `${wbTransportWaWbDetailsTableName}.price_dollar`,
         `${wbTransportWaWbDetailsTableName}.quantity`,
         `${wbTransportWaWbTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل من (A) الى (B)'),
@@ -355,6 +365,7 @@ exports.selectDetailsDetailsByIndustryByYarnByLot = async (manufacturerId, yarnI
       [
         `${wbTransportWaWbDetailsTableName}.id`,
         `${wbTransportWaWbDetailsTableName}.price`,
+        `${wbTransportWaWbDetailsTableName}.price_dollar`,
         `${wbTransportWaWbDetailsTableName}.quantity`,
         `${wbTransportWaWbDetailsTableName}.statement`,
         `${wbTransportWaWbTableName}.id as requisition_id`,
@@ -399,6 +410,7 @@ exports.selectPriceByYarnIdByIndustryId = async (yarnId, manufacturerId) => {
     .select(
       [
         `${wbTransportWaWbDetailsTableName}.price`,
+        `${wbTransportWaWbDetailsTableName}.price_dollar`,
         `${wbTransportWaWbDetailsTableName}.quantity`,
         `${wbTransportWaWbTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل من (A) الى (B)'),
@@ -428,6 +440,7 @@ exports.selectTotalByYarnId = async (yarnId) => {
     .select(
       [
         `${wbTransportWaWbDetailsTableName}.price`,
+        `${wbTransportWaWbDetailsTableName}.price_dollar`,
         `${wbTransportWaWbDetailsTableName}.quantity`,
         `${wbTransportWaWbTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل من (A) الى (B)'),
@@ -456,6 +469,7 @@ exports.selectTotalDetailsByYarnId = async (yarnId) => {
       [
         `${wbTransportWaWbDetailsTableName}.id`,
         `${wbTransportWaWbDetailsTableName}.price`,
+        `${wbTransportWaWbDetailsTableName}.price_dollar`,
         `${wbTransportWaWbDetailsTableName}.quantity`,
         `${wbTransportWaWbDetailsTableName}.document`,
         `${wbTransportWaWbDetailsTableName}.statement`,
@@ -505,6 +519,7 @@ exports.selectTotalByYarnByWarehouseId = async (yarnId, warehouseId) => {
     .select(
       [
         `${wbTransportWaWbDetailsTableName}.price`,
+        `${wbTransportWaWbDetailsTableName}.price_dollar`,
         `${wbTransportWaWbDetailsTableName}.quantity`,
         `${wbTransportWaWbTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل من (A) الى (B)'),
@@ -534,6 +549,7 @@ exports.selectTotalDetailsByYarnIdByWarehouseId = async (yarnId, warehouseId) =>
       [
         `${wbTransportWaWbDetailsTableName}.id`,
         `${wbTransportWaWbDetailsTableName}.price`,
+        `${wbTransportWaWbDetailsTableName}.price_dollar`,
         `${wbTransportWaWbDetailsTableName}.quantity`,
         `${wbTransportWaWbDetailsTableName}.document`,
         `${wbTransportWaWbDetailsTableName}.statement`,
@@ -584,6 +600,7 @@ exports.selectDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLo
     .select(
       [
         `${wbTransportWaWbDetailsTableName}.price`,
+        `${wbTransportWaWbDetailsTableName}.price_dollar`,
         `${wbTransportWaWbDetailsTableName}.quantity`,
         `${wbTransportWaWbTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل من (A) الى (B)'),
@@ -615,6 +632,7 @@ exports.selectDetailsDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId,
       [
         `${wbTransportWaWbDetailsTableName}.id`,
         `${wbTransportWaWbDetailsTableName}.price`,
+        `${wbTransportWaWbDetailsTableName}.price_dollar`,
         `${wbTransportWaWbDetailsTableName}.quantity`,
         `${wbTransportWaWbDetailsTableName}.statement`,
         `${wbTransportWaWbTableName}.id as requisition_id`,
@@ -658,6 +676,7 @@ exports.selectPriceByYarnId = async (yarnId) => {
     .select(
       [
         `${wbTransportWaWbDetailsTableName}.price`,
+        `${wbTransportWaWbDetailsTableName}.price_dollar`,
         `${wbTransportWaWbDetailsTableName}.quantity`,
         `${wbTransportWaWbTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل من (A) الى (B)'),
@@ -682,6 +701,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
       [
         `${wbTransportWaWbDetailsTableName}.id`,
         `${wbTransportWaWbDetailsTableName}.price`,
+        `${wbTransportWaWbDetailsTableName}.price_dollar`,
         `${wbTransportWaWbDetailsTableName}.quantity`,
         `${wbTransportWaWbDetailsTableName}.document`,
         `${wbTransportWaWbDetailsTableName}.statement`,
@@ -727,6 +747,7 @@ exports.selectTotalDetailsByDateWb = async (bodyPaylod) => {
       [
         `${wbTransportWaWbDetailsTableName}.id`,
         `${wbTransportWaWbDetailsTableName}.price`,
+        `${wbTransportWaWbDetailsTableName}.price_dollar`,
         `${wbTransportWaWbDetailsTableName}.quantity`,
         `${wbTransportWaWbDetailsTableName}.document`,
         `${wbTransportWaWbDetailsTableName}.statement`,

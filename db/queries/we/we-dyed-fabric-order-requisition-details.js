@@ -46,7 +46,17 @@ exports.selectByRequisitionId = async (whereCluse) => {
         `${weDyedFabricOrderRequisitionDetailsTableName}.id`,
         `${weDyedFabricOrderRequisitionDetailsTableName}.note as details_note`,
         `${weDyedFabricOrderRequisitionDetailsTableName}.initial_quantity  as quantity`,
-        `${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity`,
+        // `${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity`,
+        knex.raw(
+            `CASE WHEN ${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
+            THEN ${0}
+            ELSE ${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity
+            END as current_quantity`),
+          knex.raw(
+            `CASE WHEN ${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
+            THEN coalesce( ${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity * -1 )
+            ELSE ${0}
+            END as over_current_quantity`),
         `${weDyedFabricOrderRequisitionDetailsTableName}.color_code`,
         `${weDyedFabricOrderRequisitionDetailsTableName}.fabric_width`,
         `${weDyedFabricOrderRequisitionDetailsTableName}.fabric_quantity_m2`,

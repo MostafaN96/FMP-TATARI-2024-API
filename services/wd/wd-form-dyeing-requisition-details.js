@@ -251,6 +251,7 @@ exports.update = async (wdFormDyeingRequisitionDetails) => {
             wdFormDyeingRequisitionDetailsQueries.update({
                 dyeing_colors_prices_id: wdFormDyeingRequisitionDetails.dyeingColorsPricesId,
                 price: wdFormDyeingRequisitionDetails.price,
+                price_dollar: wdFormDyeingRequisitionDetails.priceDollar,
                 fabric_width: wdFormDyeingRequisitionDetails.fabricWidth,
                 fabric_quantity_m2: wdFormDyeingRequisitionDetails.fabricQuantityM2,
                 document: wdFormDyeingRequisitionDetails.document,
@@ -484,6 +485,7 @@ exports.updateByOrder = async (wdFormDyeingRequisitionDetails) => {
             wdFormDyeingRequisitionDetailsQueries.update({
                 dyeing_colors_prices_id: wdFormDyeingRequisitionDetails.dyeingColorsPricesId,
                 price: wdFormDyeingRequisitionDetails.price,
+                price_dollar: wdFormDyeingRequisitionDetails.priceDollar,
                 fabric_width: wdFormDyeingRequisitionDetails.fabricWidth,
                 fabric_quantity_m2: wdFormDyeingRequisitionDetails.fabricQuantityM2,
                 document: wdFormDyeingRequisitionDetails.document,

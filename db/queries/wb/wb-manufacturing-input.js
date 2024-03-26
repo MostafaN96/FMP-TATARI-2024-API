@@ -16,6 +16,7 @@ exports.insert = async (wbManufacturingInput, items) => {
       quantity: items.quantity,
       quantity_with_waste: items.quantityWithWaste,
       price: items.price,
+      price_dollar: items.priceDollar,
       ratio: items.ratio,
       wast_ratio: items.wastRatio,
       statement: items.statement,
@@ -86,6 +87,7 @@ exports.selectOneByRequisitionId = async (requisitionId) => {
     `${wbManufacturingInputTableName}.quantity`,
     `${wbManufacturingInputTableName}.quantity_with_waste`,
     `${wbManufacturingInputTableName}.price`,
+    `${wbManufacturingInputTableName}.price_dollar`,
     `${wbManufacturingInputTableName}.ratio`,
     `${wbManufacturingInputTableName}.wast_ratio`,
     `${wbManufacturingInputTableName}.statement`,
@@ -141,6 +143,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
     `${wbManufacturingInputTableName}.quantity`,
     `${wbManufacturingInputTableName}.quantity_with_waste`,
     `${wbManufacturingInputTableName}.price`,
+    `${wbManufacturingInputTableName}.price_dollar`,
     `${wbManufacturingInputTableName}.ratio`,
     `${wbManufacturingInputTableName}.wast_ratio`,
     `${wbManufacturingInputTableName}.statement`,
@@ -225,6 +228,7 @@ exports.selectTotalByYarnIdByIndustryId = async (yarnId, manufacturerId) => {
     .select(
       [
         `${wbManufacturingInputTableName}.price`,
+        `${wbManufacturingInputTableName}.price_dollar`,
         `${wbManufacturingInputTableName}.quantity_with_waste as quantity`,
         `${wbManufacturingRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن تصنيع'),
@@ -259,6 +263,7 @@ exports.selectTotalDetailsByYarnIdByIndustryId = async (yarnId, manufacturerId) 
       [
         `${wbManufacturingInputTableName}.id`,
         `${wbManufacturingInputTableName}.price`,
+        `${wbManufacturingInputTableName}.price_dollar`,
         `${wbManufacturingInputTableName}.quantity_with_waste as quantity`,
         `${wbManufacturingInputTableName}.wast_ratio`,
         `${wbManufacturingInputTableName}.statement`,
@@ -330,6 +335,7 @@ exports.selectDetailsByIndustryByYarnByLot = async (manufacturerId, yarnId, yarn
   await knex.select(
     [
       `${wbManufacturingInputTableName}.price`,
+      `${wbManufacturingInputTableName}.price_dollar`,
       `${wbManufacturingInputTableName}.quantity_with_waste as quantity`,
       `${wbManufacturingRequisitionTableName}.date`,
       knex.raw('? as type_of_requisition', 'اذن تصنيع'),
@@ -369,6 +375,7 @@ exports.selectDetailsDetailsByIndustryByYarnByLot = async (industryId, yarnId, y
       [
         `${wbManufacturingInputTableName}.id`,
         `${wbManufacturingInputTableName}.price`,
+        `${wbManufacturingInputTableName}.price_dollar`,
         `${wbManufacturingInputTableName}.quantity_with_waste as quantity`,
         `${wbManufacturingInputTableName}.wast_ratio`,
         `${wbManufacturingInputTableName}.statement`,
@@ -430,6 +437,7 @@ exports.selectPriceByYarnIdByIndustryId = async (yarnId, manufacturerId) => {
     .select(
       [
         `${wbManufacturingInputTableName}.price`,
+        `${wbManufacturingInputTableName}.price_dollar`,
         `${wbManufacturingInputTableName}.quantity_with_waste as quantity`,
         `${wbManufacturingRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن تصنيع'),
@@ -459,6 +467,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
       [
         `${wbManufacturingInputTableName}.id`,
         `${wbManufacturingInputTableName}.price`,
+        `${wbManufacturingInputTableName}.price_dollar`,
         `${wbManufacturingInputTableName}.quantity_with_waste as quantity`,
         `${wbManufacturingInputTableName}.wast_ratio`,
         `${wbManufacturingInputTableName}.statement`,
@@ -536,6 +545,7 @@ exports.selectByFabricByConsigmentManufacturing = async (fabricId, consigmentMan
     .sum(`${wbManufacturingInputTableName}.quantity as quantity`)
     .sum(`${wbManufacturingInputTableName}.quantity_with_waste as quantity_with_waste`)
     .sum(`${wbManufacturingInputTableName}.price as price`)
+    .sum(`${wbManufacturingInputTableName}.price_dollar as price_dollar`)
     .from(wbManufacturingInputOutputTableName)
     .innerJoin(`${wbManufacturingInputTableName}`,
       `${wbManufacturingInputTableName}.id`,

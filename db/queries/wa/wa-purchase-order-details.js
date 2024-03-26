@@ -46,7 +46,17 @@ exports.selectByRequisitionId = async (whereCluse) => {
     `${waPurchaseOrderDetailsTableName}.id`,
     `${waPurchaseOrderDetailsTableName}.note as note2`,
     `${waPurchaseOrderDetailsTableName}.initial_quantity  as quantity`,
-    `${waPurchaseOrderDetailsTableName}.current_quantity`,
+    // `${waPurchaseOrderDetailsTableName}.current_quantity`,
+    knex.raw(
+      `CASE WHEN ${waPurchaseOrderDetailsTableName}.current_quantity < ${0}
+      THEN ${0}
+      ELSE ${waPurchaseOrderDetailsTableName}.current_quantity
+      END as current_quantity`),
+    knex.raw(
+      `CASE WHEN ${waPurchaseOrderDetailsTableName}.current_quantity < ${0}
+      THEN coalesce( ${waPurchaseOrderDetailsTableName}.current_quantity * -1 )
+      ELSE ${0}
+      END as over_current_quantity`),
     `${yarnTableName}.id as yarn_id`,
     `${yarnTableName}.name as yarn_name`,
     `${yarnTableName}.code as yarn_code`,

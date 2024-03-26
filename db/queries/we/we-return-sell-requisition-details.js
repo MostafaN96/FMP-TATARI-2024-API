@@ -18,6 +18,7 @@ exports.insert = async (weReturnSellRequisitionDetails, items) => {
       dyed_fabric_id: items.dyedFabricId,
       warehouse_id: items.warehouseId,
       price: items.price,
+      price_dollar: items.priceDollar,
       quantity: items.quantity,
       fabric_piece: items.numberFabricPieces,
       statement: items.statement,
@@ -45,6 +46,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
   let columns = [
     `id`,
     `price`,
+    `price_dollar`,
     `quantity`,
     `fabric_piece`,
     `statement`,
@@ -69,6 +71,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
     this.select([
       `${weReturnSellRequisitionDetailsTableName}.id`,
       `${weReturnSellRequisitionDetailsTableName}.price`,
+      `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
       `${weReturnSellRequisitionDetailsTableName}.quantity`,
       `${weReturnSellRequisitionDetailsTableName}.fabric_piece`,
       `${weReturnSellRequisitionDetailsTableName}.statement`,
@@ -118,6 +121,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
         this.select([
           `${weReturnSellRequisitionDetailsTableName}.id`,
           `${weReturnSellRequisitionDetailsTableName}.price`,
+          `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
           `${weReturnSellRequisitionDetailsTableName}.quantity`,
           `${weReturnSellRequisitionDetailsTableName}.fabric_piece`,
           `${weReturnSellRequisitionDetailsTableName}.statement`,
@@ -171,6 +175,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
         this.select([
           `${weReturnSellRequisitionDetailsTableName}.id`,
           `${weReturnSellRequisitionDetailsTableName}.price`,
+          `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
           `${weReturnSellRequisitionDetailsTableName}.quantity`,
           `${weReturnSellRequisitionDetailsTableName}.fabric_piece`,
           `${weReturnSellRequisitionDetailsTableName}.statement`,
@@ -242,6 +247,7 @@ exports.selectTotalByFabricId = async (dyedFabricId) => {
     .select(
       [
         `${weReturnSellRequisitionDetailsTableName}.price`,
+        `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
         `${weReturnSellRequisitionDetailsTableName}.quantity`,
         `${weReturnSellRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن مرتجع صرف'),
@@ -268,6 +274,7 @@ exports.selectTotalDetailsByFabricId = async (dyedFabricId) => {
   let columns = [
     `id`,
     `price`,
+    `price_dollar`,
     `quantity`,
     `fabric_piece`,
     `statement`,
@@ -297,6 +304,7 @@ exports.selectTotalDetailsByFabricId = async (dyedFabricId) => {
     this.select([
       `${weReturnSellRequisitionDetailsTableName}.id`,
       `${weReturnSellRequisitionDetailsTableName}.price`,
+      `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
       `${weReturnSellRequisitionDetailsTableName}.quantity`,
       `${weReturnSellRequisitionDetailsTableName}.fabric_piece`,
       `${weReturnSellRequisitionDetailsTableName}.statement`,
@@ -358,6 +366,7 @@ exports.selectTotalDetailsByFabricId = async (dyedFabricId) => {
         this.select([
           `${weReturnSellRequisitionDetailsTableName}.id`,
           `${weReturnSellRequisitionDetailsTableName}.price`,
+          `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
           `${weReturnSellRequisitionDetailsTableName}.quantity`,
           `${weReturnSellRequisitionDetailsTableName}.fabric_piece`,
           `${weReturnSellRequisitionDetailsTableName}.statement`,
@@ -423,6 +432,7 @@ exports.selectTotalDetailsByFabricId = async (dyedFabricId) => {
         this.select([
           `${weReturnSellRequisitionDetailsTableName}.id`,
           `${weReturnSellRequisitionDetailsTableName}.price`,
+          `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
           `${weReturnSellRequisitionDetailsTableName}.quantity`,
           `${weReturnSellRequisitionDetailsTableName}.fabric_piece`,
           `${weReturnSellRequisitionDetailsTableName}.statement`,
@@ -510,6 +520,7 @@ exports.selectDetailsByWarehouseByFabric = async (warehouseId, dyedFabricId) => 
     .select(
       [
         `${weReturnSellRequisitionDetailsTableName}.price`,
+        `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
         `${weReturnSellRequisitionDetailsTableName}.quantity`,
         `${weReturnSellRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن مرتجع صرف'),
@@ -537,6 +548,7 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, dyedFabric
   let columns = [
     `id`,
     `price`,
+    `price_dollar`,
     `quantity`,
     `fabric_piece`,
     `statement`,
@@ -565,6 +577,7 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, dyedFabric
     this.select([
       `${weReturnSellRequisitionDetailsTableName}.id`,
       `${weReturnSellRequisitionDetailsTableName}.price`,
+      `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
       `${weReturnSellRequisitionDetailsTableName}.quantity`,
       `${weReturnSellRequisitionDetailsTableName}.fabric_piece`,
       `${weReturnSellRequisitionDetailsTableName}.statement`,
@@ -624,6 +637,7 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, dyedFabric
         this.select([
           `${weReturnSellRequisitionDetailsTableName}.id`,
           `${weReturnSellRequisitionDetailsTableName}.price`,
+          `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
           `${weReturnSellRequisitionDetailsTableName}.quantity`,
           `${weReturnSellRequisitionDetailsTableName}.fabric_piece`,
           `${weReturnSellRequisitionDetailsTableName}.statement`,
@@ -687,6 +701,7 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, dyedFabric
         this.select([
           `${weReturnSellRequisitionDetailsTableName}.id`,
           `${weReturnSellRequisitionDetailsTableName}.price`,
+          `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
           `${weReturnSellRequisitionDetailsTableName}.quantity`,
           `${weReturnSellRequisitionDetailsTableName}.fabric_piece`,
           `${weReturnSellRequisitionDetailsTableName}.statement`,
@@ -771,6 +786,7 @@ exports.selectPriceByFabricId = async (dyedFabricId) => {
     .select(
       [
         `${weReturnSellRequisitionDetailsTableName}.price`,
+        `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
         `${weReturnSellRequisitionDetailsTableName}.quantity`,
         `${weReturnSellRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن مرتجع صرف'),
@@ -794,6 +810,7 @@ exports.selectPriceWe = async (whereCluse) => {
     .select(
       [
         `${weReturnSellRequisitionDetailsTableName}.price`,
+        `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
         `${weReturnSellRequisitionDetailsTableName}.quantity`,
         `${weReturnSellRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن مرتجع صرف'),
@@ -857,6 +874,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
   let columns = [
     `id`,
     `price`,
+    `price_dollar`,
     `quantity`,
     `fabric_piece`,
     `statement`,
@@ -884,6 +902,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
     this.select([
       `${weReturnSellRequisitionDetailsTableName}.id`,
       `${weReturnSellRequisitionDetailsTableName}.price`,
+      `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
       `${weReturnSellRequisitionDetailsTableName}.quantity`,
       `${weReturnSellRequisitionDetailsTableName}.fabric_piece`,
       `${weReturnSellRequisitionDetailsTableName}.statement`,
@@ -941,6 +960,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
         this.select([
           `${weReturnSellRequisitionDetailsTableName}.id`,
           `${weReturnSellRequisitionDetailsTableName}.price`,
+          `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
           `${weReturnSellRequisitionDetailsTableName}.quantity`,
           `${weReturnSellRequisitionDetailsTableName}.fabric_piece`,
           `${weReturnSellRequisitionDetailsTableName}.statement`,
@@ -1002,6 +1022,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
         this.select([
           `${weReturnSellRequisitionDetailsTableName}.id`,
           `${weReturnSellRequisitionDetailsTableName}.price`,
+          `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
           `${weReturnSellRequisitionDetailsTableName}.quantity`,
           `${weReturnSellRequisitionDetailsTableName}.fabric_piece`,
           `${weReturnSellRequisitionDetailsTableName}.statement`,

@@ -27,6 +27,7 @@ exports.insert = async (wcExecuteOrderRequisitionDetails, items) => {
       from_warehouse_id: items.fromWarehouseId,
       from_consigment_manufacturing_id: items.fromConsigmentManufacturingId,
       price: items.price,
+      price_dollar: items.priceDollar,
       quantity: items.quantity,
       note: items.note ?? '',
       creator_id: wcExecuteOrderRequisitionDetails.personid,
@@ -49,6 +50,7 @@ exports.selectByRequisitionId = async (whereCluse) => {
     `wc_fabric_order_requisition_id`,
     `wc_fabric_order_requisition_details_id`,
     `price`,
+    `price_dollar`,
     `quantity`,
     `note`,
     `requisition_id`,
@@ -71,6 +73,7 @@ exports.selectByRequisitionId = async (whereCluse) => {
       `${wcExecuteOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`,
       `${wcExecuteOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_details_id`,
       `${wcExecuteOrderRequisitionDetailsTableName}.price`,
+      `${wcExecuteOrderRequisitionDetailsTableName}.price_dollar`,
       `${wcExecuteOrderRequisitionDetailsTableName}.quantity`,
       `${wcExecuteOrderRequisitionDetailsTableName}.note`,
       `${wcExecuteOrderRequisitionTableName}.id as requisition_id`,
@@ -153,7 +156,8 @@ exports.selectLatestPrice = async (whereCluse) => {
     .selectWithJionWithLimit(wcExecuteOrderRequisitionDetailsTableName, 
       [
         `${wcExecuteOrderRequisitionDetailsTableName}.id`,
-        `${wcExecuteOrderRequisitionDetailsTableName}.price`
+        `${wcExecuteOrderRequisitionDetailsTableName}.price`,
+        `${wcExecuteOrderRequisitionDetailsTableName}.price_dollar`,
     ], 
       whereCluse,
       wcExecuteOrderRequisitionTableName, 
@@ -228,6 +232,7 @@ exports.selectFromTotalByFabricId = async (fabricId) => {
       [
         `${wcExecuteOrderRequisitionTableName}.warehouse_id`,
         `${wcExecuteOrderRequisitionDetailsTableName}.price`,
+        `${wcExecuteOrderRequisitionDetailsTableName}.price_dollar`,
         `${wcExecuteOrderRequisitionDetailsTableName}.quantity`,
         `${wcExecuteOrderRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن تنفيذ طلبية'),
@@ -267,6 +272,7 @@ exports.selectToTotalByFabricId = async (fabricId) => {
       [
         `${wcExecuteOrderRequisitionTableName}.warehouse_id`,
         `${wcExecuteOrderRequisitionDetailsTableName}.price`,
+        `${wcExecuteOrderRequisitionDetailsTableName}.price_dollar`,
         `${wcExecuteOrderRequisitionDetailsTableName}.quantity`,
         `${wcExecuteOrderRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن تنفيذ طلبية'),
@@ -300,6 +306,7 @@ exports.selectFromTotalDetailsByFabricId = async (fabricId) => {
       [
         `${wcExecuteOrderRequisitionDetailsTableName}.id`,
         `${wcExecuteOrderRequisitionDetailsTableName}.price`,
+        `${wcExecuteOrderRequisitionDetailsTableName}.price_dollar`,
         `${wcExecuteOrderRequisitionDetailsTableName}.quantity`,
         `${wcExecuteOrderRequisitionDetailsTableName}.note`,
         `${wcExecuteOrderRequisitionTableName}.id as requisition_id`,
@@ -355,6 +362,7 @@ exports.selectToTotalDetailsByFabricId = async (fabricId) => {
       [
         `${wcExecuteOrderRequisitionDetailsTableName}.id`,
         `${wcExecuteOrderRequisitionDetailsTableName}.price`,
+        `${wcExecuteOrderRequisitionDetailsTableName}.price_dollar`,
         `${wcExecuteOrderRequisitionDetailsTableName}.quantity`,
         `${wcExecuteOrderRequisitionDetailsTableName}.note`,
         `${wcExecuteOrderRequisitionTableName}.id as requisition_id`,
@@ -410,6 +418,7 @@ exports.selectFromWarehouseDetailsByWarehouseByFabricByConsigmentManufacturing =
         `${wcExecuteOrderRequisitionDetailsTableName}.id`,
         `${wcExecuteOrderRequisitionDetailsTableName}.consigment_manufacturing_id`,
         `${wcExecuteOrderRequisitionDetailsTableName}.price`,
+        `${wcExecuteOrderRequisitionDetailsTableName}.price_dollar`,
         `${wcExecuteOrderRequisitionDetailsTableName}.quantity`,
         `${wcExecuteOrderRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن تنفيذ طلبية'),
@@ -449,6 +458,7 @@ exports.selectToWarehouseDetailsByWarehouseByFabricByConsigmentManufacturing = a
         `${wcExecuteOrderRequisitionDetailsTableName}.id`,
         `${wcExecuteOrderRequisitionDetailsTableName}.consigment_manufacturing_id`,
         `${wcExecuteOrderRequisitionDetailsTableName}.price`,
+        `${wcExecuteOrderRequisitionDetailsTableName}.price_dollar`,
         `${wcExecuteOrderRequisitionDetailsTableName}.quantity`,
         `${wcExecuteOrderRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن تنفيذ طلبية'),
@@ -484,6 +494,7 @@ exports.selectFromWarehouseDetailsDetailsByWarehouseByFabricByConsigmentManufact
       [
         `${wcExecuteOrderRequisitionDetailsTableName}.id`,
         `${wcExecuteOrderRequisitionDetailsTableName}.price`,
+        `${wcExecuteOrderRequisitionDetailsTableName}.price_dollar`,
         `${wcExecuteOrderRequisitionDetailsTableName}.quantity`,
         `${wcExecuteOrderRequisitionDetailsTableName}.note`,
         `${wcExecuteOrderRequisitionTableName}.id as requisition_id`,
@@ -541,6 +552,7 @@ exports.selectToWarehouseDetailsDetailsByWarehouseByFabricByConsigmentManufactur
       [
         `${wcExecuteOrderRequisitionDetailsTableName}.id`,
         `${wcExecuteOrderRequisitionDetailsTableName}.price`,
+        `${wcExecuteOrderRequisitionDetailsTableName}.price_dollar`,
         `${wcExecuteOrderRequisitionDetailsTableName}.quantity`,
         `${wcExecuteOrderRequisitionDetailsTableName}.note`,
         `${wcExecuteOrderRequisitionTableName}.id as requisition_id`,
@@ -589,6 +601,7 @@ exports.selectFromWarehouseTotalDetailsByDate = async (bodyPaylod) => {
       [
         `${wcExecuteOrderRequisitionDetailsTableName}.id`,
         `${wcExecuteOrderRequisitionDetailsTableName}.price`,
+        `${wcExecuteOrderRequisitionDetailsTableName}.price_dollar`,
         `${wcExecuteOrderRequisitionDetailsTableName}.quantity`,
         `${wcExecuteOrderRequisitionDetailsTableName}.note`,
         `${wcExecuteOrderRequisitionTableName}.id as requisition_id`,
@@ -641,6 +654,7 @@ exports.selectToWarehouseTotalDetailsByDate = async (bodyPaylod) => {
       [
         `${wcExecuteOrderRequisitionDetailsTableName}.id`,
         `${wcExecuteOrderRequisitionDetailsTableName}.price`,
+        `${wcExecuteOrderRequisitionDetailsTableName}.price_dollar`,
         `${wcExecuteOrderRequisitionDetailsTableName}.quantity`,
         `${wcExecuteOrderRequisitionDetailsTableName}.note`,
         `${wcExecuteOrderRequisitionTableName}.id as requisition_id`,

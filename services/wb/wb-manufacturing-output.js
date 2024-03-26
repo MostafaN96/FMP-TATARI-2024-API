@@ -99,6 +99,7 @@ exports.update = async (wbManufacturingOutput) => {
     // Update wb Manufacturing Output Without Quantity
     await wbManufacturingOutputQueries.update({
       price: wbManufacturingOutput.price,
+      price_dollar: wbManufacturingOutput.priceDollar,
       manufacturing_fee: wbManufacturingOutput.manufacturingFee,
       document: wbManufacturingOutput.document,
       statement: wbManufacturingOutput.statement
@@ -377,6 +378,15 @@ exports.calcAvgFabricPrice = async (wbInputManufacturingResult, wboutputManufact
   inputCostWithWaste = wbInputManufacturingResult.map(function (a) { return parseFloat(a['quantity_with_waste']) * parseFloat(a['price']) }).reduce((acc, value) => acc + value, 0);
   outputCostManufacturingFee = wboutputManufacturingResult[0].quantity * parseFloat(wboutputManufacturingResult[0].manufacturing_fee)
   avgFabricPrice = (inputCostWithWaste + outputCostManufacturingFee) / wboutputManufacturingResult[0].quantity
-  console.log("avgFabricPrice :::: ", avgFabricPrice);
+  return avgFabricPrice
+}
+
+exports.calcAvgFabricPriceDollar = async (wbInputManufacturingResult, wboutputManufacturingResult) => {
+  let inputCostWithWaste = 0
+  let outputCostManufacturingFee = 0
+  let avgFabricPrice = 0
+  inputCostWithWaste = wbInputManufacturingResult.map(function (a) { return parseFloat(a['quantity_with_waste']) * parseFloat(a['price_dollar']) }).reduce((acc, value) => acc + value, 0);
+  outputCostManufacturingFee = wboutputManufacturingResult[0].quantity * parseFloat(wboutputManufacturingResult[0].manufacturing_fee)
+  avgFabricPrice = (inputCostWithWaste + outputCostManufacturingFee) / wboutputManufacturingResult[0].quantity
   return avgFabricPrice
 }

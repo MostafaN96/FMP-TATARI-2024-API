@@ -3,6 +3,7 @@ const validations = require("../../helpers/validations");
 exports.isValidUpdate = (wbManufacturingOutput) => {
     const wbManufacturingOutputSchema = joi.object({
         price: validations.joiNumber(1, 60),
+        priceDollar: validations.joiNotRequiredText(0, 50),
         quantity:validations.joiNumber(1, 60),
         manufacturingFee:validations.joiText(1, 60),
         document: validations.joiNotRequiredText(0, 10000),

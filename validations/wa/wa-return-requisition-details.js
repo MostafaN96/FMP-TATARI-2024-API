@@ -12,6 +12,7 @@ exports.isValid = (waReturnRequisition) => {
             yarnLotId: validations.joiText(15, 30),
             consigmentYarnId: validations.joiText(15, 30),
             price: validations.joiNotRequiredNumber(0, 50),
+            priceDollar: validations.joiNotRequiredText(0, 50),
             quantity: validations.joiNumber(1, 60),
             statement: validations.joiNotRequiredText(0, 10000),
         })
@@ -37,6 +38,7 @@ exports.isValidUpdate = (waReturnRequisition) => {
         date: validations.joiText(5, 50),
         note: validations.joiNotRequiredText(0, 100000),
         price: validations.joiNotRequiredNumber(0, 50),
+        priceDollar: validations.joiNotRequiredText(0, 50),
         quantity: validations.joiNumber(1, 60),
         statement: validations.joiNotRequiredText(0, 10000),
         personid: validations.joiText(1, 90),

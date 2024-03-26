@@ -96,8 +96,10 @@ exports.selectInventoryTotal = async (yarnReport) => {
                 waAddRequisitionDetailsWhereCluse[`${waAddRequisitionTableName}.date`] = selectMaxDate[0]?.date;
                 const latestPrice = await waAddRequisitionDetailsQueries.selectLatestPrice(waAddRequisitionDetailsWhereCluse)
                 yarn.latest_price = latestPrice[0]?.price
+                yarn.latest_price_dollar = latestPrice[0]?.price_dollar
             } else {
                 yarn.latest_price = 0
+                yarn.latest_price_dollar = 0
             }
             // Get Sum Current Quantity Of yarn 
             // const sumCurrentQuantity = await waService.selectSumCurrentQuantityByYarnWa(yarn.id)
@@ -169,8 +171,10 @@ exports.selectInventoryTotalByYarnByWarehouse = async (yarnId, warehouseId) => {
         const latestPrice = await waAddRequisitionDetailsQueries.selectLatestPrice(waAddRequisitionDetailsWhereCluse)
         if (latestPrice[0] != null) {
             sortedAsc[0].latest_price = latestPrice[0]?.price
+            sortedAsc[0].latest_price_dollar = latestPrice[0]?.price_dollar
         } else {
             sortedAsc[0].latest_price = 0
+            sortedAsc[0].latest_price_dollar = 0
         }
     } else {
         sortedAsc[0].latest_price = 0
@@ -231,8 +235,10 @@ exports.selectInventoryDetails = async (yarnReport) => {
                 waAddRequisitionDetailsWhereCluse[`${waAddRequisitionTableName}.date`] = selectMaxDate[0]?.date;
                 const latestPrice = await waAddRequisitionDetailsQueries.selectLatestPrice(waAddRequisitionDetailsWhereCluse)
                 warehouseYarnLot.latest_price = latestPrice[0]?.price
+                warehouseYarnLot.latest_price_dollar = latestPrice[0]?.price_dollar
             } else {
                 warehouseYarnLot.latest_price = 0
+                warehouseYarnLot.latest_price_dollar = 0
             }
             // Get Sum Current Quantity Of warehouseYarnLot 
             // const sumCurrentQuantity = await waService.selectSumCurrentQuantityByYarnWa(warehouseYarnLot.id)
@@ -324,8 +330,10 @@ exports.selectInventoryDetailsByWarehouseByYarnByLot = async (warehouseId, yarnI
         waAddRequisitionDetailsWhereCluse[`${waAddRequisitionTableName}.date`] = selectMaxDate[0]?.date;
         const latestPrice = await waAddRequisitionDetailsQueries.selectLatestPrice(waAddRequisitionDetailsWhereCluse)
         sortedAsc[0].latest_price = latestPrice[0]?.price
+        sortedAsc[0].latest_price_dollar = latestPrice[0]?.price_dollar
     } else {
         sortedAsc[0].latest_price = 0
+        sortedAsc[0].latest_price_dollar = 0
     }
     return sortedAsc;
 };
@@ -361,9 +369,11 @@ exports.selectPriceWa = async (yarnId, consigmentYarnId) => {
         waAddRequisitionDetailsWhereCluse[`${waAddRequisitionTableName}.date`] = selectMaxDate[0]?.date;
         const latestPrice = await waAddRequisitionDetailsQueries.selectLatestPrice(waAddRequisitionDetailsWhereCluse)
         if (latestPrice[0] != null) {
-            sortedAsc[0].latest_price = latestPrice[0]?.price
+            sortedAsc[0].latest_price = latestPrice[0]?.price 
+            sortedAsc[0].latest_price_dollar = latestPrice[0]?.price_dollar 
         } else {
             sortedAsc[0].latest_price = 0
+            sortedAsc[0].latest_price_dollar = 0
         }
 
         // Select Latest Consignment Price
@@ -374,12 +384,15 @@ exports.selectPriceWa = async (yarnId, consigmentYarnId) => {
         const latestConsigmentPrice = await waAddRequisitionDetailsQueries.selectLatestPrice(waAddRequisitionDetailsByConsigmentWhereCluse)
         if (latestConsigmentPrice[0] != null) {
             sortedAsc[0].latest_consigment_price = latestConsigmentPrice[0]?.price
+            sortedAsc[0].latest_consigment_price_dollar = latestConsigmentPrice[0]?.price_dollar
         } else {
             sortedAsc[0].latest_consigment_price = 0
+            sortedAsc[0].latest_consigment_price_dollar = 0
         }
     } else {
         sortedAsc[0].latest_price = 0
         sortedAsc[0].latest_consigment_price = 0
+        sortedAsc[0].latest_consigment_price_dollar = 0
     }
     return sortedAsc;
 };

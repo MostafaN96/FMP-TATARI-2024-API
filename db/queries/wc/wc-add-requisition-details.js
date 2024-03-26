@@ -21,6 +21,7 @@ exports.insert = async (wcAddRequisitionDetails, items) => {
       warehouse_id: items.warehouseId,
       consigment_manufacturing_id: items.consigmentManufacturingId,
       price: items.price,
+      price_dollar: items.priceDollar,
       quantity: items.quantity,
       document: items.document,
       statement: items.statement,

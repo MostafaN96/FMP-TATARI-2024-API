@@ -16,6 +16,7 @@ exports.insert = async (weReturnRequisitionDetails, items) => {
       dyed_fabric_id: items.dyedFabricId,
       warehouse_id: items.warehouseId,
       price: items.price,
+      price_dollar: items.priceDollar,
       quantity: items.quantity,
       fabric_piece: items.numberFabricPieces,
       statement: items.statement,
@@ -44,6 +45,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
       [
         `${weReturnRequisitionDetailsTableName}.id`,
         `${weReturnRequisitionDetailsTableName}.price`,
+        `${weReturnRequisitionDetailsTableName}.price_dollar`,
         `${weReturnRequisitionDetailsTableName}.quantity`,
         `${weReturnRequisitionDetailsTableName}.fabric_piece`,
         `${weReturnRequisitionDetailsTableName}.statement`,
@@ -103,6 +105,7 @@ exports.selectTotalByFabricId = async (dyedFabricId) => {
     .select(
       [
         `${weReturnRequisitionDetailsTableName}.price`,
+        `${weReturnRequisitionDetailsTableName}.price_dollar`,
         `${weReturnRequisitionDetailsTableName}.quantity`,
         `${weReturnRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن مرتجع'),
@@ -131,6 +134,7 @@ exports.selectTotalDetailsByFabricId = async (dyedFabricId) => {
       [
         `${weReturnRequisitionDetailsTableName}.id`,
         `${weReturnRequisitionDetailsTableName}.price`,
+        `${weReturnRequisitionDetailsTableName}.price_dollar`,
         `${weReturnRequisitionDetailsTableName}.quantity`,
         `${weReturnRequisitionDetailsTableName}.fabric_piece`,
         `${weReturnRequisitionDetailsTableName}.statement`,
@@ -200,6 +204,7 @@ exports.selectDetailsByWarehouseByFabric = async (warehouseId, dyedFabricId) => 
     .select(
       [
         `${weReturnRequisitionDetailsTableName}.price`,
+        `${weReturnRequisitionDetailsTableName}.price_dollar`,
         `${weReturnRequisitionDetailsTableName}.quantity`,
         `${weReturnRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن مرتجع'),
@@ -229,6 +234,7 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, dyedFabric
       [
         `${weReturnRequisitionDetailsTableName}.id`,
         `${weReturnRequisitionDetailsTableName}.price`,
+        `${weReturnRequisitionDetailsTableName}.price_dollar`,
         `${weReturnRequisitionDetailsTableName}.quantity`,
         `${weReturnRequisitionDetailsTableName}.fabric_piece`,
         `${weReturnRequisitionDetailsTableName}.statement`,
@@ -295,6 +301,7 @@ exports.selectPriceByFabricId = async (dyedFabricId) => {
     .select(
       [
         `${weReturnRequisitionDetailsTableName}.price`,
+        `${weReturnRequisitionDetailsTableName}.price_dollar`,
         `${weReturnRequisitionDetailsTableName}.quantity`,
         `${weReturnRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن مرتجع'),
@@ -318,6 +325,7 @@ exports.selectPriceWe = async (whereCluse) => {
     .select(
       [
         `${weReturnRequisitionDetailsTableName}.price`,
+        `${weReturnRequisitionDetailsTableName}.price_dollar`,
         `${weReturnRequisitionDetailsTableName}.quantity`,
         `${weReturnRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن مرتجع'),
@@ -383,6 +391,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
       [
         `${weReturnRequisitionDetailsTableName}.id`,
         `${weReturnRequisitionDetailsTableName}.price`,
+        `${weReturnRequisitionDetailsTableName}.price_dollar`,
         `${weReturnRequisitionDetailsTableName}.quantity`,
         `${weReturnRequisitionDetailsTableName}.fabric_piece`,
         `${weReturnRequisitionDetailsTableName}.statement`,

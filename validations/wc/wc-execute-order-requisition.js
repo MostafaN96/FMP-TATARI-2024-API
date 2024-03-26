@@ -23,6 +23,7 @@ exports.isValid = (waExecuteOrderRequisition) => {
             consigmentManufacturingNumber: validations.joiNotRequiredText(0, 60),
             newConsigmentManufacturingNumber: validations.joiText(1, 60),
             price: validations.joiNumber(1, 60),
+            priceDollar: validations.joiNotRequiredText(0, 50),
             quantity: validations.joiText(1, 60),
             validQuantity: validations.joiText(1, 60),
             note: validations.joiNotRequiredText(0, 10000),

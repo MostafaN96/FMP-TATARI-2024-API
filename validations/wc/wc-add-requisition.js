@@ -14,6 +14,7 @@ exports.isValid = (wcAddRequisition) => {
             isNewConsigment: validations.joiBoolean,
             consigmentNumber:validations.joiNotRequiredText(0, 60),
             price: validations.joiNumber(1, 60),
+            priceDollar: validations.joiNotRequiredText(0, 50),
             quantity: validations.joiNumber(1, 60),
             document: validations.joiNotRequiredNumber(0, 50),
             statement: validations.joiNotRequiredText(0, 10000),

@@ -20,6 +20,7 @@ exports.insert = async (waReturnRequisitionDetails, items) => {
       yarn_id: items.yarnId,
       consigment_yarn_id: items.consigmentYarnId,
       price: items.price,
+      price_dollar: items.priceDollar,
       quantity: items.quantity,
       statement: items.statement,
       creator_id: waReturnRequisitionDetails.personid,
@@ -46,6 +47,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
       [
         `${waReturnRequisitionDetailsTableName}.id`,
         `${waReturnRequisitionDetailsTableName}.price`,
+        `${waReturnRequisitionDetailsTableName}.price_dollar`,
         `${waReturnRequisitionDetailsTableName}.quantity`,
         `${waReturnRequisitionDetailsTableName}.statement`,
         `${waReturnRequisitionTableName}.id as requisition_id`,
@@ -88,6 +90,7 @@ exports.selectTotalByYarnId = async (yarnId) => {
     .select(
       [
         `${waReturnRequisitionDetailsTableName}.price`,
+        `${waReturnRequisitionDetailsTableName}.price_dollar`,
         `${waReturnRequisitionDetailsTableName}.quantity`,
         `${waReturnRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن مرتجع'),
@@ -116,6 +119,7 @@ exports.selectTotalDetailsByYarnId = async (yarnId) => {
       [
         `${waReturnRequisitionDetailsTableName}.id`,
         `${waReturnRequisitionDetailsTableName}.price`,
+        `${waReturnRequisitionDetailsTableName}.price_dollar`,
         `${waReturnRequisitionDetailsTableName}.quantity`,
         `${waReturnRequisitionDetailsTableName}.statement`,
         `${waReturnRequisitionTableName}.id as requisition_id`,
@@ -162,6 +166,7 @@ exports.selectTotalByYarnByWarehouseId = async (yarnId, warehouseId) => {
     .select(
       [
         `${waReturnRequisitionDetailsTableName}.price`,
+        `${waReturnRequisitionDetailsTableName}.price_dollar`,
         `${waReturnRequisitionDetailsTableName}.quantity`,
         `${waReturnRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن مرتجع'),
@@ -191,6 +196,7 @@ exports.selectTotalDetailsByYarnIdByWarehouseId = async (yarnId, warehouseId) =>
       [
         `${waReturnRequisitionDetailsTableName}.id`,
         `${waReturnRequisitionDetailsTableName}.price`,
+        `${waReturnRequisitionDetailsTableName}.price_dollar`,
         `${waReturnRequisitionDetailsTableName}.quantity`,
         `${waReturnRequisitionDetailsTableName}.statement`,
         `${waReturnRequisitionTableName}.id as requisition_id`,
@@ -239,6 +245,7 @@ exports.selectDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLo
     .select(
       [
         `${waReturnRequisitionDetailsTableName}.price`,
+        `${waReturnRequisitionDetailsTableName}.price_dollar`,
         `${waReturnRequisitionDetailsTableName}.quantity`,
         `${waReturnRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن مرتجع'),
@@ -270,6 +277,7 @@ exports.selectDetailsDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId,
       [
         `${waReturnRequisitionDetailsTableName}.id`,
         `${waReturnRequisitionDetailsTableName}.price`,
+        `${waReturnRequisitionDetailsTableName}.price_dollar`,
         `${waReturnRequisitionDetailsTableName}.quantity`,
         `${waReturnRequisitionDetailsTableName}.statement`,
         `${waReturnRequisitionTableName}.id as requisition_id`,
@@ -314,6 +322,7 @@ exports.selectPriceByYarnId = async (yarnId) => {
     .select(
       [
         `${waReturnRequisitionDetailsTableName}.price`,
+        `${waReturnRequisitionDetailsTableName}.price_dollar`,
         `${waReturnRequisitionDetailsTableName}.quantity`,
         `${waReturnRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن مرتجع'),
@@ -381,6 +390,7 @@ exports.selectTotalDetailsByDate = async (bodyPalod) => {
       [
         `${waReturnRequisitionDetailsTableName}.id`,
         `${waReturnRequisitionDetailsTableName}.price`,
+        `${waReturnRequisitionDetailsTableName}.price_dollar`,
         `${waReturnRequisitionDetailsTableName}.quantity`,
         `${waReturnRequisitionDetailsTableName}.statement`,
         `${waReturnRequisitionTableName}.id as requisition_id`,

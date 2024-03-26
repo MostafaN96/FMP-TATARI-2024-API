@@ -19,6 +19,7 @@ exports.insert = async (wdTransitionBetweenDyersRequisitionDetails, items) => {
       fabric_id: items.fabricId,
       consigment_dyeing_id: items.consigmentDyeingId,
       price: items.price,
+      price_dollar: items.priceDollar,
       quantity: items.quantity,
       document: items.document ?? '',
       statement: items.statement ?? '',
@@ -57,6 +58,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
     `${wdTransitionBetweenDyersRequisitionDetailsTableName}.document`,
     `${wdTransitionBetweenDyersRequisitionDetailsTableName}.statement`,
     `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price`,
+    `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price_dollar`,
     `${bussinessmanTableName}.id as from_dyeing_id`,
     `${bussinessmanTableName}.name as from_dyeing_name`,
     `to_dyeing.name as to_dyeing_name`,
@@ -149,6 +151,7 @@ exports.selectFromDyeingTotalByFabricIdByDyeingId = async (fabricId, dyeingId) =
     .select(
       [
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price`,
+        `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price_dollar`,
         knex.raw('? as dyeing_quantity', '0'),
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.quantity`,
         knex.raw('? as form_current_quantity', '0'),
@@ -182,6 +185,7 @@ exports.selectToDyeingTotalByFabricIdByDyeingId = async (fabricId, dyeingId) => 
       [
         `${wdTableName}.id as wd_id`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price`,
+        `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price_dollar`,
         knex.raw('? as dyeing_quantity', '0'),
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.quantity`,
         // knex.raw(`coalesce(${wdFormDyeingRequisitionDetailsTableName}.current_quantity, 0) as form_current_quantity`),
@@ -229,6 +233,7 @@ exports.selectFromDyeingTotalDetailsByFabricIdByDyeingId = async (fabricId, dyei
       [
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.id`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price`,
+        `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price_dollar`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.quantity`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.statement`,
         `${wdTransitionBetweenDyersRequisitionTableName}.id as requisition_id`,
@@ -277,6 +282,7 @@ exports.selectToDyeingTotalDetailsByFabricIdByDyeingId = async (fabricId, dyeing
       [
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.id`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price`,
+        `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price_dollar`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.quantity`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.statement`,
         `${wdTransitionBetweenDyersRequisitionTableName}.id as requisition_id`,
@@ -326,6 +332,7 @@ exports.selectFromDyeingDetailsByDyeingByFabricByConsigmentDyeing = async (dyein
       [
         // `${wdTableName}.id as wd_id`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price`,
+        `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price_dollar`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.quantity`,
         knex.raw('? as dyeing_quantity', '0'),
         knex.raw('? as form_current_quantity', '0'),
@@ -375,6 +382,7 @@ exports.selectToDyeingDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingI
       [
         `${wdTableName}.id as wd_id`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price`,
+        `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price_dollar`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.quantity`,
         knex.raw('? as dyeing_quantity', '0'),
                 // knex.raw(`coalesce(${wdFormDyeingRequisitionDetailsTableName}.current_quantity, 0) as form_current_quantity`),
@@ -421,6 +429,7 @@ exports.selectFromDyeingDetailsDetailsByDyeingByFabricByConsigmentDyeing = async
       [
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.id`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price`,
+        `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price_dollar`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.quantity`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.statement`,
         `${wdTransitionBetweenDyersRequisitionTableName}.id as requisition_id`,
@@ -470,6 +479,7 @@ exports.selectToDyeingDetailsDetailsByDyeingByFabricByConsigmentDyeing = async (
       [
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.id`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price`,
+        `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price_dollar`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.quantity`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.statement`,
         `${wdTransitionBetweenDyersRequisitionTableName}.id as requisition_id`,
@@ -518,6 +528,7 @@ exports.selectFromDyeingPriceByFabricIdByDyeingId = async (fabricId, dyeingId) =
     .select(
       [
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price`,
+        `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price_dollar`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.quantity`,
         `${wdTransitionBetweenDyersRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل بين المصابغ'),
@@ -549,6 +560,7 @@ exports.selectFromDyeingPriceByFabricIdByDyeingIdByConsigmentDyeingId = async (f
     .select(
       [
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price`,
+        `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price_dollar`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.quantity`,
         `${wdTransitionBetweenDyersRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل بين المصابغ'),
@@ -579,6 +591,7 @@ exports.selectToDyeingPriceByFabricIdByDyeingId = async (fabricId, dyeingId) => 
     .select(
       [
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price`,
+        `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price_dollar`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.quantity`,
         `${wdTransitionBetweenDyersRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل بين المصابغ'),
@@ -613,6 +626,7 @@ exports.selectToDyeingPriceByFabricIdByDyeingIdByConsigmentDyeingId = async (fab
     .select(
       [
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price`,
+        `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price_dollar`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.quantity`,
         `${wdTransitionBetweenDyersRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل بين المصابغ'),
@@ -642,6 +656,7 @@ exports.selectFromDyeingTotalDetailsByDate = async (bodyPaylod) => {
       [
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.id`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price`,
+        `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price_dollar`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.quantity`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.statement`,
         `${wdTransitionBetweenDyersRequisitionTableName}.id as requisition_id`,
@@ -686,6 +701,7 @@ exports.selectToDyeingTotalDetailsByDate = async (bodyPaylod) => {
       [
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.id`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price`,
+        `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price_dollar`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.quantity`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.statement`,
         `${wdTransitionBetweenDyersRequisitionTableName}.id as requisition_id`,
@@ -733,6 +749,7 @@ exports.selectFromDyeingTotalByFabricId = async (fabricId) => {
     .select(
       [
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price`,
+        `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price_dollar`,
         knex.raw('? as dyeing_quantity', '0'),
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.quantity`,
         knex.raw('? as form_current_quantity', '0'),
@@ -764,6 +781,7 @@ exports.selectToDyeingTotalByFabricId = async (fabricId) => {
     .select(
       [
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price`,
+        `${wdTransitionBetweenDyersRequisitionDetailsTableName}.price_dollar`,
         knex.raw('? as dyeing_quantity', '0'),
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.quantity`,
         knex.raw(`coalesce(${wdFormDyeingRequisitionDetailsTableName}.current_quantity, 0) as form_current_quantity`),

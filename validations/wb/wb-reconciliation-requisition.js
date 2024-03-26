@@ -13,6 +13,7 @@ exports.isValid = (waReconciliationRequisition) => {
             consigmentYarnId: validations.joiText(15, 30),
             fabricToBeManufacturedId: validations.joiNotRequiredText(15, 30),
             price: validations.joiNumber(1, 60),
+            priceDollar: validations.joiNotRequiredText(0, 50),
             quantity: validations.joiNumber(1, 60),
             statement: validations.joiNotRequiredText(0, 10000),
             inputOutput: validations.joiNumberStartByZero(1, 60),

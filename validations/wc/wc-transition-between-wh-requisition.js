@@ -16,6 +16,7 @@ exports.isValid = (wcTransitionBetweenWHRequisition) => {
             fabricName: validations.joiNotRequiredText(0, 50),
             fabricCode: validations.joiNotRequiredText(0, 50),
             price: validations.joiText(1, 60),
+            priceDollar: validations.joiNotRequiredText(0, 50),
             quantity: validations.joiText(1, 60),
             validQuantity: validations.joiNotRequiredText(0, 10000),
             document: validations.joiNotRequiredText(0, 50),

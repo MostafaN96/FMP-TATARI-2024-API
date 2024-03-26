@@ -24,6 +24,7 @@ exports.insert = async (wcTransitionBetweenWHRequisitionDetails, items) => {
       fabric_id: items.fabricId,
       consigment_manufacturing_id: items.consigmentManufacturingId,
       price: items.price,
+      price_dollar: items.priceDollar,
       quantity: items.quantity,
       document: items.document ?? '',
       statement: items.statement ?? '',
@@ -45,6 +46,7 @@ exports.selectByRequisitionId = async (whereCluse) => {
   let columns = [
     `id`,
     `price`,
+    `price_dollar`,
     `quantity`,
     `document`,
     `statement`,
@@ -68,6 +70,7 @@ exports.selectByRequisitionId = async (whereCluse) => {
     this.select([
       `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`,
       `${wcTransitionBetweenWHRequisitionDetailsTableName}.price`,
+      `${wcTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
       `${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
       `${wcTransitionBetweenWHRequisitionDetailsTableName}.document`,
       `${wcTransitionBetweenWHRequisitionDetailsTableName}.statement`,
@@ -150,7 +153,10 @@ exports.selectLatestPrice = async (whereCluse) => {
   let queryResults = false;
   await sqlFun
     .selectWithJionWithLimit(wcTransitionBetweenWHRequisitionDetailsTableName, 
-      ["wc_transition_between_wh_requisitions_details.id", "wc_transition_between_wh_requisitions_details.price"], 
+      ["wc_transition_between_wh_requisitions_details.id", 
+      "wc_transition_between_wh_requisitions_details.price",
+      "wc_transition_between_wh_requisitions_details.price_dollar",
+    ], 
       whereCluse,
       wcTransitionBetweenWHRequisitionTableName, 
     `${wcTransitionBetweenWHRequisitionTableName}.id`,
@@ -223,6 +229,7 @@ exports.selectFromTotalByFabricId = async (fabricId) => {
       [
         `${wcTransitionBetweenWHRequisitionTableName}.to_warehouse_id as warehouse_id`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
         `${wcTransitionBetweenWHRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل بين المخازن'),
@@ -262,6 +269,7 @@ exports.selectToTotalByFabricId = async (fabricId) => {
       [
         `${wcTransitionBetweenWHRequisitionTableName}.to_warehouse_id as warehouse_id`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
         `${wcTransitionBetweenWHRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل بين المخازن'),
@@ -295,6 +303,7 @@ exports.selectFromTotalDetailsByFabricId = async (fabricId) => {
       [
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.document`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.statement`,
@@ -351,6 +360,7 @@ exports.selectToTotalDetailsByFabricId = async (fabricId) => {
       [
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.document`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.statement`,
@@ -407,6 +417,7 @@ exports.selectFromWarehouseDetailsByWarehouseByFabricByConsigmentManufacturing =
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.consigment_manufacturing_id`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
         `${wcTransitionBetweenWHRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل بين المخازن'),
@@ -446,6 +457,7 @@ exports.selectToWarehouseDetailsByWarehouseByFabricByConsigmentManufacturing = a
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.consigment_manufacturing_id`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
         `${wcTransitionBetweenWHRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل بين المخازن'),
@@ -481,6 +493,7 @@ exports.selectFromWarehouseDetailsDetailsByWarehouseByFabricByConsigmentManufact
       [
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.document`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.statement`,
@@ -539,6 +552,7 @@ exports.selectToWarehouseDetailsDetailsByWarehouseByFabricByConsigmentManufactur
       [
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.document`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.statement`,
@@ -588,6 +602,7 @@ exports.selectFromWarehouseTotalDetailsByDate = async (bodyPaylod) => {
       [
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.document`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.statement`,
@@ -641,6 +656,7 @@ exports.selectToWarehouseTotalDetailsByDate = async (bodyPaylod) => {
       [
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.document`,
         `${wcTransitionBetweenWHRequisitionDetailsTableName}.statement`,

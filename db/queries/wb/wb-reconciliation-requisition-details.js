@@ -24,6 +24,7 @@ exports.insert = async (wbReconciliationRequisitionDetails, items) => {
       yarn_lot_id: items.yarnLotId,
       consigment_yarn_id: items.consigmentYarnId,
       price: items.price,
+      price_dollar: items.priceDollar,
       quantity: items.quantity,
       statement: items.statement ?? '',
       input_output: items.inputOutput,
@@ -51,6 +52,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
       [
         `${wbReconciliationRequisitionDetailsTableName}.id`,
         `${wbReconciliationRequisitionDetailsTableName}.price`,
+        `${wbReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wbReconciliationRequisitionDetailsTableName}.quantity`,
         `${wbReconciliationRequisitionDetailsTableName}.statement`,
         `${wbReconciliationRequisitionDetailsTableName}.input_output`,
@@ -96,6 +98,7 @@ exports.selectOneByRequisitionId = async (requisitionId) => {
       [
         `${wbReconciliationRequisitionDetailsTableName}.id`,
         `${wbReconciliationRequisitionDetailsTableName}.price`,
+        `${wbReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wbReconciliationRequisitionDetailsTableName}.quantity`,
         `${wbReconciliationRequisitionDetailsTableName}.statement`,
         `${wbReconciliationRequisitionDetailsTableName}.input_output`,
@@ -141,6 +144,7 @@ exports.selectTotalByYarnIdByIndustryId = async (yarnId, manufacturerId) => {
     .select(
       [
         `${wbReconciliationRequisitionDetailsTableName}.price`,
+        `${wbReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wbReconciliationRequisitionDetailsTableName}.quantity`,
         `${wbReconciliationRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن تسوية'),
@@ -170,6 +174,7 @@ exports.selectTotalDetailsByYarnIdByIndustryId = async (yarnId, manufacturerId) 
       [
         `${wbReconciliationRequisitionDetailsTableName}.id`,
         `${wbReconciliationRequisitionDetailsTableName}.price`,
+        `${wbReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wbReconciliationRequisitionDetailsTableName}.quantity`,
         `${wbReconciliationRequisitionDetailsTableName}.statement`,
         `${wbReconciliationRequisitionTableName}.id as requisition_id`,
@@ -216,6 +221,7 @@ exports.selectDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLo
     .select(
       [
         `${wbReconciliationRequisitionDetailsTableName}.price`,
+        `${wbReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wbReconciliationRequisitionDetailsTableName}.quantity`,
         `${wbReconciliationRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن تسوية'),
@@ -247,6 +253,7 @@ exports.selectDetailsDetailsByIndustryByYarnByLot = async (industryId, yarnId, y
       [
         `${wbReconciliationRequisitionDetailsTableName}.id`,
         `${wbReconciliationRequisitionDetailsTableName}.price`,
+        `${wbReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wbReconciliationRequisitionDetailsTableName}.quantity`,
         `${wbReconciliationRequisitionDetailsTableName}.statement`,
         `${wbReconciliationRequisitionTableName}.id as requisition_id`,
@@ -291,6 +298,7 @@ exports.selectPriceByYarnIdByIndustryId = async (yarnId) => {
     .select(
       [
         `${wbReconciliationRequisitionDetailsTableName}.price`,
+        `${wbReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wbReconciliationRequisitionDetailsTableName}.quantity`,
         `${wbReconciliationRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن تسوية'),
@@ -400,6 +408,7 @@ exports.selectDetailsByIndustryByYarnByLot = async (manufacturerId, yarnId, yarn
     .select(
       [
         `${wbReconciliationRequisitionDetailsTableName}.price`,
+        `${wbReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wbReconciliationRequisitionDetailsTableName}.quantity`,
         `${wbReconciliationRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن تسوية'),
@@ -425,6 +434,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
       [
         `${wbReconciliationRequisitionDetailsTableName}.id`,
         `${wbReconciliationRequisitionDetailsTableName}.price`,
+        `${wbReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wbReconciliationRequisitionDetailsTableName}.quantity`,
         `${wbReconciliationRequisitionDetailsTableName}.statement`,
         `${wbReconciliationRequisitionTableName}.id as requisition_id`,

@@ -15,6 +15,7 @@ exports.insert = async (wbTransitionBetweenIndustriesRequisitionDetails, items) 
       yarn_lot_id: items.yarnLotId,
       consigment_yarn_id: items.consigmentYarnId,
       price: items.price,
+      price_dollar: items.priceDollar,
       quantity: items.quantity,
       document: items.document ?? '',
       statement: items.statement ?? '',
@@ -53,6 +54,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
     `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.document`,
     `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.statement`,
     `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price`,
+    `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price_dollar`,
     `${bussinessmanTableName}.id as from_industry_id`,
     `${bussinessmanTableName}.name as from_industry_name`,
     `to_industry.name as to_industry_name`,
@@ -149,6 +151,7 @@ exports.selectFromIndustryTotalByYarnIdByIndustryId = async (yarnId, manufacture
     .select(
       [
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price_dollar`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.quantity`,
         `${wbTransitionBetweenIndustriesRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل بين المصانع'),
@@ -180,6 +183,7 @@ exports.selectToIndustryTotalByYarnIdByIndustryId = async (yarnId, manufacturerI
     .select(
       [
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price_dollar`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.quantity`,
         `${wbTransitionBetweenIndustriesRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل بين المصانع'),
@@ -214,6 +218,7 @@ exports.selectFromIndustryTotalDetailsByYarnIdByIndustryId = async (yarnId, manu
       [
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.id`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price_dollar`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.quantity`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.statement`,
         `${wbTransitionBetweenIndustriesRequisitionTableName}.id as requisition_id`,
@@ -266,6 +271,7 @@ exports.selectToIndustryTotalDetailsByYarnIdByIndustryId = async (yarnId, manufa
       [
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.id`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price_dollar`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.quantity`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.statement`,
         `${wbTransitionBetweenIndustriesRequisitionTableName}.id as requisition_id`,
@@ -319,6 +325,7 @@ exports.selectFromIndustryDetailsByIndustryByYarnByLot = async (manufacturerId, 
     .select(
       [
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price_dollar`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.quantity`,
         `${wbTransitionBetweenIndustriesRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل بين المصانع'),
@@ -351,6 +358,7 @@ exports.selectToIndustryDetailsByIndustryByYarnByLot = async (manufacturerId, ya
     .select(
       [
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price_dollar`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.quantity`,
         `${wbTransitionBetweenIndustriesRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل بين المصانع'),
@@ -387,6 +395,7 @@ exports.selectFromIndustryDetailsDetailsByIndustryByYarnByLot = async (industryI
       [
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.id`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price_dollar`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.quantity`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.statement`,
         `${wbTransitionBetweenIndustriesRequisitionTableName}.id as requisition_id`,
@@ -442,6 +451,7 @@ exports.selectToIndustryDetailsDetailsByIndustryByYarnByLot = async (industryId,
       [
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.id`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price_dollar`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.quantity`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.statement`,
         `${wbTransitionBetweenIndustriesRequisitionTableName}.id as requisition_id`,
@@ -494,6 +504,7 @@ exports.selectFromIndustryPriceByYarnIdByIndustryId = async (yarnId, manufacture
     .select(
       [
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price_dollar`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.quantity`,
         `${wbTransitionBetweenIndustriesRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل بين المصانع'),
@@ -524,6 +535,7 @@ exports.selectToIndustryPriceByYarnIdByIndustryId = async (yarnId, manufacturerI
     .select(
       [
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price_dollar`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.quantity`,
         `${wbTransitionBetweenIndustriesRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل بين المصانع'),
@@ -553,6 +565,7 @@ exports.selectFromIndustryTotalDetailsByDate = async (bodyPaylod) => {
       [
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.id`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price_dollar`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.quantity`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.statement`,
         `${wbTransitionBetweenIndustriesRequisitionTableName}.id as requisition_id`,
@@ -601,6 +614,7 @@ exports.selectToIndustryTotalDetailsByDate = async (bodyPaylod) => {
       [
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.id`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price_dollar`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.quantity`,
         `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.statement`,
         `${wbTransitionBetweenIndustriesRequisitionTableName}.id as requisition_id`,

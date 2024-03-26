@@ -135,6 +135,7 @@ exports.update = async (weExecuteOrderRequisitionDetails) => {
             callArray.push(
                 weExecuteOrderRequisitionDetailsQueries.update({
                     price: weExecuteOrderRequisitionDetails.price,
+                    price_dollar: weExecuteOrderRequisitionDetails.priceDollar,
                     note: weExecuteOrderRequisitionDetails.note
                 },
                     {
@@ -269,7 +270,8 @@ exports.update = async (weExecuteOrderRequisitionDetails) => {
                             // Increment weDyedFabricOrderRequisitionDetailsService current_quantity
                             updateResults = await weDyedFabricOrderRequisitionDetailsService.updateIncrementForExecuteOrder({
                                 weDyedFabricOrderRequisitionDetailsId: weExecuteOrderRequisitionDetails.weDyedFabricOrderRequisitionDetailsId,
-                                quantity: parseFloat((oldQuantity - newQuantity).toFixed(3))
+                                quantity: parseFloat((oldQuantity - newQuantity).toFixed(3)),
+                                is_order: 1
                             })
 
                         } else {

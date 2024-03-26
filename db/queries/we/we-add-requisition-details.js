@@ -23,6 +23,7 @@ exports.insert = async (weAddRequisitionDetails, items) => {
       color_id: items.colorId,      
       consigment_dyeing_id: items.consigmentDyeingId,
       price: items.price,
+      price_dollar: items.priceDollar,
       color_code: items.colorCode,
       dyeing_code: items.dyeingCode,
       fabric_piece: items.numberFabricPieces,
@@ -54,6 +55,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
       [
         `${weAddRequisitionDetailsTableName}.id`,
         `${weAddRequisitionDetailsTableName}.price`,
+        `${weAddRequisitionDetailsTableName}.price_dollar`,
         `${weAddRequisitionDetailsTableName}.quantity`,
         `${weAddRequisitionDetailsTableName}.document`,
         `${weAddRequisitionDetailsTableName}.statement`,
@@ -107,6 +109,7 @@ exports.selectTotalByFabricId = async (fabricId) => {
       [
         `${weAddRequisitionDetailsTableName}.id`,
         `${weAddRequisitionDetailsTableName}.price`,
+        `${weAddRequisitionDetailsTableName}.price_dollar`,
         `${weAddRequisitionDetailsTableName}.quantity`,
         `${weAddRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن اضافة'),
@@ -135,6 +138,7 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
       [
         `${weAddRequisitionDetailsTableName}.id`,
         `${weAddRequisitionDetailsTableName}.price`,
+        `${weAddRequisitionDetailsTableName}.price_dollar`,
         `${weAddRequisitionDetailsTableName}.quantity`,
         `${weAddRequisitionDetailsTableName}.document`,
         `${weAddRequisitionDetailsTableName}.statement`,
@@ -195,6 +199,7 @@ exports.selectDetailsByWarehouseByFabric = async (warehouseId, fabricId) => {
     .select(
       [
         `${weAddRequisitionDetailsTableName}.price`,
+        `${weAddRequisitionDetailsTableName}.price_dollar`,
         `${weAddRequisitionDetailsTableName}.quantity`,
         `${weAddRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن اضافة'),
@@ -224,6 +229,7 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, fabricId) 
       [
         `${weAddRequisitionDetailsTableName}.id`,
         `${weAddRequisitionDetailsTableName}.price`,
+        `${weAddRequisitionDetailsTableName}.price_dollar`,
         `${weAddRequisitionDetailsTableName}.quantity`,
         `${weAddRequisitionDetailsTableName}.document`,
         `${weAddRequisitionDetailsTableName}.statement`,
@@ -281,6 +287,7 @@ exports.selectPriceByFabricId = async (fabricId) => {
     .select(
       [
         `${weAddRequisitionDetailsTableName}.price`,
+        `${weAddRequisitionDetailsTableName}.price_dollar`,
         `${weAddRequisitionDetailsTableName}.quantity`,
         `${weAddRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن اضافة'),
@@ -304,6 +311,7 @@ exports.selectPriceWe = async (whereCluse) => {
     .select(
       [
         `${weAddRequisitionDetailsTableName}.price`,
+        `${weAddRequisitionDetailsTableName}.price_dollar`,
         `${weAddRequisitionDetailsTableName}.quantity`,
         `${weAddRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن اضافة'),
@@ -324,7 +332,11 @@ exports.selectLatestPrice = async (whereCluse) => {
   let queryResults = false;
   await sqlFun
     .selectWithJionWithLimit(weAddRequisitionDetailsTableName, 
-      ["we_add_requisition_details.id", "we_add_requisition_details.price"], 
+      [
+        "we_add_requisition_details.id", 
+      "we_add_requisition_details.price",
+      "we_add_requisition_details.price_dollar",
+    ], 
       whereCluse,
     weAddRequisitionTableName, 
     `${weAddRequisitionTableName}.id`,
@@ -377,6 +389,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
       [
         `${weAddRequisitionDetailsTableName}.id`,
         `${weAddRequisitionDetailsTableName}.price`,
+        `${weAddRequisitionDetailsTableName}.price_dollar`,
         `${weAddRequisitionDetailsTableName}.quantity`,
         `${weAddRequisitionDetailsTableName}.document`,
         `${weAddRequisitionDetailsTableName}.statement`,

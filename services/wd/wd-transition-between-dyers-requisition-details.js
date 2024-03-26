@@ -112,6 +112,7 @@ exports.update = async (wdTransitionBetweenDyersRequisitionDetails) => {
         callArray.push(
             wdTransitionBetweenDyersRequisitionDetailsQueries.update({
                 price: wdTransitionBetweenDyersRequisitionDetails.price,
+                price_dollar: wdTransitionBetweenDyersRequisitionDetails.priceDollar,
                 document: wdTransitionBetweenDyersRequisitionDetails.document,
                 statement: wdTransitionBetweenDyersRequisitionDetails.statement
             },

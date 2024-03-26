@@ -3,7 +3,7 @@
 const knex = require("../../config/connection").getConnection();
 
 // Util
-const { wdDyeingRequisitionDetailsTableName, wdDyeingRequisitionTableName, weSellRequisitionDetailsTableName, fabricTableName, colorCategoryTableName, colorTableName, weAddRequisitionDetailsTableName, weSellRequisitionTableName, bussinessmanTableName, weTableName, weSellRequisitionDetailsWeTableName, anointedColorsPricesTableName, weReconciliationRequisitionDetailsTableName, weReconciliationRequisitionDetailsWeTableName, wdFormDyeingRequisitionDetailsTableName, weReturnSellRequisitionDetailsTableName, weReturnSellRequisitionDetailsReturnDetailsTableName, weReturnSellRequisitionTableName } = require("../../../util/database-tables-name");
+const { wdDyeingRequisitionDetailsTableName, wdDyeingRequisitionTableName, weSellRequisitionDetailsTableName, fabricTableName, colorCategoryTableName, colorTableName, weAddRequisitionDetailsTableName, weSellRequisitionTableName, bussinessmanTableName, weTableName, weSellRequisitionDetailsWeTableName, anointedColorsPricesTableName, weReconciliationRequisitionDetailsTableName, weReconciliationRequisitionDetailsWeTableName, wdFormDyeingRequisitionDetailsTableName, weReturnSellRequisitionDetailsTableName, weReturnSellRequisitionDetailsReturnDetailsTableName, weReturnSellRequisitionTableName, weTransitionBetweenWHRequisitionDetailsTableName, weTransitionBetweenWHRequisitionDetailsWeTableName, weExecuteOrderRequisitionDetailsWeTableName, weExecuteOrderRequisitionDetailsTableName } = require("../../../util/database-tables-name");
 
 
 exports.dyeingReportByFabric = async (dyedFabricId) => {
@@ -359,6 +359,90 @@ exports.salesReport = async () => {
                         `${colorTableName}.id`,
                         `${anointedColorsPricesTableName}.color_id`)
                     .where(`${weReturnSellRequisitionDetailsTableName}.quantity`, ">", 0)
+            })
+            .union(function () {
+                this.select([
+                    `${weSellRequisitionTableName}.id as requisition_id`,
+                    `${weSellRequisitionTableName}.number`,
+                    `${weSellRequisitionTableName}.date`,
+                    `${fabricTableName}.name as dyed_fabric_name`,
+                    `${fabricTableName}.code as dyed_fabric_code`,
+                    `${fabricTableName}.dyeing_code`,
+                    `${weSellRequisitionDetailsTableName}.price`,
+                    `${colorCategoryTableName}.name as color_category_name`,
+                    `${colorTableName}.name as color_name`,
+                    `${weTransitionBetweenWHRequisitionDetailsTableName}.color_code`,
+                    `${bussinessmanTableName}.name as bussiness_man_name`,
+                    knex.raw('? as type_of_requisition', 'اذن بيع'),
+                    knex.raw('? as is_return_type', 'sell_warning'),
+                    knex.raw('? as input_output', '1'),
+                    knex.raw('? as sign', ''),
+                    `${weSellRequisitionDetailsTableName}.quantity as sell_quantity`,
+                knex.raw('? as return_quantity', 0),
+                `${weSellRequisitionDetailsTableName}.quantity`,
+                ])
+                    .from(`${weSellRequisitionDetailsTableName}`)
+                    .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
+                    .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${weSellRequisitionTableName}.seller_id`)
+                    .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weSellRequisitionDetailsTableName}.dyed_fabric_id`)
+                    .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
+                        `${weSellRequisitionDetailsWeTableName}.we_sell_requisition_details_id`,
+                        `${weSellRequisitionDetailsTableName}.id`)
+                        .innerJoin(`${weTableName}`,
+                        `${weTableName}.id`,
+                        `${weSellRequisitionDetailsWeTableName}.we_id`)
+                    .innerJoin(`${weTransitionBetweenWHRequisitionDetailsTableName}`,
+                        `${weTransitionBetweenWHRequisitionDetailsTableName}.id`,
+                        `${weTableName}.we_transition_between_wh_requisitions_details_id`)
+                    .innerJoin(`${colorCategoryTableName}`,
+                        `${colorCategoryTableName}.id`,
+                        `${weTransitionBetweenWHRequisitionDetailsTableName}.color_category_id`)
+                    .innerJoin(`${colorTableName}`,
+                        `${colorTableName}.id`,
+                        `${weTransitionBetweenWHRequisitionDetailsTableName}.color_id`)
+                    .where(`${weSellRequisitionDetailsTableName}.quantity`, ">", 0)
+            })
+            .union(function () {
+                this.select([
+                    `${weSellRequisitionTableName}.id as requisition_id`,
+                    `${weSellRequisitionTableName}.number`,
+                    `${weSellRequisitionTableName}.date`,
+                    `${fabricTableName}.name as dyed_fabric_name`,
+                    `${fabricTableName}.code as dyed_fabric_code`,
+                    `${fabricTableName}.dyeing_code`,
+                    `${weSellRequisitionDetailsTableName}.price`,
+                    `${colorCategoryTableName}.name as color_category_name`,
+                    `${colorTableName}.name as color_name`,
+                    `${weExecuteOrderRequisitionDetailsTableName}.color_code`,
+                    `${bussinessmanTableName}.name as bussiness_man_name`,
+                    knex.raw('? as type_of_requisition', 'اذن بيع'),
+                    knex.raw('? as is_return_type', 'sell_warning'),
+                    knex.raw('? as input_output', '1'),
+                    knex.raw('? as sign', ''),
+                    `${weSellRequisitionDetailsTableName}.quantity as sell_quantity`,
+                knex.raw('? as return_quantity', 0),
+                `${weSellRequisitionDetailsTableName}.quantity`,
+                ])
+                    .from(`${weSellRequisitionDetailsTableName}`)
+                    .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
+                    .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${weSellRequisitionTableName}.seller_id`)
+                    .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weSellRequisitionDetailsTableName}.dyed_fabric_id`)
+                    .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
+                        `${weSellRequisitionDetailsWeTableName}.we_sell_requisition_details_id`,
+                        `${weSellRequisitionDetailsTableName}.id`)
+                        .innerJoin(`${weTableName}`,
+                        `${weTableName}.id`,
+                        `${weSellRequisitionDetailsWeTableName}.we_id`)
+                    .innerJoin(`${weExecuteOrderRequisitionDetailsTableName}`,
+                        `${weExecuteOrderRequisitionDetailsTableName}.id`,
+                        `${weTableName}.we_execute_order_requisition_details_id`)
+                    .innerJoin(`${colorCategoryTableName}`,
+                        `${colorCategoryTableName}.id`,
+                        `${weExecuteOrderRequisitionDetailsTableName}.color_category_id`)
+                    .innerJoin(`${colorTableName}`,
+                        `${colorTableName}.id`,
+                        `${weExecuteOrderRequisitionDetailsTableName}.color_id`)
+                    .where(`${weSellRequisitionDetailsTableName}.quantity`, ">", 0)
             })
     }).as('temp')
         .sum("sell_quantity as sell_quantity")

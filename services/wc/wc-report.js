@@ -104,8 +104,10 @@ exports.selectInventoryTotal = async (fabricReport) => {
                 wcAddRequisitionDetailsWhereCluse[`${wcAddRequisitionTableName}.date`] = selectMaxDate[0]?.date;
                 const latestPrice = await wcAddRequisitionDetailsQueries.selectLatestPrice(wcAddRequisitionDetailsWhereCluse)
                 fabric.latest_price = (latestPrice[0] == undefined) ? 0 : latestPrice[0]?.price
+                fabric.latest_price_dollar = (latestPrice[0] == undefined) ? 0 : latestPrice[0]?.price_dollar
             } else {
                 fabric.latest_price = 0
+                fabric.latest_price_dollar = 0
             }
             let manufacturingMaxDateWhereCluse = {};
             manufacturingMaxDateWhereCluse[`${wbManufacturingOutputTableName}.fabric_id`] = fabric.id;
@@ -126,8 +128,10 @@ exports.selectInventoryTotal = async (fabricReport) => {
                 wbManufacturingOutputWhereCluse[`${wbManufacturingRequisitionTableName}.date`] = selectManufacturingMaxDate[0]?.date;
                 const latestManufacturingPrice = await wbManufacturingOutputQueries.selectLatestPrice(wbManufacturingOutputWhereCluse)
                 fabric.latest_manufacturing_price = (latestManufacturingPrice[0] == undefined) ? 0 : latestManufacturingPrice[0]?.price
+                fabric.latest_manufacturing_price_dollar = (latestManufacturingPrice[0] == undefined) ? 0 : latestManufacturingPrice[0]?.price_dollar
             } else {
                 fabric.latest_manufacturing_price = 0
+                fabric.latest_manufacturing_price_dollar = 0
             }
             // Get Sum Current Quantity Of fabric 
             // const sumCurrentQuantity = await waService.selectSumCurrentQuantityByYarnWa(fabric.id)
@@ -201,8 +205,10 @@ exports.selectInventoryTotalByFabric = async (fabricId) => {
         wcAddRequisitionDetailsWhereCluse[`${wcAddRequisitionTableName}.date`] = selectMaxDate[0]?.date;
         const latestPrice = await wcAddRequisitionDetailsQueries.selectLatestPrice(wcAddRequisitionDetailsWhereCluse)
         sortedAsc[0].latest_price = latestPrice[0]?.price
+        sortedAsc[0].latest_price_dollar = latestPrice[0]?.price_dollar
     } else {
         sortedAsc[0].latest_price = 0
+        sortedAsc[0].latest_price_dollar = 0
     }
     return sortedAsc;
 };
@@ -268,8 +274,10 @@ exports.selectInventoryDetails = async (fabricReport) => {
                 wcAddRequisitionDetailsWhereCluse[`${wcAddRequisitionTableName}.date`] = selectMaxDate[0]?.date;
                 const latestPrice = await wcAddRequisitionDetailsQueries.selectLatestPrice(wcAddRequisitionDetailsWhereCluse)
                 warehousesFabricConsigmentManufacturing.latest_price = latestPrice[0]?.price
+                warehousesFabricConsigmentManufacturing.latest_price_dollar = latestPrice[0]?.price_dollar
             } else {
                 warehousesFabricConsigmentManufacturing.latest_price = 0
+                warehousesFabricConsigmentManufacturing.latest_price_dollar = 0
             }
 
             let manufacturingMaxDateWhereCluse = {};
@@ -291,8 +299,10 @@ exports.selectInventoryDetails = async (fabricReport) => {
                 wbManufacturingOutputWhereCluse[`${wbManufacturingRequisitionTableName}.date`] = selectManufacturingMaxDate[0]?.date;
                 const latestManufacturingPrice = await wbManufacturingOutputQueries.selectLatestPrice(wbManufacturingOutputWhereCluse)
                 warehousesFabricConsigmentManufacturing.latest_manufacturing_price = latestManufacturingPrice[0]?.price
+                warehousesFabricConsigmentManufacturing.latest_manufacturing_price_dollar = latestManufacturingPrice[0]?.price_dollar
             } else {
                 warehousesFabricConsigmentManufacturing.latest_manufacturing_price = 0
+                warehousesFabricConsigmentManufacturing.latest_manufacturing_price_dollar = 0
             }
 
             // Get Sum Current Quantity Of warehousesFabricConsigmentManufacturing 
@@ -389,9 +399,11 @@ exports.selectInventoryDetailsByWarehouseByFabricByConsigmentManufacturing = asy
         wcAddRequisitionDetailsWhereCluse[`${wcAddRequisitionTableName}.date`] = selectMaxDate[0]?.date;
         const latestPrice = await wcAddRequisitionDetailsQueries.selectLatestPrice(wcAddRequisitionDetailsWhereCluse)
         sortedAsc[0].latest_price = (latestPrice[0] != null) ? latestPrice[0].price : 0
+        sortedAsc[0].latest_price_dollar = (latestPrice[0] != null) ? latestPrice[0].price_dollar : 0
     } else {
         if(sortedAsc.length > 0) {
             sortedAsc[0].latest_price = 0
+            sortedAsc[0].latest_price_dollar = 0
         } 
         // else {
         //     sortedAsc = [...sortedAsc, ...[{latest_price: 0}]] 
@@ -434,13 +446,16 @@ exports.selectPriceWc = async (fabricId) => {
         const latestPrice = await wcAddRequisitionDetailsQueries.selectLatestPrice(wcAddRequisitionDetailsWhereCluse)
         if(latestPrice[0] != null ) {
             sortedAsc[0].latest_price = latestPrice[0].price
+            sortedAsc[0].latest_price_dollar = latestPrice[0].price_dollar
         } else {
             if(sortedAsc.length > 0) {
                 sortedAsc[0].latest_price = 0
+                sortedAsc[0].latest_price_dollar = 0
             } 
         }
     } else {
         sortedAsc[0].latest_price = 0
+        sortedAsc[0].latest_price_dollar = 0
     }
     return sortedAsc;
 };
@@ -479,12 +494,12 @@ exports.selectPriceByFabricByConsigmentManufacturingInWc = async (fabricId, cons
         const latestPrice = await wcAddRequisitionDetailsQueries.selectLatestPrice(wcAddRequisitionDetailsWhereCluse)
         if(latestPrice[0] != null ) {
             // sortedAsc[0].latest_price = latestPrice[0].price
-            sortedAsc = [...sortedAsc, ...[{latest_price: latestPrice[0].price}]] 
+            sortedAsc = [...sortedAsc, ...[{latest_price: latestPrice[0].price, latest_price_dollar: latestPrice[0].price_dollar}]] 
         } else {
-            sortedAsc = [...sortedAsc, ...[{latest_price: 0}]] 
+            sortedAsc = [...sortedAsc, ...[{latest_price: 0, latest_price_dollar: 0}]] 
         }
     } else {
-        sortedAsc = [...sortedAsc, ...[{latest_price: 0}]] 
+        sortedAsc = [...sortedAsc, ...[{latest_price: 0, latest_price_dollar: 0}]] 
     }
     return sortedAsc;
 };

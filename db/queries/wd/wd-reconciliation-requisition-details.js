@@ -25,6 +25,7 @@ exports.insert = async (wdReconciliationRequisitionDetails, items) => {
       fabric_id: items.fabricId,
       consigment_dyeing_id: items.consigmentDyeingId,
       price: items.price,
+      price_dollar: items.priceDollar,
       quantity: items.quantity,
       statement: items.statement ?? '',
       input_output: items.inputOutput,
@@ -52,6 +53,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
       [
         `${wdReconciliationRequisitionDetailsTableName}.id`,
         `${wdReconciliationRequisitionDetailsTableName}.price`,
+        `${wdReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wdReconciliationRequisitionDetailsTableName}.quantity`,
         `${wdReconciliationRequisitionDetailsTableName}.statement`,
         `${wdReconciliationRequisitionDetailsTableName}.input_output`,
@@ -96,6 +98,7 @@ exports.selectInputTotalByFabricIdByDyeingId = async (fabricId, dyeingId) => {
       [
         `${wdTableName}.id as wd_id`,
         `${wdReconciliationRequisitionDetailsTableName}.price`,
+        `${wdReconciliationRequisitionDetailsTableName}.price_dollar`,
         knex.raw('? as dyeing_quantity', '0'),
         `${wdReconciliationRequisitionDetailsTableName}.quantity`,
         // knex.raw(`coalesce(${wdFormDyeingRequisitionDetailsTableName}.current_quantity, 0) as form_current_quantity`),
@@ -138,6 +141,7 @@ exports.selectOutputTotalByFabricIdByDyeingId = async (fabricId, dyeingId) => {
     .select(
       [
         `${wdReconciliationRequisitionDetailsTableName}.price`,
+        `${wdReconciliationRequisitionDetailsTableName}.price_dollar`,
         knex.raw('? as dyeing_quantity', '0'),
         `${wdReconciliationRequisitionDetailsTableName}.quantity`,
         knex.raw('? as form_current_quantity', '0'),
@@ -169,6 +173,7 @@ exports.selectTotalDetailsByFabricIdByDyeingId = async (fabricId, dyeingId) => {
       [
         `${wdReconciliationRequisitionDetailsTableName}.id`,
         `${wdReconciliationRequisitionDetailsTableName}.price`,
+        `${wdReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wdReconciliationRequisitionDetailsTableName}.quantity`,
         `${wdReconciliationRequisitionDetailsTableName}.statement`,
         `${wdReconciliationRequisitionTableName}.id as requisition_id`,
@@ -213,6 +218,7 @@ exports.selectInputDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId, 
       [
         `${wdTableName}.id as wd_id`,
         `${wdReconciliationRequisitionDetailsTableName}.price`,
+        `${wdReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wdReconciliationRequisitionDetailsTableName}.quantity`,
         knex.raw('? as dyeing_quantity', '0'),
         knex.raw('? as form_current_quantity', '0'),
@@ -252,6 +258,7 @@ exports.selectOutputDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId,
     .select(
       [
         `${wdReconciliationRequisitionDetailsTableName}.price`,
+        `${wdReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wdReconciliationRequisitionDetailsTableName}.quantity`,
         knex.raw('? as dyeing_quantity', '0'),
         knex.raw('? as form_current_quantity', '0'),
@@ -284,6 +291,7 @@ exports.selectDetailsDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId
       [
         `${wdReconciliationRequisitionDetailsTableName}.id`,
         `${wdReconciliationRequisitionDetailsTableName}.price`,
+        `${wdReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wdReconciliationRequisitionDetailsTableName}.quantity`,
         `${wdReconciliationRequisitionDetailsTableName}.statement`,
         `${wdReconciliationRequisitionTableName}.id as requisition_id`,
@@ -324,6 +332,7 @@ exports.selectPriceByFabricIdByDyeingId = async (fabricId) => {
     .select(
       [
         `${wdReconciliationRequisitionDetailsTableName}.price`,
+        `${wdReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wdReconciliationRequisitionDetailsTableName}.quantity`,
         `${wdReconciliationRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن تسوية'),
@@ -353,6 +362,7 @@ exports.selectPriceByFabricIdByDyeingIdByConsigmentDyeingId = async (fabricId, d
     .select(
       [
         `${wdReconciliationRequisitionDetailsTableName}.price`,
+        `${wdReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wdReconciliationRequisitionDetailsTableName}.quantity`,
         `${wdReconciliationRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن تسوية'),
@@ -459,6 +469,7 @@ exports.selectDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId, fabri
     .select(
       [
         `${wdReconciliationRequisitionDetailsTableName}.price`,
+        `${wdReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wdReconciliationRequisitionDetailsTableName}.quantity`,
         `${wdReconciliationRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن تسوية'),
@@ -483,6 +494,7 @@ exports.selectTotalDetailsByDateWd = async (bodyPaylod) => {
       [
         `${wdReconciliationRequisitionDetailsTableName}.id`,
         `${wdReconciliationRequisitionDetailsTableName}.price`,
+        `${wdReconciliationRequisitionDetailsTableName}.price_dollar`,
         `${wdReconciliationRequisitionDetailsTableName}.quantity`,
         `${wdReconciliationRequisitionDetailsTableName}.statement`,
         `${wdReconciliationRequisitionTableName}.id as requisition_id`,
@@ -525,6 +537,7 @@ exports.selectInputTotalByFabricId = async (fabricId) => {
     .select(
       [
         `${wdReconciliationRequisitionDetailsTableName}.price`,
+        `${wdReconciliationRequisitionDetailsTableName}.price_dollar`,
         knex.raw('? as dyeing_quantity', '0'),
         `${wdReconciliationRequisitionDetailsTableName}.quantity`,
         knex.raw(`coalesce(${wdFormDyeingRequisitionDetailsTableName}.current_quantity, 0) as form_current_quantity`),
@@ -561,6 +574,7 @@ exports.selectOutputTotalByFabricId = async (fabricId) => {
     .select(
       [
         `${wdReconciliationRequisitionDetailsTableName}.price`,
+        `${wdReconciliationRequisitionDetailsTableName}.price_dollar`,
         knex.raw('? as dyeing_quantity', '0'),
         `${wdReconciliationRequisitionDetailsTableName}.quantity`,
         knex.raw('? as form_current_quantity', '0'),

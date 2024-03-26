@@ -126,6 +126,7 @@ exports.update = async (weReturnRequisitionDetails) => {
         callArray.push(
             weReturnRequisitionDetailsQueries.update({
                 price: weReturnRequisitionDetails.price,
+                price_dollar: weReturnRequisitionDetails.priceDollar,
                 fabric_piece: weReturnRequisitionDetails.numberFabricPieces,
                 is_defect: weReturnRequisitionDetails.isDefect,
                 statement: weReturnRequisitionDetails.statement

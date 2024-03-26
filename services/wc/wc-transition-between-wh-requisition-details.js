@@ -134,6 +134,7 @@ exports.update = async (wcTransitionBetweenWHRequisitionDetails) => {
             callArray.push(
                 wcTransitionBetweenWHRequisitionDetailsQueries.update({
                     price: wcTransitionBetweenWHRequisitionDetails.price,
+                    price_dollar: wcTransitionBetweenWHRequisitionDetails.priceDollar,
                     document: wcTransitionBetweenWHRequisitionDetails.document,
                     statement: wcTransitionBetweenWHRequisitionDetails.statement
                 },

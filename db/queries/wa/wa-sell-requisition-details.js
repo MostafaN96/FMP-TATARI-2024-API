@@ -21,6 +21,7 @@ exports.insert = async (waSellRequisitionDetails, items) => {
       yarn_id: items.yarnId,
       consigment_yarn_id: items.consigmentYarnId,
       price: items.price,
+      price_dollar: items.priceDollar,
       quantity: items.quantity,
       document: items.document,
       statement: items.statement,
@@ -48,6 +49,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
       [
         `${waSellRequisitionDetailsTableName}.id`,
         `${waSellRequisitionDetailsTableName}.price`,
+        `${waSellRequisitionDetailsTableName}.price_dollar`,
         `${waSellRequisitionDetailsTableName}.quantity`,
         `${waSellRequisitionDetailsTableName}.document`,
         `${waSellRequisitionDetailsTableName}.statement`,
@@ -91,6 +93,7 @@ exports.selectTotalByYarnId = async (yarnId) => {
     .select(
       [
         `${waSellRequisitionDetailsTableName}.price`,
+        `${waSellRequisitionDetailsTableName}.price_dollar`,
         `${waSellRequisitionDetailsTableName}.quantity`,
         `${waSellRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن بيع'),
@@ -119,6 +122,7 @@ exports.selectTotalDetailsByYarnId = async (yarnId) => {
       [
         `${waSellRequisitionDetailsTableName}.id`,
         `${waSellRequisitionDetailsTableName}.price`,
+        `${waSellRequisitionDetailsTableName}.price_dollar`,
         `${waSellRequisitionDetailsTableName}.quantity`,
         `${waSellRequisitionDetailsTableName}.document`,
         `${waSellRequisitionDetailsTableName}.statement`,
@@ -166,6 +170,7 @@ exports.selectTotalByYarnByWarehouseId = async (yarnId, warehouseId) => {
     .select(
       [
         `${waSellRequisitionDetailsTableName}.price`,
+        `${waSellRequisitionDetailsTableName}.price_dollar`,
         `${waSellRequisitionDetailsTableName}.quantity`,
         `${waSellRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن بيع'),
@@ -195,6 +200,7 @@ exports.selectTotalDetailsByYarnIdByWarehouseId = async (yarnId, warehouseId) =>
       [
         `${waSellRequisitionDetailsTableName}.id`,
         `${waSellRequisitionDetailsTableName}.price`,
+        `${waSellRequisitionDetailsTableName}.price_dollar`,
         `${waSellRequisitionDetailsTableName}.quantity`,
         `${waSellRequisitionDetailsTableName}.document`,
         `${waSellRequisitionDetailsTableName}.statement`,
@@ -244,6 +250,7 @@ exports.selectDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLo
     .select(
       [
         `${waSellRequisitionDetailsTableName}.price`,
+        `${waSellRequisitionDetailsTableName}.price_dollar`,
         `${waSellRequisitionDetailsTableName}.quantity`,
         `${waSellRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن بيع'),
@@ -275,6 +282,7 @@ exports.selectDetailsDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId,
       [
         `${waSellRequisitionDetailsTableName}.id`,
         `${waSellRequisitionDetailsTableName}.price`,
+        `${waSellRequisitionDetailsTableName}.price_dollar`,
         `${waSellRequisitionDetailsTableName}.quantity`,
         `${waSellRequisitionDetailsTableName}.document`,
         `${waSellRequisitionDetailsTableName}.statement`,
@@ -320,6 +328,7 @@ exports.selectPriceByYarnId = async (yarnId) => {
     .select(
       [
         `${waSellRequisitionDetailsTableName}.price`,
+        `${waSellRequisitionDetailsTableName}.price_dollar`,
         `${waSellRequisitionDetailsTableName}.quantity`,
         `${waSellRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن بيع'),
@@ -375,6 +384,7 @@ exports.selectOneByRequisitionId = async (requisitionId) => {
       [
         `${waSellRequisitionDetailsTableName}.id`,
         `${waSellRequisitionDetailsTableName}.price`,
+        `${waSellRequisitionDetailsTableName}.price_dollar`,
         `${waSellRequisitionDetailsTableName}.quantity`,
         `${waSellRequisitionDetailsTableName}.document`,
         `${waSellRequisitionDetailsTableName}.statement`,
@@ -430,6 +440,7 @@ exports.selectTotalDetailsByDate = async (bodyPalod) => {
       [
         `${waSellRequisitionDetailsTableName}.id`,
         `${waSellRequisitionDetailsTableName}.price`,
+        `${waSellRequisitionDetailsTableName}.price_dollar`,
         `${waSellRequisitionDetailsTableName}.quantity`,
         `${waSellRequisitionDetailsTableName}.document`,
         `${waSellRequisitionDetailsTableName}.statement`,

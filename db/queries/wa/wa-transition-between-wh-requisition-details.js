@@ -26,6 +26,7 @@ exports.insert = async (waTransitionBetweenWHRequisitionDetails, items) => {
       yarn_lot_id: items.yarnLotId,
       consigment_yarn_id: items.consigmentYarnId,
       price: items.price,
+      price_dollar: items.priceDollar,
       quantity: items.quantity,
       document: items.document ?? '',
       statement: items.statement ?? '',
@@ -47,6 +48,7 @@ exports.selectByRequisitionId = async (whereCluse) => {
   let columns = [
     `id`,
     `price`,
+    `price_dollar`,
     `quantity`,
     `document`,
     `statement`,
@@ -71,6 +73,7 @@ exports.selectByRequisitionId = async (whereCluse) => {
     this.select([
       `${waTransitionBetweenWHRequisitionDetailsTableName}.id`,
       `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
+      `${waTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
       `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
       `${waTransitionBetweenWHRequisitionDetailsTableName}.document`,
       `${waTransitionBetweenWHRequisitionDetailsTableName}.statement`,
@@ -234,6 +237,7 @@ exports.selectFromWarehouseTotalByYarnIdByWarehouseId = async (yarnId, warehouse
       [
         `${waTransitionBetweenWHRequisitionDetailsTableName}.from_warehouse_id as warehouse_id`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${waTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
         `${waTransitionBetweenWHRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل بين المخازن'),
@@ -268,6 +272,7 @@ exports.selectToWarehouseTotalByYarnIdByWarehouseId = async (yarnId, warehouseId
       [
         `${waTransitionBetweenWHRequisitionTableName}.to_warehouse_id as warehouse_id`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${waTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
         `${waTransitionBetweenWHRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل بين المخازن'),
@@ -302,6 +307,7 @@ exports.selectFromWarehouseTotalDetailsByYarnIdByWarehouseId = async (yarnId, wa
       [
         `${waTransitionBetweenWHRequisitionDetailsTableName}.id`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${waTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.document`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.statement`,
@@ -363,6 +369,7 @@ exports.selectToWarehouseTotalDetailsByYarnIdByWarehouseId = async (yarnId, ware
       [
         `${waTransitionBetweenWHRequisitionDetailsTableName}.id`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${waTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.statement`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.document`,
@@ -427,6 +434,7 @@ exports.selectFromWarehouseDetailsByWarehouseByYarnByLot = async (warehouseId, y
     .select(
       [
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${waTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
         `${waTransitionBetweenWHRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل بين المخازن'),
@@ -465,6 +473,7 @@ exports.selectToWarehouseDetailsByWarehouseByYarnByLot = async (warehouseId, yar
     .select(
       [
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${waTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
         `${waTransitionBetweenWHRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل بين المخازن'),
@@ -501,6 +510,7 @@ exports.selectFromWarehouseDetailsDetailsByWarehouseByYarnByLot = async (warehou
       [
         `${waTransitionBetweenWHRequisitionDetailsTableName}.id`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${waTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.document`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.statement`,
@@ -564,6 +574,7 @@ exports.selectToWarehouseDetailsDetailsByWarehouseByYarnByLot = async (warehouse
       [
         `${waTransitionBetweenWHRequisitionDetailsTableName}.id`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${waTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.document`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.statement`,
@@ -620,6 +631,7 @@ exports.selectFromWarehouseTotalDetailsByDate = async (bodyPaylod) => {
       [
         `${waTransitionBetweenWHRequisitionDetailsTableName}.id`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${waTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.document`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.statement`,
@@ -677,6 +689,7 @@ exports.selectToWarehouseTotalDetailsByDate = async (bodyPaylod) => {
       [
         `${waTransitionBetweenWHRequisitionDetailsTableName}.id`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${waTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.document`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.statement`,
@@ -739,6 +752,7 @@ exports.selectToWarehousePriceByWarehouseByYarnId = async (toWarehouseId, yarnId
     .select(
       [
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${waTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
         `${waTransitionBetweenWHRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل بين المخازن'),

@@ -80,8 +80,10 @@ exports.selectInventoryTotal = async (yarnReport) => {
                 wbTransportRequisitionWaWbDetailsWhereCluse[`${wbTransportWaWbTableName}.date`] = selectMaxDate[0]?.date;
                 const latestPrice = await wbTransportRequisitionWaWbDetailsQueries.selectLatestPrice(wbTransportRequisitionWaWbDetailsWhereCluse)
                 yarn.latest_price = latestPrice[0]?.price
+                yarn.latest_price_dollar = latestPrice[0]?.price_dollar 
             } else {
                 yarn.latest_price = 0
+                yarn.latest_price_dollar = 0
             }
             // Get Sum Current Quantity Of yarn 
             // const sumCurrentQuantity = await wbService.selectSumCurrentQuantityByIndustryByYarnInWb(yarn.manufacturer_id, yarn.yarn_id)
@@ -146,8 +148,10 @@ exports.selectInventoryTotalByYarnByIndustry = async (manufacturerId, yarnId) =>
         wbTransportRequisitionWaWbDetailsWhereCluse[`${wbTransportWaWbTableName}.date`] = selectMaxDate[0]?.date;
         const latestPrice = await wbTransportRequisitionWaWbDetailsQueries.selectLatestPrice(wbTransportRequisitionWaWbDetailsWhereCluse)
         sortedAsc[0].latest_price = latestPrice[0]?.price
+        sortedAsc[0].latest_price_dollar = latestPrice[0]?.price_dollar
     } else {
         sortedAsc[0].latest_price = 0
+        sortedAsc[0].latest_price_dollar = 0
     }
     return sortedAsc;
 };
@@ -202,8 +206,10 @@ exports.selectInventoryDetails = async (yarnReport) => {
                 wbTransportRequisitionWaWbDetailsWhereCluse[`${wbTransportWaWbTableName}.date`] = selectMaxDate[0]?.date;
                 const latestPrice = await wbTransportRequisitionWaWbDetailsQueries.selectLatestPrice(wbTransportRequisitionWaWbDetailsWhereCluse)
                 industryYarnLot.latest_price = latestPrice[0]?.price
+                industryYarnLot.latest_price_dollar = latestPrice[0]?.price_dollar
             } else {
                 industryYarnLot.latest_price = 0
+                industryYarnLot.latest_price_dollar = 0
             }
             // Get Sum Current Quantity Of industryYarnLot 
             // const sumCurrentQuantity = await wbService.selectSumCurrentQuantityByIndustryByYarnByYarnLotInWb(industryYarnLot.manufacturer_id, industryYarnLot.yarn_id, industryYarnLot.yarn_lot_id)
@@ -281,8 +287,10 @@ exports.selectInventoryDetailsByIndustryByYarnByLot = async (industryId, yarnId,
         wbTransportRequisitionWaWbDetailsWhereCluse[`${wbTransportWaWbTableName}.date`] = selectMaxDate[0]?.date;
         const latestPrice = await wbTransportRequisitionWaWbDetailsQueries.selectLatestPrice(wbTransportRequisitionWaWbDetailsWhereCluse)
         sortedAsc[0].latest_price = (latestPrice[0] != null) ? latestPrice[0].price : 0
+        sortedAsc[0].latest_price_dollar = (latestPrice[0] != null) ? latestPrice[0].price_dollar : 0
     } else {
         sortedAsc[0].latest_price = 0
+        sortedAsc[0].latest_price_dollar = 0
     }
     return sortedAsc;
 };
@@ -324,11 +332,14 @@ exports.selectPriceWb = async (yarnId, manufacturerId) => {
         const latestPrice = await wbTransportRequisitionWaWbDetailsQueries.selectLatestPrice(wbTransportRequisitionWaWbDetailsWhereCluse)
         if(latestPrice[0] != null) {
             sortedAsc[0].latest_price = latestPrice[0].price
+            sortedAsc[0].latest_price_dollar = latestPrice[0].price_dollar
         } else {
             sortedAsc[0].latest_price = 0
+            sortedAsc[0].latest_price_dollar = 0
         }
     } else {
         sortedAsc[0].latest_price = 0
+        sortedAsc[0].latest_price_dollar = 0
     }
     return sortedAsc;
 };
@@ -372,11 +383,14 @@ exports.selectPriceByYarnIdByIndustryIdByConsigmentWb = async (yarnId, manufactu
         const latestPrice = await wbTransportRequisitionWaWbDetailsQueries.selectLatestPrice(wbTransportRequisitionWaWbDetailsWhereCluse)
         if(latestPrice[0] != null) {
             sortedAsc[0].latest_price = latestPrice[0].price
+            sortedAsc[0].latest_price_dollar = latestPrice[0].price_dollar
         } else {
             sortedAsc[0].latest_price = 0
+            sortedAsc[0].latest_price_dollar = 0
         }
     } else {
         sortedAsc[0].latest_price = 0
+        sortedAsc[0].latest_price_dollar = 0
     }
     return sortedAsc;
 };

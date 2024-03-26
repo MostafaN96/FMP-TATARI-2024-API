@@ -77,8 +77,10 @@ exports.createOrder = async (waAddRequisitionDetails, item) => {
         } else {
             let excessQuantity = parseFloat((item.quantity - selectPurchaseOrderDetailsOneResult[0].current_quantity).toFixed(3))
             await waPurchaseOrderDetailsQueries.update({
-                initial_quantity: selectPurchaseOrderDetailsOneResult[0].initial_quantity + excessQuantity,
-                current_quantity: 0,
+                // initial_quantity: selectPurchaseOrderDetailsOneResult[0].initial_quantity + excessQuantity,
+                // current_quantity: 0,
+                // is_order: "0"
+                current_quantity: selectPurchaseOrderDetailsOneResult[0].current_quantity - parseFloat(item.quantity),
                 is_order: "0"
             }, {
                 id: item.orderDetailsId
@@ -151,6 +153,7 @@ exports.update = async (waAddRequisitionDetails) => {
             callArray.push(
                 waAddRequisitionDetailsQueries.update({
                     price: waAddRequisitionDetails.price,
+                    price_dollar: waAddRequisitionDetails.priceDollar,
                     document: waAddRequisitionDetails.document,
                     statement: waAddRequisitionDetails.statement
                 },
