@@ -5,6 +5,7 @@ const ordersRequisitionsQueries = require("../../db/queries/general/orders-requi
 
 // Services
 // const ordersRequisitionsService = require("../general/orders-requisitions");
+const wcFabricOrderRequisitionDetailsService = require("../wc/wc-fabric-order-requisition-details");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -32,6 +33,9 @@ exports.create = async (waYarnOrderRequisitionDetails) => {
         await ordersRequisitionsQueries.insertForYarnOrder(waYarnOrderRequisitionDetails)
 
     }
+    // create raw fabric order
+    await wcFabricOrderRequisitionDetailsService.createOrderWithYarnOrder(waYarnOrderRequisitionDetails)
+
     return { ...constants.insertSuccess, ...{ id: waYarnOrderRequisitionDetails.id } };
 };
 

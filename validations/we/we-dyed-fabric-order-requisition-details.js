@@ -14,6 +14,8 @@ exports.isValid = (weDyedFabricOrderRequisitionDetails) => {
             quantity: validations.joiNumber(1, 60),
             fabricWidth: validations.joiNotRequiredNumber(0, 50),
             fabricQuantityM2: validations.joiNotRequiredNumber(0, 50),
+            price: validations.joiNumber(1, 60),
+            priceDollar: validations.joiNotRequiredText(0, 50),
             note: validations.joiNotRequiredText(0, 100000),
         })
     });
@@ -44,6 +46,8 @@ exports.isValidUpdate = (weDyedFabricOrderRequisitionDetails) => {
         quantity: validations.joiNumber(1, 60),
         fabricWidth: validations.joiNotRequiredNumber(0, 50),
         fabricQuantityM2: validations.joiNotRequiredNumber(0, 50),
+        price: validations.joiNumber(1, 60),
+        priceDollar: validations.joiNotRequiredText(0, 50),
         detailsNote: validations.joiNotRequiredText(0, 100000),
         personid: validations.joiText(3, 50),
         ipaddress: validations.joiText(3, 50),

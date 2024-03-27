@@ -34,7 +34,7 @@ exports.selectSumCurrentQuantityByIndustryByYarnByYarnLotInWb = async (industryI
     whereCluse[`${wbTableName}.industry_id`] = industryId;
     whereCluse[`${wbTransportWaWbDetailsTableName}.yarn_id`] = yarnId;
     whereCluse[`${wbTransportWaWbDetailsTableName}.yarn_lot_id`] = yarnLotId;
-    whereCluse[`${wbTransportWaWbDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
+    whereCluse[`${wbTransportWaWbDetailsTableName}.from_consigment_yarn_id`] = consigmentYarnId;
 
     let reconciliationWhereCluse = {};
     reconciliationWhereCluse[`${wbTableName}.is_deleted`] = 0;
@@ -162,7 +162,7 @@ exports.selectRecordsByIndustryByYarnByYarnLot = async (industryId, yarnId, yarn
     whereCluse[`${wbTableName}.industry_id`] = industryId;
     whereCluse[`${wbTransportWaWbDetailsTableName}.yarn_id`] = yarnId;
     whereCluse[`${wbTransportWaWbDetailsTableName}.yarn_lot_id`] = yarnLotId;
-    whereCluse[`${wbTransportWaWbDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
+    whereCluse[`${wbTransportWaWbDetailsTableName}.from_consigment_yarn_id`] = consigmentYarnId;
 
     let reconciliationWhereCluse = {};
     reconciliationWhereCluse[`${wbTableName}.is_deleted`] = 0;
@@ -326,7 +326,7 @@ exports.selectSumCurrentQuantityByIndustryByYarnByYarnLotByFabricToBeManufacture
     whereCluse[`${wbTableName}.fabric_to_be_manufactured_id`] = fabricToBeManufacturedId;
     whereCluse[`${wbTransportWaWbDetailsTableName}.yarn_id`] = yarnId;
     whereCluse[`${wbTransportWaWbDetailsTableName}.yarn_lot_id`] = yarnLotId;
-    whereCluse[`${wbTransportWaWbDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
+    whereCluse[`${wbTransportWaWbDetailsTableName}.from_consigment_yarn_id`] = consigmentYarnId;
 
     let reconciliationWhereCluse = {};
     reconciliationWhereCluse[`${wbTableName}.is_deleted`] = 0;
@@ -363,7 +363,7 @@ exports.selectRecordsByIndustryByYarnByYarnLotByFabricToBeManufactured = async (
     whereCluse[`${wbTableName}.fabric_to_be_manufactured_id`] = fabricToBeManufacturedId;
     whereCluse[`${wbTransportWaWbDetailsTableName}.yarn_id`] = yarnId;
     whereCluse[`${wbTransportWaWbDetailsTableName}.yarn_lot_id`] = yarnLotId;
-    whereCluse[`${wbTransportWaWbDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
+    whereCluse[`${wbTransportWaWbDetailsTableName}.from_consigment_yarn_id`] = consigmentYarnId;
 
     let reconciliationWhereCluse = {};
     reconciliationWhereCluse[`${wbTableName}.is_deleted`] = 0;
@@ -416,11 +416,12 @@ exports.updateFabricToBeManufactured = async (wb) => {
             wb.industryId,
             wb.yarnId,
             wb.yarnLotId,
-            wb.consigmentYarnId,
+            (wb.requisition_type == constantsPayloads.transportFromAToBType) ? 
+                    wb.fromConsigmentYarnId : wb.consigmentYarnId,
             isFound[0].fabric_to_be_manufactured_id
         )
         if (sumCurrentQuantityWb[0] != null) {
-            console.log("sumCurrentQuantityWb ::: ", sumCurrentQuantityWb);
+            // console.log("sumCurrentQuantityWb ::: ", sumCurrentQuantityWb);
             const sumCurrentQuantity = sumCurrentQuantityWb[0].current_quantity
             let newQuantity = parseFloat(wb.quantity)
             // let oldQuantity = isFound[0].current_quantity
@@ -433,11 +434,12 @@ exports.updateFabricToBeManufactured = async (wb) => {
                     wb.industryId,
                     wb.yarnId,
                     wb.yarnLotId,
-                    wb.consigmentYarnId,
+                    (wb.requisition_type == constantsPayloads.transportFromAToBType) ? 
+                    wb.fromConsigmentYarnId : wb.consigmentYarnId,
                     isFound[0].fabric_to_be_manufactured_id
                 )
                 if (wbRecords[0] != null) {
-                    console.log("wbRecords ::: ", wbRecords);
+                    // console.log("wbRecords ::: ", wbRecords);
 
                     // Increment Wb current_quantity
                     // await wbQueries.update({
@@ -472,6 +474,8 @@ exports.updateFabricToBeManufactured = async (wb) => {
                         wbRecord.personid = wb.personid
                         wbRecord.ipaddress = wb.ipaddress
                         wb.price = wbRecord.price
+                        wb.priceDollar = wbRecord.price_dollar
+                        // wb.fromConsigmentYarnId = wbRecord.from_consigment_yarn_id
                         wbRecord.items = [wb]
                         if (wbRecord.requisition_type == constantsPayloads.transportFromAToBType) {
                             const wbTransportWaWbDetailsResult = await wbTransportWaWbDetailsService.updateDecrement(wbRecord)

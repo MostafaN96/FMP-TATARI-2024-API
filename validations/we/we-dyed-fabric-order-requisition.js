@@ -18,6 +18,8 @@ exports.isValid = (weDyedFabricOrderRequisition) => {
             quantity: validations.joiNumber(1, 60),
             fabricWidth: validations.joiNotRequiredText(0, 50),
             fabricQuantityM2: validations.joiNotRequiredText(0, 50),
+            price: validations.joiNumber(1, 60),
+            priceDollar: validations.joiNotRequiredText(0, 50),
             note: validations.joiNotRequiredText(0, 50),
         })
     });

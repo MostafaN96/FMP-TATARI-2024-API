@@ -4,7 +4,8 @@ const wcFabricOrderRequisitionQueries = require("../../db/queries/wc/wc-fabric-o
 const ordersRequisitionsQueries = require("../../db/queries/general/orders-requisitions");
 
 // Services
-// const ordersRequisitionsService = require("../general/orders-requisitions");
+const ordersRequisitionsService = require("../general/orders-requisitions");
+const wcFabricOrderRequisitionService = require("./wc-fabric-order-requisition");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -46,8 +47,43 @@ exports.createDetails = async (wcFabricOrderRequisitionDetails) => {
     return { ...constants.insertSuccess, ...{ id: wcFabricOrderRequisitionDetails.id } };
 };
 
+exports.createOrderWithYarnOrder = async (wcFabricOrderRequisitionDetails) => {
+    const dyedFabricOrderRequisitionId = wcFabricOrderRequisitionDetails.orderId
+    const yarnOrderRequisitionId = wcFabricOrderRequisitionDetails.id
+    wcFabricOrderRequisitionDetails.items = []
+
+    // check if not created fabric order before
+    const selectFabricOrderResult = await ordersRequisitionsService.selectByDyeingIdForFabricOrderWc(dyedFabricOrderRequisitionId)
+
+    if (selectFabricOrderResult.length < 1) {
+        
+        const selectInquireFabricResults = await wcFabricOrderRequisitionService.inquireFabricsForOrderWc(dyedFabricOrderRequisitionId)
+        
+        if (Array.isArray(selectInquireFabricResults) && selectInquireFabricResults.length > 0) {
+            for (let i = 0; i < selectInquireFabricResults.length; i++) {
+                const element = selectInquireFabricResults[i];
+
+                wcFabricOrderRequisitionDetails.items.push({
+                    fabricId: element.id,
+                    fabricName: element.name,
+                    fabricCode: element.code,
+                    quantity: element.needed_quantity,
+                    fabricWidth: element.fabric_width,
+                    fabricQuantityM2: element.fabric_quantity_m2,
+                    note: element.details_note,
+                })
+            }
+
+            // create fabric order
+            await wcFabricOrderRequisitionService.create(wcFabricOrderRequisitionDetails)
+            wcFabricOrderRequisitionDetails.id = yarnOrderRequisitionId
+        }
+    }
+    
+};
+
+
 exports.selectByRequisitionIdOpenedOrder = async (requisitionId) => {
-    console.log("requisitionId :::::::: ", requisitionId);
     // check is found
     const isFound = await wcFabricOrderRequisitionQueries.selectOne({
         ...constantsPayloads.deletePayload,

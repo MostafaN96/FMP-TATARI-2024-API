@@ -14,6 +14,7 @@ exports.insert = async (wbTransportWaWb, items) => {
       yarn_id: items.yarnId,
       yarn_lot_id: items.yarnLotId,
       consigment_yarn_id: items.consigmentYarnId,
+      from_consigment_yarn_id: items.fromConsigmentYarnId,
       price: items.price,
       price_dollar: items.priceDollar,
       quantity: items.quantity,
@@ -56,6 +57,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
     `${wbTransportWaWbDetailsTableName}.price`,
     `${wbTransportWaWbDetailsTableName}.price_dollar`,
     `${consigmentYarnTableName}.number as consigment_yarn_number`,
+    `from_consigment_yarn.number as from_consigment_yarn_number`,
     `${bussinessmanTableName}.name as manufacturer_name`,
     `${wbTableName}.current_quantity`,
   ])
@@ -83,6 +85,9 @@ exports.selectByRequisitionId = async (requisitionId) => {
     .innerJoin(`${consigmentYarnTableName}`,
       `${consigmentYarnTableName}.id`,
       `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`)
+    .innerJoin(`${consigmentYarnTableName} as from_consigment_yarn`,
+      `from_consigment_yarn.id`,
+      `${wbTransportWaWbDetailsTableName}.from_consigment_yarn_id`)
     .groupBy(`${wbTransportWaWbDetailsTableName}.yarn_id`,
     `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`,
       `${bussinessmanTableName}.id`,
@@ -126,9 +131,13 @@ exports.selectWithFabricManufacturedByRequisitionId = async (requisitionId) => {
     `${bussinessmanTableName}.name as manufacturer_name`,
     `${wbTableName}.id as wb_id`,
     `${wbTableName}.current_quantity`,
+    `${wbTableName}.type as requisition_type`,
     `${fabricTableName}.name as fabric_to_be_manufactured_name`,
     `${fabricTableName}.code as fabric_to_be_manufactured_code`,
+    `${consigmentYarnTableName}.id as consigment_yarn_id`,
     `${consigmentYarnTableName}.number as consigment_yarn_number`,
+    `from_consigment_yarn.id as from_consigment_yarn_id`,
+    `from_consigment_yarn.number as from_consigment_yarn_number`,
   ])
     .from(`${wbTransportWaWbDetailsTableName}`)
     .innerJoin(`${wbTransportWaWbTableName}`,
@@ -152,7 +161,12 @@ exports.selectWithFabricManufacturedByRequisitionId = async (requisitionId) => {
     .innerJoin(`${fabricTableName}`,
       `${fabricTableName}.id`,
       `${wbTableName}.fabric_to_be_manufactured_id`)
-    .innerJoin(`${consigmentYarnTableName}`, `${consigmentYarnTableName}.id`, `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`)
+    .innerJoin(`${consigmentYarnTableName}`, 
+    `${consigmentYarnTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`)
+    .innerJoin(`${consigmentYarnTableName} as from_consigment_yarn`,
+      `from_consigment_yarn.id`,
+      `${wbTransportWaWbDetailsTableName}.from_consigment_yarn_id`)
     .where(whereCluse)
     .andWhere(`${wbTransportWaWbDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -170,6 +184,7 @@ exports.selectOne = async (whereCluse) => {
       `${wbTransportWaWbDetailsTableName}.yarn_id`,
       `${wbTransportWaWbDetailsTableName}.yarn_lot_id`,
       `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`,
+      `${wbTransportWaWbDetailsTableName}.from_consigment_yarn_id`,
       `${wbTransportWaWbDetailsTableName}.quantity`,
       `${wbTransportWaWbTableName}.warehouse_id`,
     ])
@@ -250,8 +265,12 @@ exports.selectTotalByYarnIdByIndustryId = async (yarnId, manufacturerId) => {
         knex.raw('? as input_output', '1')
       ],
     )
-    .innerJoin(`${wbTransportWaWbTableName}`, `${wbTransportWaWbTableName}.id`, `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
-    .innerJoin(`${wbTableName}`, `${wbTableName}.wb_transport_wa_wb_details_id`, `${wbTransportWaWbDetailsTableName}.id`)
+    .innerJoin(`${wbTransportWaWbTableName}`, 
+    `${wbTransportWaWbTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
+    .innerJoin(`${wbTableName}`, 
+    `${wbTableName}.wb_transport_wa_wb_details_id`, 
+    `${wbTransportWaWbDetailsTableName}.id`)
     .where(whereCluse)
     .andWhere(`${wbTransportWaWbDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -290,26 +309,44 @@ exports.selectTotalDetailsByYarnIdByIndustryId = async (yarnId, manufacturerId) 
         `${warehouseTableName}.name as warehouse_name`,
         `${consigmentYarnTableName}.id as consigment_yarn_id`,
         `${consigmentYarnTableName}.number as consigment_yarn_number`,
+        `from_consigment_yarn.id as from_consigment_yarn_id`,
+        `from_consigment_yarn.number as from_consigment_yarn_number`,
         knex.raw('? as type_of_requisition', 'اذن نقل من (A) الى (B)'),
         knex.raw('? as input_output', '1'),
         knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
-
       ],
     )
     .groupBy(
       `${wbTransportWaWbTableName}.id`,
       `${wbTableName}.industry_id`, 
     `${wbTransportWaWbDetailsTableName}.yarn_id`,
-    `${consigmentYarnTableName}.id`)
+    `from_consigment_yarn.id`)
     .sum(`${wbTransportWaWbDetailsTableName}.quantity as quantity`)
-    .innerJoin(`${wbTransportWaWbTableName}`, `${wbTransportWaWbTableName}.id`, `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
-    .innerJoin(`${wbTableName}`, `${wbTableName}.wb_transport_wa_wb_details_id`, `${wbTransportWaWbDetailsTableName}.id`)
-    .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${wbTransportWaWbTableName}.warehouse_id`)
-    .innerJoin(`${yarnTableName}`, `${yarnTableName}.id`, `${wbTransportWaWbDetailsTableName}.yarn_id`)
-    .innerJoin(`${yarnLotTableName}`, `${yarnLotTableName}.id`, `${wbTransportWaWbDetailsTableName}.yarn_lot_id`)
-    .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${wbTableName}.industry_id`)
-        .innerJoin(`${consigmentYarnTableName}`, `${consigmentYarnTableName}.id`, `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`)
-    .where(whereCluse)
+    .innerJoin(`${wbTransportWaWbTableName}`, 
+    `${wbTransportWaWbTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
+    .innerJoin(`${wbTableName}`, 
+    `${wbTableName}.wb_transport_wa_wb_details_id`, 
+    `${wbTransportWaWbDetailsTableName}.id`)
+    .innerJoin(`${warehouseTableName}`, 
+    `${warehouseTableName}.id`, 
+    `${wbTransportWaWbTableName}.warehouse_id`)
+    .innerJoin(`${yarnTableName}`, 
+    `${yarnTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.yarn_id`)
+    .innerJoin(`${yarnLotTableName}`, 
+    `${yarnLotTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.yarn_lot_id`)
+    .innerJoin(`${bussinessmanTableName}`, 
+    `${bussinessmanTableName}.id`, 
+    `${wbTableName}.industry_id`)
+    .innerJoin(`${consigmentYarnTableName}`, 
+    `${consigmentYarnTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`)
+    .innerJoin(`${consigmentYarnTableName} as from_consigment_yarn`,
+      `from_consigment_yarn.id`,
+      `${wbTransportWaWbDetailsTableName}.from_consigment_yarn_id`)
+        .where(whereCluse)
     .andWhere(`${wbTransportWaWbDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
       queryResults = data;
@@ -339,8 +376,12 @@ exports.selectDetailsByIndustryByYarnByLot = async (manufacturerId, yarnId, yarn
         knex.raw('? as input_output', '1')
       ],
     )
-    .innerJoin(`${wbTransportWaWbTableName}`, `${wbTransportWaWbTableName}.id`, `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
-    .innerJoin(`${wbTableName}`, `${wbTableName}.wb_transport_wa_wb_details_id`, `${wbTransportWaWbDetailsTableName}.id`)
+    .innerJoin(`${wbTransportWaWbTableName}`, 
+    `${wbTransportWaWbTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
+    .innerJoin(`${wbTableName}`, 
+    `${wbTableName}.wb_transport_wa_wb_details_id`, 
+    `${wbTransportWaWbDetailsTableName}.id`)
     .where(whereCluse)
     .andWhere(`${wbTransportWaWbDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -377,18 +418,34 @@ exports.selectDetailsDetailsByIndustryByYarnByLot = async (manufacturerId, yarnI
         `${yarnTableName}.name as yarn_name`,
         `${yarnTableName}.code as yarn_code`,
         `${yarnLotTableName}.code as yarn_lot_code`,
-`${consigmentYarnTableName}.number as consigment_yarn_number`,
+        `${consigmentYarnTableName}.number as consigment_yarn_number`,
+        `to_consigment_yarn.number as to_consigment_yarn_number`,
         knex.raw('? as type_of_requisition', 'اذن نقل من (A) الى (B)'),
         knex.raw('? as input_output', '1'),
         knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
       ],
     )
-    .innerJoin(`${wbTransportWaWbTableName}`, `${wbTransportWaWbTableName}.id`, `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
-    .innerJoin(`${wbTableName}`, `${wbTableName}.wb_transport_wa_wb_details_id`, `${wbTransportWaWbDetailsTableName}.id`)
-    .innerJoin(`${yarnTableName}`, `${yarnTableName}.id`, `${wbTransportWaWbDetailsTableName}.yarn_id`)
-    .innerJoin(`${yarnLotTableName}`, `${yarnLotTableName}.id`, `${wbTransportWaWbDetailsTableName}.yarn_lot_id`)
-    .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${wbTableName}.industry_id`)
-            .innerJoin(`${consigmentYarnTableName}`, `${consigmentYarnTableName}.id`, `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`)
+    .innerJoin(`${wbTransportWaWbTableName}`, 
+    `${wbTransportWaWbTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
+    .innerJoin(`${wbTableName}`, 
+    `${wbTableName}.wb_transport_wa_wb_details_id`, 
+    `${wbTransportWaWbDetailsTableName}.id`)
+    .innerJoin(`${yarnTableName}`, 
+    `${yarnTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.yarn_id`)
+    .innerJoin(`${yarnLotTableName}`, 
+    `${yarnLotTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.yarn_lot_id`)
+    .innerJoin(`${bussinessmanTableName}`, 
+    `${bussinessmanTableName}.id`, 
+    `${wbTableName}.industry_id`)
+    .innerJoin(`${consigmentYarnTableName}`, 
+    `${consigmentYarnTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.from_consigment_yarn_id`)
+    .innerJoin(`${consigmentYarnTableName} as to_consigment_yarn`,
+      `to_consigment_yarn.id`,
+      `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`)
     .where(whereCluse)
     .andWhere(`${wbTransportWaWbDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -417,8 +474,12 @@ exports.selectPriceByYarnIdByIndustryId = async (yarnId, manufacturerId) => {
         knex.raw('? as input_output', '1')
       ],
     )
-    .innerJoin(`${wbTransportWaWbTableName}`, `${wbTransportWaWbTableName}.id`, `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
-    .innerJoin(`${wbTableName}`, `${wbTableName}.wb_transport_wa_wb_details_id`, `${wbTransportWaWbDetailsTableName}.id`)
+    .innerJoin(`${wbTransportWaWbTableName}`, 
+    `${wbTransportWaWbTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
+    .innerJoin(`${wbTableName}`, 
+    `${wbTableName}.wb_transport_wa_wb_details_id`, 
+    `${wbTransportWaWbDetailsTableName}.id`)
     .where(whereCluse)
     .andWhere(`${wbTransportWaWbDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -447,7 +508,9 @@ exports.selectTotalByYarnId = async (yarnId) => {
         knex.raw('? as input_output', '0')
       ],
     )
-    .innerJoin(`${wbTransportWaWbTableName}`, `${wbTransportWaWbTableName}.id`, `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
+    .innerJoin(`${wbTransportWaWbTableName}`, 
+    `${wbTransportWaWbTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
     .where(whereCluse)
     .andWhere(`${wbTransportWaWbDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -482,21 +545,38 @@ exports.selectTotalDetailsByYarnId = async (yarnId) => {
         `${yarnTableName}.name as yarn_name`,
         `${yarnTableName}.code as yarn_code`,
         `${yarnLotTableName}.code as yarn_lot_code`,
-`${consigmentYarnTableName}.number as consigment_yarn_number`,
+        `${consigmentYarnTableName}.number as consigment_yarn_number`,
+        `from_consigment_yarn.number as from_consigment_yarn_number`,
         `${warehouseTableName}.name as warehouse_name`,
         knex.raw('? as type_of_requisition', 'اذن نقل من (A) الى (B)'),
         knex.raw('? as input_output', '0'),
         knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
-
       ],
     )
-    .innerJoin(`${wbTransportWaWbTableName}`, `${wbTransportWaWbTableName}.id`, `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
-    .innerJoin(`${wbTableName}`, `${wbTableName}.wb_transport_wa_wb_details_id`, `${wbTransportWaWbDetailsTableName}.id`)
-    .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${wbTransportWaWbTableName}.warehouse_id`)
-    .innerJoin(`${yarnTableName}`, `${yarnTableName}.id`, `${wbTransportWaWbDetailsTableName}.yarn_id`)
-    .innerJoin(`${yarnLotTableName}`, `${yarnLotTableName}.id`, `${wbTransportWaWbDetailsTableName}.yarn_lot_id`)
-    .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${wbTableName}.industry_id`)
-            .innerJoin(`${consigmentYarnTableName}`, `${consigmentYarnTableName}.id`, `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`)
+    .innerJoin(`${wbTransportWaWbTableName}`, 
+    `${wbTransportWaWbTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
+    .innerJoin(`${wbTableName}`, 
+    `${wbTableName}.wb_transport_wa_wb_details_id`, 
+    `${wbTransportWaWbDetailsTableName}.id`)
+    .innerJoin(`${warehouseTableName}`, 
+    `${warehouseTableName}.id`, 
+    `${wbTransportWaWbTableName}.warehouse_id`)
+    .innerJoin(`${yarnTableName}`, 
+    `${yarnTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.yarn_id`)
+    .innerJoin(`${yarnLotTableName}`, 
+    `${yarnLotTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.yarn_lot_id`)
+    .innerJoin(`${bussinessmanTableName}`, 
+    `${bussinessmanTableName}.id`, 
+    `${wbTableName}.industry_id`)
+    .innerJoin(`${consigmentYarnTableName}`, 
+    `${consigmentYarnTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`)
+    .innerJoin(`${consigmentYarnTableName} as from_consigment_yarn`,
+      `from_consigment_yarn.id`,
+      `${wbTransportWaWbDetailsTableName}.from_consigment_yarn_id`)
     .where(whereCluse)
     .andWhere(`${wbTransportWaWbDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -526,7 +606,9 @@ exports.selectTotalByYarnByWarehouseId = async (yarnId, warehouseId) => {
         knex.raw('? as input_output', '0')
       ],
     )
-    .innerJoin(`${wbTransportWaWbTableName}`, `${wbTransportWaWbTableName}.id`, `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
+    .innerJoin(`${wbTransportWaWbTableName}`, 
+    `${wbTransportWaWbTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
     .where(whereCluse)
     .andWhere(`${wbTransportWaWbDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -562,21 +644,38 @@ exports.selectTotalDetailsByYarnIdByWarehouseId = async (yarnId, warehouseId) =>
         `${yarnTableName}.name as yarn_name`,
         `${yarnTableName}.code as yarn_code`,
         `${yarnLotTableName}.code as yarn_lot_code`,
-`${consigmentYarnTableName}.number as consigment_yarn_number`,
+        `${consigmentYarnTableName}.number as consigment_yarn_number`,
+        `to_consigment_yarn.number as to_consigment_yarn_number`,
         `${warehouseTableName}.name as warehouse_name`,
         knex.raw('? as type_of_requisition', 'اذن نقل من (A) الى (B)'),
         knex.raw('? as input_output', '0'),
         knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
-
       ],
     )
-    .innerJoin(`${wbTransportWaWbTableName}`, `${wbTransportWaWbTableName}.id`, `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
-    .innerJoin(`${wbTableName}`, `${wbTableName}.wb_transport_wa_wb_details_id`, `${wbTransportWaWbDetailsTableName}.id`)
-    .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${wbTransportWaWbTableName}.warehouse_id`)
-    .innerJoin(`${yarnTableName}`, `${yarnTableName}.id`, `${wbTransportWaWbDetailsTableName}.yarn_id`)
-    .innerJoin(`${yarnLotTableName}`, `${yarnLotTableName}.id`, `${wbTransportWaWbDetailsTableName}.yarn_lot_id`)
-    .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${wbTableName}.industry_id`)
-            .innerJoin(`${consigmentYarnTableName}`, `${consigmentYarnTableName}.id`, `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`)
+    .innerJoin(`${wbTransportWaWbTableName}`, 
+    `${wbTransportWaWbTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
+    .innerJoin(`${wbTableName}`, 
+    `${wbTableName}.wb_transport_wa_wb_details_id`, 
+    `${wbTransportWaWbDetailsTableName}.id`)
+    .innerJoin(`${warehouseTableName}`, 
+    `${warehouseTableName}.id`, 
+    `${wbTransportWaWbTableName}.warehouse_id`)
+    .innerJoin(`${yarnTableName}`, 
+    `${yarnTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.yarn_id`)
+    .innerJoin(`${yarnLotTableName}`, 
+    `${yarnLotTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.yarn_lot_id`)
+    .innerJoin(`${bussinessmanTableName}`, 
+    `${bussinessmanTableName}.id`, 
+    `${wbTableName}.industry_id`)
+    .innerJoin(`${consigmentYarnTableName}`, 
+    `${consigmentYarnTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.from_consigment_yarn_id`)
+    .innerJoin(`${consigmentYarnTableName} as to_consigment_yarn`,
+      `to_consigment_yarn.id`,
+      `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`)
     .where(whereCluse)
     .andWhere(`${wbTransportWaWbDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -592,7 +691,7 @@ exports.selectDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLo
   whereCluse[`${wbTransportWaWbTableName}.warehouse_id`] = warehouseId;
   whereCluse[`${wbTransportWaWbDetailsTableName}.yarn_id`] = yarnId;
   whereCluse[`${wbTransportWaWbDetailsTableName}.yarn_lot_id`] = yarnLotId;
-          whereCluse[`${wbTransportWaWbDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
+          whereCluse[`${wbTransportWaWbDetailsTableName}.from_consigment_yarn_id`] = consigmentYarnId;
   whereCluse[`${wbTransportWaWbDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${wbTransportWaWbDetailsTableName}.is_active`] = 1;
 
@@ -623,7 +722,7 @@ exports.selectDetailsDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId,
   whereCluse[`${wbTransportWaWbTableName}.warehouse_id`] = warehouseId;
   whereCluse[`${wbTransportWaWbDetailsTableName}.yarn_id`] = yarnId;
   whereCluse[`${wbTransportWaWbDetailsTableName}.yarn_lot_id`] = yarnLotId;
-          whereCluse[`${wbTransportWaWbDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
+          whereCluse[`${wbTransportWaWbDetailsTableName}.from_consigment_yarn_id`] = consigmentYarnId;
   whereCluse[`${wbTransportWaWbDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${wbTransportWaWbDetailsTableName}.is_active`] = 1;
 
@@ -645,17 +744,33 @@ exports.selectDetailsDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId,
         `${yarnTableName}.code as yarn_code`,
         `${yarnLotTableName}.code as yarn_lot_code`,
         `${consigmentYarnTableName}.number as consigment_yarn_number`,
+        `to_consigment_yarn.number as to_consigment_yarn_number`,
         knex.raw('? as type_of_requisition', 'اذن نقل من (A) الى (B)'),
         knex.raw('? as input_output', '0'),
         knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
       ],
     )
-    .innerJoin(`${wbTransportWaWbTableName}`, `${wbTransportWaWbTableName}.id`, `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
-    .innerJoin(`${wbTableName}`, `${wbTableName}.wb_transport_wa_wb_details_id`, `${wbTransportWaWbDetailsTableName}.id`)
-    .innerJoin(`${yarnTableName}`, `${yarnTableName}.id`, `${wbTransportWaWbDetailsTableName}.yarn_id`)
-    .innerJoin(`${yarnLotTableName}`, `${yarnLotTableName}.id`, `${wbTransportWaWbDetailsTableName}.yarn_lot_id`)
-    .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${wbTableName}.industry_id`)
-        .innerJoin(`${consigmentYarnTableName}`, `${consigmentYarnTableName}.id`, `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`)
+    .innerJoin(`${wbTransportWaWbTableName}`, 
+    `${wbTransportWaWbTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
+    .innerJoin(`${wbTableName}`, 
+    `${wbTableName}.wb_transport_wa_wb_details_id`, 
+    `${wbTransportWaWbDetailsTableName}.id`)
+    .innerJoin(`${yarnTableName}`, 
+    `${yarnTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.yarn_id`)
+    .innerJoin(`${yarnLotTableName}`, 
+    `${yarnLotTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.yarn_lot_id`)
+    .innerJoin(`${bussinessmanTableName}`, 
+    `${bussinessmanTableName}.id`, 
+    `${wbTableName}.industry_id`)
+    .innerJoin(`${consigmentYarnTableName}`, 
+    `${consigmentYarnTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.from_consigment_yarn_id`)
+    .innerJoin(`${consigmentYarnTableName} as to_consigment_yarn`,
+      `to_consigment_yarn.id`,
+      `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`)
     .where(whereCluse)
     .andWhere(`${wbTransportWaWbDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -683,7 +798,9 @@ exports.selectPriceByYarnId = async (yarnId) => {
         knex.raw('? as input_output', '0')
       ],
     )
-    .innerJoin(`${wbTransportWaWbTableName}`, `${wbTransportWaWbTableName}.id`, `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
+    .innerJoin(`${wbTransportWaWbTableName}`, 
+    `${wbTransportWaWbTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
     .where(whereCluse)
     .andWhere(`${wbTransportWaWbDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -714,23 +831,40 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
         `${yarnTableName}.name as yarn_name`,
         `${yarnTableName}.code as yarn_code`,
         `${yarnLotTableName}.code as yarn_lot_code`,
-`${consigmentYarnTableName}.number as consigment_yarn_number`,
+        `${consigmentYarnTableName}.number as consigment_yarn_number`,
+        `from_consigment_yarn.number as from_consigment_yarn_number`,
         `${warehouseTableName}.name as warehouse_name`,
         knex.raw('? as type_of_requisition', 'اذن نقل من (A) الى (B)'),
         knex.raw('? as input_output', '0'),
         knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
-
       ],
     )
-    .innerJoin(`${wbTransportWaWbTableName}`, `${wbTransportWaWbTableName}.id`, `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
-    .innerJoin(`${wbTableName}`, `${wbTableName}.wb_transport_wa_wb_details_id`, `${wbTransportWaWbDetailsTableName}.id`)
-    .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${wbTransportWaWbTableName}.warehouse_id`)
-    .innerJoin(`${yarnTableName}`, `${yarnTableName}.id`, `${wbTransportWaWbDetailsTableName}.yarn_id`)
-    .innerJoin(`${yarnLotTableName}`, `${yarnLotTableName}.id`, `${wbTransportWaWbDetailsTableName}.yarn_lot_id`)
-    .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${wbTableName}.industry_id`)
-            .innerJoin(`${consigmentYarnTableName}`, `${consigmentYarnTableName}.id`, `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`)
-            .where(`${wbTransportWaWbTableName}.date`, `>=`, bodyPaylod.startDate)
-            .andWhere(`${wbTransportWaWbTableName}.date`, `<=`, bodyPaylod.endDate)
+    .innerJoin(`${wbTransportWaWbTableName}`, 
+    `${wbTransportWaWbTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
+    .innerJoin(`${wbTableName}`, 
+    `${wbTableName}.wb_transport_wa_wb_details_id`, 
+    `${wbTransportWaWbDetailsTableName}.id`)
+    .innerJoin(`${warehouseTableName}`, 
+    `${warehouseTableName}.id`, 
+    `${wbTransportWaWbTableName}.warehouse_id`)
+    .innerJoin(`${yarnTableName}`, 
+    `${yarnTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.yarn_id`)
+    .innerJoin(`${yarnLotTableName}`, 
+    `${yarnLotTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.yarn_lot_id`)
+    .innerJoin(`${bussinessmanTableName}`, 
+    `${bussinessmanTableName}.id`, 
+    `${wbTableName}.industry_id`)
+    .innerJoin(`${consigmentYarnTableName}`, 
+    `${consigmentYarnTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`)
+    .innerJoin(`${consigmentYarnTableName} as from_consigment_yarn`,
+      `from_consigment_yarn.id`,
+      `${wbTransportWaWbDetailsTableName}.from_consigment_yarn_id`)
+    .where(`${wbTransportWaWbTableName}.date`, `>=`, bodyPaylod.startDate)
+    .andWhere(`${wbTransportWaWbTableName}.date`, `<=`, bodyPaylod.endDate)
     .andWhere(`${wbTransportWaWbDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
       queryResults = data;
@@ -761,22 +895,40 @@ exports.selectTotalDetailsByDateWb = async (bodyPaylod) => {
         `${yarnTableName}.code as yarn_code`,
         `${yarnLotTableName}.code as yarn_lot_code`,
         `${warehouseTableName}.name as warehouse_name`,
-`${consigmentYarnTableName}.number as consigment_yarn_number`,
+        `${consigmentYarnTableName}.number as consigment_yarn_number`,
+        `from_consigment_yarn.number as from_consigment_yarn_number`,
         knex.raw('? as type_of_requisition', 'اذن نقل من (A) الى (B)'),
         knex.raw('? as input_output', '1'),
         knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
 
       ],
     )
-    .innerJoin(`${wbTransportWaWbTableName}`, `${wbTransportWaWbTableName}.id`, `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
-    .innerJoin(`${wbTableName}`, `${wbTableName}.wb_transport_wa_wb_details_id`, `${wbTransportWaWbDetailsTableName}.id`)
-    .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${wbTransportWaWbTableName}.warehouse_id`)
-    .innerJoin(`${yarnTableName}`, `${yarnTableName}.id`, `${wbTransportWaWbDetailsTableName}.yarn_id`)
-    .innerJoin(`${yarnLotTableName}`, `${yarnLotTableName}.id`, `${wbTransportWaWbDetailsTableName}.yarn_lot_id`)
-    .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${wbTableName}.industry_id`)
-        .innerJoin(`${consigmentYarnTableName}`, `${consigmentYarnTableName}.id`, `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`)
-        .where(`${wbTransportWaWbTableName}.date`, `>=`, bodyPaylod.startDate)
-        .andWhere(`${wbTransportWaWbTableName}.date`, `<=`, bodyPaylod.endDate)
+    .innerJoin(`${wbTransportWaWbTableName}`, 
+    `${wbTransportWaWbTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
+    .innerJoin(`${wbTableName}`, 
+    `${wbTableName}.wb_transport_wa_wb_details_id`, 
+    `${wbTransportWaWbDetailsTableName}.id`)
+    .innerJoin(`${warehouseTableName}`, 
+    `${warehouseTableName}.id`, 
+    `${wbTransportWaWbTableName}.warehouse_id`)
+    .innerJoin(`${yarnTableName}`, 
+    `${yarnTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.yarn_id`)
+    .innerJoin(`${yarnLotTableName}`, 
+    `${yarnLotTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.yarn_lot_id`)
+    .innerJoin(`${bussinessmanTableName}`, 
+    `${bussinessmanTableName}.id`, 
+    `${wbTableName}.industry_id`)
+    .innerJoin(`${consigmentYarnTableName}`, 
+    `${consigmentYarnTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`)
+    .innerJoin(`${consigmentYarnTableName} as from_consigment_yarn`,
+      `from_consigment_yarn.id`,
+      `${wbTransportWaWbDetailsTableName}.from_consigment_yarn_id`)
+    .where(`${wbTransportWaWbTableName}.date`, `>=`, bodyPaylod.startDate)
+    .andWhere(`${wbTransportWaWbTableName}.date`, `<=`, bodyPaylod.endDate)
     .andWhere(`${wbTransportWaWbDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
       queryResults = data;

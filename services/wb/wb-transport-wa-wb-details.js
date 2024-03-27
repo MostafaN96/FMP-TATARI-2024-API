@@ -4,6 +4,7 @@ const wbTransportWaWbDetailsWaQueries = require("../../db/queries/wb/wb-transpor
 const wbTransportWaWbQueries = require("../../db/queries/wb/wb-transport-wa-wb");
 const wbQueries = require("../../db/queries/wb/wb");
 const waQueries = require("../../db/queries/wa/wa");
+const consigmentYarnQueries = require("../../db/queries/general/consigment-yarn");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -23,6 +24,15 @@ exports.create = async (wbTransportWaWbRequisitionDetails) => {
         wbTransportWaWbRequisitionDetails.items[i].wbTransportWaWbDetailsId = trans.transform();
         wbTransportWaWbRequisitionDetails.items[i].wbId = trans.transform();
 
+        wbTransportWaWbRequisitionDetails.items[i].consigmentYarnId = trans.transform();
+        // Check Consigment Yarn Dupplication
+        const selectConsigmentYarnOneResult = await consigmentYarnQueries.selectOne({ number: wbTransportWaWbRequisitionDetails.items[i].consigmentYarnNumber })
+        if (selectConsigmentYarnOneResult[0] != null) {
+            wbTransportWaWbRequisitionDetails.items[i].consigmentYarnId = selectConsigmentYarnOneResult[0].id;
+        } else {
+            await consigmentYarnQueries.insertForTransportWaWb(wbTransportWaWbRequisitionDetails, wbTransportWaWbRequisitionDetails.items[i]);
+        }
+
         const results = await wbTransportWaWbDetailsQueries.insert(wbTransportWaWbRequisitionDetails, wbTransportWaWbRequisitionDetails.items[i]);
         if (!results) {
             return constants.insertError;
@@ -34,7 +44,7 @@ exports.create = async (wbTransportWaWbRequisitionDetails) => {
                 wbTransportWaWbRequisitionDetails.warehouseId,
                 wbTransportWaWbRequisitionDetails.items[i].yarnId,
                 wbTransportWaWbRequisitionDetails.items[i].yarnLotId,
-                wbTransportWaWbRequisitionDetails.items[i].consigmentYarnId)
+                wbTransportWaWbRequisitionDetails.items[i].fromConsigmentYarnId)
             if (yarnsStoredInWaResult[0] != null) {
 
                 for (let j = 0; j < yarnsStoredInWaResult.length; j++) {
@@ -162,10 +172,10 @@ exports.update = async (wbTransportWaWbRequisitionDetails) => {
                     isFound[0].warehouse_id,
                     isFound[0].yarn_id,
                     isFound[0].yarn_lot_id,
-                    isFound[0].consigment_yarn_id
+                    isFound[0].from_consigment_yarn_id
                 )
                 if (sumCurrentQuantityWa[0] != null) {
-                    console.log("sumCurrentQuantityWa ::: ", sumCurrentQuantityWa);
+                    // console.log("sumCurrentQuantityWa ::: ", sumCurrentQuantityWa);
                     const sumCurrentQuantity = sumCurrentQuantityWa[0].current_quantity
                     if (sumCurrentQuantity >= defferenceQuantity) {
 
@@ -181,10 +191,10 @@ exports.update = async (wbTransportWaWbRequisitionDetails) => {
                             isFound[0].warehouse_id,
                             isFound[0].yarn_id,
                             isFound[0].yarn_lot_id,
-                            isFound[0].consigment_yarn_id
+                            isFound[0].from_consigment_yarn_id
                         )
                         if (waRecords[0] != null) {
-                            console.log("waRecords ::: ", waRecords);
+                            // console.log("waRecords ::: ", waRecords);
 
                             // Increment Wb current_quantity
                             await wbQueries.update({
@@ -252,7 +262,7 @@ exports.update = async (wbTransportWaWbRequisitionDetails) => {
 
             } else if (newQuantity < oldQuantity) {
                 defferenceQuantity = parseFloat((oldQuantity - newQuantity).toFixed(3))
-                console.log("selectOneWbRecord[0].current_quantity ::: ", selectOneWbRecord[0].current_quantity);
+                // console.log("selectOneWbRecord[0].current_quantity ::: ", selectOneWbRecord[0].current_quantity);
 
                 if (selectOneWbRecord[0].current_quantity >= defferenceQuantity) {
 

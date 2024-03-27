@@ -911,9 +911,9 @@ exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
                                 :
                                 parseFloat((neededYarnQuantity).toFixed(3))
                             }
-                            if(isWbYarnsAdded) {
-                                wbYarn.current_quantity = wbYarn.current_quantity - getElementOf.current_quantity
-                            }
+                            // if(isWbYarnsAdded) {
+                            //     wbYarn.current_quantity = wbYarn.current_quantity - getElementOf.current_quantity
+                            // }
 
                             data.wbYarns.push(wbYarn)
                             if (neededYarnQuantity == 0) {
@@ -1494,9 +1494,9 @@ exports.inquireFabricAvilabilityTotalReportWe = async (fabric, addedData) => {
                                 :
                                 parseFloat((neededYarnQuantity).toFixed(3))
                             }
-                            if(isWbYarnsAdded) {
-                                wbYarn.current_quantity = wbYarn.current_quantity - getElementOf.current_quantity
-                            }
+                            // if(isWbYarnsAdded) {
+                            //     wbYarn.current_quantity = wbYarn.current_quantity - getElementOf.current_quantity
+                            // }
 
                             data.wbYarns.push(wbYarn)
                             if (neededYarnQuantity == 0) {
@@ -2293,7 +2293,7 @@ exports.filterObjectsWarehousesOfParentArray = async (objectsWarehouses) => {
                                     ) {
                                         // get index of element
                                         wbYarnsElement = data.wbYarns[await this.getIndexOfElement2Attr(data.wbYarns, objectWarehouseArrayFilteredElement, 'yarn_id', 'manufacturer_id')] 
-                                        wbYarnsElement.needed_quantity = wbYarnsElement.needed_quantity + objectWarehouseArrayFiltered.needed_quantity
+                                        // wbYarnsElement.needed_quantity = wbYarnsElement.needed_quantity + objectWarehouseArrayFiltered.needed_quantity
                                         wbYarnsElement.current_quantity = wbYarnsElement.current_quantity + objectWarehouseArrayFiltered.current_quantity
                                         break;
                                     } else {
@@ -2818,7 +2818,7 @@ exports.filterObjectsWarehousesOfParentArrayTotal = async (objectsWarehouses) =>
                                     ) {
                                         // get index of element
                                         wbYarnsElement = data.wbYarns[await this.getIndexOfElement1Attr(data.wbYarns, objectWarehouseArrayFilteredElement, 'yarn_id')] 
-                                        wbYarnsElement.needed_quantity = wbYarnsElement.needed_quantity + objectWarehouseArrayFiltered.needed_quantity
+                                        // wbYarnsElement.needed_quantity = wbYarnsElement.needed_quantity + objectWarehouseArrayFiltered.needed_quantity
                                         wbYarnsElement.current_quantity = wbYarnsElement.current_quantity + objectWarehouseArrayFiltered.current_quantity
                                         break;
                                     } else {
@@ -2839,7 +2839,7 @@ exports.filterObjectsWarehousesOfParentArrayTotal = async (objectsWarehouses) =>
                     // --------------------- START waYarns-----------------
                     // Check key type
                     if (key == "waYarns") {
-                        console.log("objectWarehouseArray ::::::::::::::: ", objectWarehouseArray);
+                        // console.log("objectWarehouseArray ::::::::::::::: ", objectWarehouseArray);
                         let objectWarehouseArrayFiltered = []
                         objectWarehouseArrayFiltered.push(objectWarehouseArray[0])
                         let arrayOfYarns = [{
