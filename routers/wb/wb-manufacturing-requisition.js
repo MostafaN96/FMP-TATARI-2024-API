@@ -33,4 +33,12 @@ router.post(
   wbManufacturingRequisitionController.createForOrder
 );
 
+router.put(
+  "/:id",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  middleWeres.checkInt(),
+  wbManufacturingRequisitionController.update
+);
+
 module.exports = router;

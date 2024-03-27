@@ -3,6 +3,7 @@ const waAddRequisitionDetailsPurchaseOrderQueries = require("../../db/queries/wa
 
 // Util
 const constants = require("../../util/constants");
+const { waAddRequisitionDetailsPurchaseOrderTableName } = require("../../util/database-tables-name");
 
 exports.create = async (waAddRequisitionDetailsPurchaseOrder, itemsOrder) => {
 
@@ -12,4 +13,16 @@ exports.create = async (waAddRequisitionDetailsPurchaseOrder, itemsOrder) => {
   } else {
     return constants.insertError;
   }
+};
+
+
+exports.selectByPurchaseOrderId = async (data) => {
+  
+  let whereCluse = {};
+    whereCluse[`${waAddRequisitionDetailsPurchaseOrderTableName}.wa_add_purchase_order_id`] = data.id;
+    whereCluse[`${waAddRequisitionDetailsPurchaseOrderTableName}.is_deleted`] = 0;
+    whereCluse[`${waAddRequisitionDetailsPurchaseOrderTableName}.is_active`] = 1;
+
+    const results = await waAddRequisitionDetailsPurchaseOrderQueries.select(whereCluse);
+    return results;
 };

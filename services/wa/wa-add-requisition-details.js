@@ -251,6 +251,7 @@ exports.updateForOrder = async (waAddRequisitionDetails) => {
       // Update wa Add Requisition Details Without Quantity
       await waAddRequisitionDetailsQueries.update({
         price: waAddRequisitionDetails.price,
+        price_dollar: waAddRequisitionDetails.priceDollar,
         document: waAddRequisitionDetails.document,
         statement: waAddRequisitionDetails.statement
       },

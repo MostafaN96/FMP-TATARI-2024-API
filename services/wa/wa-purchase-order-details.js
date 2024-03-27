@@ -4,6 +4,8 @@ const waPurchaseOrderQueries = require("../../db/queries/wa/wa-purchase-order");
 
 // Services
 const waAddRequisitionDetailsService = require("./wa-add-requisition-details");
+const waAddRequisitionService = require("./wa-add-requisition");
+const waAddRequisitionDetailsPurchaseOrderService = require("./wa-add-requisition-details-purchase-order");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -16,14 +18,31 @@ const { waPurchaseOrderTableName, waPurchaseOrderDetailsTableName,
 } = require("../../util/database-tables-name");
 
 exports.create = async (waPurchaseOrderDetails) => {
+    const orderId = waPurchaseOrderDetails.id
+
     for (let i = 0; i < waPurchaseOrderDetails.items.length; i++) {
         waPurchaseOrderDetails.items[i].waPurchaseOrderDetailsId = trans.transform();
+
+        // For Add wa requisition (optional)
+        waPurchaseOrderDetails.items[i].orderDetailsId = waPurchaseOrderDetails.items[i].waPurchaseOrderDetailsId
 
         const results = await waPurchaseOrderDetailsQueries.insert(waPurchaseOrderDetails, waPurchaseOrderDetails.items[i]);
         if (!results) {
             return constants.insertError;
         }
     }
+    // Add wa requisition (optional)
+    if(waPurchaseOrderDetails.addType == "add") {
+        await waAddRequisitionService.createForOrder(waPurchaseOrderDetails)
+    } else if (waPurchaseOrderDetails.addType == "add_details") {
+        const selectAddRequisitionDetailsPurchaseOrderResult = await waAddRequisitionDetailsPurchaseOrderService.selectByPurchaseOrderId(orderId)
+        if (Array.isArray(selectAddRequisitionDetailsPurchaseOrderResult) && selectAddRequisitionDetailsPurchaseOrderResult.length > 0) {
+            waPurchaseOrderDetails.id = selectAddRequisitionDetailsPurchaseOrderResult[0].wa_add_requisition_id
+
+            await waAddRequisitionDetailsService.create(waPurchaseOrderDetails, 1)
+        }
+    }
+    waPurchaseOrderDetails.id = orderId
 
     return { ...constants.insertSuccess, ...{ id: waPurchaseOrderDetails.id } };
 };
@@ -228,6 +247,8 @@ exports.update = async (waPurchaseOrderDetails) => {
         // Update waPurchaseOrderDetails Without Quantity
         callArray.push(
             waPurchaseOrderDetailsQueries.update({
+                price: waPurchaseOrderDetails.price,
+                price_dollar: waPurchaseOrderDetails.priceDollar,
                 note: waPurchaseOrderDetails.note2,
             },
                 {

@@ -70,3 +70,30 @@ exports.selectOrders = async () => {
     const results = await wbManufacturingRequisitionQueries.selectOrders();
     return results;
   };
+  
+exports.update = async (wbManufacturingInput) => {
+    // check is found
+    let whereCluse = {};
+    whereCluse[`${wbManufacturingRequisitionTableName}.id`] = wbManufacturingInput.id;
+    whereCluse[`${wbManufacturingRequisitionTableName}.is_deleted`] = 0;
+    whereCluse[`${wbManufacturingRequisitionTableName}.is_active`] = 1;
+    const isFound = await wbManufacturingRequisitionQueries.selectOne(whereCluse);
+    if (isFound[0] != null) {
+  
+        // updated
+        const updateResults = await wbManufacturingRequisitionQueries.update({
+            date: wbManufacturingInput.date,
+            note: wbManufacturingInput.note,
+            status: wbManufacturingInput.status
+        }, {
+            id: wbManufacturingInput.id
+        });
+        if (updateResults) {
+          return constants.updateSuccess;
+        } else {
+          return constants.updateError;
+        }
+    } else {
+      return constants.itemNotFound;
+    }
+  };

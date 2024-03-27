@@ -255,7 +255,8 @@ exports.update = async (wbManufacturingInput) => {
         // Update wb Manufacturing requisition Without Quantity
         callArray.push(wbManufacturingRequisitionQueries.update({
             date: wbManufacturingInput.date,
-            note: wbManufacturingInput.note
+            note: wbManufacturingInput.note,
+            status: wbManufacturingInput.status,
         },
             {
                 id: wbManufacturingInput.wbManufacturingRequisitionId

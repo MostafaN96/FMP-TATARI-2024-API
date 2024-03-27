@@ -10,6 +10,9 @@ const constants = require("../../util/constants");
 exports.create = async (request, response) => {
   const bodyPalod = request.body;
 
+  // For Add wa requisition (optional)
+  bodyPalod.orderId = bodyPalod.id;
+
   // Validation
   if (!waPurchaseOrderDetailsValidation.isValid(bodyPalod)) {
       // logging

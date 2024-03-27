@@ -80,6 +80,17 @@ function notZero(n) {
   return n;
 }
 
+// wb manufacturing requisition status
+const wb_manufacturing_requisition_status_new = 'new'
+const wb_manufacturing_requisition_status_good_after_check = 'good_after_check'
+const wb_manufacturing_requisition_status_not_good_after_check = 'not_good_after_check'
+const wb_manufacturing_requisition_status_white = 'white'
+
+const wb_manufacturing_requisition_status_new_trans = 'غير مفحوص'
+const wb_manufacturing_requisition_status_good_after_check_trans = 'مقبول بعد مفحوص'
+const wb_manufacturing_requisition_status_not_good_after_check_trans = 'غير مقبول'
+const wb_manufacturing_requisition_status_white_trans = 'ابيض'
+
 module.exports = {
   insertError,
   insertSuccess,
@@ -96,5 +107,15 @@ module.exports = {
   unauthorized,
   wrongQuantity,
 
-  notZero
+  notZero,
+
+  wb_manufacturing_requisition_status_new,
+  wb_manufacturing_requisition_status_good_after_check,
+  wb_manufacturing_requisition_status_not_good_after_check,
+  wb_manufacturing_requisition_status_white,
+  
+  wb_manufacturing_requisition_status_new_trans,
+  wb_manufacturing_requisition_status_good_after_check_trans,
+  wb_manufacturing_requisition_status_not_good_after_check_trans,
+  wb_manufacturing_requisition_status_white_trans,
 };

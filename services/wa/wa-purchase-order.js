@@ -18,6 +18,9 @@ const { waPurchaseOrderTableName, waPurchaseOrderDetailsTableName, wdDyeingOrder
 exports.create = async (waPurchaseOrder) => {
     waPurchaseOrder.id = trans.transform();
 
+    // For Add wa requisition (optional)
+    waPurchaseOrder.orderId = waPurchaseOrder.id;
+
     // Select Max Number Of Requisition
     const selectMaxRequisitionNumber = await generalQueries.selectMaxValue(waPurchaseOrderTableName, { number: 'number' })
     if (selectMaxRequisitionNumber[0].number == null) {

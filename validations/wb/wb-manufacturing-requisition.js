@@ -103,3 +103,26 @@ exports.isValidOrder = (wbManufacturingRequisition) => {
         return false;
     }
 };
+
+exports.isValidUpdate = (wbManufacturing) => {
+    const wbManufacturingSchema = joi.object({
+        date: validations.joiText(5, 50),
+        note: validations.joiNotRequiredText(0, 100000),
+        status: validations.joiNotRequiredText(0, 1000),
+        personid: validations.joiText(3, 50),
+        ipaddress: validations.joiText(3, 50),
+    });
+    const joiErrors = wbManufacturingSchema.validate(wbManufacturing);
+
+    try {
+        if (joiErrors.error) {
+            console.log(joiErrors.error.details);
+            return false;
+        } else {
+            return true;
+        }
+    } catch (error) {
+        console.log(joiErrors.error.details);
+        return false;
+    }
+};

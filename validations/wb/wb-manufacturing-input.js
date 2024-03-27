@@ -41,6 +41,7 @@ exports.isValidUpdate = (wbManufacturingInput) => {
     const wbManufacturingInputSchema = joi.object({
         date: validations.joiText(5, 50),
         note: validations.joiNotRequiredText(0, 100000),
+        status: validations.joiNotRequiredText(0, 1000),
         yarnId: validations.joiText(15, 30),
         yarnLotId: validations.joiText(15, 30),
         price: validations.joiNumber(1, 60),

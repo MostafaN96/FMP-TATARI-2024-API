@@ -10,7 +10,7 @@ const constants = require("../../util/constants");
 
 exports.create = async (request, response) => {
   const bodyPalod = request.body;
-  console.log("bodyPalod.isOrder ::: ", bodyPalod.isOrder);
+  // console.log("bodyPalod.isOrder ::: ", bodyPalod.isOrder);
 
   // Validation
   if (!wbManufacturingInputValidation.isValid(bodyPalod)) {

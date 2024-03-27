@@ -697,6 +697,9 @@ exports.selectQuantityByDyeingWd = async (whereCluseArray, groupBy) => {
     `fabric_name`,
     `fabric_code`,
     `fabric_dyeing_code`,
+    `dyed_fabric_id`,
+    `dyed_fabric_name`,
+    `dyed_fabric_code`,
     `consigment_dyeing_id`,
     `consigment_dyeing_number`,
     `dyeing_id`,
@@ -708,6 +711,9 @@ exports.selectQuantityByDyeingWd = async (whereCluseArray, groupBy) => {
       `${fabricTableName}.name as fabric_name`,
       `${fabricTableName}.code as fabric_code`,
       `${fabricTableName}.dyeing_code as fabric_dyeing_code`,
+      `dyed_fabric.id as dyed_fabric_id`,
+      `dyed_fabric.name as dyed_fabric_name`,
+      `dyed_fabric.code as dyed_fabric_code`,
       `${consigmentDyeingTableName}.id as consigment_dyeing_id`,
       `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
       `${wdTableName}.dyeing_id`,
@@ -723,6 +729,9 @@ exports.selectQuantityByDyeingWd = async (whereCluseArray, groupBy) => {
       .innerJoin(`${fabricTableName}`,
         `${fabricTableName}.id`,
         `${wdTransportWcWdDetailsTableName}.fabric_id`)
+      .leftOuterJoin(`${fabricTableName} as dyed_fabric`,
+        `dyed_fabric.fabric_id`,
+        `${fabricTableName}.id`)
       .where(whereCluseArray[0])
       // .groupBy(`${waAddRequisitionDetailsTableName}.consigment_dyeing_id`)
       .as('t1')
@@ -732,6 +741,9 @@ exports.selectQuantityByDyeingWd = async (whereCluseArray, groupBy) => {
           `${fabricTableName}.name as fabric_name`,
           `${fabricTableName}.code as fabric_code`,
           `${fabricTableName}.dyeing_code as fabric_dyeing_code`,
+          `dyed_fabric.id as dyed_fabric_id`,
+      `dyed_fabric.name as dyed_fabric_name`,
+      `dyed_fabric.code as dyed_fabric_code`,
           `${consigmentDyeingTableName}.id as consigment_dyeing_id`,
           `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
           `${wdTableName}.dyeing_id`,
@@ -753,6 +765,9 @@ exports.selectQuantityByDyeingWd = async (whereCluseArray, groupBy) => {
           .innerJoin(`${fabricTableName}`,
             `${fabricTableName}.id`,
             `${wdReconciliationRequisitionDetailsTableName}.fabric_id`)
+          .leftOuterJoin(`${fabricTableName} as dyed_fabric`,
+            `dyed_fabric.fabric_id`,
+            `${fabricTableName}.id`)
           .where(whereCluseArray[1])
         // .groupBy(`${waReconciliationRequisitionDetailsTableName}.consigment_dyeing_id`)
         // .groupBy(`fabric_id`)
@@ -763,6 +778,9 @@ exports.selectQuantityByDyeingWd = async (whereCluseArray, groupBy) => {
       `${fabricTableName}.name as fabric_name`,
       `${fabricTableName}.code as fabric_code`,
       `${fabricTableName}.dyeing_code as fabric_dyeing_code`,
+      `dyed_fabric.id as dyed_fabric_id`,
+      `dyed_fabric.name as dyed_fabric_name`,
+      `dyed_fabric.code as dyed_fabric_code`,
       `${consigmentDyeingTableName}.id as consigment_dyeing_id`,
       `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
       `${wdTableName}.dyeing_id`,
@@ -778,6 +796,9 @@ exports.selectQuantityByDyeingWd = async (whereCluseArray, groupBy) => {
       .innerJoin(`${fabricTableName}`,
         `${fabricTableName}.id`,
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.fabric_id`)
+      .leftOuterJoin(`${fabricTableName} as dyed_fabric`,
+            `dyed_fabric.fabric_id`,
+            `${fabricTableName}.id`)
       .where(whereCluseArray[3])
     // .groupBy(`${waReconciliationRequisitionDetailsTableName}.consigment_dyeing_id`)
     // .groupBy(`fabric_id`)

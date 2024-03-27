@@ -3,7 +3,13 @@ const sqlFun = require("../../config/sql-fun");
 const knex = require("../../config/connection").getConnection();
 
 // Util
-const { wbManufacturingRequisitionTableName, bussinessmanTableName, fabricTableName, wbManufacturingInputOutputTableName, wbManufacturingOutputTableName, wbManufacturingOutputOrderTableName, wbManufacturingOrderRequisitionTableName } = require("../../../util/database-tables-name");
+const constants = require("../../../util/constants");
+const { 
+  wbManufacturingRequisitionTableName, bussinessmanTableName, 
+  fabricTableName, wbManufacturingInputOutputTableName, 
+  wbManufacturingOutputTableName, wbManufacturingOutputOrderTableName, 
+  wbManufacturingOrderRequisitionTableName 
+} = require("../../../util/database-tables-name");
 
 exports.insert = async (wbManufacturingRequisition) => {
   let queryResults = false;
@@ -58,6 +64,7 @@ exports.select = async () => {
     .select([
       `${wbManufacturingRequisitionTableName}.id`,
       `${wbManufacturingRequisitionTableName}.number`,
+      `${wbManufacturingRequisitionTableName}.status`,
       `${wbManufacturingRequisitionTableName}.date`,
       `${wbManufacturingRequisitionTableName}.note`,
       `${wbManufacturingRequisitionTableName}.is_order`,
@@ -70,6 +77,14 @@ exports.select = async () => {
       `${wbManufacturingOrderRequisitionTableName}.number as order_number`,
       `seller.id as seller_id`,
       `seller.name as seller_name`,
+      knex.raw(
+        `CASE 
+        WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_new}' THEN '${constants.wb_manufacturing_requisition_status_new_trans}' 
+        WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_good_after_check}' THEN '${constants.wb_manufacturing_requisition_status_good_after_check_trans}'  
+        WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_not_good_after_check}' THEN '${constants.wb_manufacturing_requisition_status_not_good_after_check_trans}'  
+        WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_white}' THEN '${constants.wb_manufacturing_requisition_status_white_trans}'  
+        ELSE ''  
+        END as status_name`),
     ])
     .from(`${wbManufacturingRequisitionTableName}`)
     .innerJoin(`${wbManufacturingInputOutputTableName}`,
@@ -113,6 +128,7 @@ exports.selectOrders = async () => {
     .select([
       `${wbManufacturingRequisitionTableName}.id`,
       `${wbManufacturingRequisitionTableName}.number`,
+      `${wbManufacturingRequisitionTableName}.status`,
       `${wbManufacturingRequisitionTableName}.date`,
       `${wbManufacturingRequisitionTableName}.note`,
       `${wbManufacturingRequisitionTableName}.is_order`,
@@ -124,6 +140,14 @@ exports.selectOrders = async () => {
       `${wbManufacturingOrderRequisitionTableName}.number as order_number`,
       `seller.id as seller_id`,
       `seller.name as seller_name`,
+      knex.raw(
+        `CASE 
+        WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_new}' THEN '${constants.wb_manufacturing_requisition_status_new_trans}' 
+        WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_good_after_check}' THEN '${constants.wb_manufacturing_requisition_status_good_after_check_trans}'  
+        WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_not_good_after_check}' THEN '${constants.wb_manufacturing_requisition_status_not_good_after_check_trans}'  
+        WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_white}' THEN '${constants.wb_manufacturing_requisition_status_white_trans}'  
+        ELSE ''  
+        END as status_name`),
     ])
     .from(`${wbManufacturingRequisitionTableName}`)
     .innerJoin(`${wbManufacturingInputOutputTableName}`,
