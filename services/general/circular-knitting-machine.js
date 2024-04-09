@@ -18,7 +18,7 @@ exports.create = async (circularKnittingMachine) => {
     const selectOneCircularKnittingMachineBussinessmanResult = await circularKnittingMachineBussinessmanQueries.selectOne({
       manufacturer_id: circularKnittingMachine.manufactureId,
       circular_knitting_machine_id: selectOneResult[0].id,
-      fabric_id: circularKnittingMachine.fabricId,
+      // fabric_id: circularKnittingMachine.fabricId,
     })
     if (selectOneCircularKnittingMachineBussinessmanResult[0] != null) {
       return constants.duplicatedData;
@@ -57,7 +57,7 @@ exports.update = async (circularKnittingMachine) => {
       const selectOneCircularKnittingMachineBussinessmanResult = await circularKnittingMachineBussinessmanQueries.selectOne({
         manufacturer_id: circularKnittingMachine.manufactureId,
         circular_knitting_machine_id: checkDuplication[0].id,
-        fabric_id: circularKnittingMachine.fabricId,
+        // fabric_id: circularKnittingMachine.fabricId,
       })
       if (selectOneCircularKnittingMachineBussinessmanResult[0] != null) {
         return constants.duplicatedData;

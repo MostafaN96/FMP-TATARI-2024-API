@@ -1,5 +1,5 @@
 // Config
-const { fabricTableName } = require("../../../util/database-tables-name");
+// const { fabricTableName } = require("../../../util/database-tables-name");
 const sqlFun = require("../../config/sql-fun");
 const knex = require("../../config/connection").getConnection();
 
@@ -15,7 +15,27 @@ exports.insert = async (circularKnittingMachineBussinessman) => {
       id: circularKnittingMachineBussinessman.circularKnittingMachineBussinessmanId,
       circular_knitting_machine_id: circularKnittingMachineBussinessman.id,
       manufacturer_id: circularKnittingMachineBussinessman.manufactureId,
-      fabric_id: circularKnittingMachineBussinessman.fabricId,
+      // fabric_id: circularKnittingMachineBussinessman.fabricId,
+      creator_id: circularKnittingMachineBussinessman.personid,
+      ip_address: circularKnittingMachineBussinessman.ipaddress
+    })
+    .then((data) => {
+      queryResults = true;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+  return queryResults;
+};
+
+exports.insertForManufacturingWb = async (circularKnittingMachineBussinessman) => {
+  let queryResults = false;
+  await sqlFun
+    .insert(circularKnittingMachineBussinessmanTableName, {
+      id: circularKnittingMachineBussinessman.circularKnittingMachineBussinessmanId,
+      circular_knitting_machine_id: circularKnittingMachineBussinessman.circularKnittingMachineId,
+      manufacturer_id: circularKnittingMachineBussinessman.industryId,
+      // fabric_id: circularKnittingMachineBussinessman.fabricId,
       creator_id: circularKnittingMachineBussinessman.personid,
       ip_address: circularKnittingMachineBussinessman.ipaddress
     })
@@ -31,7 +51,10 @@ exports.insert = async (circularKnittingMachineBussinessman) => {
 exports.selectOne = async (whereCluse) => {
   let queryResults = false;
   await sqlFun
-    .limitedSelect(circularKnittingMachineBussinessmanTableName, ["is_deleted"], whereCluse, 1)
+    .limitedSelect(circularKnittingMachineBussinessmanTableName, [
+      "id",
+      "circular_knitting_machine_id",
+    ], whereCluse, 1)
     .then((data) => {
       queryResults = data;
     })
@@ -57,9 +80,9 @@ exports.select = async () => {
   `${circularKnittingMachineTableName}.model`,
   `${bussinessmanTableName}.id as manufacturer_id`, 
   `${bussinessmanTableName}.name as manufacturer_name`,
-  `${fabricTableName}.id as fabric_id`, 
-  `${fabricTableName}.name as fabric_name`,
-  `${fabricTableName}.name as fabric_code`,
+  // `${fabricTableName}.id as fabric_id`, 
+  // `${fabricTableName}.name as fabric_name`,
+  // `${fabricTableName}.name as fabric_code`,
 ])
   .from(`${circularKnittingMachineBussinessmanTableName}`)
   .where(whereCluse)
@@ -69,9 +92,9 @@ exports.select = async () => {
   .innerJoin(bussinessmanTableName, 
     `${bussinessmanTableName}.id`, 
     `${circularKnittingMachineBussinessmanTableName}.manufacturer_id`)
-    .innerJoin(fabricTableName, 
-      `${fabricTableName}.id`, 
-      `${circularKnittingMachineBussinessmanTableName}.fabric_id`)
+    // .innerJoin(fabricTableName, 
+    //   `${fabricTableName}.id`, 
+    //   `${circularKnittingMachineBussinessmanTableName}.fabric_id`)
       .then(data => {
           queryResults = data
       })
@@ -101,8 +124,12 @@ exports.selectDeleted = async () => {
 ])
   .from(`${circularKnittingMachineBussinessmanTableName}`)
   .where(whereCluse)
-  .innerJoin(circularKnittingMachineTableName, `${circularKnittingMachineTableName}.id`, `${circularKnittingMachineBussinessmanTableName}.circular_knitting_machine_id`)
-  .innerJoin(bussinessmanTableName, `${bussinessmanTableName}.id`, `${circularKnittingMachineBussinessmanTableName}.manufacturer_id`)
+  .innerJoin(circularKnittingMachineTableName, 
+    `${circularKnittingMachineTableName}.id`, 
+    `${circularKnittingMachineBussinessmanTableName}.circular_knitting_machine_id`)
+  .innerJoin(bussinessmanTableName, 
+    `${bussinessmanTableName}.id`, 
+    `${circularKnittingMachineBussinessmanTableName}.manufacturer_id`)
       .then(data => {
           queryResults = data
       })

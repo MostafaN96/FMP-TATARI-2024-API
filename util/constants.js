@@ -87,7 +87,7 @@ const wb_manufacturing_requisition_status_not_good_after_check = 'not_good_after
 const wb_manufacturing_requisition_status_white = 'white'
 
 const wb_manufacturing_requisition_status_new_trans = 'غير مفحوص'
-const wb_manufacturing_requisition_status_good_after_check_trans = 'مقبول بعد مفحوص'
+const wb_manufacturing_requisition_status_good_after_check_trans = 'مقبول بعد الفحص'
 const wb_manufacturing_requisition_status_not_good_after_check_trans = 'غير مقبول'
 const wb_manufacturing_requisition_status_white_trans = 'ابيض'
 

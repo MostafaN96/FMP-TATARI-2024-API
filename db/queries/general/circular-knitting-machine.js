@@ -26,6 +26,28 @@ exports.insert = async (circularKnittingMachine) => {
   return queryResults;
 };
 
+exports.insertForManufacturingWb = async (circularKnittingMachine) => {
+  let queryResults = false;
+  await sqlFun
+    .insert(circularKnittingMachineTableName, {
+      id: circularKnittingMachine.circularKnittingMachineId,
+      type: "",
+      number: "",
+      diameter: "",
+      smoothness: "",
+      model: "",
+      creator_id: circularKnittingMachine.personid,
+      ip_address: circularKnittingMachine.ipaddress
+    })
+    .then((data) => {
+      queryResults = true;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+  return queryResults;
+};
+
 exports.update = async (circularKnittingMachine) => {
   let queryResults = false;
   await sqlFun

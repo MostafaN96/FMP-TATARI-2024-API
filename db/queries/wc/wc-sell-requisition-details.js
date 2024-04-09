@@ -22,6 +22,7 @@ exports.insert = async (wcSellRequisitionDetails, items) => {
       price: items.price,
       price_dollar: items.priceDollar,
       quantity: items.quantity,
+      fabric_piece: items.numberFabricPieces,
       document: items.document,
       statement: items.statement,
       creator_id: wcSellRequisitionDetails.personid,
@@ -50,6 +51,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
         `${wcSellRequisitionDetailsTableName}.price`,
         `${wcSellRequisitionDetailsTableName}.price_dollar`,
         `${wcSellRequisitionDetailsTableName}.quantity`,
+        `${wcSellRequisitionDetailsTableName}.fabric_piece`,
         `${wcSellRequisitionDetailsTableName}.document`,
         `${wcSellRequisitionDetailsTableName}.statement`,
         `${wcSellRequisitionTableName}.id as requisition_id`,
@@ -92,12 +94,15 @@ exports.selectTotalByFabricId = async (fabricId) => {
         `${wcSellRequisitionDetailsTableName}.price`,
         `${wcSellRequisitionDetailsTableName}.price_dollar`,
         `${wcSellRequisitionDetailsTableName}.quantity`,
+        `${wcSellRequisitionDetailsTableName}.fabric_piece`,
         `${wcSellRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن بيع'),
         knex.raw('? as input_output', '0')
       ],
     )
-    .innerJoin(`${wcSellRequisitionTableName}`, `${wcSellRequisitionTableName}.id`, `${wcSellRequisitionDetailsTableName}.wc_sell_requisition_id`)
+    .innerJoin(`${wcSellRequisitionTableName}`, 
+    `${wcSellRequisitionTableName}.id`, 
+    `${wcSellRequisitionDetailsTableName}.wc_sell_requisition_id`)
     .where(whereCluse)
     .andWhere(`${wcSellRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -121,6 +126,7 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
         `${wcSellRequisitionDetailsTableName}.price`,
         `${wcSellRequisitionDetailsTableName}.price_dollar`,
         `${wcSellRequisitionDetailsTableName}.quantity`,
+        `${wcSellRequisitionDetailsTableName}.fabric_piece`,
         `${wcSellRequisitionDetailsTableName}.document`,
         `${wcSellRequisitionDetailsTableName}.statement`,
         `${wcSellRequisitionTableName}.id as requisition_id`,
@@ -168,6 +174,7 @@ exports.selectDetailsByWarehouseByFabricByConsigmentManufacturing = async (wareh
         `${wcSellRequisitionDetailsTableName}.price`,
         `${wcSellRequisitionDetailsTableName}.price_dollar`,
         `${wcSellRequisitionDetailsTableName}.quantity`,
+        `${wcSellRequisitionDetailsTableName}.fabric_piece`,
         `${wcSellRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن بيع'),
         knex.raw('? as input_output', '0')
@@ -199,6 +206,7 @@ exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async
         `${wcSellRequisitionDetailsTableName}.price`,
         `${wcSellRequisitionDetailsTableName}.price_dollar`,
         `${wcSellRequisitionDetailsTableName}.quantity`,
+        `${wcSellRequisitionDetailsTableName}.fabric_piece`,
         `${wcSellRequisitionDetailsTableName}.document`,
         `${wcSellRequisitionDetailsTableName}.statement`,
         `${wcSellRequisitionTableName}.id as requisition_id`,
@@ -243,6 +251,7 @@ exports.selectPriceByFabricId = async (fabricId) => {
         `${wcSellRequisitionDetailsTableName}.price`,
         `${wcSellRequisitionDetailsTableName}.price_dollar`,
         `${wcSellRequisitionDetailsTableName}.quantity`,
+        `${wcSellRequisitionDetailsTableName}.fabric_piece`,
         `${wcSellRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن بيع'),
         knex.raw('? as input_output', '0')
@@ -272,6 +281,7 @@ exports.selectPriceByFabricIdByConsigmentManufacturingId = async (fabricId, cons
         `${wcSellRequisitionDetailsTableName}.price`,
         `${wcSellRequisitionDetailsTableName}.price_dollar`,
         `${wcSellRequisitionDetailsTableName}.quantity`,
+        `${wcSellRequisitionDetailsTableName}.fabric_piece`,
         `${wcSellRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن بيع'),
         knex.raw('? as input_output', '0')
@@ -295,7 +305,8 @@ exports.selectOne = async (whereCluse) => {
     `${wcSellRequisitionDetailsTableName}.consigment_manufacturing_id`, 
     `${wcSellRequisitionDetailsTableName}.fabric_id`, 
     `${wcSellRequisitionTableName}.warehouse_id`, 
-    `${wcSellRequisitionDetailsTableName}.quantity`
+    `${wcSellRequisitionDetailsTableName}.quantity`,
+    `${wcSellRequisitionDetailsTableName}.fabric_piece`,
   ])
   .from(`${wcSellRequisitionDetailsTableName}`)
   .innerJoin(`${wcSellRequisitionTableName}`,
@@ -338,6 +349,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
         `${wcSellRequisitionDetailsTableName}.price`,
         `${wcSellRequisitionDetailsTableName}.price_dollar`,
         `${wcSellRequisitionDetailsTableName}.quantity`,
+        `${wcSellRequisitionDetailsTableName}.fabric_piece`,
         `${wcSellRequisitionDetailsTableName}.document`,
         `${wcSellRequisitionDetailsTableName}.statement`,
         `${wcSellRequisitionTableName}.id as requisition_id`,

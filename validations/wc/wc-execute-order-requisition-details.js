@@ -24,6 +24,7 @@ exports.isValid = (waExecuteOrderRequisitionDetails) => {
             price: validations.joiNumber(1, 60),
             priceDollar: validations.joiNotRequiredText(0, 50),
             quantity: validations.joiText(1, 60),
+            numberFabricPieces:validations.joiText(1, 60),
             validQuantity: validations.joiText(1, 60),
             note: validations.joiNotRequiredText(0, 10000),
         })
@@ -53,6 +54,7 @@ exports.isValidUpdate = (waExecuteOrderRequisitionDetails) => {
         price: validations.joiNumber(1, 60),
         priceDollar: validations.joiNotRequiredText(0, 50),
         quantity: validations.joiNumber(1, 60),
+        numberFabricPieces:validations.joiText(1, 60),
         note: validations.joiNotRequiredText(0, 10000),
         personid: validations.joiText(1, 50),
         ipaddress: validations.joiText(3, 50),

@@ -6,6 +6,8 @@ const wbManufacturingRequisitionQueries = require("../../db/queries/wb/wb-manufa
 const wcQueries = require("../../db/queries/wc/wc");
 const wbManufacturingOrderRequisitionDetailsQueries = require("../../db/queries/wb/wb-manufacturing-order-requisition-details");
 const wbManufacturingOutputOrderQueries = require("../../db/queries/wb/wb-manufacturing-output-order");
+const circularKnittingMachineQueries = require("../../db/queries/general/circular-knitting-machine");
+const circularKnittingMachineBussinessmanQueries = require("../../db/queries/general/circular-knitting-machine-bussinessman");
 
 // Services
 const wbManufacturingInputService = require("./wb-manufacturing-input");
@@ -26,9 +28,28 @@ exports.create = async (wbManufacturingOutput) => {
     const selectConsigmentManufacturingOneResult = await consigmentManufacturingQueries.selectOne({ number: wbManufacturingOutput.consigmentNumber })
     if (selectConsigmentManufacturingOneResult[0] != null) {
       wbManufacturingOutput.consigmentManufacturingId = selectConsigmentManufacturingOneResult[0].id;
+    } else {
+      await consigmentManufacturingQueries.insertForManufacturing(wbManufacturingOutput);
     }
-    await consigmentManufacturingQueries.insertForManufacturing(wbManufacturingOutput);
   }
+
+  // Check Circular Knitting Machine
+  wbManufacturingOutput.circularKnittingMachineId = trans.transform();
+  const selectCircularKnittingMachineOneResult = await circularKnittingMachineBussinessmanQueries.selectOne({ 
+    manufacturer_id: wbManufacturingOutput.industryId,
+    // fabric_id: wbManufacturingOutput.fabricId,
+  })
+    if (selectCircularKnittingMachineOneResult[0] != null) {
+      wbManufacturingOutput.circularKnittingMachineId = selectCircularKnittingMachineOneResult[0].id;
+    } else {
+      const createCircularKnittingMachine =  await circularKnittingMachineQueries.insertForManufacturingWb(wbManufacturingOutput);
+      if(createCircularKnittingMachine) {
+        wbManufacturingOutput.circularKnittingMachineBussinessmanId = trans.transform();
+        await circularKnittingMachineBussinessmanQueries.insertForManufacturingWb(wbManufacturingOutput)
+        
+        wbManufacturingOutput.circularKnittingMachineId = wbManufacturingOutput.circularKnittingMachineBussinessmanId
+      }
+    }
 
   const results = await wbManufacturingOutputQueries.insert(wbManufacturingOutput);
   if (results) {
@@ -100,6 +121,7 @@ exports.update = async (wbManufacturingOutput) => {
     await wbManufacturingOutputQueries.update({
       price: wbManufacturingOutput.price,
       price_dollar: wbManufacturingOutput.priceDollar,
+      fabric_piece: wbManufacturingOutput.numberFabricPieces,
       manufacturing_fee: wbManufacturingOutput.manufacturingFee,
       document: wbManufacturingOutput.document,
       statement: wbManufacturingOutput.statement
@@ -226,6 +248,7 @@ exports.updateForOrder = async (wbManufacturingOutput) => {
     // Update wb Manufacturing Output Without Quantity
     await wbManufacturingOutputQueries.update({
       price: wbManufacturingOutput.price,
+      fabric_piece: wbManufacturingOutput.numberFabricPieces,
       manufacturing_fee: wbManufacturingOutput.manufacturingFee,
       document: wbManufacturingOutput.document,
       statement: wbManufacturingOutput.statement

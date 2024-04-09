@@ -43,3 +43,22 @@ exports.selectMaxValueWithJoinCondition = async (fromTableName, atrributeMaxValu
         })
     return queryResults
 }
+
+exports.selectMaxValueWith2JoinCondition = async (fromTableName, atrributeMaxValue, whereCluse, 
+    innerTable, innerTableAttribute, outerTableAttribute,
+    innerTable2, innerTableAttribute2, outerTableAttribute2
+    ) => {
+    let queryResults = []
+    await sqlFun.selectMaxValueWith2JoinCondition(fromTableName, atrributeMaxValue, whereCluse, 
+        innerTable, innerTableAttribute, outerTableAttribute,
+        innerTable2, innerTableAttribute2, outerTableAttribute2,
+        )
+        .then(data => {
+            queryResults = data
+        })
+        .catch(error => {
+            queryResults = constants.errorPayload
+            console.log(error);
+        })
+    return queryResults
+}

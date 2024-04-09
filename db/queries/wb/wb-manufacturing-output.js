@@ -15,6 +15,7 @@ exports.insert = async (wbManufacturingOutput, items) => {
       circular_knitting_machine_bussiness_man_id: wbManufacturingOutput.circularKnittingMachineId,
       warehouse_id: wbManufacturingOutput.warehouseId,
       quantity: wbManufacturingOutput.fabricQuantity,
+      fabric_piece: wbManufacturingOutput.numberFabricPieces,
       price: wbManufacturingOutput.fabricPrice,
       price_dollar: wbManufacturingOutput.fabricPriceDollar,
       manufacturing_fee: wbManufacturingOutput.manufacturingFee,
@@ -69,6 +70,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
     `${wbManufacturingOutputTableName}.price`,
     `${wbManufacturingOutputTableName}.price_dollar`,
     `${wbManufacturingOutputTableName}.manufacturing_fee`,
+    `${wbManufacturingOutputTableName}.fabric_piece`,
     `${wbManufacturingOutputTableName}.document`,
     `${wbManufacturingOutputTableName}.statement`,
     `${fabricTableName}.id as fabric_id`,
@@ -125,6 +127,7 @@ exports.selectByRequisitionIdForOrder = async (requisitionId) => {
     `${wbManufacturingOutputTableName}.price`,
     `${wbManufacturingOutputTableName}.price_dollar`,
     `${wbManufacturingOutputTableName}.manufacturing_fee`,
+    `${wbManufacturingOutputTableName}.fabric_piece`,
     `${wbManufacturingOutputTableName}.document`,
     `${wbManufacturingOutputTableName}.statement`,
     `${fabricTableName}.id as fabric_id`,
@@ -282,6 +285,7 @@ exports.selectTotalByFabricId = async (fabricId) => {
       [
         `${wbManufacturingOutputTableName}.price`,
         `${wbManufacturingOutputTableName}.price_dollar`,
+        `${wbManufacturingOutputTableName}.fabric_piece`,
         `${wbManufacturingOutputTableName}.quantity`,
         `${wbManufacturingRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن تصنيع'),
@@ -318,6 +322,7 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
         `${wbManufacturingOutputTableName}.price`,
         `${wbManufacturingOutputTableName}.price_dollar`,
         `${wbManufacturingOutputTableName}.quantity`,
+        `${wbManufacturingOutputTableName}.fabric_piece`,
         `${wbManufacturingOutputTableName}.document`,
         `${wbManufacturingOutputTableName}.statement`,
         `${wbManufacturingRequisitionTableName}.id as requisition_id`,
@@ -374,6 +379,7 @@ exports.selectDetailsByWarehouseByFabricByConsigmentManufacturing = async (wareh
         `${wbManufacturingOutputTableName}.price`,
         `${wbManufacturingOutputTableName}.price_dollar`,
         `${wbManufacturingOutputTableName}.quantity`,
+        `${wbManufacturingOutputTableName}.fabric_piece`,
         `${wbManufacturingRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن تصنيع'),
         knex.raw('? as input_output', '1')
@@ -411,6 +417,7 @@ exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async
         `${wbManufacturingOutputTableName}.price`,
         `${wbManufacturingOutputTableName}.price_dollar`,
         `${wbManufacturingOutputTableName}.quantity`,
+        `${wbManufacturingOutputTableName}.fabric_piece`,
         `${wbManufacturingOutputTableName}.document`,
         `${wbManufacturingOutputTableName}.statement`,
         `${wbManufacturingRequisitionTableName}.id as requisition_id`,
@@ -464,6 +471,7 @@ exports.selectPriceByFabricId = async (fabricId) => {
         `${wbManufacturingOutputTableName}.price`,
         `${wbManufacturingOutputTableName}.price_dollar`,
         `${wbManufacturingOutputTableName}.quantity`,
+        `${wbManufacturingOutputTableName}.fabric_piece`,
         `${wbManufacturingRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن تصنيع'),
         knex.raw('? as input_output', '1')
@@ -498,6 +506,7 @@ exports.selectPriceByFabricIdByConsigmentManufacturingId = async (fabricId, cons
         `${wbManufacturingOutputTableName}.price`,
         `${wbManufacturingOutputTableName}.price_dollar`,
         `${wbManufacturingOutputTableName}.quantity`,
+        `${wbManufacturingOutputTableName}.fabric_piece`,
         `${wbManufacturingRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن تصنيع'),
         knex.raw('? as input_output', '1')
@@ -526,7 +535,8 @@ exports.selectSumCurrentQuantityByWarehouseByFabricWc = async (whereCluse) => {
       .select([
         `${consigmentManufacturingTableName}.id`, 
         `${consigmentManufacturingTableName}.number`, 
-        `${wbManufacturingOutputTableName}.quantity`
+        `${wbManufacturingOutputTableName}.quantity`,
+        `${wbManufacturingOutputTableName}.fabric_piece`,
       ])
       .innerJoin(`${wbManufacturingOutputTableName}`, 
       `${wbManufacturingOutputTableName}.consigment_manufacturing_id`, 
@@ -558,6 +568,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
         `${wbManufacturingOutputTableName}.price`,
         `${wbManufacturingOutputTableName}.price_dollar`,
         `${wbManufacturingOutputTableName}.quantity`,
+        `${wbManufacturingOutputTableName}.fabric_piece`,
         `${wbManufacturingOutputTableName}.document`,
         `${wbManufacturingOutputTableName}.statement`,
         `${wbManufacturingRequisitionTableName}.id as requisition_id`,
@@ -621,6 +632,7 @@ exports.selectByFabricByConsigmentManufacturing = async (fabricId, consigmentMan
     `${wbManufacturingOutputTableName}.price`,
     `${wbManufacturingOutputTableName}.price_dollar`,
     `${wbManufacturingOutputTableName}.manufacturing_fee`,
+    `${wbManufacturingOutputTableName}.fabric_piece`,
     `${fabricTableName}.id as fabric_id`,
     `${fabricTableName}.name as fabric_name`,
     `${fabricTableName}.code as fabric_code`,

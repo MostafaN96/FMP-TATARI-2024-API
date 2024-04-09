@@ -119,6 +119,7 @@ exports.update = async (wcReconciliationRequisitionDetails) => {
             wcReconciliationRequisitionDetailsQueries.update({
                 price: wcReconciliationRequisitionDetails.price,
                 price_dollar: wcReconciliationRequisitionDetails.priceDollar,
+                fabric_piece: wcReconciliationRequisitionDetails.numberFabricPieces,
                 statement: wcReconciliationRequisitionDetails.statement
             },
                 {

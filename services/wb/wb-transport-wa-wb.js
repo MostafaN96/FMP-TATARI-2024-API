@@ -38,5 +38,9 @@ exports.create = async (wbTransportWaWbRequisition) => {
 
 exports.select = async () => {
     const results = await wbTransportWaWbRequisitionQueries.select();
+    for (let i = 0; i < results.length; i++) {
+        const element = results[i];
+        element.details = await wbTransportWaWbRequisitionDetailsService.selectByRequisitionId(element.id)
+    }
     return results;
   };

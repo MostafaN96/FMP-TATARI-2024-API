@@ -16,6 +16,7 @@ exports.isValid = (weDyedFabricOrderRequisition) => {
             colorCode: validations.joiText(1, 90),
             wastRatio: validations.joiNotRequiredText(0, 90),
             quantity: validations.joiNumber(1, 60),
+            wastRatio: validations.joiNotRequiredText(0, 90),
             fabricWidth: validations.joiNotRequiredText(0, 50),
             fabricQuantityM2: validations.joiNotRequiredText(0, 50),
             price: validations.joiNumber(1, 60),

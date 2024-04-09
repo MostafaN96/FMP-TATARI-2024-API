@@ -23,6 +23,7 @@ exports.insert = async (wcAddRequisitionDetails, items) => {
       price: items.price,
       price_dollar: items.priceDollar,
       quantity: items.quantity,
+      fabric_piece: items.numberFabricPieces,
       document: items.document,
       statement: items.statement,
       creator_id: wcAddRequisitionDetails.personid,
@@ -50,6 +51,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
         `${wcAddRequisitionDetailsTableName}.id`,
         `${wcAddRequisitionDetailsTableName}.price`,
         `${wcAddRequisitionDetailsTableName}.quantity`,
+        `${wcAddRequisitionDetailsTableName}.fabric_piece`,
         `${wcAddRequisitionDetailsTableName}.document`,
         `${wcAddRequisitionDetailsTableName}.statement`,
         `${wcAddRequisitionTableName}.number`,
@@ -116,6 +118,7 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
         `${wcAddRequisitionDetailsTableName}.id`,
         `${wcAddRequisitionDetailsTableName}.price`,
         `${wcAddRequisitionDetailsTableName}.quantity`,
+        `${wcAddRequisitionDetailsTableName}.fabric_piece`,
         `${wcAddRequisitionDetailsTableName}.document`,
         `${wcAddRequisitionDetailsTableName}.statement`,
         `${wcAddRequisitionTableName}.id as requisition_id`,
@@ -192,6 +195,7 @@ exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async
         `${wcAddRequisitionDetailsTableName}.id`,
         `${wcAddRequisitionDetailsTableName}.price`,
         `${wcAddRequisitionDetailsTableName}.quantity`,
+        `${wcAddRequisitionDetailsTableName}.fabric_piece`,
         `${wcAddRequisitionDetailsTableName}.document`,
         `${wcAddRequisitionDetailsTableName}.statement`,
         `${wcAddRequisitionTableName}.id as requisition_id`,
@@ -235,12 +239,15 @@ exports.selectPriceByFabricId = async (fabricId) => {
       [
         `${wcAddRequisitionDetailsTableName}.price`,
         `${wcAddRequisitionDetailsTableName}.quantity`,
+        `${wcAddRequisitionDetailsTableName}.fabric_piece`,
         `${wcAddRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن اضافة'),
         knex.raw('? as input_output', '1')
       ],
     )
-    .innerJoin(`${wcAddRequisitionTableName}`, `${wcAddRequisitionTableName}.id`, `${wcAddRequisitionDetailsTableName}.wc_add_requisition_id`)
+    .innerJoin(`${wcAddRequisitionTableName}`, 
+    `${wcAddRequisitionTableName}.id`, 
+    `${wcAddRequisitionDetailsTableName}.wc_add_requisition_id`)
     .where(whereCluse)
     .andWhere(`${wcAddRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -263,12 +270,15 @@ exports.selectPriceByFabricIdByConsigmentManufacturingId = async (fabricId, cons
       [
         `${wcAddRequisitionDetailsTableName}.price`,
         `${wcAddRequisitionDetailsTableName}.quantity`,
+        `${wcAddRequisitionDetailsTableName}.fabric_piece`,
         `${wcAddRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن اضافة'),
         knex.raw('? as input_output', '1')
       ],
     )
-    .innerJoin(`${wcAddRequisitionTableName}`, `${wcAddRequisitionTableName}.id`, `${wcAddRequisitionDetailsTableName}.wc_add_requisition_id`)
+    .innerJoin(`${wcAddRequisitionTableName}`, 
+    `${wcAddRequisitionTableName}.id`, 
+    `${wcAddRequisitionDetailsTableName}.wc_add_requisition_id`)
     .where(whereCluse)
     .andWhere(`${wcAddRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -305,6 +315,7 @@ exports.selectSumCurrentQuantityByWarehouseByFabricWc = async (whereCluse) => {
       .select([
         `${consigmentManufacturingTableName}.id`, 
         `${consigmentManufacturingTableName}.number`, 
+        `${wcAddRequisitionDetailsTableName}.fabric_piece`,
         `${wcAddRequisitionDetailsTableName}.quantity`
       ])
       .innerJoin(`${wcAddRequisitionDetailsTableName}`, 
@@ -329,7 +340,11 @@ exports.selectSumCurrentQuantityByWarehouseByFabricWc = async (whereCluse) => {
 exports.selectOne = async (whereCluse) => {
   let queryResults = false;
   await sqlFun
-    .limitedSelect(wcAddRequisitionDetailsTableName, ["wc_add_requisition_id", "quantity", "is_deleted"], whereCluse, 1)
+    .limitedSelect(wcAddRequisitionDetailsTableName, [
+      "wc_add_requisition_id", 
+      "quantity", 
+      "is_deleted"
+    ], whereCluse, 1)
     .then((data) => {
       queryResults = data;
     })
@@ -364,6 +379,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
         `${wcAddRequisitionDetailsTableName}.id`,
         `${wcAddRequisitionDetailsTableName}.price`,
         `${wcAddRequisitionDetailsTableName}.quantity`,
+        `${wcAddRequisitionDetailsTableName}.fabric_piece`,
         `${wcAddRequisitionDetailsTableName}.document`,
         `${wcAddRequisitionDetailsTableName}.statement`,
         `${wcAddRequisitionTableName}.id as requisition_id`,

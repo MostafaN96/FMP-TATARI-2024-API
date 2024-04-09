@@ -98,7 +98,7 @@ exports.circularKnittingMachineReport = async () => {
             .innerJoin(`${circularKnittingMachineBussinessmanTableName}`, function() {
                 this
                   .on(`${circularKnittingMachineBussinessmanTableName}.manufacturer_id`, '=', `${bussinessmanTableName}.id`)
-                  .andOn(`${circularKnittingMachineBussinessmanTableName}.fabric_id`, '=', `${wbTableName}.fabric_to_be_manufactured_id`)
+                //   .andOn(`${circularKnittingMachineBussinessmanTableName}.fabric_id`, '=', `${wbTableName}.fabric_to_be_manufactured_id`)
               })
         // .innerJoin(`${circularKnittingMachineBussinessmanTableName}`,
         //     `${circularKnittingMachineBussinessmanTableName}.manufacturer_id`,

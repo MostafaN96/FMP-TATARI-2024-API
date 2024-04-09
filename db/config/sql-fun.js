@@ -23,6 +23,17 @@ exports.selectMaxValueWithJoinCondition = async (tableName, atrributeMaxValue, w
   .where(whereCluse)
 }
 
+exports.selectMaxValueWith2JoinCondition = async (tableName, atrributeMaxValue, whereCluse, 
+  innerTable, innerTableAttribute, outerTableAttribute,
+  innerTable2, innerTableAttribute2, outerTableAttribute2
+  ) => {
+  return knex(tableName)
+  .max(atrributeMaxValue)
+  .innerJoin(innerTable, innerTableAttribute, outerTableAttribute)
+  .innerJoin(innerTable2, innerTableAttribute2, outerTableAttribute2)
+  .where(whereCluse)
+}
+
 exports.update = async ( tableName, payload, whereCluse) => {
   return knex(`${tableName}`).where(whereCluse).update(payload);
 };

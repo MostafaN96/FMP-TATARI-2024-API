@@ -21,6 +21,7 @@ exports.insert = async (wdTransportWcWd, items) => {
       consigment_dyeing_id: items.consigmentDyeingId,
       consigment_manufacturing_id: items.consigmentManufacturingId,
       price: items.price,
+      price_dollar: items.priceDollar,
       quantity: items.quantity,
       document: items.document ?? '',
       statement: items.statement ?? '',

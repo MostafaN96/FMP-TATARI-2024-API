@@ -13,6 +13,7 @@ exports.isValid = (wcReconciliationRequisition) => {
             price: validations.joiNumber(1, 60),
             priceDollar: validations.joiNotRequiredText(0, 50),
             quantity: validations.joiNumber(1, 60),
+            numberFabricPieces:validations.joiText(1, 60),
             statement: validations.joiNotRequiredText(0, 10000),
             inputOutput: validations.joiNumberStartByZero(1, 60),
         })
@@ -39,6 +40,7 @@ exports.isValidUpdate = (wcReconciliationRequisition) => {
         price: validations.joiNumber(1, 60),
         priceDollar: validations.joiNotRequiredText(0, 50),
         quantity: validations.joiNumber(1, 60),
+        numberFabricPieces:validations.joiText(1, 60),
         statement: validations.joiNotRequiredText(0, 10000),
         inputOutput: validations.joiNumberStartByZero(1, 60),
         personid: validations.joiText(1, 90),

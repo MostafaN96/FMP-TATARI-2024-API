@@ -498,6 +498,34 @@ exports.selectPriceByFabricByConsigmentManufacturingInWc = async (fabricId, cons
         } else {
             sortedAsc = [...sortedAsc, ...[{latest_price: 0, latest_price_dollar: 0}]] 
         }
+
+        // Select Max Added Date
+    let maxDateManufacturingOutputWhereCluse = {};
+    maxDateManufacturingOutputWhereCluse[`${wbManufacturingOutputTableName}.fabric_id`] = fabricId;
+    const selectManufacturingOutputMaxDate = await generalQueries.selectMaxValueWith2JoinCondition(wbManufacturingOutputTableName,
+        { date: 'date' }, maxDateManufacturingOutputWhereCluse,
+        wbManufacturingInputOutputTableName,
+        `${wbManufacturingInputOutputTableName}.wb_manufacturing_output_id`,
+        `${wbManufacturingOutputTableName}.id`,
+        wbManufacturingRequisitionTableName,
+        `${wbManufacturingRequisitionTableName}.id`,
+        `${wbManufacturingInputOutputTableName}.wb_manufacturing_requisition_id`
+        )
+    if (selectManufacturingOutputMaxDate[0] != null) {
+        // Select Latest Manufacturing Output Price
+        let wbManufacturingOutputWhereCluse = {};
+        wbManufacturingOutputWhereCluse[`${wbManufacturingOutputTableName}.fabric_id`] = fabricId;
+        wbManufacturingOutputWhereCluse[`${wbManufacturingRequisitionTableName}.date`] = selectManufacturingOutputMaxDate[0]?.date;
+        const latestManufacturingOutputPrice = await wbManufacturingOutputQueries.selectLatestPrice(wbManufacturingOutputWhereCluse)
+        if (latestManufacturingOutputPrice[0] != null) {
+            sortedAsc[0].latest_manufacturing_price = latestManufacturingOutputPrice[0]?.price
+            sortedAsc[0].latest_manufacturing_price_dollar = latestManufacturingOutputPrice[0]?.price_dollar
+        } else {
+            sortedAsc[0].latest_manufacturing_price= 0
+            sortedAsc[0].latest_manufacturing_price_dollar = 0
+        }
+    }
+
     } else {
         sortedAsc = [...sortedAsc, ...[{latest_price: 0, latest_price_dollar: 0}]] 
     }
