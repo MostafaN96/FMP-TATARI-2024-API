@@ -1,6 +1,7 @@
 // Queries
 const waPurchaseOrderDetailsQueries = require("../../db/queries/wa/wa-purchase-order-details");
 const waPurchaseOrderQueries = require("../../db/queries/wa/wa-purchase-order");
+const bussinessmanQueries = require("../../db/queries/general/bussinessman");
 
 // Services
 const waAddRequisitionDetailsService = require("./wa-add-requisition-details");
@@ -22,6 +23,7 @@ exports.create = async (waPurchaseOrderDetails) => {
 
     for (let i = 0; i < waPurchaseOrderDetails.items.length; i++) {
         waPurchaseOrderDetails.items[i].waPurchaseOrderDetailsId = trans.transform();
+        waPurchaseOrderDetails.items[i].consigmentYarnNumber = waPurchaseOrderDetails.orderName
 
         // For Add wa requisition (optional)
         waPurchaseOrderDetails.items[i].orderDetailsId = waPurchaseOrderDetails.items[i].waPurchaseOrderDetailsId
@@ -31,6 +33,15 @@ exports.create = async (waPurchaseOrderDetails) => {
             return constants.insertError;
         }
     }
+
+    // Select Supllier for consigment name
+    const selectBussinessmanOneResult = await bussinessmanQueries.selectOne({
+        id: waPurchaseOrderDetails.supplierId
+    })
+    if (Array.isArray(selectBussinessmanOneResult) && selectBussinessmanOneResult.length > 0) {
+        waPurchaseOrderDetails.supplierName = selectBussinessmanOneResult[0].name
+    }
+
     // Add wa requisition (optional)
     if(waPurchaseOrderDetails.addType == "add") {
         await waAddRequisitionService.createForOrder(waPurchaseOrderDetails)

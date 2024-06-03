@@ -93,7 +93,7 @@ exports.update = async (bussinessman) => {
 exports.selectOne = async (whereCluse) => {
   let queryResults = false;
   await sqlFun
-    .limitedSelect(bussinessmanTableName, ["is_deleted"], whereCluse, 1)
+    .limitedSelect(bussinessmanTableName, ["id", "name", "is_deleted"], whereCluse, 1)
     .then((data) => {
       queryResults = data;
     })

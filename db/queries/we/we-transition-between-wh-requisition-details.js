@@ -140,6 +140,101 @@ exports.selectByRequisitionId = async (whereCluse) => {
   return queryResults;
 };
 
+exports.selectOneByRequisitionId = async (whereCluse) => {
+  let queryResults = [];
+
+  let columns = [
+    `id`,
+    `price`,
+    `price_dollar`,
+    `quantity`,
+    `fabric_piece`,
+    `document`,
+    `statement`,
+    `requisition_id`,
+    `number`,
+    `date`,
+    `note`,
+    `requisition_id`,
+    `number`,
+    `date`,
+    `from_warehouse_id`,
+    `from_warehouse_name`,
+    `to_warehouse_name`,
+    `to_warehouse_id`,
+    `dyed_fabric_name`,
+    `dyed_fabric_code`,
+    `color_category_name`,
+    `color_name`,
+    `color_code`,
+    `consigment_dyeing_id`,
+    `consigment_dyeing_number`,
+    `work_order_number`,
+  ]
+  await knex.select(columns).from(function () {
+    this.select([
+      `${weTransitionBetweenWHRequisitionDetailsTableName}.id`,
+      `${weTransitionBetweenWHRequisitionDetailsTableName}.price`,
+      `${weTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
+      `${weTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
+      `${weTransitionBetweenWHRequisitionDetailsTableName}.fabric_piece`,
+      `${weTransitionBetweenWHRequisitionDetailsTableName}.document`,
+      `${weTransitionBetweenWHRequisitionDetailsTableName}.statement`,
+      `${weTransitionBetweenWHRequisitionTableName}.id as requisition_id`,
+      `${weTransitionBetweenWHRequisitionTableName}.number`,
+      `${weTransitionBetweenWHRequisitionTableName}.date`,
+      `${weTransitionBetweenWHRequisitionTableName}.note`,
+      `${warehouseTableName}.id as from_warehouse_id`,
+      `${warehouseTableName}.name as from_warehouse_name`,
+      `to_warehouse.name as to_warehouse_name`,
+      `to_warehouse.id as to_warehouse_id`,
+      `${fabricTableName}.name as dyed_fabric_name`,
+      `${fabricTableName}.code as dyed_fabric_code`,
+      `${colorCategoryTableName}.name as color_category_name`,
+      `${colorTableName}.name as color_name`,
+      `${weTransitionBetweenWHRequisitionDetailsTableName}.color_code`,
+      `${consigmentDyeingTableName}.id as consigment_dyeing_id`,
+      `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+      `${weTransitionBetweenWHRequisitionDetailsTableName}.work_order_number`,
+    ])
+      .from(`${weTransitionBetweenWHRequisitionDetailsTableName}`)
+      .innerJoin(`${weTransitionBetweenWHRequisitionTableName}`, 
+      `${weTransitionBetweenWHRequisitionTableName}.id`, 
+      `${weTransitionBetweenWHRequisitionDetailsTableName}.we_transition_between_wh_requisitions_id`)
+      .innerJoin(`${warehouseTableName}`, 
+      `${warehouseTableName}.id`, 
+      `${weTransitionBetweenWHRequisitionDetailsTableName}.from_warehouse_id`)
+      .innerJoin(`${warehouseTableName} as to_warehouse`,
+      `to_warehouse.id`,
+      `${weTransitionBetweenWHRequisitionTableName}.to_warehouse_id`)
+      .innerJoin(`${fabricTableName}`, 
+      `${fabricTableName}.id`, 
+      `${weTransitionBetweenWHRequisitionDetailsTableName}.dyed_fabric_id`)
+      .innerJoin(`${weTableName}`,
+        `${weTableName}.we_transition_between_wh_requisitions_details_id`,
+        `${weTransitionBetweenWHRequisitionDetailsTableName}.id`)
+        .innerJoin(`${colorCategoryTableName}`,
+        `${colorCategoryTableName}.id`,
+        `${weTransitionBetweenWHRequisitionDetailsTableName}.color_category_id`)
+      .innerJoin(`${colorTableName}`,
+        `${colorTableName}.id`,
+        `${weTransitionBetweenWHRequisitionDetailsTableName}.color_id`)
+        .innerJoin(`${consigmentDyeingTableName}`,
+        `${consigmentDyeingTableName}.id`,
+        `${weTransitionBetweenWHRequisitionDetailsTableName}.consigment_dyeing_id`)
+      .where(whereCluse)
+      .limit(1)
+      // .andWhere(`${weTransitionBetweenWHRequisitionDetailsTableName}.quantity`, ">", 0)
+      .as('t1')
+  }).as('temp')
+
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
 exports.selectOne = async (whereCluse) => {
   let queryResults = false;
   await knex
@@ -609,6 +704,7 @@ exports.selectFromWarehouseTotalDetailsByDate = async (bodyPaylod) => {
         knex.raw('? as type_of_requisition', 'اذن نقل بين المخازن'),
         knex.raw('? as input_output', '0'),
         knex.raw(`CONCAT(' اذن نقل من مخزن ', '( ', ${warehouseTableName}.name, ')', ' الى مخزن ', '(', to_warehouse.name, ')') as side_of`),
+        knex.raw('? as is_return_type', 'not_return'),
       ],
     )
     .innerJoin(`${weTransitionBetweenWHRequisitionTableName}`,
@@ -618,7 +714,7 @@ exports.selectFromWarehouseTotalDetailsByDate = async (bodyPaylod) => {
       `${weTableName}.we_transition_between_wh_requisitions_details_id`,
       `${weTransitionBetweenWHRequisitionDetailsTableName}.id`)
     .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weTransitionBetweenWHRequisitionDetailsTableName}.dyed_fabric_id`)
-    .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weTransitionBetweenWHRequisitionTableName}.from_warehouse_id`)
+    .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weTransitionBetweenWHRequisitionDetailsTableName}.from_warehouse_id`)
     .innerJoin(`${warehouseTableName} as to_warehouse`, `to_warehouse.id`, `${weTransitionBetweenWHRequisitionTableName}.to_warehouse_id`)
       .where(`${weTransitionBetweenWHRequisitionTableName}.date`, `>=`, bodyPaylod.startDate)
       .andWhere(`${weTransitionBetweenWHRequisitionTableName}.date`, `<=`, bodyPaylod.endDate)
@@ -652,6 +748,7 @@ exports.selectToWarehouseTotalDetailsByDate = async (bodyPaylod) => {
         knex.raw('? as type_of_requisition', 'اذن نقل بين المخازن'),
         knex.raw('? as input_output', '1'),
         knex.raw(`CONCAT(' اذن نقل من مخزن ', '(', ${warehouseTableName}.name, ')', ' الى مخزن ', '(', to_warehouse.name, ')') as side_of`),
+        knex.raw('? as is_return_type', 'not_return'),
       ],
     )
     .innerJoin(`${weTransitionBetweenWHRequisitionTableName}`,
@@ -661,7 +758,7 @@ exports.selectToWarehouseTotalDetailsByDate = async (bodyPaylod) => {
       `${weTableName}.we_transition_between_wh_requisitions_details_id`,
       `${weTransitionBetweenWHRequisitionDetailsTableName}.id`)
     .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weTransitionBetweenWHRequisitionDetailsTableName}.dyed_fabric_id`)
-    .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weTransitionBetweenWHRequisitionTableName}.from_warehouse_id`)
+    .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weTransitionBetweenWHRequisitionDetailsTableName}.from_warehouse_id`)
     .innerJoin(`${warehouseTableName} as to_warehouse`, `to_warehouse.id`, `${weTransitionBetweenWHRequisitionTableName}.to_warehouse_id`)
       .where(`${weTransitionBetweenWHRequisitionTableName}.date`, `>=`, bodyPaylod.startDate)
       .andWhere(`${weTransitionBetweenWHRequisitionTableName}.date`, `<=`, bodyPaylod.endDate)

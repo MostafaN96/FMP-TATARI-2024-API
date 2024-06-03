@@ -52,7 +52,7 @@ exports.insertForOrder = async (waAddRequisition) => {
 exports.selectOne = async (whereCluse) => {
   let queryResults = false;
   await sqlFun
-    .limitedSelect(waAddRequisitionTableName, ["is_deleted"], whereCluse, 1)
+    .limitedSelect(waAddRequisitionTableName, ["supplier_id", "is_deleted"], whereCluse, 1)
     .then((data) => {
       queryResults = data;
     })

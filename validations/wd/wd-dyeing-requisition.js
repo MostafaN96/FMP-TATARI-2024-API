@@ -18,6 +18,7 @@ exports.isValid = (wdDyeingRequisition) => {
             dyeingServices:joi.array(),
             price: validations.joiNumber(1, 60),
             costPrice: validations.joiNumber(1, 60),
+            addedCost: validations.joiNotRequiredText(0, 60),
             quantity:validations.joiNumber(1, 60),
             dyeingQuantity:validations.joiNumber(1, 60),
             numberFabricPieces:validations.joiText(1, 60),

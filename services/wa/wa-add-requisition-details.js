@@ -25,6 +25,7 @@ const { waPurchaseOrderDetailsTableName, waTableName, waAddRequisitionDetailsTab
 exports.create = async (waAddRequisitionDetails, isOrder) => {
     for (let i = 0; i < waAddRequisitionDetails.items.length; i++) {
         waAddRequisitionDetails.waRequisitionDetailsId = trans.transform();
+        waAddRequisitionDetails.items[i].consigmentYarnNumber = waAddRequisitionDetails.items[i].consigmentYarnNumber + "-" + waAddRequisitionDetails.supplierName
 
         waAddRequisitionDetails.items[i].consigmentYarnId = trans.transform();
         // Check Consigment Yarn Dupplication

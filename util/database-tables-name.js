@@ -18,6 +18,8 @@ const anointedServicesPricesTableName = 'anointed_services_prices'
 const dyeingServicesTableName = 'anointed_services'
 const dyeingServicesDetailsTableName = 'dyeing_services_details'
 const logsTableName = 'logs'
+const exchangeRateTableName = 'exchange_rate'
+const exchangeRateLogTableName = 'exchange_rate_log'
 
 const modulesTableName = 'modules'
 const componentsTableName = 'components'
@@ -199,6 +201,8 @@ module.exports = {
     dyeingServicesTableName,
     dyeingServicesDetailsTableName,
     logsTableName,
+    exchangeRateTableName,
+    exchangeRateLogTableName,
 
     modulesTableName,
     componentsTableName,

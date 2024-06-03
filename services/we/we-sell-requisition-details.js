@@ -16,7 +16,7 @@ const constantsPayloads = require("../../util/constants-payloads");
 // Services
 const weService = require("./we");
 const weSellRequisitionDetailsWeService = require("./we-sell-requisition-details-we");
-const { weSellRequisitionDetailsTableName, weSellRequisitionDetailsWeTableName, weTableName, weAddRequisitionDetailsTableName, weReconciliationRequisitionDetailsTableName, wdDyeingRequisitionDetailsTableName, anointedColorsPricesTableName } = require("../../util/database-tables-name");
+const { weSellRequisitionDetailsTableName, weSellRequisitionDetailsWeTableName, weTableName, weAddRequisitionDetailsTableName, weReconciliationRequisitionDetailsTableName, wdDyeingRequisitionDetailsTableName, anointedColorsPricesTableName, weTransitionBetweenWHRequisitionDetailsTableName } = require("../../util/database-tables-name");
 
 exports.create = async (weSellRequisitionDetails) => {
     for (let i = 0; i < weSellRequisitionDetails.items.length; i++) {
@@ -103,8 +103,16 @@ exports.createForConfirmDirect = async (weSellRequisitionDetails) => {
             dyeingWhereCluse[`${weTableName}.is_active`] = 1;
             dyeingWhereCluse[`${weTableName}.type`] = constantsPayloads.dyeingType;
         
+            let transitionBetweenWhWhereCluse = {};
+            transitionBetweenWhWhereCluse[`${weTransitionBetweenWHRequisitionDetailsTableName}.dyed_fabric_id`] = weSellRequisitionDetails.items[i].dyedFabricId;
+            transitionBetweenWhWhereCluse[`${weTransitionBetweenWHRequisitionDetailsTableName}.work_order_number`] = weSellRequisitionDetails.items[i].workOrderNumber;
+            transitionBetweenWhWhereCluse[`${weTransitionBetweenWHRequisitionDetailsTableName}.color_id`] = weSellRequisitionDetails.items[i].colorId;
+            transitionBetweenWhWhereCluse[`${weTableName}.is_deleted`] = 0;
+            transitionBetweenWhWhereCluse[`${weTableName}.is_active`] = 1;
+
             let andWhereCluse = {whereTableName: `current_quantity`, operator: ">", value: "0"}
-            let whereCluseArray = [whereCluse, reconciliationWhereCluse, andWhereCluse, dyeingWhereCluse]
+            let whereCluseArray = [whereCluse, reconciliationWhereCluse, andWhereCluse, 
+                dyeingWhereCluse, transitionBetweenWhWhereCluse]
             let orderByCluse = {attributeName: `date`, value: "desc"}
 
             // let weWhereCluse = {}

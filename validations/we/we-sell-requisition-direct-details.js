@@ -37,7 +37,7 @@ exports.isValid = (wcSellRequisition) => {
 exports.isValidUpdate = (wcSellRequisition) => {
     const wcSellRequisitionSchema = joi.object({
         weSellRequisitionId: validations.joiText(15, 30),
-        deliveryCarId: validations.joiText(15, 30),
+        deliveryCarId: validations.joiNotRequiredText(0, 10000),
         colorCategoryId: validations.joiText(15, 30),
         colorId: validations.joiText(15, 30),
         colorCode: validations.joiNumber(1, 60),
@@ -70,7 +70,7 @@ exports.isValidConfirm = (weSellRequisition) => {
     const weSellRequisitionSchema = joi.object({
         id: validations.joiText(15, 30),
         sellerId: validations.joiText(15, 30),
-        deliveryCarId: validations.joiText(15, 30),
+        deliveryCarId: validations.joiNotRequiredText(0, 10000),
         personid: validations.joiText(3, 50),
         ipaddress: validations.joiText(3, 50),
         items:joi.array().items( {

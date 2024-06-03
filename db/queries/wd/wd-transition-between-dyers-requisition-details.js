@@ -212,6 +212,7 @@ exports.selectToDyeingTotalByFabricIdByDyeingId = async (fabricId, dyeingId) => 
     .then(async (data) => {
       if(data[0] != null) {
         queryResults =  await wdFormDyeingRequisitionDetailsQueries.selectFormQuantityByWdId(data) ;
+        queryResults =  await wdFormDyeingRequisitionDetailsQueries.selectFormQuantityPrepareDyeingByWdId(data) ;
       } else {
         queryResults = data
       }
@@ -408,6 +409,7 @@ exports.selectToDyeingDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingI
     .then(async (data) => {
       if(data[0] != null) {
         queryResults =  await wdFormDyeingRequisitionDetailsQueries.selectFormQuantityByWdId(data) ;
+        queryResults =  await wdFormDyeingRequisitionDetailsQueries.selectFormQuantityPrepareDyeingByWdId(data) ;
       } else {
         queryResults = data
       }    })

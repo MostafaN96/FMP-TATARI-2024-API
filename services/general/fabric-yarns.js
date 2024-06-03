@@ -71,6 +71,18 @@ exports.selectByFabricId = async (fabricId) => {
   return results;
 };
 
+exports.selectByFabricIdForReport = async (fabricId) => {
+
+  let whereCluse = {}
+  whereCluse[`${fabricYarnsTableName}.fabric_id`] = fabricId;
+  whereCluse[`${fabricYarnsTableName}.is_deleted`] = 0;
+  whereCluse[`${fabricYarnsTableName}.is_active`] = 1;
+
+  const results = await fabricYarnsQueries.selectByFabricIdForReport(whereCluse);
+
+  return results;
+};
+
 exports.selectByFabricIdByYarnId = async (fabricId, yarnId) => {
 
   let whereCluse = {}
@@ -89,7 +101,7 @@ exports.update = async (fabricYarns) => {
 
   for (let i = 0; i < fabricYarns.items.length; i++) {
     const fabricYarn = fabricYarns.items[i];
-    console.log("fabricYarn ::: ", fabricYarn);
+    // console.log("fabricYarn ::: ", fabricYarn);
 
     // check is found
     let whereCluse = {}
@@ -107,7 +119,9 @@ exports.update = async (fabricYarns) => {
         wast_ratio: fabricYarn.wastRatio
       }, whereCluse);
       if (updateResults) {
-        return constants.updateSuccess;
+        if(i == fabricYarns.items.length -1) {
+          return constants.updateSuccess;
+        }
       } else {
         return constants.updateError;
       }

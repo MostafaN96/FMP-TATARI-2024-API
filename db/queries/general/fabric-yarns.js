@@ -67,6 +67,43 @@ exports.select = async (whereCluse) => {
       `${fabricYarnsTableName}.fabric_id`)
       .where(whereCluse)
       .then((data) => {
+        console.log("fabricYarns ::::: data => ", data);
+        queryResults = data;
+      })
+      .catch((error) => console.error(error));
+    return queryResults;
+  };
+
+exports.selectByFabricIdForReport = async (whereCluse) => {
+    let queryResults = [];
+  
+    await knex.from(fabricYarnsTableName)
+      .select(
+        [
+          `${fabricYarnsTableName}.fabric_id`,
+          `${fabricYarnsTableName}.yarn_id`,
+          `${fabricYarnsTableName}.ratio`,
+          `${fabricYarnsTableName}.wast_ratio`,
+          `${yarnTableName}.name as yarn_name`,
+          `${yarnTableName}.code as yarn_code`,
+          `${fabricTableName}.name as fabric_name`,
+          `${fabricTableName}.code as fabric_code`,
+          `${fabricTableName}.dyeing_code`,
+          `${fabricTableName}.fabric_quantity_m2`,
+          // knex.raw(`coalesce((SUM(${fabricYarnsTableName}.ratio) + ${fabricYarnsTableName}.wast_ratio), 0) as total_ratio`),
+          knex.raw(`coalesce((SUM(${fabricYarnsTableName}.ratio) ), 0) as total_ratio`),
+        ],
+      )
+      .groupBy(`${yarnTableName}.id`)
+      .innerJoin(`${yarnTableName}`, 
+      `${yarnTableName}.id`, 
+      `${fabricYarnsTableName}.yarn_id`)
+      .innerJoin(`${fabricTableName}`, 
+      `${fabricTableName}.id`, 
+      `${fabricYarnsTableName}.fabric_id`)
+      .where(whereCluse)
+      .then((data) => {
+        console.log("fabricYarns ::::: data => ", data);
         queryResults = data;
       })
       .catch((error) => console.error(error));

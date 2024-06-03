@@ -228,7 +228,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
           .andWhere(`${weReturnSellRequisitionDetailsTableName}.quantity`, ">", 0)
       })
   }).as('temp')
-
+  .groupBy(`id`)
     .then((data) => {
       queryResults = data;
     })

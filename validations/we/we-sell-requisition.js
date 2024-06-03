@@ -3,7 +3,7 @@ const validations = require("../../helpers/validations");
 exports.isValid = (weSellRequisition) => {
     const weSellRequisitionSchema = joi.object({
         sellerId: validations.joiText(15, 30),
-        deliveryCarId: validations.joiText(15, 30),
+        deliveryCarId: validations.joiNotRequiredText(0, 10000),
         date: validations.joiText(5, 50),
         note: validations.joiNotRequiredText(0, 100000),
         personid: validations.joiText(3, 50),

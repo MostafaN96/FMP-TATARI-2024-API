@@ -4,6 +4,7 @@ const waAddRequisitionDetailsService = require("./wa-add-requisition-details");
 // Queries
 const waAddRequisitionQueries = require("../../db/queries/wa/wa-add-requisition");
 const generalQueries = require("../../db/queries/general/general");
+const bussinessmanQueries = require("../../db/queries/general/bussinessman");
 
 // Util
 const constants = require("../../util/constants");
@@ -54,6 +55,14 @@ exports.createForOrder = async (waAddRequisition) => {
 
     const results = await waAddRequisitionQueries.insertForOrder(waAddRequisition);
     if (results) {
+        // Select Supllier for consigment name
+        const selectBussinessmanOneResult = await bussinessmanQueries.selectOne({
+            id: waAddRequisition.supplierId
+        })
+        if (Array.isArray(selectBussinessmanOneResult) && selectBussinessmanOneResult.length > 0) {
+            waAddRequisition.supplierName = selectBussinessmanOneResult[0].name
+        }
+
         return await waAddRequisitionDetailsService.create(waAddRequisition, 1);
     } else {
         return constants.insertError;

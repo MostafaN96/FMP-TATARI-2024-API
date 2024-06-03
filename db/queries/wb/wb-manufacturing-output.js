@@ -57,6 +57,30 @@ exports.selectLatestManufacturingFeeByIndustryAndFabric = async (whereCluse) => 
   return queryResults;
 };
 
+exports.select = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.select([
+    `${wbManufacturingOutputTableName}.id`,
+    `${wbManufacturingOutputTableName}.consigment_manufacturing_id`,
+    `${wbManufacturingOutputTableName}.quantity`,
+    `${wbManufacturingOutputTableName}.price`,
+    `${wbManufacturingOutputTableName}.price_dollar`,
+    `${wbManufacturingOutputTableName}.manufacturing_fee`,
+    `${wbManufacturingOutputTableName}.fabric_piece`,
+    `${wbManufacturingOutputTableName}.document`,
+    `${wbManufacturingOutputTableName}.statement`,
+  ])
+    .from(`${wbManufacturingOutputTableName}`) 
+    .where(whereCluse)
+    .andWhere(`${wbManufacturingOutputTableName}.quantity`, ">", 0)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
 exports.selectByRequisitionId = async (requisitionId) => {
   let queryResults = [];
   let whereCluse = {};
@@ -81,6 +105,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
     `${circularKnittingMachineTableName}.smoothness as circular_knitting_machine_smoothness`,
     `${circularKnittingMachineTableName}.model as circular_knitting_machine_model`,
     `${circularKnittingMachineTableName}.number as circular_knitting_machine_number`,
+    `${wbManufacturingOutputTableName}.consigment_manufacturing_id`,
     `${consigmentManufacturingTableName}.number as consigment_number`,
     `${warehouseTableName}.name as warehouse_name`,
   ])
@@ -219,7 +244,12 @@ exports.selectConsigmentManufacturingByFabric = async (fabricId) => {
 exports.selectOne = async (whereCluse) => {
   let queryResults = false;
   await sqlFun
-    .limitedSelect(wbManufacturingOutputTableName, ["quantity", "is_deleted"], whereCluse, 1)
+    .limitedSelect(wbManufacturingOutputTableName, [
+      "fabric_id",
+      "consigment_manufacturing_id",
+      "quantity",
+      "is_deleted"
+    ], whereCluse, 1)
     .then((data) => {
       queryResults = data;
     })

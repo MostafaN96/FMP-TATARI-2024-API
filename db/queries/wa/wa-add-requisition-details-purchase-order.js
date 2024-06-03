@@ -3,7 +3,10 @@ const sqlFun = require("../../config/sql-fun");
 const knex = require("../../config/connection").getConnection();
 
 // Util
-const { waAddRequisitionDetailsPurchaseOrderTableName, waAddRequisitionDetailsTableName } = require("../../../util/database-tables-name");
+const { 
+  waAddRequisitionDetailsPurchaseOrderTableName, waAddRequisitionDetailsTableName, 
+  waAddRequisitionTableName, waPurchaseOrderTableName 
+} = require("../../../util/database-tables-name");
 
 exports.insert = async (waAddRequisitionDetailsPurchaseOrder, item) => {
     let queryResults = false;
@@ -55,11 +58,19 @@ exports.select = async (whereCluse) => {
         `${waAddRequisitionDetailsPurchaseOrderTableName}.wa_add_requisition_details_id`,
         `${waAddRequisitionDetailsPurchaseOrderTableName}.quantity`,
         `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`,
+        `${waPurchaseOrderTableName}.name`,
+        `${waAddRequisitionTableName}.supplier_id`,
       ],
     )
     .innerJoin(`${waAddRequisitionDetailsTableName}`, 
     `${waAddRequisitionDetailsTableName}.id`, 
     `${waAddRequisitionDetailsPurchaseOrderTableName}.wa_add_requisition_details_id`)
+    .innerJoin(`${waAddRequisitionTableName}`, 
+    `${waAddRequisitionTableName}.id`, 
+    `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
+    .innerJoin(`${waPurchaseOrderTableName}`, 
+    `${waPurchaseOrderTableName}.id`, 
+    `${waAddRequisitionDetailsPurchaseOrderTableName}.wa_add_purchase_order_id`)
     .where(whereCluse)
     .then((data) => {
       queryResults = data;

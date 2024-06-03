@@ -36,7 +36,7 @@ exports.isValid = (wcSellRequisition) => {
 exports.isValidUpdate = (wcSellRequisition) => {
     const wcSellRequisitionSchema = joi.object({
         weSellRequisitionId: validations.joiText(15, 30),
-        deliveryCarId: validations.joiText(15, 30),
+        deliveryCarId: validations.joiNotRequiredText(0, 10000),
         date: validations.joiText(5, 50),
         note: validations.joiNotRequiredText(0, 100000),
         price: validations.joiNumber(1, 60),

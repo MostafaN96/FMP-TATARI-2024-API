@@ -19,7 +19,7 @@ exports.create = async (waAddRequisitionDetailsPurchaseOrder, itemsOrder) => {
 exports.selectByPurchaseOrderId = async (data) => {
   
   let whereCluse = {};
-    whereCluse[`${waAddRequisitionDetailsPurchaseOrderTableName}.wa_add_purchase_order_id`] = data.id;
+    whereCluse[`${waAddRequisitionDetailsPurchaseOrderTableName}.wa_add_purchase_order_id`] = data;
     whereCluse[`${waAddRequisitionDetailsPurchaseOrderTableName}.is_deleted`] = 0;
     whereCluse[`${waAddRequisitionDetailsPurchaseOrderTableName}.is_active`] = 1;
 

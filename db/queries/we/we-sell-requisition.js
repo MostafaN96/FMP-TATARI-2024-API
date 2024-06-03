@@ -64,7 +64,7 @@ exports.select = async () => {
   .innerJoin(`${bussinessmanTableName}`,
   `${bussinessmanTableName}.id`,
   `${weSellRequisitionTableName}.seller_id`)
-  .innerJoin(`${deliveryCarTableName}`,
+  .leftOuterJoin(`${deliveryCarTableName}`,
   `${deliveryCarTableName}.id`,
   `${weSellRequisitionTableName}.delivery_car_id`)
   .where(whereCluse)

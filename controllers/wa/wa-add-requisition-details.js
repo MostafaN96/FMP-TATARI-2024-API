@@ -7,6 +7,11 @@ const waAddRequisitionDetailsModel = require("../../models/wa/wa-add-requisition
 // Validations
 const waAddRequisitionDetailsValidation = require("../../validations/wa/wa-add-requisition-details");
 
+
+// Queries
+const bussinessmanQueries = require("../../db/queries/general/bussinessman");
+const waAddRequisitionQueries = require("../../db/queries/wa/wa-add-requisition");
+
 // Util
 const constants = require("../../util/constants");
 
@@ -18,6 +23,20 @@ exports.create = async (request, response) => {
       // logging
       return response.status(400).json(constants.invalidDataResponse);
   }
+
+  // Select Supllier for consigment name
+  const selectAddRequisitionOneResult = await waAddRequisitionQueries.selectOne({
+    id: bodyPalod.id
+})
+if (Array.isArray(selectAddRequisitionOneResult) && selectAddRequisitionOneResult.length > 0) {
+    const selectBussinessmanOneResult = await bussinessmanQueries.selectOne({
+      id: selectAddRequisitionOneResult[0].supplier_id
+    })
+    if (Array.isArray(selectBussinessmanOneResult) && selectBussinessmanOneResult.length > 0) {
+      bodyPalod.supplierName = selectBussinessmanOneResult[0].name
+    }
+}
+
   //   send data to service
   const results = await waAddRequisitionDetailsService.create(bodyPalod, 0);
 

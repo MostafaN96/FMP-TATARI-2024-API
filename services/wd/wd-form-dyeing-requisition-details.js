@@ -255,7 +255,8 @@ exports.update = async (wdFormDyeingRequisitionDetails) => {
                 fabric_width: wdFormDyeingRequisitionDetails.fabricWidth,
                 fabric_quantity_m2: wdFormDyeingRequisitionDetails.fabricQuantityM2,
                 document: wdFormDyeingRequisitionDetails.document,
-                statement: wdFormDyeingRequisitionDetails.statement
+                statement: wdFormDyeingRequisitionDetails.statement,
+                is_prepare_dyeing: wdFormDyeingRequisitionDetails.isPrepareDyeing
             },
                 {
                     id: wdFormDyeingRequisitionDetails.id

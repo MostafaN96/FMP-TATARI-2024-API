@@ -60,6 +60,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
     `${wdTransportWcWdDetailsTableName}.document`,
     `${wdTransportWcWdDetailsTableName}.statement`,
     `${wdTransportWcWdDetailsTableName}.price`,
+    `${wdTransportWcWdDetailsTableName}.price_dollar`,
     `${bussinessmanTableName}.name as dyer_name`,
     `${wdTableName}.current_quantity`,
   ])
@@ -184,7 +185,11 @@ exports.selectOne = async (whereCluse) => {
 exports.selectLatestPrice = async (whereCluse) => {
   let queryResults = false;
   await knex(wdTransportWcWdDetailsTableName)
-    .select(["wd_transport_wc_wd_details.id", "wd_transport_wc_wd_details.price"])
+    .select([
+      "wd_transport_wc_wd_details.id", 
+      "wd_transport_wc_wd_details.price",
+      "wd_transport_wc_wd_details.price_dollar",
+    ])
     .innerJoin(wdTransportWcWdTableName,
       `${wdTransportWcWdTableName}.id`,
       `${wdTransportWcWdDetailsTableName}.wd_transport_wc_wd_id`)
@@ -249,6 +254,7 @@ exports.selectTotalByFabricIdByDyeingId = async (fabricId, dyeingId) => {
     .then(async (data) => {
       if(data[0] != null) {
         queryResults =  await wdFormDyeingRequisitionDetailsQueries.selectFormQuantityByWdId(data) ;
+        queryResults =  await wdFormDyeingRequisitionDetailsQueries.selectFormQuantityPrepareDyeingByWdId(data) ;
       } else {
         queryResults = data
       }    })
@@ -368,6 +374,7 @@ exports.selectDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId, fabri
     .then(async (data) => {
       if(data[0] != null) {
         queryResults =  await wdFormDyeingRequisitionDetailsQueries.selectFormQuantityByWdId(data) ;
+        queryResults =  await wdFormDyeingRequisitionDetailsQueries.selectFormQuantityPrepareDyeingByWdId(data) ;
       } else {
         queryResults = data
       }    })
@@ -475,6 +482,7 @@ exports.selectPriceByFabricIdByDyeingId = async (fabricId, dyeingId) => {
     .select(
       [
         `${wdTransportWcWdDetailsTableName}.price`,
+        `${wdTransportWcWdDetailsTableName}.price_dollar`,
         `${wdTransportWcWdDetailsTableName}.quantity`,
         `${wdTransportWcWdTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل من (C) الى (D)'),
@@ -505,6 +513,7 @@ exports.selectPriceByFabricIdByDyeingIdByConsigmentDyeingId = async (fabricId, d
     .select(
       [
         `${wdTransportWcWdDetailsTableName}.price`,
+        `${wdTransportWcWdDetailsTableName}.price_dollar`,
         `${wdTransportWcWdDetailsTableName}.quantity`,
         `${wdTransportWcWdTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل من (C) الى (D)'),
@@ -680,6 +689,7 @@ exports.selectPriceByFabricId = async (fabricId) => {
     .select(
       [
         `${wdTransportWcWdDetailsTableName}.price`,
+        `${wdTransportWcWdDetailsTableName}.price_dollar`,
         `${wdTransportWcWdDetailsTableName}.quantity`,
         `${wdTransportWcWdTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل من (C) الى (D)'),
@@ -708,6 +718,7 @@ exports.selectPriceByFabricIdByConsigmentManufacturingId = async (fabricId, cons
     .select(
       [
         `${wdTransportWcWdDetailsTableName}.price`,
+        `${wdTransportWcWdDetailsTableName}.price_dollar`,
         `${wdTransportWcWdDetailsTableName}.quantity`,
         `${wdTransportWcWdTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل من (C) الى (D)'),

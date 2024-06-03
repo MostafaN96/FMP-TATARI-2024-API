@@ -334,9 +334,11 @@ exports.update = async (weReturnSellRequisitionDetails) => {
                                 }
 
                                 // select we sell requisition details record
-                                const weSellRequisitionDetailsRecord = await weSellRequisitionDetailsQueries.selectOne({
-                                    id: weReturnSellRequisitionDetailsReturnDetailsRecord.we_sell_requisition_details_id
-                                })
+                                let whereCluseWeSellRequisitionDetails = {};
+                                whereCluseWeSellRequisitionDetails[`${weSellRequisitionDetailsTableName}.id`] = weReturnSellRequisitionDetailsReturnDetailsRecord.we_sell_requisition_details_id;
+                                whereCluseWeSellRequisitionDetails[`${weSellRequisitionDetailsTableName}.is_deleted`] = 0;
+                                whereCluseWeSellRequisitionDetails[`${weSellRequisitionDetailsTableName}.is_active`] = 1;
+                                const weSellRequisitionDetailsRecord = await weSellRequisitionDetailsQueries.selectOne(whereCluseWeSellRequisitionDetails)
                                 if (weSellRequisitionDetailsRecord[0] != null) {
                                     const oldCurrentQuantity = weSellRequisitionDetailsRecord[0].current_quantity
 

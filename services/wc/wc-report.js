@@ -494,9 +494,9 @@ exports.selectPriceByFabricByConsigmentManufacturingInWc = async (fabricId, cons
         const latestPrice = await wcAddRequisitionDetailsQueries.selectLatestPrice(wcAddRequisitionDetailsWhereCluse)
         if(latestPrice[0] != null ) {
             // sortedAsc[0].latest_price = latestPrice[0].price
-            sortedAsc = [...sortedAsc, ...[{latest_price: latestPrice[0].price, latest_price_dollar: latestPrice[0].price_dollar}]] 
+            sortedAsc = [...[{latest_price: latestPrice[0].price, latest_price_dollar: latestPrice[0].price_dollar}], ...sortedAsc] 
         } else {
-            sortedAsc = [...sortedAsc, ...[{latest_price: 0, latest_price_dollar: 0}]] 
+            sortedAsc = [...[{latest_price: 0, latest_price_dollar: 0}], ...sortedAsc] 
         }
 
         // Select Max Added Date

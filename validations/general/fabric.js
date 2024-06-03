@@ -2,7 +2,7 @@ const joi = require("joi");
 const validations = require("../../helpers/validations");
 exports.isValid = (fabric) => {
   const fabricSchema = joi.object({
-    name: validations.joiText(3, 90),
+    name: validations.joiText(3, 120),
     code: validations.joiText(3, 45),
     dyeingCode: validations.joiNotRequiredText(0, 90),
     fabricQuantityM2: validations.joiNotRequiredText(0, 90),
@@ -34,7 +34,7 @@ exports.isValid = (fabric) => {
 
 exports.isValidUpdate = (fabric) => {
   const fabricSchema = joi.object({
-    name: validations.joiText(3, 90),
+    name: validations.joiText(3, 120),
     code: validations.joiText(3, 45),
     dyeingCode: validations.joiNotRequiredText(0, 90),
     fabricQuantityM2: validations.joiNotRequiredText(0, 90),

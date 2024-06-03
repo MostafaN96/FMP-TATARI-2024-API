@@ -122,6 +122,7 @@ exports.update = async (wdDyeingRequisitionDetails) => {
                 cost_price: wdDyeingRequisitionDetails.costPrice,
                 fabric_piece: wdDyeingRequisitionDetails.numberFabricPieces,
                 dyeing_fee: wdDyeingRequisitionDetails.dyeingFee,
+                added_cost: wdDyeingRequisitionDetails.addedCost,
                 fabric_width: wdDyeingRequisitionDetails.fabricWidth,
                 fabric_quantity_m2: wdDyeingRequisitionDetails.fabricQuantityM2,
                 work_order_number: wdDyeingRequisitionDetails.workOrderNumber,
@@ -390,7 +391,7 @@ exports.getSumTotalCostOfDyeing = async (dataSourceSearchTabel) => {
     let sum = 0
     const element = dataSourceSearchTabel;
     sum = await this.getTotalCost(parseFloat(element.price), element.quantity, element.dyeingServices,
-        parseFloat(element.dyeing_fee), parseFloat(element.fabric_piece)) / element.dyeing_quantity
+        (parseFloat(element.dyeing_fee) + parseFloat(element.added_cost)), parseFloat(element.fabric_piece)) / element.dyeing_quantity
     return parseFloat((sum).toFixed(3))
 }
 

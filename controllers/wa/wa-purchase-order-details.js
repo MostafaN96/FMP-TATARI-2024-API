@@ -4,20 +4,34 @@ const waPurchaseOrderDetailsService = require("../../services/wa/wa-purchase-ord
 // Validations
 const waPurchaseOrderDetailsValidation = require("../../validations/wa/wa-purchase-order-details");
 
+
+// Queries
+const waAddRequisitionDetailsPurchaseOrderQueries = require("../../db/queries/wa/wa-add-requisition-details-purchase-order");
+
 // Util
 const constants = require("../../util/constants");
 
 exports.create = async (request, response) => {
   const bodyPalod = request.body;
 
-  // For Add wa requisition (optional)
-  bodyPalod.orderId = bodyPalod.id;
-
   // Validation
   if (!waPurchaseOrderDetailsValidation.isValid(bodyPalod)) {
       // logging
       return response.status(400).json(constants.invalidDataResponse);
   }
+  
+  // For Add wa requisition (optional)
+  bodyPalod.orderId = bodyPalod.id;
+  
+  // Select Supllier for consigment name
+  const selectWaAddRequisitionDetailsPurchaseOrderOneResult = await waAddRequisitionDetailsPurchaseOrderQueries.select({
+    wa_add_purchase_order_id: bodyPalod.id
+  })
+  if (Array.isArray(selectWaAddRequisitionDetailsPurchaseOrderOneResult) && selectWaAddRequisitionDetailsPurchaseOrderOneResult.length > 0) {
+    bodyPalod.supplierId = selectWaAddRequisitionDetailsPurchaseOrderOneResult[0].supplier_id
+    bodyPalod.consigmentYarnNumber = selectWaAddRequisitionDetailsPurchaseOrderOneResult[0].name
+  }
+
   //   send data to service
   const results = await waPurchaseOrderDetailsService.create(bodyPalod);
 

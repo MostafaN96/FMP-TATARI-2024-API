@@ -1,5 +1,6 @@
 // Services
 const wbManufacturingInputService = require("./wb-manufacturing-input");
+const wbManufacturingOutputService = require("./wb-manufacturing-output");
 
 // Queries
 const wbManufacturingRequisitionQueries = require("../../db/queries/wb/wb-manufacturing-requisition");
@@ -62,12 +63,28 @@ exports.createForOrder = async (wbManufacturingRequisition) => {
 };
 
 exports.select = async () => {
-    const results = await wbManufacturingRequisitionQueries.select();
+    let results = await wbManufacturingRequisitionQueries.select();
+    if (Array.isArray(results) && results.length > 0) {
+        for (let j = 0; j < results.length; j++) {
+            let selectWbManufacturingRequisition = results[j];
+
+            let selectManufacturingOutputByRequisitionId = await wbManufacturingOutputService.selectByRequisitionId(selectWbManufacturingRequisition.id)
+            selectWbManufacturingRequisition.details = selectManufacturingOutputByRequisitionId[0];
+        }
+    }
     return results;
   };
 
 exports.selectOrders = async () => {
-    const results = await wbManufacturingRequisitionQueries.selectOrders();
+    let results = await wbManufacturingRequisitionQueries.selectOrders();
+    if (Array.isArray(results) && results.length > 0) {
+        for (let j = 0; j < results.length; j++) {
+            let selectWbManufacturingRequisition = results[j];
+
+            let selectManufacturingOutputByRequisitionId = await wbManufacturingOutputService.selectByRequisitionIdForOrder(selectWbManufacturingRequisition.id)
+            selectWbManufacturingRequisition.details = selectManufacturingOutputByRequisitionId[0];
+        }
+    }
     return results;
   };
   

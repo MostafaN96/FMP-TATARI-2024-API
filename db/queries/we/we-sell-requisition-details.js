@@ -113,7 +113,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
       .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${weSellRequisitionTableName}.seller_id`)
       .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weSellRequisitionDetailsTableName}.dyed_fabric_id`)
       .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weSellRequisitionDetailsTableName}.warehouse_id`)
-      .innerJoin(`${deliveryCarTableName}`,
+      .leftOuterJoin(`${deliveryCarTableName}`,
         `${deliveryCarTableName}.id`,
         `${weSellRequisitionTableName}.delivery_car_id`)
       .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
@@ -166,7 +166,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
           .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${weSellRequisitionTableName}.seller_id`)
           .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weSellRequisitionDetailsTableName}.dyed_fabric_id`)
           .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weSellRequisitionDetailsTableName}.warehouse_id`)
-          .innerJoin(`${deliveryCarTableName}`,
+          .leftOuterJoin(`${deliveryCarTableName}`,
             `${deliveryCarTableName}.id`,
             `${weSellRequisitionTableName}.delivery_car_id`)
           .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
@@ -223,7 +223,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
           .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${weSellRequisitionTableName}.seller_id`)
           .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weSellRequisitionDetailsTableName}.dyed_fabric_id`)
           .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weSellRequisitionDetailsTableName}.warehouse_id`)
-          .innerJoin(`${deliveryCarTableName}`,
+          .leftOuterJoin(`${deliveryCarTableName}`,
             `${deliveryCarTableName}.id`,
             `${weSellRequisitionTableName}.delivery_car_id`)
           .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
@@ -282,7 +282,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
         .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${weSellRequisitionTableName}.seller_id`)
         .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weSellRequisitionDetailsTableName}.dyed_fabric_id`)
         .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weSellRequisitionDetailsTableName}.warehouse_id`)
-        .innerJoin(`${deliveryCarTableName}`,
+        .leftOuterJoin(`${deliveryCarTableName}`,
           `${deliveryCarTableName}.id`,
           `${weSellRequisitionTableName}.delivery_car_id`)
         .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
@@ -335,7 +335,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
         .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${weSellRequisitionTableName}.seller_id`)
         .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weSellRequisitionDetailsTableName}.dyed_fabric_id`)
         .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weSellRequisitionDetailsTableName}.warehouse_id`)
-        .innerJoin(`${deliveryCarTableName}`,
+        .leftOuterJoin(`${deliveryCarTableName}`,
           `${deliveryCarTableName}.id`,
           `${weSellRequisitionTableName}.delivery_car_id`)
         .innerJoin(`${weSellRequisitionDetailsWeTableName}`,

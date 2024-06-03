@@ -238,6 +238,7 @@ exports.selectPriceByFabricId = async (fabricId) => {
     .select(
       [
         `${wcAddRequisitionDetailsTableName}.price`,
+        `${wcAddRequisitionDetailsTableName}.price_dollar`,
         `${wcAddRequisitionDetailsTableName}.quantity`,
         `${wcAddRequisitionDetailsTableName}.fabric_piece`,
         `${wcAddRequisitionTableName}.date`,
@@ -269,6 +270,7 @@ exports.selectPriceByFabricIdByConsigmentManufacturingId = async (fabricId, cons
     .select(
       [
         `${wcAddRequisitionDetailsTableName}.price`,
+        `${wcAddRequisitionDetailsTableName}.price_dollar`,
         `${wcAddRequisitionDetailsTableName}.quantity`,
         `${wcAddRequisitionDetailsTableName}.fabric_piece`,
         `${wcAddRequisitionTableName}.date`,
@@ -292,7 +294,11 @@ exports.selectLatestPrice = async (whereCluse) => {
   let queryResults = false;
   await sqlFun
     .selectWithJionWithLimit(wcAddRequisitionDetailsTableName, 
-      ["wc_add_requisition_details.id", "wc_add_requisition_details.price"], 
+      [
+        "wc_add_requisition_details.id", 
+      "wc_add_requisition_details.price",
+      "wc_add_requisition_details.price_dollar",
+    ], 
       whereCluse,
     wcAddRequisitionTableName, 
     `${wcAddRequisitionTableName}.id`,

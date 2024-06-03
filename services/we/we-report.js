@@ -857,7 +857,7 @@ exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
 
             ////////////////////////////////////////// WB ///////////////////////////////////////
             // select yarns of fabric
-            const yarnsOfFabricResult = await fabricYarnsService.selectByFabricId(fabric.fabricId)
+            const yarnsOfFabricResult = await fabricYarnsService.selectByFabricIdForReport(fabric.fabricId)
             if (yarnsOfFabricResult[0] != null) {
 
                 for (let i = 0; i < yarnsOfFabricResult.length; i++) {
@@ -868,6 +868,8 @@ exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
                     if (Array.isArray(wbYarns) && wbYarns.length > 0) {
                         let neededYarnQuantity = calcQuantity
                         neededYarnQuantity = parseFloat(((calcQuantity * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
+                        neededYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((neededYarnQuantity / ( 1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100) )).toFixed(3)) 
+                        : neededYarnQuantity
 
                         for (let j = 0; j < wbYarns.length; j++) {
                             const wbYarn = wbYarns[j];
@@ -1019,9 +1021,14 @@ exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
 
                                 let orderedYarnQuantity = 0
                                 orderedYarnQuantity = parseFloat(((calcQuantityYarn * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
+                                orderedYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((orderedYarnQuantity / ( 1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100) )).toFixed(3)) 
+                                : orderedYarnQuantity
 
                                 let neededYarnQuantity = 0
                                 neededYarnQuantity = parseFloat(((calcQuantityYarn * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
+                                neededYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((neededYarnQuantity / ( 1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100) )).toFixed(3)) 
+                                : neededYarnQuantity
+
                                 calcQuantityYarn = 0
 
                                 waYarn.ordered_quantity = orderedYarnQuantity
@@ -1086,6 +1093,12 @@ exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
                                 }
                             }
                         } else {
+                            let calcQuantityYarn = parseFloat((calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100))).toFixed(3))
+                            let orderedYarnQuantity = 0
+                            orderedYarnQuantity = parseFloat(((calcQuantityYarn * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
+                            orderedYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((orderedYarnQuantity / ( 1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100) )).toFixed(3)) 
+                            : orderedYarnQuantity
+
                             data.waYarns.push(
                                 {
                                     id: yarnOfFabric.yarn_id,
@@ -1094,8 +1107,8 @@ exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
                                     name: yarnOfFabric.yarn_name,
                                     code: yarnOfFabric.yarn_code,
                                     existed_quantity: 0,
-                                    needed_quantity: parseFloat(((calcQuantity * parseFloat(yarnOfFabric.total_ratio)) / 100).toFixed(3)),
-                                    ordered_quantity: parseFloat(((calcQuantity * parseFloat(yarnOfFabric.total_ratio)) / 100).toFixed(3)),
+                                    needed_quantity: orderedYarnQuantity,
+                                    ordered_quantity: orderedYarnQuantity,
                                 }
                             )
                         }
@@ -1442,7 +1455,7 @@ exports.inquireFabricAvilabilityTotalReportWe = async (fabric, addedData) => {
 
             ////////////////////////////////////////// WB ///////////////////////////////////////
             // select yarns of fabric
-            const yarnsOfFabricResult = await fabricYarnsService.selectByFabricId(fabric.fabricId)
+            const yarnsOfFabricResult = await fabricYarnsService.selectByFabricIdForReport(fabric.fabricId)
             if (yarnsOfFabricResult[0] != null) {
 
                 for (let i = 0; i < yarnsOfFabricResult.length; i++) {
@@ -1453,7 +1466,9 @@ exports.inquireFabricAvilabilityTotalReportWe = async (fabric, addedData) => {
                     if (Array.isArray(wbYarns) && wbYarns.length > 0) {
                         let neededYarnQuantity = calcQuantity
                         neededYarnQuantity = parseFloat(((calcQuantity * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
-
+                        neededYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((neededYarnQuantity / ( 1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100) )).toFixed(3)) 
+                        : neededYarnQuantity
+                        
                         for (let j = 0; j < wbYarns.length; j++) {
                             const wbYarn = wbYarns[j];
 
@@ -1596,9 +1611,13 @@ exports.inquireFabricAvilabilityTotalReportWe = async (fabric, addedData) => {
 
                                 let orderedYarnQuantity = 0
                                 orderedYarnQuantity = parseFloat(((calcQuantityYarn * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
+                                orderedYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((orderedYarnQuantity / ( 1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100) )).toFixed(3)) 
+                                : orderedYarnQuantity
 
                                 let neededYarnQuantity = 0
                                 neededYarnQuantity = parseFloat(((calcQuantityYarn * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
+                                neededYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((neededYarnQuantity / ( 1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100) )).toFixed(3)) 
+                                : neededYarnQuantity
                                 calcQuantityYarn = 0
 
                                 waYarn.ordered_quantity = orderedYarnQuantity
@@ -1662,14 +1681,22 @@ exports.inquireFabricAvilabilityTotalReportWe = async (fabric, addedData) => {
                                 }
                             }
                         } else {
+                            let calcQuantityYarn = parseFloat((calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100))).toFixed(3))
+                            let orderedYarnQuantity = 0
+                            orderedYarnQuantity = parseFloat(((calcQuantityYarn * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
+                            orderedYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((orderedYarnQuantity / ( 1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100) )).toFixed(3)) 
+                            : orderedYarnQuantity
+
                             data.waYarns.push(
                                 {
                                     id: yarnOfFabric.yarn_id,
                                     name: yarnOfFabric.yarn_name,
                                     code: yarnOfFabric.yarn_code,
                                     existed_quantity: 0,
-                                    needed_quantity: parseFloat(((calcQuantity * parseFloat(yarnOfFabric.total_ratio)) / 100).toFixed(3)),
-                                    ordered_quantity: parseFloat(((calcQuantity * parseFloat(yarnOfFabric.total_ratio)) / 100).toFixed(3)),
+                                    // needed_quantity: parseFloat(((calcQuantity * parseFloat(yarnOfFabric.total_ratio)) / 100).toFixed(3)),
+                                    // ordered_quantity: parseFloat(((calcQuantity * parseFloat(yarnOfFabric.total_ratio)) / 100).toFixed(3)),
+                                    needed_quantity: orderedYarnQuantity,
+                                    ordered_quantity: orderedYarnQuantity,
                                 }
                             )
                         }
@@ -1800,6 +1827,7 @@ exports.inquireFabricAvilabilityByDyeingOrderRequisitionTotalReportWe = async (w
         //     console.log(" element ========== ", element);
         dataResult = await this.filterObjectsWarehousesOfParentArrayTotal(dataResult)
         // }
+        // console.log("dataResult ::::::::: ", dataResult);
         resolve(dataResult); // Yay! Everything went well!
 
     });

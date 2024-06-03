@@ -165,7 +165,9 @@ exports.createInputDetails = async (wbManufacturingInput, isOrder) => {
                 price: fabricPrice,
                 price_dollar: fabricPriceDollar
             }, {
-                id: selectOutputManufacturingOneResult[0].id
+                // id: selectOutputManufacturingOneResult[0].id
+                fabric_id: selectOutputManufacturingOneResult[0].fabric_id,
+              consigment_manufacturing_id: selectOutputManufacturingOneResult[0].consigment_manufacturing_id
             })
         }
     }
@@ -470,7 +472,9 @@ exports.update = async (wbManufacturingInput) => {
                         price: fabricPrice,
                         price_dollar: fabricPriceDollar
                     }, {
-                        id: selectOutputManufacturingOneResult[0].id
+                        // id: selectOutputManufacturingOneResult[0].id
+                        fabric_id: selectOutputManufacturingOneResult[0].fabric_id,
+                        consigment_manufacturing_id: selectOutputManufacturingOneResult[0].consigment_manufacturing_id
                     })
                 }
             }

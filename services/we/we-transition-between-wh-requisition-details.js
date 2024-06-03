@@ -94,7 +94,10 @@ exports.selectByRequisitionId = async (requisitionId) => {
         whereCluse[`${weTransitionBetweenWHRequisitionDetailsTableName}.we_transition_between_wh_requisitions_id`] = requisitionId;
         whereCluse[`${weTransitionBetweenWHRequisitionDetailsTableName}.is_deleted`] = 0;
         whereCluse[`${weTransitionBetweenWHRequisitionDetailsTableName}.is_active`] = 1;
-        const results = await weTransitionBetweenWHRequisitionDetailsQueries.selectByRequisitionId(whereCluse);
+        let results = await weTransitionBetweenWHRequisitionDetailsQueries.selectByRequisitionId(whereCluse);
+        if (Array.isArray(results) && results.length < 1) {
+            results = await weTransitionBetweenWHRequisitionDetailsQueries.selectOneByRequisitionId(whereCluse);
+        }
         return results;
     } else {
         return constants.itemNotFound;

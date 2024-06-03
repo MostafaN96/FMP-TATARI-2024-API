@@ -81,7 +81,7 @@ exports.selectByRequisitionId = async (whereCluse) => {
     .innerJoin(`${warehouseTableName}`,
       `${warehouseTableName}.id`,
       `${weSellRequisitionDirectDetailsTableName}.warehouse_id`)
-    .innerJoin(`${deliveryCarTableName}`,
+    .leftOuterJoin(`${deliveryCarTableName}`,
       `${deliveryCarTableName}.id`,
       `${weSellRequisitionTableName}.delivery_car_id`)
     .innerJoin(`${colorCategoryTableName}`,
@@ -140,7 +140,7 @@ exports.selectOneByRequisitionId = async (whereCluse) => {
     .innerJoin(`${warehouseTableName}`,
       `${warehouseTableName}.id`,
       `${weSellRequisitionDirectDetailsTableName}.warehouse_id`)
-    .innerJoin(`${deliveryCarTableName}`,
+    .leftOuterJoin(`${deliveryCarTableName}`,
       `${deliveryCarTableName}.id`,
       `${weSellRequisitionTableName}.delivery_car_id`)
     .innerJoin(`${colorCategoryTableName}`,

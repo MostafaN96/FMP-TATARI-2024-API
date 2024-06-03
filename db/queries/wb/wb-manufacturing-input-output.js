@@ -44,3 +44,23 @@ exports.selectOne = async (whereCluse) => {
 
   return queryResults;
 };
+  
+exports.select = async (whereCluse) => {
+  let queryResults = false;
+  await knex
+    .select([
+      `${wbManufacturingInputOutputTableName}.wb_manufacturing_requisition_id`,
+      `${wbManufacturingInputOutputTableName}.wb_manufacturing_input_id`,
+      `${wbManufacturingInputOutputTableName}.wb_manufacturing_output_id`,
+    ])
+    .from(`${wbManufacturingInputOutputTableName}`)
+    .where(whereCluse)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+
+  return queryResults;
+};

@@ -119,7 +119,8 @@ exports.selectInputTotalByFabricIdByDyeingId = async (fabricId, dyeingId) => {
     .andWhere(`${wdReconciliationRequisitionDetailsTableName}.quantity`, ">", 0)
     .then(async (data) => {
       if(data[0] != null) {
-        queryResults =  await wdFormDyeingRequisitionDetailsQueries.selectFormQuantityByWdId(data) ;
+        queryResults =  await wdFormDyeingRequisitionDetailsQueries.selectFormQuantityByWdId(data);
+        queryResults =  await wdFormDyeingRequisitionDetailsQueries.selectFormQuantityPrepareDyeingByWdId(data) ;
       } else {
         queryResults = data
       }
@@ -236,6 +237,7 @@ exports.selectInputDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId, 
     .then(async (data) => {
       if(data[0] != null) {
         queryResults =  await wdFormDyeingRequisitionDetailsQueries.selectFormQuantityByWdId(data) ;
+        queryResults =  await wdFormDyeingRequisitionDetailsQueries.selectFormQuantityPrepareDyeingByWdId(data) ;
       } else {
         queryResults = data
       }    

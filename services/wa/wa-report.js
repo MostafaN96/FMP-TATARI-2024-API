@@ -576,7 +576,7 @@ exports.inquireYarnsOfFabricForOrderWa = async (fabric, addedData) => {
 
     const myFirstPromise = new Promise(async (resolve, reject) => {
         // select yarns of fabric
-        const yarnsOfFabricResult = await fabricYarnsService.selectByFabricId(fabric.fabricId)
+        const yarnsOfFabricResult = await fabricYarnsService.selectByFabricIdForReport(fabric.fabricId)
         if (yarnsOfFabricResult[0] != null) {
 
             for (let i = 0; i < yarnsOfFabricResult.length; i++) {
@@ -590,6 +590,8 @@ exports.inquireYarnsOfFabricForOrderWa = async (fabric, addedData) => {
 
                         let neededYarnQuantity = 0
                         neededYarnQuantity = parseFloat((((calcQuantityYarn / (1 - (constants.notZero(fabric.wasteRatio) / 100))) * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
+                        neededYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((neededYarnQuantity / ( 1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100) )).toFixed(3)) 
+                        : neededYarnQuantity
                         calcQuantityYarn = 0
 
                         // check if yarn added before for not calc same current quantity in all records
@@ -647,6 +649,10 @@ exports.inquireYarnsOfFabricForOrderWa = async (fabric, addedData) => {
                         }
                     }
                 } else {
+                    let neededYarnQuantity = 0
+                        neededYarnQuantity = parseFloat((((calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100))) * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
+                        neededYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((neededYarnQuantity / ( 1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100) )).toFixed(3)) 
+                        : neededYarnQuantity
                     data.push(
                         {
                             id: yarnOfFabric.yarn_id,
@@ -655,7 +661,8 @@ exports.inquireYarnsOfFabricForOrderWa = async (fabric, addedData) => {
                             name: yarnOfFabric.yarn_name,
                             code: yarnOfFabric.yarn_code,
                             existed_quantity: 0,
-                            needed_quantity: parseFloat(((calcQuantity * parseFloat(yarnOfFabric.total_ratio)) / 100).toFixed(3)),
+                            // needed_quantity: parseFloat(((calcQuantity * parseFloat(yarnOfFabric.total_ratio)) / 100).toFixed(3)),
+                            needed_quantity: neededYarnQuantity,
                         }
                     )
                 }
@@ -675,14 +682,16 @@ exports.yarnsOfFabricForOrderWa = async (fabric) => {
 
     const myFirstPromise = new Promise(async (resolve, reject) => {
         // select yarns of fabric
-        const yarnsOfFabricResult = await fabricYarnsService.selectByFabricId(fabric.fabricId)
+        const yarnsOfFabricResult = await fabricYarnsService.selectByFabricIdForReport(fabric.fabricId)
         if (yarnsOfFabricResult[0] != null) {
 
             for (let i = 0; i < yarnsOfFabricResult.length; i++) {
                 const yarnOfFabric = yarnsOfFabricResult[i];
 
                 neededYarnQuantity = parseFloat((((calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100))) * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
-
+                neededYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((neededYarnQuantity / ( 1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100) )).toFixed(3)) 
+                : neededYarnQuantity
+                
                 data.push({
                     id: yarnOfFabric.yarn_id,
                     name: yarnOfFabric.yarn_name,

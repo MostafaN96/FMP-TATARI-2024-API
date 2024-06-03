@@ -253,8 +253,14 @@ exports.selectStoreWithDyeingServicesWe = async () => {
     dyeingWhereCluse[`${weTableName}.is_active`] = 1;
     dyeingWhereCluse[`${weTableName}.type`] = constantsPayloads.dyeingType;
 
+    let transitionBetweenWhWhereCluse = {};
+    transitionBetweenWhWhereCluse[`${weTableName}.is_deleted`] = 0;
+    transitionBetweenWhWhereCluse[`${weTableName}.is_active`] = 1;
+    transitionBetweenWhWhereCluse[`${weTableName}.type`] = constantsPayloads.transportBetweenType;
+
     let andWhereCluse = {whereTableName: `current_quantity`, operator: ">", value: "0"}
-    let whereCluseArray = [whereCluse, reconciliationWhereCluse, andWhereCluse, dyeingWhereCluse]
+    let whereCluseArray = [whereCluse, reconciliationWhereCluse, andWhereCluse, 
+        dyeingWhereCluse, transitionBetweenWhWhereCluse]
     let orderByCluse = {attributeName: `date`, value: "desc"}
 
     const storeWeResult = await weQueries.selectStoreWe(whereCluseArray, orderByCluse);

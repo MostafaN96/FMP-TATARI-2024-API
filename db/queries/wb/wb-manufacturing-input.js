@@ -41,6 +41,8 @@ exports.selectOne = async (whereCluse) => {
       `${wbManufacturingInputTableName}.consigment_yarn_id`,
       `${wbManufacturingInputTableName}.quantity`,
       `${wbManufacturingInputTableName}.quantity_with_waste`,
+      `${wbManufacturingInputTableName}.price`,
+      `${wbManufacturingInputTableName}.price_dollar`,
       `${wbManufacturingInputOutputTableName}.wb_manufacturing_requisition_id`,
       `${wbManufacturingRequisitionTableName}.industry_id`,
     ])

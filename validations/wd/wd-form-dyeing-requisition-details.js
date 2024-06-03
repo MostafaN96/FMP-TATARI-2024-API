@@ -20,6 +20,7 @@ exports.isValid = (wdFormDyeingRequisitionDetails) => {
             fabricQuantityM2:validations.joiText(1, 60),
             document: validations.joiNotRequiredNumber(0, 50),
             statement: validations.joiNotRequiredText(0, 10000),
+            isPrepareDyeing: validations.joiNumberAny,
         })
     });
     const joiErrors = wdFormDyeingRequisitionDetailsSchema.validate(wdFormDyeingRequisitionDetails);
@@ -89,6 +90,7 @@ exports.isValidUpdate = (wdFormDyeingRequisitionDetails) => {
         fabricQuantityM2:validations.joiText(1, 60),
         document: validations.joiNotRequiredNumber(0, 50),
         statement: validations.joiNotRequiredText(0, 10000),
+        isPrepareDyeing: validations.joiNumberAny,
         personid: validations.joiText(1, 90),
         ipaddress: validations.joiText(1, 90)
     });

@@ -8,6 +8,7 @@ const wbManufacturingOrderRequisitionDetailsQueries = require("../../db/queries/
 const wbManufacturingOutputOrderQueries = require("../../db/queries/wb/wb-manufacturing-output-order");
 const circularKnittingMachineQueries = require("../../db/queries/general/circular-knitting-machine");
 const circularKnittingMachineBussinessmanQueries = require("../../db/queries/general/circular-knitting-machine-bussinessman");
+const wbManufacturingInputQueries = require("../../db/queries/wb/wb-manufacturing-input");
 
 // Services
 const wbManufacturingInputService = require("./wb-manufacturing-input");
@@ -18,7 +19,7 @@ const trans = require("../../helpers/transform");
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-const { wbManufacturingRequisitionTableName, wbManufacturingOutputTableName, wcTableName, wbManufacturingOrderRequisitionDetailsTableName, wbManufacturingInputOutputTableName } = require("../../util/database-tables-name");
+const { wbManufacturingRequisitionTableName, wbManufacturingOutputTableName, wcTableName, wbManufacturingOrderRequisitionDetailsTableName, wbManufacturingInputOutputTableName, wbManufacturingInputTableName } = require("../../util/database-tables-name");
 
 exports.create = async (wbManufacturingOutput) => {
   if (wbManufacturingOutput.isNewConsigment) {
@@ -215,10 +216,14 @@ exports.update = async (wbManufacturingOutput) => {
           const selectOutputManufacturingOneResult = await this.selectByRequisitionId(selectInputOutputManufacturingOneResult[0].wb_manufacturing_requisition_id)
           if (selectOutputManufacturingOneResult[0] != null) {
             fabricPrice = await this.calcAvgFabricPrice(selectInputManufacturingResult, selectOutputManufacturingOneResult)
+            fabricPriceDollar = await this.calcAvgFabricPriceDollar(selectInputManufacturingResult, selectOutputManufacturingOneResult)
             await wbManufacturingOutputQueries.update({
-              price: fabricPrice
+              price: fabricPrice,
+              price_dollar: fabricPriceDollar
             }, {
-              id: selectOutputManufacturingOneResult[0].id
+              // id: selectOutputManufacturingOneResult[0].id,
+              fabric_id: selectOutputManufacturingOneResult[0].fabric_id,
+              consigment_manufacturing_id: selectOutputManufacturingOneResult[0].consigment_manufacturing_id
             })
           }
         }
@@ -395,21 +400,113 @@ exports.selectByFabricByConsigmentManufacturing = async (fabricId, consigmentMan
 };
 
 exports.calcAvgFabricPrice = async (wbInputManufacturingResult, wboutputManufacturingResult) => {
+  // let inputCostWithWaste = 0
+  // let outputCostManufacturingFee = 0
+  // let avgFabricPrice = 0
+  // inputCostWithWaste = wbInputManufacturingResult.map(function (a) { return parseFloat(a['quantity_with_waste']) * parseFloat(a['price']) }).reduce((acc, value) => acc + value, 0);
+  // outputCostManufacturingFee = wboutputManufacturingResult[0].quantity * parseFloat(wboutputManufacturingResult[0].manufacturing_fee)
+  // avgFabricPrice = (inputCostWithWaste + outputCostManufacturingFee) / wboutputManufacturingResult[0].quantity
+  
   let inputCostWithWaste = 0
   let outputCostManufacturingFee = 0
   let avgFabricPrice = 0
-  inputCostWithWaste = wbInputManufacturingResult.map(function (a) { return parseFloat(a['quantity_with_waste']) * parseFloat(a['price']) }).reduce((acc, value) => acc + value, 0);
-  outputCostManufacturingFee = wboutputManufacturingResult[0].quantity * parseFloat(wboutputManufacturingResult[0].manufacturing_fee)
-  avgFabricPrice = (inputCostWithWaste + outputCostManufacturingFee) / wboutputManufacturingResult[0].quantity
+  let totalOutputQuantity = 0
+  let totalInputOutput = await this.getTotalOutputQuantityOfConsigment(wboutputManufacturingResult, "price")
+  console.log("totalInputOutput ::::::::::: ", totalInputOutput);
+  inputCostWithWaste = totalInputOutput[0]
+  outputCostManufacturingFee = totalInputOutput[1]
+  totalOutputQuantity = totalInputOutput[2]
+  if(totalOutputQuantity == 0) {
+    avgFabricPrice = 0
+  } else {
+    avgFabricPrice = (inputCostWithWaste + outputCostManufacturingFee) / totalOutputQuantity
+  }
+
   return avgFabricPrice
 }
 
 exports.calcAvgFabricPriceDollar = async (wbInputManufacturingResult, wboutputManufacturingResult) => {
+  // let inputCostWithWaste = 0
+  // let outputCostManufacturingFee = 0
+  // let avgFabricPrice = 0
+  // inputCostWithWaste = wbInputManufacturingResult.map(function (a) { return parseFloat(a['quantity_with_waste']) * parseFloat(a['price_dollar']) }).reduce((acc, value) => acc + value, 0);
+  // outputCostManufacturingFee = wboutputManufacturingResult[0].quantity * parseFloat(wboutputManufacturingResult[0].manufacturing_fee)
+  // avgFabricPrice = (inputCostWithWaste + outputCostManufacturingFee) / wboutputManufacturingResult[0].quantity
+  
   let inputCostWithWaste = 0
   let outputCostManufacturingFee = 0
   let avgFabricPrice = 0
-  inputCostWithWaste = wbInputManufacturingResult.map(function (a) { return parseFloat(a['quantity_with_waste']) * parseFloat(a['price_dollar']) }).reduce((acc, value) => acc + value, 0);
-  outputCostManufacturingFee = wboutputManufacturingResult[0].quantity * parseFloat(wboutputManufacturingResult[0].manufacturing_fee)
-  avgFabricPrice = (inputCostWithWaste + outputCostManufacturingFee) / wboutputManufacturingResult[0].quantity
+  let totalOutputQuantity = 0
+  let totalInputOutput = await this.getTotalOutputQuantityOfConsigment(wboutputManufacturingResult, "price_dollar")
+  console.log("totalInputOutput ::::::::::: ", totalInputOutput);
+  inputCostWithWaste = totalInputOutput[0]
+  outputCostManufacturingFee = totalInputOutput[1]
+  totalOutputQuantity = totalInputOutput[2]
+  if(totalOutputQuantity == 0) {
+    avgFabricPrice = 0
+  } else {
+    avgFabricPrice = (inputCostWithWaste + outputCostManufacturingFee) / totalOutputQuantity
+  }
+
   return avgFabricPrice
 }
+
+exports.getTotalInputQuantityOfConsigment = async (wbOutputManufacturingResult, totalInputCostWithWaste, priceType) => {
+  let whereCluse = {};
+  whereCluse[`${wbManufacturingInputOutputTableName}.wb_manufacturing_output_id`] = wbOutputManufacturingResult.id;
+  whereCluse[`${wbManufacturingInputOutputTableName}.is_deleted`] = 0;
+  whereCluse[`${wbManufacturingInputOutputTableName}.is_active`] = 1;
+
+  const selectInputsManufaturingResults = await wbManufacturingInputOutputQueries.select(whereCluse)
+  console.log("selectInputsManufaturingResults ::: ", selectInputsManufaturingResults);
+  if (Array.isArray(selectInputsManufaturingResults) && selectInputsManufaturingResults.length > 0) {
+    for (let j = 0; j < selectInputsManufaturingResults.length; j++) {
+      const selectInputsManufaturing = selectInputsManufaturingResults[j];
+      
+      let wbInputManufacturingWhereCluse = {};
+      wbInputManufacturingWhereCluse[`${wbManufacturingInputTableName}.id`] = selectInputsManufaturing.wb_manufacturing_input_id;
+      wbInputManufacturingWhereCluse[`${wbManufacturingInputTableName}.is_deleted`] = 0;
+      wbInputManufacturingWhereCluse[`${wbManufacturingInputTableName}.is_active`] = 1;
+      const selectWbInputManufacturingResult = await wbManufacturingInputQueries.selectOne(wbInputManufacturingWhereCluse)
+      if (Array.isArray(selectWbInputManufacturingResult) && selectWbInputManufacturingResult.length > 0) {
+        totalInputCostWithWaste = totalInputCostWithWaste + ( parseFloat(selectWbInputManufacturingResult[0].quantity_with_waste) * parseFloat(selectWbInputManufacturingResult[0][priceType]) )
+      }
+    }
+  } else {
+    return 0
+  }
+  return totalInputCostWithWaste
+}
+
+exports.getTotalOutputQuantityOfConsigment = async (wbOutputManufacturingResult, priceType) => {
+  let totalInputCostWithWaste = 0
+  let totalOutputCostManufacturingFee = 0
+  let totalOutputQuantity = 0
+
+  let whereCluse = {};
+  whereCluse[`${wbManufacturingOutputTableName}.consigment_manufacturing_id`] = wbOutputManufacturingResult[0].consigment_manufacturing_id;
+  whereCluse[`${wbManufacturingOutputTableName}.fabric_id`] = wbOutputManufacturingResult[0].fabric_id;
+  whereCluse[`${wbManufacturingOutputTableName}.is_deleted`] = 0;
+  whereCluse[`${wbManufacturingOutputTableName}.is_active`] = 1;
+
+  const selectOutputManufaturingResults = await wbManufacturingOutputQueries.select(whereCluse)
+  if (Array.isArray(selectOutputManufaturingResults) && selectOutputManufaturingResults.length > 0) {
+    for (let i = 0; i < selectOutputManufaturingResults.length; i++) {
+      const selectOutputManufaturingElement = selectOutputManufaturingResults[i];
+      totalOutputCostManufacturingFee = totalOutputCostManufacturingFee + (selectOutputManufaturingElement.quantity * parseFloat(selectOutputManufaturingElement.manufacturing_fee))
+      totalOutputQuantity = totalOutputQuantity + selectOutputManufaturingElement.quantity
+      
+      // input
+      const selectInputManufaturingResults = await this.getTotalInputQuantityOfConsigment(selectOutputManufaturingElement, totalInputCostWithWaste, priceType)
+      totalInputCostWithWaste = totalInputCostWithWaste + selectInputManufaturingResults
+
+    }
+  } else {
+    return [0, 0, 0]
+  }
+  if(totalInputCostWithWaste == 0) {
+    return [0, 0, 0] 
+  } else {
+    return [totalInputCostWithWaste, totalOutputCostManufacturingFee, totalOutputQuantity]
+  }
+  }
