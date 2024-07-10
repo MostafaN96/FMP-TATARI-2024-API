@@ -23,7 +23,7 @@ exports.create = async (waPurchaseOrderDetails) => {
 
     for (let i = 0; i < waPurchaseOrderDetails.items.length; i++) {
         waPurchaseOrderDetails.items[i].waPurchaseOrderDetailsId = trans.transform();
-        waPurchaseOrderDetails.items[i].consigmentYarnNumber = waPurchaseOrderDetails.orderName
+        waPurchaseOrderDetails.items[i].consigmentYarnNumber = waPurchaseOrderDetails.name
 
         // For Add wa requisition (optional)
         waPurchaseOrderDetails.items[i].orderDetailsId = waPurchaseOrderDetails.items[i].waPurchaseOrderDetailsId

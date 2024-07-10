@@ -22,7 +22,10 @@ const { fabricTableName, wbTableName, wcTableName,
   weReconciliationRequisitionTableName, wcExecuteOrderRequisitionDetailsTableName, 
   wcExecuteOrderRequisitionTableName, consigmentManufacturingTableName, 
   weTransitionBetweenWHRequisitionDetailsTableName, weTransitionBetweenWHRequisitionTableName, 
-  wcTransitionBetweenWHRequisitionDetailsTableName, wcTransitionBetweenWHRequisitionTableName 
+  wcTransitionBetweenWHRequisitionDetailsTableName, wcTransitionBetweenWHRequisitionTableName, 
+  weExecuteOrderRequisitionDetailsTableName,
+  weExecuteOrderRequisitionTableName,
+  weReturnSellRequisitionTableName
 } = require("../../../util/database-tables-name");
 
 exports.insert = async (fabric) => {
@@ -1343,6 +1346,70 @@ exports.selectStoredWeFabrics = async (whereCluseArray, isGreaterThanZero = 1) =
             `${weTableName}.we_transition_between_wh_requisitions_details_id`,
             `${weTransitionBetweenWHRequisitionDetailsTableName}.id`)
           .where(whereCluseArray[3])
+          .andWhere(
+            (qb) => {
+              if (isGreaterThanZero) {
+                qb.where(`${weTableName}.current_quantity`, ">", "0")
+              } else {
+                qb.where(`${weTableName}.current_quantity`, ">=", "0")
+              }
+            })
+        // .groupBy(`${wcReconciliationRequisitionDetailsTableName}.spinning_id`)
+      })
+      .union(function () {
+        this.select([
+          `${weTableName}.id as we_id`,
+          `${fabricTableName}.id as dyed_fabric_id`,
+          `${fabricTableName}.name as dyed_fabric_name`,
+          `${fabricTableName}.dyeing_code`,
+          `${fabricTableName}.code as dyed_fabric_code`,
+          `${weExecuteOrderRequisitionDetailsTableName}.quantity`,
+          knex.raw('? as dyeing_id', ''),
+          `${weTableName}.current_quantity`
+        ])
+          .from(`${fabricTableName}`)
+          .innerJoin(`${weExecuteOrderRequisitionDetailsTableName}`,
+            `${weExecuteOrderRequisitionDetailsTableName}.dyed_fabric_id`,
+            `${fabricTableName}.id`)
+            .innerJoin(`${weExecuteOrderRequisitionTableName}`,
+            `${weExecuteOrderRequisitionTableName}.id`,
+            `${weExecuteOrderRequisitionDetailsTableName}.we_execute_order_requisition_id`)
+          .innerJoin(`${weTableName}`,
+            `${weTableName}.we_execute_order_requisition_details_id`,
+            `${weExecuteOrderRequisitionDetailsTableName}.id`)
+          .where(whereCluseArray[4])
+          .andWhere(
+            (qb) => {
+              if (isGreaterThanZero) {
+                qb.where(`${weTableName}.current_quantity`, ">", "0")
+              } else {
+                qb.where(`${weTableName}.current_quantity`, ">=", "0")
+              }
+            })
+        // .groupBy(`${wcReconciliationRequisitionDetailsTableName}.spinning_id`)
+      })
+      .union(function () {
+        this.select([
+          `${weTableName}.id as we_id`,
+          `${fabricTableName}.id as dyed_fabric_id`,
+          `${fabricTableName}.name as dyed_fabric_name`,
+          `${fabricTableName}.dyeing_code`,
+          `${fabricTableName}.code as dyed_fabric_code`,
+          `${weReturnSellRequisitionDetailsTableName}.quantity`,
+          knex.raw('? as dyeing_id', ''),
+          `${weTableName}.current_quantity`
+        ])
+          .from(`${fabricTableName}`)
+          .innerJoin(`${weReturnSellRequisitionDetailsTableName}`,
+            `${weReturnSellRequisitionDetailsTableName}.dyed_fabric_id`,
+            `${fabricTableName}.id`)
+            .innerJoin(`${weReturnSellRequisitionTableName}`,
+            `${weReturnSellRequisitionTableName}.id`,
+            `${weReturnSellRequisitionDetailsTableName}.we_return_sell_requisition_id`)
+          .innerJoin(`${weTableName}`,
+            `${weTableName}.we_return_sell_requisition_details_id`,
+            `${weReturnSellRequisitionDetailsTableName}.id`)
+          .where(whereCluseArray[5])
           .andWhere(
             (qb) => {
               if (isGreaterThanZero) {

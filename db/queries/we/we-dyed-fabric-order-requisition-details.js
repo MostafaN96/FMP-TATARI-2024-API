@@ -136,7 +136,7 @@ exports.selectByRequisitionIds = async (whereCluse, requisitionsIds) => {
         `${colorTableName}.name as color_name`,
     ])
     .sum(`${weDyedFabricOrderRequisitionDetailsTableName}.initial_quantity  as quantity`)
-    .sum(`${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity`)
+    .sum(`${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity as current_quantity`)
         .from(`${weDyedFabricOrderRequisitionDetailsTableName}`)
         .innerJoin(`${weDyedFabricOrderRequisitionTableName}`,
             `${weDyedFabricOrderRequisitionTableName}.id`,

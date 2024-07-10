@@ -128,7 +128,7 @@ exports.update = async (wdTransportWcWdRequisitionDetails) => {
         // Update wd transport wc wd requisition Without Quantity
         callArray.push(wdTransportWcWdQueries.update({
             date: wdTransportWcWdRequisitionDetails.date,
-            note: wdTransportWcWdRequisitionDetails.note
+            note: wdTransportWcWdRequisitionDetails.note,
         },
             {
                 id: wdTransportWcWdRequisitionDetails.wdTransportWcWdId

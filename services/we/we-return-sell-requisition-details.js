@@ -33,22 +33,24 @@ exports.create = async (weReturnSellRequisitionDetails) => {
         for (let i = 0; i < weReturnSellRequisitionDetails.items.length; i++) {
             weReturnSellRequisitionDetails.items[i].weReturnSellRequisitionDetailsId = trans.transform();
 
-            const results = await weReturnSellRequisitionDetailsQueries.insert(weReturnSellRequisitionDetails, weReturnSellRequisitionDetails.items[i]);
-            if (!results) {
-                return constants.insertError;
-            } else {
-                let newQuantity = parseFloat(weReturnSellRequisitionDetails.items[i].quantity)
+            let newQuantity = parseFloat(weReturnSellRequisitionDetails.items[i].quantity)
 
-                // select we sell requisition details for decrement current quantity
-                let weWhereCluse = {}
-                weWhereCluse[`${weSellRequisitionDetailsTableName}.id`] = weReturnSellRequisitionDetails.items[i].weSellRequisitionDetailsId
-                const fabricsStoredInWeSellRequisitionDetailsResult = await weSellRequisitionDetailsQueries.selectOne(weWhereCluse)
-                if (fabricsStoredInWeSellRequisitionDetailsResult[0] != null) {
+            // select we sell requisition details for decrement current quantity
+            let weWhereCluse = {}
+            weWhereCluse[`${weSellRequisitionDetailsTableName}.id`] = weReturnSellRequisitionDetails.items[i].weSellRequisitionDetailsId
+            const fabricsStoredInWeSellRequisitionDetailsResult = await weSellRequisitionDetailsQueries.selectOne(weWhereCluse)
+            if (Array.isArray(fabricsStoredInWeSellRequisitionDetailsResult) && fabricsStoredInWeSellRequisitionDetailsResult.length > 0) {
 
-                    for (let j = 0; j < fabricsStoredInWeSellRequisitionDetailsResult.length; j++) {
-                        const fabricStoredInWeSellRequisitionDetails = fabricsStoredInWeSellRequisitionDetailsResult[j];
-                        let currentQuantity = fabricStoredInWeSellRequisitionDetails.current_quantity
-                        let updatedQuantity = 0
+                const fabricStoredInWeSellRequisitionDetails = fabricsStoredInWeSellRequisitionDetailsResult[0];
+                let currentQuantity = fabricStoredInWeSellRequisitionDetails.current_quantity
+                let updatedQuantity = 0
+
+                if (currentQuantity >= newQuantity) {
+
+                    const results = await weReturnSellRequisitionDetailsQueries.insert(weReturnSellRequisitionDetails, weReturnSellRequisitionDetails.items[i]);
+                    if (!results) {
+                        return constants.insertError;
+                    } else {
 
                         // decrement we sell requisition details CurrentQuantity
                         let returnedQuantityObj = await weSellRequisitionDetailsService.decrementWeSellRequisitionDetailsCurrentQuantity(newQuantity, currentQuantity, fabricStoredInWeSellRequisitionDetails, updatedQuantity);
@@ -56,41 +58,31 @@ exports.create = async (weReturnSellRequisitionDetails) => {
                         updatedQuantity = returnedQuantityObj.updatedQuantity
                         weReturnSellRequisitionDetails.items[i].weSellRequisitionDetailsId = fabricStoredInWeSellRequisitionDetails.id
                         weReturnSellRequisitionDetails.items[i].updatedQuantity = updatedQuantity
-                        weReturnSellRequisitionDetails.items[i].weId = fabricStoredInWeSellRequisitionDetails.we_id;
 
+                        weReturnSellRequisitionDetails.items[i].weId = trans.transform();
                         // Add we Return Requisition Details sell details
                         await weReturnSellRequisitionDetailsReturnDetailsService.create(weReturnSellRequisitionDetails, weReturnSellRequisitionDetails.items[i])
 
-                        // Add we_return_sell_requisition_details_we
-                        await weReturnSellRequisitionDetailsWeQueries.insert(weReturnSellRequisitionDetails, weReturnSellRequisitionDetails.items[i])
+                        // insert we
+                        const weResult = await weQueries.createForReturnSell(weReturnSellRequisitionDetails, weReturnSellRequisitionDetails.items[i])
+                        if (weResult) {
+                            // Add we_return_sell_requisition_details_we
+                            await weReturnSellRequisitionDetailsWeQueries.insert(weReturnSellRequisitionDetails, weReturnSellRequisitionDetails.items[i])
+                        }
 
-                        // select we Record
-                        let weWhereCluse = {}
-                        weWhereCluse[`${weTableName}.id`] = fabricStoredInWeSellRequisitionDetails.we_id
-                        const selectWeRecord = await weQueries.selectOne(weWhereCluse)
-                        if(selectWeRecord[0] != null) {
-                            // Update we
-                            await weQueries.update({
-                                current_quantity: selectWeRecord[0].current_quantity + updatedQuantity
-                            }, {
-                                id: fabricStoredInWeSellRequisitionDetails.we_id
-                            })
-                        }
-                        // Enter to if condition when stock runs out
-                        if (newQuantity == 0) {
-                            break;
-                        }
                     }
 
-                } else {
-                    return {
-                        ...constants.wrongQuantity,
-                        spentQuantity: 0,
-                        newQuantity: newQuantity
-                    }
                 }
 
+
+            } else {
+                return {
+                    ...constants.wrongQuantity,
+                    spentQuantity: 0,
+                    newQuantity: newQuantity
+                }
             }
+
         }
         return { ...constants.insertSuccess, ...{ id: weReturnSellRequisitionDetails.id } };
     } else {

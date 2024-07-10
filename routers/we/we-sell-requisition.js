@@ -22,4 +22,12 @@ router.post(
   weSellRequisitionController.create
 );
 
+router.put(
+  "/confirm-received/:id",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  middleWeres.checkInt(),
+  weSellRequisitionController.confirmReceived
+);
+
 module.exports = router;

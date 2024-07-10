@@ -34,3 +34,24 @@ exports.isValid = (weSellRequisition) => {
         return false;
     }
 };
+
+exports.isValidConfirmReceived = (weSellRequisition) => {
+    const weSellRequisitionSchema = joi.object({
+        isApproved: validations.joiBoolean,
+        personid: validations.joiText(3, 50),
+        ipaddress: validations.joiText(3, 50),
+    });
+    const joiErrors = weSellRequisitionSchema.validate(weSellRequisition);
+
+    try {
+        if (joiErrors.error) {
+            console.log(joiErrors.error.details);
+            return false;
+        } else {
+            return true;
+        }
+    } catch (error) {
+        console.log(joiErrors.error.details);
+        return false;
+    }
+};

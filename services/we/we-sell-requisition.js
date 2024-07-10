@@ -7,7 +7,8 @@ const generalQueries = require("../../db/queries/general/general");
 
 // Util
 const constants = require("../../util/constants");
-const weSellRequisitionTableName = require("../../util/database-tables-name").weSellRequisitionTableName;
+const constantsPayloads = require("../../util/constants-payloads");
+const { weSellRequisitionTableName } = require("../../util/database-tables-name");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -39,4 +40,31 @@ exports.create = async (weSellRequisition) => {
 exports.select = async () => {
     const results = await weSellRequisitionQueries.select();
     return results;
+  };
+  
+exports.confirm = async (weSellRequisition) => {
+    // check is found
+    const isFound = await weSellRequisitionQueries.selectOne({
+      ...constantsPayloads.deletePayload,
+      id: weSellRequisition.id,
+    });
+    if (isFound[0] != null) {
+        let whereCluse = {};
+        whereCluse[`${weSellRequisitionTableName}.id`] = weSellRequisition.id;
+        whereCluse[`${weSellRequisitionTableName}.is_deleted`] = 0;
+        whereCluse[`${weSellRequisitionTableName}.is_active`] = 1;
+  
+        // updated
+        const updateResults = await weSellRequisitionQueries.update(
+            {
+                is_approved: weSellRequisition.isApproved
+            }, whereCluse);
+        if (updateResults) {
+          return constants.updateSuccess;
+        } else {
+          return constants.updateError;
+        }
+    } else {
+      return constants.itemNotFound;
+    }
   };

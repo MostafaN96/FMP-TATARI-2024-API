@@ -31,8 +31,8 @@ exports.create = async (wdFormDyeingRequisitionDetails) => {
 
             // select Wd for decrement current quantity
             const fabricsStoredInWdResult = await wdService.selectRecordsByDyeingByFabricByConsigmentDyeing(
-                wdFormDyeingRequisitionDetails.dyeingId, 
-                wdFormDyeingRequisitionDetails.items[i].fabricId, 
+                wdFormDyeingRequisitionDetails.dyeingId,
+                wdFormDyeingRequisitionDetails.items[i].fabricId,
                 wdFormDyeingRequisitionDetails.items[i].consigmentDyeingId)
             if (fabricsStoredInWdResult[0] != null) {
 
@@ -91,47 +91,47 @@ exports.createForOrder = async (wdFormDyeingRequisitionDetails) => {
             // add in wd_form_order_details_wd_form_details
             const wdFormOrderDetailsWdFormDetailsResult = await wdFormOrderDetailsWdFormDetailsQueries.insert(wdFormDyeingRequisitionDetails, wdFormDyeingRequisitionDetails.items[i]);
 
-            if(wdFormOrderDetailsWdFormDetailsResult) {
+            if (wdFormOrderDetailsWdFormDetailsResult) {
                 let newQuantity = parseFloat(wdFormDyeingRequisitionDetails.items[i].quantity)
                 let newQuantityFixed = parseFloat(wdFormDyeingRequisitionDetails.items[i].quantity)
 
                 // select Wd for decrement current quantity
                 const fabricsStoredInWdResult = await wdService.selectRecordsByDyeingByFabricByConsigmentDyeing(
-                    wdFormDyeingRequisitionDetails.dyeingId, 
-                    wdFormDyeingRequisitionDetails.items[i].fabricId, 
+                    wdFormDyeingRequisitionDetails.dyeingId,
+                    wdFormDyeingRequisitionDetails.items[i].fabricId,
                     wdFormDyeingRequisitionDetails.items[i].consigmentDyeingId)
                 if (fabricsStoredInWdResult[0] != null) {
-    
+
                     for (let j = 0; j < fabricsStoredInWdResult.length; j++) {
                         const fabricStoredInWd = fabricsStoredInWdResult[j];
                         let currentQuantity = fabricStoredInWd.current_quantity
                         let updatedQuantity = 0
-    
+
                         // decrement wd CurrentQuantity
                         let returnedQuantityObj = await wdService.decrementWdCurrentQuantity(newQuantity, currentQuantity, fabricStoredInWd, updatedQuantity);
                         newQuantity = returnedQuantityObj.newQuantity
                         updatedQuantity = returnedQuantityObj.updatedQuantity
                         wdFormDyeingRequisitionDetails.items[i].wdId = fabricStoredInWd.id
                         wdFormDyeingRequisitionDetails.items[i].updatedQuantity = updatedQuantity
-    
+
                         // Add wdFormDyeingRequisitionDetailsWd
                         await wdFormDyeingRequisitionDetailsWdService.create(wdFormDyeingRequisitionDetails, wdFormDyeingRequisitionDetails.items[i])
-    
+
                         // Enter to if condition when stock runs out
                         if (newQuantity == 0) {
                             break;
                         }
                     }
-    
+
                     // Add Dyeing Services
                     for (let k = 0; k < wdFormDyeingRequisitionDetails.items[i].dyeingServices.length; k++) {
                         const dyeingService = wdFormDyeingRequisitionDetails.items[i].dyeingServices[k];
-    
+
                         // Add wd_form_dyeing_requisition_details_dyeing_services
                         await wdFormDyeingRequisitionDetailsDyeingServicesService.create(wdFormDyeingRequisitionDetails, wdFormDyeingRequisitionDetails.items[i], dyeingService[0])
-    
+
                     }
-    
+
                     // decrement form_current_quantity
                     // Step (1) select record of order
                     const selectOneDyeingOrder = await wdDyeingOrderRequisitionDetailsQueries.selectOne({
@@ -143,7 +143,7 @@ exports.createForOrder = async (wdFormDyeingRequisitionDetails) => {
                         let orderDyeingCurrentQuantity = selectOneDyeingOrder[0].dyeing_current_quantity
                         let deferenceQuantityOrderCurentQuantity = newQuantityFixed - orderFormCurrentQuantity
 
-                        if(deferenceQuantityOrderCurentQuantity > orderFormCurrentQuantity) {
+                        if (deferenceQuantityOrderCurentQuantity > orderFormCurrentQuantity) {
                             await wdDyeingOrderRequisitionDetailsQueries.update({
                                 quantity: orderQuantity + deferenceQuantityOrderCurentQuantity,
                                 form_current_quantity: (orderFormCurrentQuantity + deferenceQuantityOrderCurentQuantity) - newQuantityFixed,
@@ -165,7 +165,7 @@ exports.createForOrder = async (wdFormDyeingRequisitionDetails) => {
                             id: wdFormDyeingRequisitionDetails.items[i].wdFormDyeingOrderRequisitionDetailsId
                         })
                     }
-    
+
                 } else {
                     return {
                         ...constants.wrongQuantity,
@@ -176,7 +176,7 @@ exports.createForOrder = async (wdFormDyeingRequisitionDetails) => {
             } else {
                 return constants.insertError;
             }
-            
+
 
         }
     }
@@ -263,6 +263,7 @@ exports.update = async (wdFormDyeingRequisitionDetails) => {
                 })
         )
         await Promise.all(callArray)
+        this.updatePreparedDyeing(wdFormDyeingRequisitionDetails)
 
         // let currentQuantity = wdResult[0].current_quantity
         let oldQuantity = isFound[0].quantity
@@ -490,13 +491,15 @@ exports.updateByOrder = async (wdFormDyeingRequisitionDetails) => {
                 fabric_width: wdFormDyeingRequisitionDetails.fabricWidth,
                 fabric_quantity_m2: wdFormDyeingRequisitionDetails.fabricQuantityM2,
                 document: wdFormDyeingRequisitionDetails.document,
-                statement: wdFormDyeingRequisitionDetails.statement
+                statement: wdFormDyeingRequisitionDetails.statement,
+                is_prepare_dyeing: wdFormDyeingRequisitionDetails.isPrepareDyeing
             },
                 {
                     id: wdFormDyeingRequisitionDetails.id
                 })
         )
         await Promise.all(callArray)
+        this.updatePreparedDyeing(wdFormDyeingRequisitionDetails)
 
         // let currentQuantity = wdResult[0].current_quantity
         let oldQuantity = isFound[0].quantity
@@ -714,3 +717,18 @@ exports.updateByOrder = async (wdFormDyeingRequisitionDetails) => {
         return constants.itemNotFound;
     }
 };
+
+exports.updatePreparedDyeing = async (wdFormDyeingRequisitionDetails) => {
+    await wdFormDyeingRequisitionQueries.update({
+        is_prepare_dyeing: wdFormDyeingRequisitionDetails.isPrepareDyeing
+    },
+        {
+            id: wdFormDyeingRequisitionDetails.wdFormDyeingRequisitionId
+        })
+    await wdFormDyeingRequisitionDetailsQueries.update({
+        is_prepare_dyeing: wdFormDyeingRequisitionDetails.isPrepareDyeing
+    },
+        {
+            wd_form_dyeing_requisition_id: wdFormDyeingRequisitionDetails.wdFormDyeingRequisitionId
+        })
+}

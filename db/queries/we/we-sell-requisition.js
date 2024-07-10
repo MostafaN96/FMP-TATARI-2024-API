@@ -55,6 +55,8 @@ exports.select = async () => {
     `${weSellRequisitionTableName}.number`,
     `${weSellRequisitionTableName}.date`,
     `${weSellRequisitionTableName}.note`,
+    `${weSellRequisitionTableName}.is_approved`,
+    knex.raw(`CASE WHEN ${weSellRequisitionTableName}.is_approved = '1' THEN 'تم التسليم' ELSE 'بانتظار التسليم' END as approved_state`),
     `${weSellRequisitionTableName}.is_direct`,
     `${bussinessmanTableName}.name as seller_name`,
     knex.raw(`CONCAT(${deliveryCarTableName}.drivers_name, 

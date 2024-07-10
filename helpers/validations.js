@@ -14,8 +14,14 @@ const joiNotRequiredText = (min, max) => joi.alternatives().try(
     joi.string().allow('').allow(null).not().empty().trim().normalize().min(min).max(max).pattern(patterns.text).not()
 )
 const joiBoolean =  joi.boolean().allow(0,1,'0','1',true,false).not().empty()
-const joiNumber = (min, max) => joi.string().not().empty().trim().normalize().min(min).max(max).pattern(patterns.number).required()
-const joiNotRequiredNumber = (min, max) => joi.string().allow('').allow(null).not().empty().trim().normalize().min(min).max(max).pattern(patterns.emptyNumber)
+const joiNumber = (min, max) => joi.alternatives().try(
+    joi.number().required(),
+    joi.string().not().empty().trim().normalize().min(min).max(max).pattern(patterns.number).required()
+)
+const joiNotRequiredNumber = (min, max) => joi.alternatives().try(
+    joi.number().allow(null),
+    joi.string().allow('').allow(null).not().empty().trim().normalize().min(min).max(max).pattern(patterns.emptyNumber)
+)
 const joiNumberStartByZero = (min, max) => joi.string().not().empty().trim().normalize().min(min).max(max).pattern(patterns.numberStartByZero).required()
 const joiNumberAny = joi.number().integer().required()
 

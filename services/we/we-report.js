@@ -72,8 +72,24 @@ exports.selectInventoryTotal = async (fabricReport) => {
     transitionBetweenToWHWhereCluse[`${weTableName}.is_active`] = 1;
     transitionBetweenToWHWhereCluse[`${weTableName}.type`] = constantsPayloads.transportBetweenType;
 
+    let executeOrderWhereCluse = {};
+    executeOrderWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    executeOrderWhereCluse[`${fabricTableName}.is_active`] = 1;
+    executeOrderWhereCluse[`${weTableName}.is_deleted`] = 0;
+    executeOrderWhereCluse[`${weTableName}.is_active`] = 1;
+    executeOrderWhereCluse[`${weTableName}.type`] = constantsPayloads.executeOrderType;
+
+    let returnSellWhereCluse = {};
+    returnSellWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    returnSellWhereCluse[`${fabricTableName}.is_active`] = 1;
+    returnSellWhereCluse[`${weTableName}.is_deleted`] = 0;
+    returnSellWhereCluse[`${weTableName}.is_active`] = 1;
+    returnSellWhereCluse[`${weTableName}.type`] = constantsPayloads.returnSellType;
+
     let whereCluseArray = [fabricWhereCluse, reconciliationWhereCluse, 
-        dyeingWhereCluse, transitionBetweenToWHWhereCluse]
+        dyeingWhereCluse, transitionBetweenToWHWhereCluse, executeOrderWhereCluse,
+        returnSellWhereCluse
+    ]
 
     // select fabrics 
     const fabrics = (fabricReport.isShowClosedBalances == 1) ? await fabricQueries.selectStoredWeFabrics(whereCluseArray, 0) : await fabricQueries.selectStoredWeFabrics(whereCluseArray)
@@ -233,6 +249,7 @@ exports.selectInventoryDetails = async (fabricReport) => {
     let returnSellWhereCluse = {};
     returnSellWhereCluse[`${weTableName}.is_deleted`] = 0;
     returnSellWhereCluse[`${weTableName}.is_active`] = 1;
+    returnSellWhereCluse[`${weTableName}.type`] = constantsPayloads.returnSellType;
 
     let transitionBetweenToWHWhereCluse = {};
     transitionBetweenToWHWhereCluse[`${fabricTableName}.is_deleted`] = 0;
@@ -241,8 +258,16 @@ exports.selectInventoryDetails = async (fabricReport) => {
     transitionBetweenToWHWhereCluse[`${weTableName}.is_active`] = 1;
     transitionBetweenToWHWhereCluse[`${weTableName}.type`] = constantsPayloads.transportBetweenType;
 
+    let executeOrderWhereCluse = {};
+    executeOrderWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    executeOrderWhereCluse[`${fabricTableName}.is_active`] = 1;
+    executeOrderWhereCluse[`${weTableName}.is_deleted`] = 0;
+    executeOrderWhereCluse[`${weTableName}.is_active`] = 1;
+    executeOrderWhereCluse[`${weTableName}.type`] = constantsPayloads.executeOrderType;
+
     let whereCluseArray = [fabricWhereCluse, reconciliationWhereCluse, dyeingWhereCluse, 
-        returnSellWhereCluse, transitionBetweenToWHWhereCluse]
+        returnSellWhereCluse, transitionBetweenToWHWhereCluse, executeOrderWhereCluse
+    ]
 
     // select warehousesFabrics 
     const warehousesFabrics = (fabricReport.isShowClosedBalances == 1) ? await weQueries.selectStoredWarehouseAndFabricForReport(whereCluseArray, 0) : await weQueries.selectStoredWarehouseAndFabricForReport(whereCluseArray)

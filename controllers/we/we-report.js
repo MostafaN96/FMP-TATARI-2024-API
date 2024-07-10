@@ -97,7 +97,6 @@ exports.inquireFabricAvilabilityByDyeingOrderRequisitionTotalReportWe = async (r
   // logging
   const bodyPalod = request.body;
 
-
   const results = await weReportService.inquireFabricAvilabilityByDyeingOrderRequisitionTotalReportWe(bodyPalod);
     response.status(200).json(results);
 };

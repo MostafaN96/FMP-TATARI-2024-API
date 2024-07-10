@@ -40,6 +40,7 @@ exports.isValidUpdate = (weReturnRequisition) => {
         date: validations.joiText(5, 50),
         note: validations.joiNotRequiredText(0, 100000),
         price: validations.joiNumber(1, 60),
+        priceDollar: validations.joiNotRequiredText(0, 50),
         quantity: validations.joiNumber(1, 60),
         numberFabricPieces: validations.joiNumber(1, 60),
         statement: validations.joiNotRequiredText(0, 10000),

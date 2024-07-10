@@ -98,3 +98,28 @@ exports.updateForOrder = async (request, response) => {
       return response.status(200).json(updateResults);
   }
 };
+
+exports.confirmReceived = async (request, response) => {
+  // logging
+  const { id } = request.params;
+  const bodyPalod = request.body;
+
+  // Validation
+  if (!wbManufacturingOutputValidation.isValidConfirmReceived(bodyPalod)) {
+    // logging
+    return response.status(400).json(constants.invalidDataResponse);
+  }
+  bodyPalod.id = id;
+  const updateResults = await wbManufacturingOutputService.confirm(bodyPalod);
+  // response
+  switch (updateResults) {
+    case constants.itemNotFound:
+      return response.status(200).json(constants.itemNotFound);
+    case constants.updateError:
+      return response.status(500).json(constants.updateError);
+    case constants.updateSuccess:
+      return response.status(200).json(constants.updateSuccess);
+      default:
+      return response.status(200).json(updateResults);
+  }
+};

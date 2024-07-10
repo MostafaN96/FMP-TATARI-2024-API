@@ -4,7 +4,8 @@ exports.isValid = (waPurchaseOrder) => {
     const waPurchaseOrderSchema = joi.object({
         addType: validations.joiNotRequiredText(0, 1000),
         supplierId: validations.joiText(15, 30),
-        orderId: validations.joiNotRequiredText(0, 100000),
+        orderId:joi.array(),
+        // orderId: validations.joiNotRequiredText(0, 100000),
         orderName: validations.joiNotRequiredText(0, 100000),
         date: validations.joiText(5, 50),
         name: validations.joiText(1, 90),

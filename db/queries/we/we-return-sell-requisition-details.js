@@ -17,10 +17,16 @@ exports.insert = async (weReturnSellRequisitionDetails, items) => {
       we_return_sell_requisition_id: weReturnSellRequisitionDetails.id,
       dyed_fabric_id: items.dyedFabricId,
       warehouse_id: items.warehouseId,
+      color_category_id: items.colorCategoryId,
+      color_id: items.colorId,
+      consigment_dyeing_id: items.consigmentDyeingId,
+      color_code: items.colorCode,
+      work_order_number: items.workOrderNumber,
       price: items.price,
       price_dollar: items.priceDollar,
       quantity: items.quantity,
       fabric_piece: items.numberFabricPieces,
+      color_code: items.colorCode,
       statement: items.statement,
       is_defect: items.isDefect,
       creator_id: weReturnSellRequisitionDetails.personid,
@@ -86,147 +92,25 @@ exports.selectByRequisitionId = async (requisitionId) => {
       `${fabricTableName}.code as dyed_fabric_code`,
       `${colorCategoryTableName}.name as color_category_name`,
       `${colorTableName}.name as color_name`,
-      `${weAddRequisitionDetailsTableName}.color_code`,
-      `${weAddRequisitionDetailsTableName}.work_order_number`,
+      `${weReturnSellRequisitionDetailsTableName}.color_code`,
+      `${weReturnSellRequisitionDetailsTableName}.work_order_number`,
     ])
       .from(`${weReturnSellRequisitionDetailsTableName}`)
       .innerJoin(`${weReturnSellRequisitionTableName}`, `${weReturnSellRequisitionTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.we_return_sell_requisition_id`)
       .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${weReturnSellRequisitionTableName}.seller_id`)
       .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.dyed_fabric_id`)
-      .innerJoin(`${weReturnSellRequisitionDetailsReturnDetailsTableName}`,
-        `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_return_sell_requisition_details_id`,
-        `${weReturnSellRequisitionDetailsTableName}.id`)
-      .innerJoin(`${weSellRequisitionDetailsTableName}`,
-        `${weSellRequisitionDetailsTableName}.id`,
-        `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_sell_requisition_details_id`)
-      .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
-        `${weSellRequisitionDetailsWeTableName}.we_sell_requisition_details_id`,
-        `${weSellRequisitionDetailsTableName}.id`)
       .innerJoin(`${weTableName}`,
-        `${weTableName}.id`,
-        `${weSellRequisitionDetailsWeTableName}.we_id`)
-      .innerJoin(`${weAddRequisitionDetailsTableName}`,
-        `${weAddRequisitionDetailsTableName}.id`,
-        `${weTableName}.we_add_requisition_details_id`)
+        `${weTableName}.we_return_sell_requisition_details_id`,
+        `${weReturnSellRequisitionDetailsTableName}.id`)
       .innerJoin(`${colorCategoryTableName}`,
         `${colorCategoryTableName}.id`,
-        `${weAddRequisitionDetailsTableName}.color_category_id`)
+        `${weReturnSellRequisitionDetailsTableName}.color_category_id`)
       .innerJoin(`${colorTableName}`,
         `${colorTableName}.id`,
-        `${weAddRequisitionDetailsTableName}.color_id`)
+        `${weReturnSellRequisitionDetailsTableName}.color_id`)
       .where(whereCluse)
       .andWhere(`${weReturnSellRequisitionDetailsTableName}.quantity`, ">", 0)
       .as('t1')
-      .union(function () {
-        this.select([
-          `${weReturnSellRequisitionDetailsTableName}.id`,
-          `${weReturnSellRequisitionDetailsTableName}.price`,
-          `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
-          `${weReturnSellRequisitionDetailsTableName}.quantity`,
-          `${weReturnSellRequisitionDetailsTableName}.fabric_piece`,
-          `${weReturnSellRequisitionDetailsTableName}.statement`,
-          `${weReturnSellRequisitionDetailsTableName}.is_defect`,
-          `${weReturnSellRequisitionTableName}.id as requisition_id`,
-          `${weReturnSellRequisitionTableName}.number`,
-          `${weReturnSellRequisitionTableName}.date`,
-          `${weReturnSellRequisitionTableName}.note`,
-          `${bussinessmanTableName}.id as seller_id`,
-          `${bussinessmanTableName}.name as seller_name`,
-          `${fabricTableName}.name as dyed_fabric_name`,
-          `${fabricTableName}.code as dyed_fabric_code`,
-          `${colorCategoryTableName}.name as color_category_name`,
-          `${colorTableName}.name as color_name`,
-          `${weReconciliationRequisitionDetailsTableName}.color_code`,
-          `${weReconciliationRequisitionDetailsTableName}.work_order_number`,
-        ])
-          .from(`${weReturnSellRequisitionDetailsTableName}`)
-          .innerJoin(`${weReturnSellRequisitionTableName}`, `${weReturnSellRequisitionTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.we_return_sell_requisition_id`)
-          .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${weReturnSellRequisitionTableName}.seller_id`)
-          .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.dyed_fabric_id`)
-          .innerJoin(`${weReturnSellRequisitionDetailsReturnDetailsTableName}`,
-            `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_return_sell_requisition_details_id`,
-            `${weReturnSellRequisitionDetailsTableName}.id`)
-          .innerJoin(`${weSellRequisitionDetailsTableName}`,
-            `${weSellRequisitionDetailsTableName}.id`,
-            `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_sell_requisition_details_id`)
-          .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
-            `${weSellRequisitionDetailsWeTableName}.we_sell_requisition_details_id`,
-            `${weSellRequisitionDetailsTableName}.id`)
-          .innerJoin(`${weTableName}`,
-            `${weTableName}.id`,
-            `${weSellRequisitionDetailsWeTableName}.we_id`)
-
-          .innerJoin(`${weReconciliationRequisitionDetailsWeTableName}`,
-            `${weReconciliationRequisitionDetailsWeTableName}.we_id`,
-            `${weTableName}.id`)
-          .innerJoin(`${weReconciliationRequisitionDetailsTableName}`,
-            `${weReconciliationRequisitionDetailsTableName}.id`,
-            `${weReconciliationRequisitionDetailsWeTableName}.we_reconcilition_requisition_details_id`)
-          .innerJoin(`${colorCategoryTableName}`,
-            `${colorCategoryTableName}.id`,
-            `${weReconciliationRequisitionDetailsTableName}.color_category_id`)
-          .innerJoin(`${colorTableName}`,
-            `${colorTableName}.id`,
-            `${weReconciliationRequisitionDetailsTableName}.color_id`)
-          .where(whereCluse)
-          .andWhere(`${weReturnSellRequisitionDetailsTableName}.quantity`, ">", 0)
-      })
-      .union(function () {
-        this.select([
-          `${weReturnSellRequisitionDetailsTableName}.id`,
-          `${weReturnSellRequisitionDetailsTableName}.price`,
-          `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
-          `${weReturnSellRequisitionDetailsTableName}.quantity`,
-          `${weReturnSellRequisitionDetailsTableName}.fabric_piece`,
-          `${weReturnSellRequisitionDetailsTableName}.statement`,
-          `${weReturnSellRequisitionDetailsTableName}.is_defect`,
-          `${weReturnSellRequisitionTableName}.id as requisition_id`,
-          `${weReturnSellRequisitionTableName}.number`,
-          `${weReturnSellRequisitionTableName}.date`,
-          `${weReturnSellRequisitionTableName}.note`,
-          `${bussinessmanTableName}.id as seller_id`,
-          `${bussinessmanTableName}.name as seller_name`,
-          `${fabricTableName}.name as dyed_fabric_name`,
-          `${fabricTableName}.code as dyed_fabric_code`,
-          `${colorCategoryTableName}.name as color_category_name`,
-          `${colorTableName}.name as color_name`,
-          `${anointedColorsPricesTableName}.code as color_code`,
-          `${wdDyeingRequisitionDetailsTableName}.work_order_number`,
-        ])
-          .from(`${weReturnSellRequisitionDetailsTableName}`)
-          .innerJoin(`${weReturnSellRequisitionTableName}`, `${weReturnSellRequisitionTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.we_return_sell_requisition_id`)
-          .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${weReturnSellRequisitionTableName}.seller_id`)
-          .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.dyed_fabric_id`)
-          .innerJoin(`${weReturnSellRequisitionDetailsReturnDetailsTableName}`,
-            `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_return_sell_requisition_details_id`,
-            `${weReturnSellRequisitionDetailsTableName}.id`)
-          .innerJoin(`${weSellRequisitionDetailsTableName}`,
-            `${weSellRequisitionDetailsTableName}.id`,
-            `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_sell_requisition_details_id`)
-          .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
-            `${weSellRequisitionDetailsWeTableName}.we_sell_requisition_details_id`,
-            `${weSellRequisitionDetailsTableName}.id`)
-          .innerJoin(`${weTableName}`,
-            `${weTableName}.id`,
-            `${weSellRequisitionDetailsWeTableName}.we_id`)
-          .innerJoin(`${wdDyeingRequisitionDetailsTableName}`,
-            `${wdDyeingRequisitionDetailsTableName}.id`,
-            `${weTableName}.wd_dyeing_requisition_details_id`)
-          .innerJoin(`${wdFormDyeingRequisitionDetailsTableName}`,
-            `${wdFormDyeingRequisitionDetailsTableName}.id`,
-            `${wdDyeingRequisitionDetailsTableName}.wd_form_dyeing_requisition_details_id`)
-          .innerJoin(`${anointedColorsPricesTableName}`,
-            `${anointedColorsPricesTableName}.id`,
-            `${wdFormDyeingRequisitionDetailsTableName}.dyeing_colors_prices_id`)
-          .innerJoin(`${colorCategoryTableName}`,
-            `${colorCategoryTableName}.id`,
-            `${anointedColorsPricesTableName}.color_category_id`)
-          .innerJoin(`${colorTableName}`,
-            `${colorTableName}.id`,
-            `${anointedColorsPricesTableName}.color_id`)
-          .where(whereCluse)
-          .andWhere(`${weReturnSellRequisitionDetailsTableName}.quantity`, ">", 0)
-      })
   }).as('temp')
   .groupBy(`id`)
     .then((data) => {
@@ -254,7 +138,9 @@ exports.selectTotalByFabricId = async (dyedFabricId) => {
         knex.raw('? as input_output', '1')
       ],
     )
-    .innerJoin(`${weReturnSellRequisitionTableName}`, `${weReturnSellRequisitionTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.we_return_sell_requisition_id`)
+    .innerJoin(`${weReturnSellRequisitionTableName}`, 
+    `${weReturnSellRequisitionTableName}.id`, 
+    `${weReturnSellRequisitionDetailsTableName}.we_return_sell_requisition_id`)
     .where(whereCluse)
     .andWhere(`${weReturnSellRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -325,180 +211,34 @@ exports.selectTotalDetailsByFabricId = async (dyedFabricId) => {
       knex.raw('? as is_return_type', 'return_warning'),
       `${colorCategoryTableName}.name as color_category_name`,
       `${colorTableName}.name as color_name`,
-      `${weAddRequisitionDetailsTableName}.color_code`,
-      `${weAddRequisitionDetailsTableName}.work_order_number`,
+      `${weReturnSellRequisitionDetailsTableName}.color_code`,
+      `${weReturnSellRequisitionDetailsTableName}.work_order_number`,
       knex.raw(
         `CASE WHEN ${weReturnSellRequisitionDetailsTableName}.is_defect = '1' THEN 'مرتجع صرف عيب بضاعة' 
         ELSE 'مرتجع صرف عادي'  
         END as return_type_name`),
-        knex.raw('? as consigment_dyeing_number', ''),
-    ])
+        `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+      ])
       .from(`${weReturnSellRequisitionDetailsTableName}`)
       .innerJoin(`${weReturnSellRequisitionTableName}`, `${weReturnSellRequisitionTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.we_return_sell_requisition_id`)
       .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${weReturnSellRequisitionTableName}.seller_id`)
       .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.dyed_fabric_id`)
       .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.warehouse_id`)
-      .innerJoin(`${weReturnSellRequisitionDetailsReturnDetailsTableName}`,
-        `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_return_sell_requisition_details_id`,
-        `${weReturnSellRequisitionDetailsTableName}.id`)
-      .innerJoin(`${weSellRequisitionDetailsTableName}`,
-        `${weSellRequisitionDetailsTableName}.id`,
-        `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_sell_requisition_details_id`)
-      .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
-        `${weSellRequisitionDetailsWeTableName}.we_sell_requisition_details_id`,
-        `${weSellRequisitionDetailsTableName}.id`)
       .innerJoin(`${weTableName}`,
-        `${weTableName}.id`,
-        `${weSellRequisitionDetailsWeTableName}.we_id`)
-      .innerJoin(`${weAddRequisitionDetailsTableName}`,
-        `${weAddRequisitionDetailsTableName}.id`,
-        `${weTableName}.we_add_requisition_details_id`)
+        `${weTableName}.we_return_sell_requisition_details_id`,
+        `${weReturnSellRequisitionDetailsTableName}.id`)
       .innerJoin(`${colorCategoryTableName}`,
         `${colorCategoryTableName}.id`,
-        `${weAddRequisitionDetailsTableName}.color_category_id`)
+        `${weReturnSellRequisitionDetailsTableName}.color_category_id`)
       .innerJoin(`${colorTableName}`,
         `${colorTableName}.id`,
-        `${weAddRequisitionDetailsTableName}.color_id`)
+        `${weReturnSellRequisitionDetailsTableName}.color_id`)
+        .innerJoin(`${consigmentDyeingTableName}`, 
+        `${consigmentDyeingTableName}.id`, 
+        `${weReturnSellRequisitionDetailsTableName}.consigment_dyeing_id`)
       .where(whereCluse)
       .andWhere(`${weReturnSellRequisitionDetailsTableName}.quantity`, ">", 0)
       .as('t1')
-      .union(function () {
-        this.select([
-          `${weReturnSellRequisitionDetailsTableName}.id`,
-          `${weReturnSellRequisitionDetailsTableName}.price`,
-          `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
-          `${weReturnSellRequisitionDetailsTableName}.quantity`,
-          `${weReturnSellRequisitionDetailsTableName}.fabric_piece`,
-          `${weReturnSellRequisitionDetailsTableName}.statement`,
-          `${weReturnSellRequisitionDetailsTableName}.is_defect`,
-          `${weReturnSellRequisitionTableName}.id as requisition_id`,
-          `${weReturnSellRequisitionTableName}.number`,
-          `${weReturnSellRequisitionTableName}.date`,
-          `${weReturnSellRequisitionTableName}.note`,
-          `${bussinessmanTableName}.id as seller_id`,
-          `${bussinessmanTableName}.name as seller_name`,
-          `${fabricTableName}.name as fabric_name`,
-      `${fabricTableName}.code as fabric_code`,
-          `${fabricTableName}.dyeing_code`,
-          `${warehouseTableName}.name as warehouse_name`,
-          knex.raw('? as type_of_requisition', 'اذن مرتجع صرف'),
-          knex.raw('? as input_output', '1'),
-          knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
-          knex.raw('? as is_return_type', 'return_warning'),
-          `${colorCategoryTableName}.name as color_category_name`,
-          `${colorTableName}.name as color_name`,
-          `${weReconciliationRequisitionDetailsTableName}.color_code`,
-          `${weReconciliationRequisitionDetailsTableName}.work_order_number`,
-          knex.raw(
-            `CASE WHEN ${weReturnSellRequisitionDetailsTableName}.is_defect = '1' THEN 'مرتجع صرف عيب بضاعة' 
-            ELSE 'مرتجع صرف عادي'  
-            END as return_type_name`),
-            knex.raw('? as consigment_dyeing_number', ''),
-        ])
-          .from(`${weReturnSellRequisitionDetailsTableName}`)
-          .innerJoin(`${weReturnSellRequisitionTableName}`, `${weReturnSellRequisitionTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.we_return_sell_requisition_id`)
-          .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${weReturnSellRequisitionTableName}.seller_id`)
-          .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.dyed_fabric_id`)
-          .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.warehouse_id`)
-          .innerJoin(`${weReturnSellRequisitionDetailsReturnDetailsTableName}`,
-            `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_return_sell_requisition_details_id`,
-            `${weReturnSellRequisitionDetailsTableName}.id`)
-          .innerJoin(`${weSellRequisitionDetailsTableName}`,
-            `${weSellRequisitionDetailsTableName}.id`,
-            `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_sell_requisition_details_id`)
-          .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
-            `${weSellRequisitionDetailsWeTableName}.we_sell_requisition_details_id`,
-            `${weSellRequisitionDetailsTableName}.id`)
-          .innerJoin(`${weTableName}`,
-            `${weTableName}.id`,
-            `${weSellRequisitionDetailsWeTableName}.we_id`)
-
-          .innerJoin(`${weReconciliationRequisitionDetailsWeTableName}`,
-            `${weReconciliationRequisitionDetailsWeTableName}.we_id`,
-            `${weTableName}.id`)
-          .innerJoin(`${weReconciliationRequisitionDetailsTableName}`,
-            `${weReconciliationRequisitionDetailsTableName}.id`,
-            `${weReconciliationRequisitionDetailsWeTableName}.we_reconcilition_requisition_details_id`)
-          .innerJoin(`${colorCategoryTableName}`,
-            `${colorCategoryTableName}.id`,
-            `${weReconciliationRequisitionDetailsTableName}.color_category_id`)
-          .innerJoin(`${colorTableName}`,
-            `${colorTableName}.id`,
-            `${weReconciliationRequisitionDetailsTableName}.color_id`)
-          .where(whereCluse)
-          .andWhere(`${weReturnSellRequisitionDetailsTableName}.quantity`, ">", 0)
-      })
-      .union(function () {
-        this.select([
-          `${weReturnSellRequisitionDetailsTableName}.id`,
-          `${weReturnSellRequisitionDetailsTableName}.price`,
-          `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
-          `${weReturnSellRequisitionDetailsTableName}.quantity`,
-          `${weReturnSellRequisitionDetailsTableName}.fabric_piece`,
-          `${weReturnSellRequisitionDetailsTableName}.statement`,
-          `${weReturnSellRequisitionDetailsTableName}.is_defect`,
-          `${weReturnSellRequisitionTableName}.id as requisition_id`,
-          `${weReturnSellRequisitionTableName}.number`,
-          `${weReturnSellRequisitionTableName}.date`,
-          `${weReturnSellRequisitionTableName}.note`,
-          `${bussinessmanTableName}.id as seller_id`,
-          `${bussinessmanTableName}.name as seller_name`,
-          `${fabricTableName}.name as fabric_name`,
-      `${fabricTableName}.code as fabric_code`,
-          `${fabricTableName}.dyeing_code`,
-          `${warehouseTableName}.name as warehouse_name`,
-          knex.raw('? as type_of_requisition', 'اذن مرتجع صرف'),
-          knex.raw('? as input_output', '1'),
-          knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
-          knex.raw('? as is_return_type', 'return_warning'),
-          `${colorCategoryTableName}.name as color_category_name`,
-          `${colorTableName}.name as color_name`,
-          `${anointedColorsPricesTableName}.code as color_code`,
-          `${wdDyeingRequisitionDetailsTableName}.work_order_number`,
-          knex.raw(
-            `CASE WHEN ${weReturnSellRequisitionDetailsTableName}.is_defect = '1' THEN 'مرتجع صرف عيب بضاعة' 
-            ELSE 'مرتجع صرف عادي'  
-            END as return_type_name`),
-                      `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
-
-        ])
-          .from(`${weReturnSellRequisitionDetailsTableName}`)
-          .innerJoin(`${weReturnSellRequisitionTableName}`, `${weReturnSellRequisitionTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.we_return_sell_requisition_id`)
-          .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${weReturnSellRequisitionTableName}.seller_id`)
-          .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.dyed_fabric_id`)
-          .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.warehouse_id`)
-          .innerJoin(`${weReturnSellRequisitionDetailsReturnDetailsTableName}`,
-            `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_return_sell_requisition_details_id`,
-            `${weReturnSellRequisitionDetailsTableName}.id`)
-          .innerJoin(`${weSellRequisitionDetailsTableName}`,
-            `${weSellRequisitionDetailsTableName}.id`,
-            `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_sell_requisition_details_id`)
-          .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
-            `${weSellRequisitionDetailsWeTableName}.we_sell_requisition_details_id`,
-            `${weSellRequisitionDetailsTableName}.id`)
-          .innerJoin(`${weTableName}`,
-            `${weTableName}.id`,
-            `${weSellRequisitionDetailsWeTableName}.we_id`)
-          .innerJoin(`${wdDyeingRequisitionDetailsTableName}`,
-            `${wdDyeingRequisitionDetailsTableName}.id`,
-            `${weTableName}.wd_dyeing_requisition_details_id`)
-          .innerJoin(`${wdFormDyeingRequisitionDetailsTableName}`,
-            `${wdFormDyeingRequisitionDetailsTableName}.id`,
-            `${wdDyeingRequisitionDetailsTableName}.wd_form_dyeing_requisition_details_id`)
-          .innerJoin(`${anointedColorsPricesTableName}`,
-            `${anointedColorsPricesTableName}.id`,
-            `${wdFormDyeingRequisitionDetailsTableName}.dyeing_colors_prices_id`)
-          .innerJoin(`${colorCategoryTableName}`,
-            `${colorCategoryTableName}.id`,
-            `${anointedColorsPricesTableName}.color_category_id`)
-          .innerJoin(`${colorTableName}`,
-            `${colorTableName}.id`,
-            `${anointedColorsPricesTableName}.color_id`)
-                        .innerJoin(`${consigmentDyeingTableName}`, `${consigmentDyeingTableName}.id`, `${wdFormDyeingRequisitionDetailsTableName}.consigment_dyeing_id`)
-
-          .where(whereCluse)
-          .andWhere(`${weReturnSellRequisitionDetailsTableName}.quantity`, ">", 0)
-      })
   }).as('temp')
   .groupBy(`id`)
     .then((data) => {
@@ -597,175 +337,33 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, dyedFabric
       knex.raw('? as is_return_type', 'return_warning'),
       `${colorCategoryTableName}.name as color_category_name`,
       `${colorTableName}.name as color_name`,
-      `${weAddRequisitionDetailsTableName}.color_code`,
-      `${weAddRequisitionDetailsTableName}.work_order_number`,
+      `${weReturnSellRequisitionDetailsTableName}.color_code`,
+      `${weReturnSellRequisitionDetailsTableName}.work_order_number`,
       knex.raw(
         `CASE WHEN ${weReturnSellRequisitionDetailsTableName}.is_defect = '1' THEN 'مرتجع صرف عيب بضاعة' 
         ELSE 'مرتجع صرف عادي'  
         END as return_type_name`),
-        knex.raw('? as consigment_dyeing_number', ''),
+        `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
     ])
       .from(`${weReturnSellRequisitionDetailsTableName}`)
       .innerJoin(`${weReturnSellRequisitionTableName}`, `${weReturnSellRequisitionTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.we_return_sell_requisition_id`)
       .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${weReturnSellRequisitionTableName}.seller_id`)
       .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.dyed_fabric_id`)
-      .innerJoin(`${weReturnSellRequisitionDetailsReturnDetailsTableName}`,
-        `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_return_sell_requisition_details_id`,
-        `${weReturnSellRequisitionDetailsTableName}.id`)
-      .innerJoin(`${weSellRequisitionDetailsTableName}`,
-        `${weSellRequisitionDetailsTableName}.id`,
-        `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_sell_requisition_details_id`)
-      .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
-        `${weSellRequisitionDetailsWeTableName}.we_sell_requisition_details_id`,
-        `${weSellRequisitionDetailsTableName}.id`)
       .innerJoin(`${weTableName}`,
-        `${weTableName}.id`,
-        `${weSellRequisitionDetailsWeTableName}.we_id`)
-      .innerJoin(`${weAddRequisitionDetailsTableName}`,
-        `${weAddRequisitionDetailsTableName}.id`,
-        `${weTableName}.we_add_requisition_details_id`)
+        `${weTableName}.we_return_sell_requisition_details_id`,
+        `${weReturnSellRequisitionDetailsTableName}.id`)
       .innerJoin(`${colorCategoryTableName}`,
         `${colorCategoryTableName}.id`,
-        `${weAddRequisitionDetailsTableName}.color_category_id`)
+        `${weReturnSellRequisitionDetailsTableName}.color_category_id`)
       .innerJoin(`${colorTableName}`,
         `${colorTableName}.id`,
-        `${weAddRequisitionDetailsTableName}.color_id`)
+        `${weReturnSellRequisitionDetailsTableName}.color_id`)
+        .innerJoin(`${consigmentDyeingTableName}`, 
+        `${consigmentDyeingTableName}.id`, 
+        `${weReturnSellRequisitionDetailsTableName}.consigment_dyeing_id`)
       .where(whereCluse)
       .andWhere(`${weReturnSellRequisitionDetailsTableName}.quantity`, ">", 0)
       .as('t1')
-      .union(function () {
-        this.select([
-          `${weReturnSellRequisitionDetailsTableName}.id`,
-          `${weReturnSellRequisitionDetailsTableName}.price`,
-          `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
-          `${weReturnSellRequisitionDetailsTableName}.quantity`,
-          `${weReturnSellRequisitionDetailsTableName}.fabric_piece`,
-          `${weReturnSellRequisitionDetailsTableName}.statement`,
-          `${weReturnSellRequisitionDetailsTableName}.is_defect`,
-          `${weReturnSellRequisitionTableName}.id as requisition_id`,
-          `${weReturnSellRequisitionTableName}.number`,
-          `${weReturnSellRequisitionTableName}.date`,
-          `${weReturnSellRequisitionTableName}.note`,
-          `${bussinessmanTableName}.id as seller_id`,
-          `${bussinessmanTableName}.name as seller_name`,
-          `${fabricTableName}.name as fabric_name`,
-      `${fabricTableName}.code as fabric_code`,
-          `${fabricTableName}.dyeing_code`,
-          knex.raw('? as type_of_requisition', 'اذن مرتجع صرف'),
-          knex.raw('? as input_output', '1'),
-          knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
-          knex.raw('? as is_return_type', 'return_warning'),
-          `${colorCategoryTableName}.name as color_category_name`,
-          `${colorTableName}.name as color_name`,
-          `${weReconciliationRequisitionDetailsTableName}.color_code`,
-          `${weReconciliationRequisitionDetailsTableName}.work_order_number`,
-          knex.raw(
-            `CASE WHEN ${weReturnSellRequisitionDetailsTableName}.is_defect = '1' THEN 'مرتجع صرف عيب بضاعة' 
-            ELSE 'مرتجع صرف عادي'  
-            END as return_type_name`),
-            knex.raw('? as consigment_dyeing_number', ''),
-        ])
-          .from(`${weReturnSellRequisitionDetailsTableName}`)
-          .innerJoin(`${weReturnSellRequisitionTableName}`, `${weReturnSellRequisitionTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.we_return_sell_requisition_id`)
-          .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${weReturnSellRequisitionTableName}.seller_id`)
-          .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.dyed_fabric_id`)
-          .innerJoin(`${weReturnSellRequisitionDetailsReturnDetailsTableName}`,
-            `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_return_sell_requisition_details_id`,
-            `${weReturnSellRequisitionDetailsTableName}.id`)
-          .innerJoin(`${weSellRequisitionDetailsTableName}`,
-            `${weSellRequisitionDetailsTableName}.id`,
-            `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_sell_requisition_details_id`)
-          .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
-            `${weSellRequisitionDetailsWeTableName}.we_sell_requisition_details_id`,
-            `${weSellRequisitionDetailsTableName}.id`)
-          .innerJoin(`${weTableName}`,
-            `${weTableName}.id`,
-            `${weSellRequisitionDetailsWeTableName}.we_id`)
-
-          .innerJoin(`${weReconciliationRequisitionDetailsWeTableName}`,
-            `${weReconciliationRequisitionDetailsWeTableName}.we_id`,
-            `${weTableName}.id`)
-          .innerJoin(`${weReconciliationRequisitionDetailsTableName}`,
-            `${weReconciliationRequisitionDetailsTableName}.id`,
-            `${weReconciliationRequisitionDetailsWeTableName}.we_reconcilition_requisition_details_id`)
-          .innerJoin(`${colorCategoryTableName}`,
-            `${colorCategoryTableName}.id`,
-            `${weReconciliationRequisitionDetailsTableName}.color_category_id`)
-          .innerJoin(`${colorTableName}`,
-            `${colorTableName}.id`,
-            `${weReconciliationRequisitionDetailsTableName}.color_id`)
-          .where(whereCluse)
-          .andWhere(`${weReturnSellRequisitionDetailsTableName}.quantity`, ">", 0)
-      })
-      .union(function () {
-        this.select([
-          `${weReturnSellRequisitionDetailsTableName}.id`,
-          `${weReturnSellRequisitionDetailsTableName}.price`,
-          `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
-          `${weReturnSellRequisitionDetailsTableName}.quantity`,
-          `${weReturnSellRequisitionDetailsTableName}.fabric_piece`,
-          `${weReturnSellRequisitionDetailsTableName}.statement`,
-          `${weReturnSellRequisitionDetailsTableName}.is_defect`,
-          `${weReturnSellRequisitionTableName}.id as requisition_id`,
-          `${weReturnSellRequisitionTableName}.number`,
-          `${weReturnSellRequisitionTableName}.date`,
-          `${weReturnSellRequisitionTableName}.note`,
-          `${bussinessmanTableName}.id as seller_id`,
-          `${bussinessmanTableName}.name as seller_name`,
-          `${fabricTableName}.name as fabric_name`,
-      `${fabricTableName}.code as fabric_code`,
-          `${fabricTableName}.dyeing_code`,
-          knex.raw('? as type_of_requisition', 'اذن مرتجع صرف'),
-          knex.raw('? as input_output', '1'),
-          knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
-          knex.raw('? as is_return_type', 'return_warning'),
-          `${colorCategoryTableName}.name as color_category_name`,
-          `${colorTableName}.name as color_name`,
-          `${anointedColorsPricesTableName}.code as color_code`,
-          `${wdDyeingRequisitionDetailsTableName}.work_order_number`,
-          knex.raw(
-            `CASE WHEN ${weReturnSellRequisitionDetailsTableName}.is_defect = '1' THEN 'مرتجع صرف عيب بضاعة' 
-            ELSE 'مرتجع صرف عادي'  
-            END as return_type_name`),
-        `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
-
-        ])
-          .from(`${weReturnSellRequisitionDetailsTableName}`)
-          .innerJoin(`${weReturnSellRequisitionTableName}`, `${weReturnSellRequisitionTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.we_return_sell_requisition_id`)
-          .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${weReturnSellRequisitionTableName}.seller_id`)
-          .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.dyed_fabric_id`)
-          .innerJoin(`${weReturnSellRequisitionDetailsReturnDetailsTableName}`,
-            `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_return_sell_requisition_details_id`,
-            `${weReturnSellRequisitionDetailsTableName}.id`)
-          .innerJoin(`${weSellRequisitionDetailsTableName}`,
-            `${weSellRequisitionDetailsTableName}.id`,
-            `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_sell_requisition_details_id`)
-          .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
-            `${weSellRequisitionDetailsWeTableName}.we_sell_requisition_details_id`,
-            `${weSellRequisitionDetailsTableName}.id`)
-          .innerJoin(`${weTableName}`,
-            `${weTableName}.id`,
-            `${weSellRequisitionDetailsWeTableName}.we_id`)
-          .innerJoin(`${wdDyeingRequisitionDetailsTableName}`,
-            `${wdDyeingRequisitionDetailsTableName}.id`,
-            `${weTableName}.wd_dyeing_requisition_details_id`)
-          .innerJoin(`${wdFormDyeingRequisitionDetailsTableName}`,
-            `${wdFormDyeingRequisitionDetailsTableName}.id`,
-            `${wdDyeingRequisitionDetailsTableName}.wd_form_dyeing_requisition_details_id`)
-          .innerJoin(`${anointedColorsPricesTableName}`,
-            `${anointedColorsPricesTableName}.id`,
-            `${wdFormDyeingRequisitionDetailsTableName}.dyeing_colors_prices_id`)
-          .innerJoin(`${colorCategoryTableName}`,
-            `${colorCategoryTableName}.id`,
-            `${anointedColorsPricesTableName}.color_category_id`)
-          .innerJoin(`${colorTableName}`,
-            `${colorTableName}.id`,
-            `${anointedColorsPricesTableName}.color_id`)
-                        .innerJoin(`${consigmentDyeingTableName}`, `${consigmentDyeingTableName}.id`, `${wdFormDyeingRequisitionDetailsTableName}.consigment_dyeing_id`)
-
-          .where(whereCluse)
-          .andWhere(`${weReturnSellRequisitionDetailsTableName}.quantity`, ">", 0)
-      })
   }).as('temp')
   .groupBy(`id`)
     .then((data) => {
@@ -923,165 +521,27 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
       knex.raw('? as is_return_type', 'return_warning'),
       `${colorCategoryTableName}.name as color_category_name`,
       `${colorTableName}.name as color_name`,
-      `${weAddRequisitionDetailsTableName}.color_code`,
-      `${weAddRequisitionDetailsTableName}.work_order_number`,
+      `${weReturnSellRequisitionDetailsTableName}.color_code`,
+      `${weReturnSellRequisitionDetailsTableName}.work_order_number`,
     ])
       .from(`${weReturnSellRequisitionDetailsTableName}`)
       .innerJoin(`${weReturnSellRequisitionTableName}`, `${weReturnSellRequisitionTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.we_return_sell_requisition_id`)
       .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${weReturnSellRequisitionTableName}.seller_id`)
       .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.dyed_fabric_id`)
       .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.warehouse_id`)
-      .innerJoin(`${weReturnSellRequisitionDetailsReturnDetailsTableName}`,
-        `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_return_sell_requisition_details_id`,
-        `${weReturnSellRequisitionDetailsTableName}.id`)
-      .innerJoin(`${weSellRequisitionDetailsTableName}`,
-        `${weSellRequisitionDetailsTableName}.id`,
-        `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_sell_requisition_details_id`)
-      .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
-        `${weSellRequisitionDetailsWeTableName}.we_sell_requisition_details_id`,
-        `${weSellRequisitionDetailsTableName}.id`)
       .innerJoin(`${weTableName}`,
-        `${weTableName}.id`,
-        `${weSellRequisitionDetailsWeTableName}.we_id`)
-      .innerJoin(`${weAddRequisitionDetailsTableName}`,
-        `${weAddRequisitionDetailsTableName}.id`,
-        `${weTableName}.we_add_requisition_details_id`)
+        `${weTableName}.we_return_sell_requisition_details_id`,
+        `${weReturnSellRequisitionDetailsTableName}.id`)
       .innerJoin(`${colorCategoryTableName}`,
         `${colorCategoryTableName}.id`,
-        `${weAddRequisitionDetailsTableName}.color_category_id`)
+        `${weReturnSellRequisitionDetailsTableName}.color_category_id`)
       .innerJoin(`${colorTableName}`,
         `${colorTableName}.id`,
-        `${weAddRequisitionDetailsTableName}.color_id`)
+        `${weReturnSellRequisitionDetailsTableName}.color_id`)
         .where(`${weReturnSellRequisitionTableName}.date`, `>=`, bodyPaylod.startDate)
         .andWhere(`${weReturnSellRequisitionTableName}.date`, `<=`, bodyPaylod.endDate)
       .andWhere(`${weReturnSellRequisitionDetailsTableName}.quantity`, ">", 0)
       .as('t1')
-      .union(function () {
-        this.select([
-          `${weReturnSellRequisitionDetailsTableName}.id`,
-          `${weReturnSellRequisitionDetailsTableName}.price`,
-          `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
-          `${weReturnSellRequisitionDetailsTableName}.quantity`,
-          `${weReturnSellRequisitionDetailsTableName}.fabric_piece`,
-          `${weReturnSellRequisitionDetailsTableName}.statement`,
-          `${weReturnSellRequisitionDetailsTableName}.is_defect`,
-          `${weReturnSellRequisitionTableName}.id as requisition_id`,
-          `${weReturnSellRequisitionTableName}.number`,
-          `${weReturnSellRequisitionTableName}.date`,
-          `${weReturnSellRequisitionTableName}.note`,
-          `${bussinessmanTableName}.id as seller_id`,
-          `${bussinessmanTableName}.name as seller_name`,
-          `${fabricTableName}.name as fabric_name`,
-      `${fabricTableName}.code as fabric_code`,
-          `${fabricTableName}.dyeing_code`,
-          `${warehouseTableName}.name as warehouse_name`,
-          knex.raw('? as type_of_requisition', 'اذن مرتجع صرف'),
-          knex.raw('? as input_output', '1'),
-          knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
-          knex.raw('? as is_return_type', 'return_warning'),
-          `${colorCategoryTableName}.name as color_category_name`,
-          `${colorTableName}.name as color_name`,
-          `${weReconciliationRequisitionDetailsTableName}.color_code`,
-          `${weReconciliationRequisitionDetailsTableName}.work_order_number`,
-        ])
-          .from(`${weReturnSellRequisitionDetailsTableName}`)
-          .innerJoin(`${weReturnSellRequisitionTableName}`, `${weReturnSellRequisitionTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.we_return_sell_requisition_id`)
-          .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${weReturnSellRequisitionTableName}.seller_id`)
-          .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.dyed_fabric_id`)
-          .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.warehouse_id`)
-          .innerJoin(`${weReturnSellRequisitionDetailsReturnDetailsTableName}`,
-            `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_return_sell_requisition_details_id`,
-            `${weReturnSellRequisitionDetailsTableName}.id`)
-          .innerJoin(`${weSellRequisitionDetailsTableName}`,
-            `${weSellRequisitionDetailsTableName}.id`,
-            `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_sell_requisition_details_id`)
-          .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
-            `${weSellRequisitionDetailsWeTableName}.we_sell_requisition_details_id`,
-            `${weSellRequisitionDetailsTableName}.id`)
-          .innerJoin(`${weTableName}`,
-            `${weTableName}.id`,
-            `${weSellRequisitionDetailsWeTableName}.we_id`)
-
-          .innerJoin(`${weReconciliationRequisitionDetailsWeTableName}`,
-            `${weReconciliationRequisitionDetailsWeTableName}.we_id`,
-            `${weTableName}.id`)
-          .innerJoin(`${weReconciliationRequisitionDetailsTableName}`,
-            `${weReconciliationRequisitionDetailsTableName}.id`,
-            `${weReconciliationRequisitionDetailsWeTableName}.we_reconcilition_requisition_details_id`)
-          .innerJoin(`${colorCategoryTableName}`,
-            `${colorCategoryTableName}.id`,
-            `${weReconciliationRequisitionDetailsTableName}.color_category_id`)
-          .innerJoin(`${colorTableName}`,
-            `${colorTableName}.id`,
-            `${weReconciliationRequisitionDetailsTableName}.color_id`)
-            .where(`${weReturnSellRequisitionTableName}.date`, `>=`, bodyPaylod.startDate)
-            .andWhere(`${weReturnSellRequisitionTableName}.date`, `<=`, bodyPaylod.endDate)
-          .andWhere(`${weReturnSellRequisitionDetailsTableName}.quantity`, ">", 0)
-      })
-      .union(function () {
-        this.select([
-          `${weReturnSellRequisitionDetailsTableName}.id`,
-          `${weReturnSellRequisitionDetailsTableName}.price`,
-          `${weReturnSellRequisitionDetailsTableName}.price_dollar`,
-          `${weReturnSellRequisitionDetailsTableName}.quantity`,
-          `${weReturnSellRequisitionDetailsTableName}.fabric_piece`,
-          `${weReturnSellRequisitionDetailsTableName}.statement`,
-          `${weReturnSellRequisitionDetailsTableName}.is_defect`,
-          `${weReturnSellRequisitionTableName}.id as requisition_id`,
-          `${weReturnSellRequisitionTableName}.number`,
-          `${weReturnSellRequisitionTableName}.date`,
-          `${weReturnSellRequisitionTableName}.note`,
-          `${bussinessmanTableName}.id as seller_id`,
-          `${bussinessmanTableName}.name as seller_name`,
-          `${fabricTableName}.name as fabric_name`,
-      `${fabricTableName}.code as fabric_code`,
-          `${fabricTableName}.dyeing_code`,
-          `${warehouseTableName}.name as warehouse_name`,
-          knex.raw('? as type_of_requisition', 'اذن مرتجع صرف'),
-          knex.raw('? as input_output', '1'),
-          knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
-          knex.raw('? as is_return_type', 'return_warning'),
-          `${colorCategoryTableName}.name as color_category_name`,
-          `${colorTableName}.name as color_name`,
-          `${anointedColorsPricesTableName}.code as color_code`,
-          `${wdDyeingRequisitionDetailsTableName}.work_order_number`,
-        ])
-          .from(`${weReturnSellRequisitionDetailsTableName}`)
-          .innerJoin(`${weReturnSellRequisitionTableName}`, `${weReturnSellRequisitionTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.we_return_sell_requisition_id`)
-          .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${weReturnSellRequisitionTableName}.seller_id`)
-          .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.dyed_fabric_id`)
-          .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.warehouse_id`)
-          .innerJoin(`${weReturnSellRequisitionDetailsReturnDetailsTableName}`,
-            `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_return_sell_requisition_details_id`,
-            `${weReturnSellRequisitionDetailsTableName}.id`)
-          .innerJoin(`${weSellRequisitionDetailsTableName}`,
-            `${weSellRequisitionDetailsTableName}.id`,
-            `${weReturnSellRequisitionDetailsReturnDetailsTableName}.we_sell_requisition_details_id`)
-          .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
-            `${weSellRequisitionDetailsWeTableName}.we_sell_requisition_details_id`,
-            `${weSellRequisitionDetailsTableName}.id`)
-          .innerJoin(`${weTableName}`,
-            `${weTableName}.id`,
-            `${weSellRequisitionDetailsWeTableName}.we_id`)
-          .innerJoin(`${wdDyeingRequisitionDetailsTableName}`,
-            `${wdDyeingRequisitionDetailsTableName}.id`,
-            `${weTableName}.wd_dyeing_requisition_details_id`)
-          .innerJoin(`${wdFormDyeingRequisitionDetailsTableName}`,
-            `${wdFormDyeingRequisitionDetailsTableName}.id`,
-            `${wdDyeingRequisitionDetailsTableName}.wd_form_dyeing_requisition_details_id`)
-          .innerJoin(`${anointedColorsPricesTableName}`,
-            `${anointedColorsPricesTableName}.id`,
-            `${wdFormDyeingRequisitionDetailsTableName}.dyeing_colors_prices_id`)
-          .innerJoin(`${colorCategoryTableName}`,
-            `${colorCategoryTableName}.id`,
-            `${anointedColorsPricesTableName}.color_category_id`)
-          .innerJoin(`${colorTableName}`,
-            `${colorTableName}.id`,
-            `${anointedColorsPricesTableName}.color_id`)
-            .where(`${weReturnSellRequisitionTableName}.date`, `>=`, bodyPaylod.startDate)
-            .andWhere(`${weReturnSellRequisitionTableName}.date`, `<=`, bodyPaylod.endDate)
-          .andWhere(`${weReturnSellRequisitionDetailsTableName}.quantity`, ">", 0)
-      })
   }).as('temp')
     .then((data) => {
       queryResults = data;

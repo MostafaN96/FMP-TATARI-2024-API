@@ -45,4 +45,13 @@ router.put(
   middleWeres.checkInt(),
   wbManufacturingOutputController.updateForOrder
 );
+
+router.put(
+  "/confirm-received/:id",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  middleWeres.checkInt(),
+  wbManufacturingOutputController.confirmReceived
+);
+
 module.exports = router;

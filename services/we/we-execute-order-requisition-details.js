@@ -136,6 +136,7 @@ exports.update = async (weExecuteOrderRequisitionDetails) => {
                 weExecuteOrderRequisitionDetailsQueries.update({
                     price: weExecuteOrderRequisitionDetails.price,
                     price_dollar: weExecuteOrderRequisitionDetails.priceDollar,
+                    fabric_piece: weExecuteOrderRequisitionDetails.numberFabricPieces,
                     note: weExecuteOrderRequisitionDetails.note
                 },
                     {

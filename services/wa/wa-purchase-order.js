@@ -145,7 +145,7 @@ exports.selectClosedOrders = async () => {
 
         let dyeingOrderRequisitions = await weDyedFabricOrderRequisitionDetailsQueries.selectByRequisitionIds(whereCluse, [weDyedFabricOrderRequisitionId])
 
-    for (let i = 0; i < dyeingOrderRequisitions.length; i++) {
+        for (let i = 0; i < dyeingOrderRequisitions.length; i++) {
         const element = dyeingOrderRequisitions[i];
         
         let result = await waReportService.inquireYarnsOfFabricForOrderWa(element, data)
@@ -164,6 +164,29 @@ exports.selectClosedOrders = async () => {
         resultData[0].dyeingOrderRequisition = dyeingOrderRequisitions[0]
     }
     return resultData
+   
+}
+  
+  exports.inquireYarnsOfFabricForOrderWaByOrders = async (weDyedFabricOrdersRequisition) => {
+    let data = []
+    // console.log("weDyedFabricOrdersRequisition ::::::::: ", weDyedFabricOrdersRequisition);
+
+    for (let i = 0; i < weDyedFabricOrdersRequisition.length; i++) {
+        const weDyedFabricOrder = weDyedFabricOrdersRequisition[i];
+
+        const inquireYarnsData = await this.inquireYarnsOfFabricForOrderWa(weDyedFabricOrder.orderId)
+        if (Array.isArray(inquireYarnsData) && inquireYarnsData.length > 0) {
+            if(data.length > 0) {
+                data = [...inquireYarnsData, ...data]
+                data = await this.filterOrderYarnsArray(data)
+            } else {
+                data = inquireYarnsData
+            }
+        }
+        
+    }
+    // console.log("data ::::::::::::: ", data);
+    return data
    
 }
 

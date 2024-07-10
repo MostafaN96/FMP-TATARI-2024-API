@@ -91,6 +91,10 @@ const wb_manufacturing_requisition_status_good_after_check_trans = 'مقبول �
 const wb_manufacturing_requisition_status_not_good_after_check_trans = 'غير مقبول'
 const wb_manufacturing_requisition_status_white_trans = 'ابيض'
 
+const wb_manufacturing_requisition_status_is_approved_1 = 'تم الاستلام'
+const wb_manufacturing_requisition_status_is_approved_0 = 'لم يتم الاستلام'
+
+
 module.exports = {
   insertError,
   insertSuccess,
@@ -118,4 +122,7 @@ module.exports = {
   wb_manufacturing_requisition_status_good_after_check_trans,
   wb_manufacturing_requisition_status_not_good_after_check_trans,
   wb_manufacturing_requisition_status_white_trans,
+
+  wb_manufacturing_requisition_status_is_approved_1,
+  wb_manufacturing_requisition_status_is_approved_0,
 };

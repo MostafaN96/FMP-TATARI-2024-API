@@ -209,6 +209,7 @@ exports.update = async (weDyedFabricOrderRequisitionDetails) => {
             weDyedFabricOrderRequisitionDetailsQueries.update({
                 fabric_width: weDyedFabricOrderRequisitionDetails.fabricWidth,
                 fabric_quantity_m2: weDyedFabricOrderRequisitionDetails.fabricQuantityM2,
+                waste_ratio: weDyedFabricOrderRequisitionDetails.wasteRatio,
                 price: weDyedFabricOrderRequisitionDetails.price,
                 price_dollar: weDyedFabricOrderRequisitionDetails.priceDollar,
                 note: weDyedFabricOrderRequisitionDetails.note2,

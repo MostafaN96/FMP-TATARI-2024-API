@@ -8,6 +8,12 @@ const middleWeres = require("../../middlewares/middlewares");
 const usersType = require("../../util/user-types");
 
 // get Queries
+
+router.get("/max-work-order-number",
+    middleWeres.checkAuth(),
+    middleWeres.checkIdentity(usersType.ADMIN_STR),
+    wdDyeingRequisitionDetailsController.selectMaxWorkOrderNumber);
+    
 router.get("/:id",
     middleWeres.checkAuth(),
     middleWeres.checkIdentity(usersType.ADMIN_STR),

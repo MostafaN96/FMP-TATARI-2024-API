@@ -103,7 +103,7 @@ exports.selectByFabricIdForReport = async (whereCluse) => {
       `${fabricYarnsTableName}.fabric_id`)
       .where(whereCluse)
       .then((data) => {
-        console.log("fabricYarns ::::: data => ", data);
+        // console.log("fabricYarns ::::: data => ", data);
         queryResults = data;
       })
       .catch((error) => console.error(error));

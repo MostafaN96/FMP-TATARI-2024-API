@@ -30,6 +30,11 @@ router.get("/closed-orders",
     middleWeres.checkInt(),
     waPurchaseOrderController.inquireYarnsOfFabricForOrderWa);
 
+  router.post("/inquire-yarns-by-yarn-order-requisition-by-orders",
+    middleWeres.checkAuth(),
+    middleWeres.checkIdentity(usersType.ADMIN_STR),
+    waPurchaseOrderController.inquireYarnsOfFabricForOrderWaByOrders);
+
 // Post Queries
 router.post(
   "",

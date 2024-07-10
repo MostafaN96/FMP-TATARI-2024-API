@@ -19,6 +19,7 @@ exports.insert = async (wbManufacturingOutput, items) => {
       price: wbManufacturingOutput.fabricPrice,
       price_dollar: wbManufacturingOutput.fabricPriceDollar,
       manufacturing_fee: wbManufacturingOutput.manufacturingFee,
+      manufacturing_fee_dollar: wbManufacturingOutput.manufacturingFeeDollar,
       document: wbManufacturingOutput.document,
       statement: wbManufacturingOutput.statement,
       creator_id: wbManufacturingOutput.personid,
@@ -67,6 +68,7 @@ exports.select = async (whereCluse) => {
     `${wbManufacturingOutputTableName}.price`,
     `${wbManufacturingOutputTableName}.price_dollar`,
     `${wbManufacturingOutputTableName}.manufacturing_fee`,
+    `${wbManufacturingOutputTableName}.manufacturing_fee_dollar`,
     `${wbManufacturingOutputTableName}.fabric_piece`,
     `${wbManufacturingOutputTableName}.document`,
     `${wbManufacturingOutputTableName}.statement`,
@@ -90,10 +92,12 @@ exports.selectByRequisitionId = async (requisitionId) => {
 
   await knex.select([
     `${wbManufacturingOutputTableName}.id`,
+    `${wbManufacturingOutputTableName}.circular_knitting_machine_bussiness_man_id`,
     `${wbManufacturingOutputTableName}.quantity`,
     `${wbManufacturingOutputTableName}.price`,
     `${wbManufacturingOutputTableName}.price_dollar`,
     `${wbManufacturingOutputTableName}.manufacturing_fee`,
+    `${wbManufacturingOutputTableName}.manufacturing_fee_dollar`,
     `${wbManufacturingOutputTableName}.fabric_piece`,
     `${wbManufacturingOutputTableName}.document`,
     `${wbManufacturingOutputTableName}.statement`,
@@ -105,9 +109,11 @@ exports.selectByRequisitionId = async (requisitionId) => {
     `${circularKnittingMachineTableName}.smoothness as circular_knitting_machine_smoothness`,
     `${circularKnittingMachineTableName}.model as circular_knitting_machine_model`,
     `${circularKnittingMachineTableName}.number as circular_knitting_machine_number`,
+    knex.raw(`CONCAT(${circularKnittingMachineTableName}.type, ' - طراز (', ${circularKnittingMachineTableName}.model, ')') as circular_knitting_machine_name`),
     `${wbManufacturingOutputTableName}.consigment_manufacturing_id`,
     `${consigmentManufacturingTableName}.number as consigment_number`,
     `${warehouseTableName}.name as warehouse_name`,
+    `${wbManufacturingRequisitionTableName}.industry_id as manufacture_id`,
   ])
     .distinct()
     .from(`${wbManufacturingOutputTableName}`)
@@ -149,9 +155,11 @@ exports.selectByRequisitionIdForOrder = async (requisitionId) => {
   whereCluse[`${wbManufacturingRequisitionTableName}.is_active`] = 1;
 
   await knex.select([
+    `${wbManufacturingOutputTableName}.circular_knitting_machine_bussiness_man_id`,
     `${wbManufacturingOutputTableName}.price`,
     `${wbManufacturingOutputTableName}.price_dollar`,
     `${wbManufacturingOutputTableName}.manufacturing_fee`,
+    `${wbManufacturingOutputTableName}.manufacturing_fee_dollar`,
     `${wbManufacturingOutputTableName}.fabric_piece`,
     `${wbManufacturingOutputTableName}.document`,
     `${wbManufacturingOutputTableName}.statement`,
@@ -163,12 +171,14 @@ exports.selectByRequisitionIdForOrder = async (requisitionId) => {
     `${circularKnittingMachineTableName}.smoothness as circular_knitting_machine_smoothness`,
     `${circularKnittingMachineTableName}.model as circular_knitting_machine_model`,
     `${circularKnittingMachineTableName}.number as circular_knitting_machine_number`,
+    knex.raw(`CONCAT(${circularKnittingMachineTableName}.type, ' - طراز (', ${circularKnittingMachineTableName}.model, ')') as circular_knitting_machine_name`),
     `${consigmentManufacturingTableName}.number as consigment_number`,
     `${warehouseTableName}.name as warehouse_name`,
     `${wbManufacturingOrderRequisitionTableName}.number as order_number`,
     `${bussinessmanTableName}.name as seller_name`,
     `${wbManufacturingOrderRequisitionDetailsTableName}.id`,
     `${wbManufacturingOutputOrderTableName}.quantity`,
+    `${wbManufacturingRequisitionTableName}.industry_id as manufacture_id`,
   ])
     .distinct()
     .from(`${wbManufacturingOutputTableName}`)
@@ -662,6 +672,7 @@ exports.selectByFabricByConsigmentManufacturing = async (fabricId, consigmentMan
     `${wbManufacturingOutputTableName}.price`,
     `${wbManufacturingOutputTableName}.price_dollar`,
     `${wbManufacturingOutputTableName}.manufacturing_fee`,
+    `${wbManufacturingOutputTableName}.manufacturing_fee_dollar`,
     `${wbManufacturingOutputTableName}.fabric_piece`,
     `${fabricTableName}.id as fabric_id`,
     `${fabricTableName}.name as fabric_name`,
@@ -672,6 +683,7 @@ exports.selectByFabricByConsigmentManufacturing = async (fabricId, consigmentMan
   .sum(`${wbManufacturingOutputTableName}.price as price`)
   .sum(`${wbManufacturingOutputTableName}.price_dollar as price_dollar`)
   .sum(`${wbManufacturingOutputTableName}.manufacturing_fee as manufacturing_fee`)
+  .sum(`${wbManufacturingOutputTableName}.manufacturing_fee_dollar as manufacturing_fee_dollar`)
     .from(`${wbManufacturingOutputTableName}`)
     .innerJoin(`${fabricTableName}`,
       `${fabricTableName}.id`,

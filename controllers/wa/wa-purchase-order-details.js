@@ -30,6 +30,7 @@ exports.create = async (request, response) => {
   if (Array.isArray(selectWaAddRequisitionDetailsPurchaseOrderOneResult) && selectWaAddRequisitionDetailsPurchaseOrderOneResult.length > 0) {
     bodyPalod.supplierId = selectWaAddRequisitionDetailsPurchaseOrderOneResult[0].supplier_id
     bodyPalod.consigmentYarnNumber = selectWaAddRequisitionDetailsPurchaseOrderOneResult[0].name
+    bodyPalod.name = selectWaAddRequisitionDetailsPurchaseOrderOneResult[0].name
   }
 
   //   send data to service

@@ -330,7 +330,8 @@ exports.selectFromWarehouseTotalDetailsByYarnIdByWarehouseId = async (yarnId, wa
         `${yarnTableName}.name as yarn_name`,
         `${yarnTableName}.code as yarn_code`,
         `${yarnLotTableName}.code as yarn_lot_code`,
-`${consigmentYarnTableName}.number as consigment_yarn_number`,
+      `${consigmentYarnTableName}.number as consigment_yarn_number`,
+      `to_consigment_yarn.number as to_consigment_yarn_number`,
         knex.raw('? as type_of_requisition', 'اذن تنفيذ طلبية'),
         knex.raw('? as input_output', '0'),
         knex.raw(`CONCAT(${warehouseTableName}.name) as side_of`),
@@ -356,6 +357,9 @@ exports.selectFromWarehouseTotalDetailsByYarnIdByWarehouseId = async (yarnId, wa
     `${waExecuteOrderRequisitionDetailsTableName}.from_warehouse_id`)
     .innerJoin(`${consigmentYarnTableName}`, 
     `${consigmentYarnTableName}.id`, 
+    `${waExecuteOrderRequisitionDetailsTableName}.from_consigment_yarn_id`)
+    .innerJoin(`${consigmentYarnTableName} as to_consigment_yarn`, 
+    `to_consigment_yarn.id`, 
     `${waExecuteOrderRequisitionDetailsTableName}.consigment_yarn_id`)
     .where(whereCluse)
     .andWhere(`${waExecuteOrderRequisitionDetailsTableName}.quantity`, ">", 0)

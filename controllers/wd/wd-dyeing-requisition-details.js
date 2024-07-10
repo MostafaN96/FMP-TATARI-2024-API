@@ -1,11 +1,13 @@
 // Services
 const wdDyeingRequisitionDetailsService = require("../../services/wd/wd-dyeing-requisition-details");
+const generalService = require("../../services/general/general");
 
 // Validations
 const wdDyeingRequisitionDetailsValidation = require("../../validations/wd/wd-dyeing-requisition-details");
 
 // Util
 const constants = require("../../util/constants");
+const { wdDyeingRequisitionDetailsTableName } = require("../../util/database-tables-name");
 
 exports.create = async (request, response) => {
   const bodyPalod = request.body;
@@ -82,3 +84,12 @@ exports.selectByRequisitionId = async (request, response) => {
         return response.status(200).json(updateResults);
     }
   };
+
+
+exports.selectMaxWorkOrderNumber = async (request, response) => {
+  // logging
+
+  // call service
+  const results = await generalService.selectMaxValueWithCondition(wdDyeingRequisitionDetailsTableName, { work_order_number: 'work_order_number' }, { is_deleted: '0' });
+  response.status(200).json(results);
+};

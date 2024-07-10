@@ -69,6 +69,13 @@ exports.select = async () => {
       `${wbManufacturingRequisitionTableName}.note`,
       `${wbManufacturingRequisitionTableName}.is_order`,
       `${wbManufacturingOutputTableName}.id as wb_manufacturing_output_id`,
+      `${wbManufacturingOutputTableName}.is_approved`,
+      knex.raw(
+        `CASE 
+        WHEN ${wbManufacturingOutputTableName}.is_approved = '0' THEN '${constants.wb_manufacturing_requisition_status_is_approved_0}' 
+        WHEN ${wbManufacturingOutputTableName}.is_approved = '1' THEN '${constants.wb_manufacturing_requisition_status_is_approved_1}'  
+        ELSE ''  
+        END as is_approved_status_name`),
       `${bussinessmanTableName}.id as manufacture_id`,
       `${bussinessmanTableName}.name as manufacture_name`,
       `${fabricTableName}.id as fabric_id`,
@@ -132,6 +139,14 @@ exports.selectOrders = async () => {
       `${wbManufacturingRequisitionTableName}.date`,
       `${wbManufacturingRequisitionTableName}.note`,
       `${wbManufacturingRequisitionTableName}.is_order`,
+      `${wbManufacturingOutputTableName}.id as wb_manufacturing_output_id`,
+      `${wbManufacturingOutputTableName}.is_approved`,
+      knex.raw(
+        `CASE 
+        WHEN ${wbManufacturingOutputTableName}.is_approved = '0' THEN '${constants.wb_manufacturing_requisition_status_is_approved_0}' 
+        WHEN ${wbManufacturingOutputTableName}.is_approved = '1' THEN '${constants.wb_manufacturing_requisition_status_is_approved_1}'  
+        ELSE ''  
+        END as is_approved_status_name`),
       `${bussinessmanTableName}.id as manufacture_id`,
       `${bussinessmanTableName}.name as manufacture_name`,
       `${fabricTableName}.id as fabric_id`,
