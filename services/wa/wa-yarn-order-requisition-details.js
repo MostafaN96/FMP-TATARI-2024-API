@@ -211,7 +211,8 @@ exports.update = async (waYarnOrderRequisitionDetails) => {
         callArray.push(waYarnOrderRequisitionQueries.update({
             date: waYarnOrderRequisitionDetails.date,
             name: waYarnOrderRequisitionDetails.name,
-            note: waYarnOrderRequisitionDetails.note
+            note: waYarnOrderRequisitionDetails.note,
+            is_order: 1,
         },
             {
                 id: waYarnOrderRequisitionDetails.waYarnOrderRequisitionId
@@ -221,6 +222,7 @@ exports.update = async (waYarnOrderRequisitionDetails) => {
         callArray.push(
             waYarnOrderRequisitionDetailsQueries.update({
                 note: waYarnOrderRequisitionDetails.note2,
+                is_order: 1,
             },
                 {
                     id: waYarnOrderRequisitionDetails.id

@@ -12,7 +12,8 @@ const {
   warehouseUsersTableName,
   colorTableName,
   colorCategoryTableName,
-  consigmentDyeingTableName} = require("../../../util/database-tables-name");
+  consigmentDyeingTableName,
+  gradeItemTableName} = require("../../../util/database-tables-name");
 
 exports.insert = async (weTransitionBetweenWHRequisitionDetails, items) => {
   let queryResults = false;
@@ -26,6 +27,7 @@ exports.insert = async (weTransitionBetweenWHRequisitionDetails, items) => {
       color_id: items.colorId,
       consigment_dyeing_id: items.consigmentDyeingId,
       from_consigment_dyeing_id: items.fromConsigmentDyeingId,
+      grade_item_id: items.gradeItemId,
       fabric_piece: items.numberFabricPieces,
       price: items.price,
       price_dollar: items.priceDollar,
@@ -76,6 +78,8 @@ exports.selectByRequisitionId = async (whereCluse) => {
     `consigment_dyeing_id`,
     `consigment_dyeing_number`,
     `work_order_number`,
+    `grade_item_id`,
+    `grade_item_name`,
   ]
   await knex.select(columns).from(function () {
     this.select([
@@ -102,6 +106,8 @@ exports.selectByRequisitionId = async (whereCluse) => {
       `${consigmentDyeingTableName}.id as consigment_dyeing_id`,
       `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
       `${weTransitionBetweenWHRequisitionDetailsTableName}.work_order_number`,
+        `${weTransitionBetweenWHRequisitionDetailsTableName}.grade_item_id`,
+        `${gradeItemTableName}.name as grade_item_name`,
     ])
       .from(`${weTransitionBetweenWHRequisitionDetailsTableName}`)
       .innerJoin(`${weTransitionBetweenWHRequisitionTableName}`, 
@@ -128,6 +134,9 @@ exports.selectByRequisitionId = async (whereCluse) => {
         .innerJoin(`${consigmentDyeingTableName}`,
         `${consigmentDyeingTableName}.id`,
         `${weTransitionBetweenWHRequisitionDetailsTableName}.consigment_dyeing_id`)
+        .innerJoin(`${gradeItemTableName}`, 
+      `${gradeItemTableName}.id`, 
+      `${weTransitionBetweenWHRequisitionDetailsTableName}.grade_item_id`)
       .where(whereCluse)
       .andWhere(`${weTransitionBetweenWHRequisitionDetailsTableName}.quantity`, ">", 0)
       .as('t1')
@@ -431,8 +440,10 @@ exports.selectFromWarehouseTotalDetailsByFabricId = async (fabricId) => {
         knex.raw(`CONCAT(' اذن نقل من مخزن ', '( ', ${warehouseTableName}.name, ')', ' الى مخزن ', '(', to_warehouse.name, ')') as side_of`),
         knex.raw('? as is_return_type', 'not_return'),
         `${colorTableName}.name as color_name`,
+        `${weTransitionBetweenWHRequisitionDetailsTableName}.grade_item_id`,
+        `${gradeItemTableName}.name as grade_item_name`,
       ],
-    )
+  )
     .innerJoin(`${weTransitionBetweenWHRequisitionTableName}`,
       `${weTransitionBetweenWHRequisitionTableName}.id`,
       `${weTransitionBetweenWHRequisitionDetailsTableName}.we_transition_between_wh_requisitions_id`)
@@ -442,9 +453,12 @@ exports.selectFromWarehouseTotalDetailsByFabricId = async (fabricId) => {
     .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weTransitionBetweenWHRequisitionDetailsTableName}.dyed_fabric_id`)
     .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weTransitionBetweenWHRequisitionDetailsTableName}.from_warehouse_id`)
     .innerJoin(`${warehouseTableName} as to_warehouse`, `to_warehouse.id`, `${weTransitionBetweenWHRequisitionTableName}.to_warehouse_id`)
-    .innerJoin(`${colorTableName}`, 
-    `${colorTableName}.id`, 
-    `${weTransitionBetweenWHRequisitionDetailsTableName}.color_id`)
+    .innerJoin(`${colorTableName}`,
+      `${colorTableName}.id`,
+      `${weTransitionBetweenWHRequisitionDetailsTableName}.color_id`)
+    .innerJoin(`${gradeItemTableName}`,
+      `${gradeItemTableName}.id`,
+      `${weTransitionBetweenWHRequisitionDetailsTableName}.grade_item_id`)
     .where(whereCluse)
     .andWhere(`${weTransitionBetweenWHRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -487,8 +501,10 @@ exports.selectToWarehouseTotalDetailsByFabricId = async (fabricId) => {
         knex.raw(`CONCAT(' اذن نقل من مخزن ', '(', from_warehouse.name, ')', ' الى مخزن ', '(', ${warehouseTableName}.name, ')') as side_of`),
         knex.raw('? as is_return_type', 'not_return'),
         `${colorTableName}.name as color_name`,
+        `${weTransitionBetweenWHRequisitionDetailsTableName}.grade_item_id`,
+        `${gradeItemTableName}.name as grade_item_name`,
       ],
-    )
+  )
     .innerJoin(`${weTransitionBetweenWHRequisitionTableName}`,
       `${weTransitionBetweenWHRequisitionTableName}.id`,
       `${weTransitionBetweenWHRequisitionDetailsTableName}.we_transition_between_wh_requisitions_id`)
@@ -498,9 +514,12 @@ exports.selectToWarehouseTotalDetailsByFabricId = async (fabricId) => {
     .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weTransitionBetweenWHRequisitionDetailsTableName}.dyed_fabric_id`)
     .innerJoin(`${warehouseTableName} as from_warehouse`, `from_warehouse.id`, `${weTransitionBetweenWHRequisitionDetailsTableName}.from_warehouse_id`)
     .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weTransitionBetweenWHRequisitionTableName}.to_warehouse_id`)
-    .innerJoin(`${colorTableName}`, 
-    `${colorTableName}.id`, 
-    `${weTransitionBetweenWHRequisitionDetailsTableName}.color_id`)
+    .innerJoin(`${colorTableName}`,
+      `${colorTableName}.id`,
+      `${weTransitionBetweenWHRequisitionDetailsTableName}.color_id`)
+    .innerJoin(`${gradeItemTableName}`,
+      `${gradeItemTableName}.id`,
+      `${weTransitionBetweenWHRequisitionDetailsTableName}.grade_item_id`)
     .where(whereCluse)
     .andWhere(`${weTransitionBetweenWHRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -604,6 +623,8 @@ exports.selectFromWarehouseDetailsDetailsByWarehouseByFabricId = async (fromWare
         knex.raw(`CONCAT(' اذن نقل من مخزن ', '(', ${warehouseTableName}.name, ')', ' الى مخزن ', '(', to_warehouse.name, ')') as side_of`),
         knex.raw('? as is_return_type', 'not_return'),
         `${colorTableName}.name as color_name`,
+        `${weTransitionBetweenWHRequisitionDetailsTableName}.grade_item_id`,
+        `${gradeItemTableName}.name as grade_item_name`,
       ],
     )
     .innerJoin(`${weTransitionBetweenWHRequisitionTableName}`,
@@ -618,6 +639,9 @@ exports.selectFromWarehouseDetailsDetailsByWarehouseByFabricId = async (fromWare
     .innerJoin(`${colorTableName}`, 
     `${colorTableName}.id`, 
     `${weTransitionBetweenWHRequisitionDetailsTableName}.color_id`)
+    .innerJoin(`${gradeItemTableName}`,
+      `${gradeItemTableName}.id`,
+      `${weTransitionBetweenWHRequisitionDetailsTableName}.grade_item_id`)
     .where(whereCluse)
     .andWhere(`${weTransitionBetweenWHRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -659,6 +683,8 @@ exports.selectToWarehouseDetailsDetailsByWarehouseByFabricId = async (toWarehous
         knex.raw(`CONCAT(' اذن نقل من مخزن ', '(', from_warehouse.name, ')', ' الى مخزن ', '(', ${warehouseTableName}.name, ')') as side_of`),
         knex.raw('? as is_return_type', 'not_return'),
         `${colorTableName}.name as color_name`,
+        `${weTransitionBetweenWHRequisitionDetailsTableName}.grade_item_id`,
+        `${gradeItemTableName}.name as grade_item_name`,
       ],
     )
     .innerJoin(`${weTransitionBetweenWHRequisitionTableName}`,
@@ -673,6 +699,9 @@ exports.selectToWarehouseDetailsDetailsByWarehouseByFabricId = async (toWarehous
     .innerJoin(`${colorTableName}`, 
     `${colorTableName}.id`, 
     `${weTransitionBetweenWHRequisitionDetailsTableName}.color_id`)
+    .innerJoin(`${gradeItemTableName}`,
+      `${gradeItemTableName}.id`,
+      `${weTransitionBetweenWHRequisitionDetailsTableName}.grade_item_id`)
     .where(whereCluse)
     .andWhere(`${weTransitionBetweenWHRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {

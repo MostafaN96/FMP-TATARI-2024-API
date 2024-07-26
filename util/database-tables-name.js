@@ -20,6 +20,7 @@ const dyeingServicesDetailsTableName = 'dyeing_services_details'
 const logsTableName = 'logs'
 const exchangeRateTableName = 'exchange_rate'
 const exchangeRateLogTableName = 'exchange_rate_log'
+const gradeItemTableName = 'grade_item'
 
 const modulesTableName = 'modules'
 const componentsTableName = 'components'
@@ -203,6 +204,7 @@ module.exports = {
     logsTableName,
     exchangeRateTableName,
     exchangeRateLogTableName,
+    gradeItemTableName,
 
     modulesTableName,
     componentsTableName,

@@ -27,6 +27,8 @@ exports.isValid = (weExecuteOrderRequisition) => {
             colorId: validations.joiText(15, 30),
             colorName: validations.joiNotRequiredText(0, 60),
             colorCode: validations.joiText(1, 60),
+            gradeItemId: validations.joiText(15, 30),
+            gradeItemName:validations.joiNotRequiredText(0, 60),
             price: validations.joiNumber(1, 60),
             priceDollar: validations.joiNotRequiredText(0, 50),
             quantity: validations.joiText(1, 60),

@@ -6,7 +6,8 @@ const knex = require("../../config/connection").getConnection();
 const { weReturnSellRequisitionDetailsTableName, weReturnSellRequisitionTableName, fabricTableName,
   bussinessmanTableName, warehouseTableName, weTableName,
   weReturnSellRequisitionDetailsReturnDetailsTableName,
-  weAddRequisitionDetailsTableName, colorCategoryTableName, colorTableName, weSellRequisitionDetailsTableName, weSellRequisitionDetailsWeTableName, wdDyeingRequisitionDetailsTableName, wdFormDyeingRequisitionDetailsTableName, anointedColorsPricesTableName, weReconciliationRequisitionDetailsWeTableName, weReconciliationRequisitionDetailsTableName, weReconciliationRequisitionTableName, wdDyeingRequisitionTableName, consigmentDyeingTableName
+  weAddRequisitionDetailsTableName, colorCategoryTableName, colorTableName, weSellRequisitionDetailsTableName, weSellRequisitionDetailsWeTableName, wdDyeingRequisitionDetailsTableName, wdFormDyeingRequisitionDetailsTableName, anointedColorsPricesTableName, weReconciliationRequisitionDetailsWeTableName, weReconciliationRequisitionDetailsTableName, weReconciliationRequisitionTableName, wdDyeingRequisitionTableName, consigmentDyeingTableName,
+  gradeItemTableName
 } = require("../../../util/database-tables-name");
 
 exports.insert = async (weReturnSellRequisitionDetails, items) => {
@@ -20,6 +21,7 @@ exports.insert = async (weReturnSellRequisitionDetails, items) => {
       color_category_id: items.colorCategoryId,
       color_id: items.colorId,
       consigment_dyeing_id: items.consigmentDyeingId,
+      grade_item_id: items.gradeItemId,
       color_code: items.colorCode,
       work_order_number: items.workOrderNumber,
       price: items.price,
@@ -72,6 +74,8 @@ exports.selectByRequisitionId = async (requisitionId) => {
     `color_name`,
     `color_code`,
     `work_order_number`,
+    `grade_item_id`,
+    `grade_item_name`,
   ]
   await knex.select(columns).from(function () {
     this.select([
@@ -94,6 +98,8 @@ exports.selectByRequisitionId = async (requisitionId) => {
       `${colorTableName}.name as color_name`,
       `${weReturnSellRequisitionDetailsTableName}.color_code`,
       `${weReturnSellRequisitionDetailsTableName}.work_order_number`,
+      `${weReturnSellRequisitionDetailsTableName}.grade_item_id`,
+      `${gradeItemTableName}.name as grade_item_name`,
     ])
       .from(`${weReturnSellRequisitionDetailsTableName}`)
       .innerJoin(`${weReturnSellRequisitionTableName}`, `${weReturnSellRequisitionTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.we_return_sell_requisition_id`)
@@ -108,6 +114,9 @@ exports.selectByRequisitionId = async (requisitionId) => {
       .innerJoin(`${colorTableName}`,
         `${colorTableName}.id`,
         `${weReturnSellRequisitionDetailsTableName}.color_id`)
+        .innerJoin(`${gradeItemTableName}`, 
+      `${gradeItemTableName}.id`, 
+      `${weReturnSellRequisitionDetailsTableName}.grade_item_id`)
       .where(whereCluse)
       .andWhere(`${weReturnSellRequisitionDetailsTableName}.quantity`, ">", 0)
       .as('t1')
@@ -312,6 +321,8 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, dyedFabric
     `work_order_number`,
     `return_type_name`,
     `consigment_dyeing_number`,
+    `grade_item_id`,
+    `grade_item_name`,
   ]
   await knex.select(columns).from(function () {
     this.select([
@@ -344,6 +355,8 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, dyedFabric
         ELSE 'مرتجع صرف عادي'  
         END as return_type_name`),
         `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+        `${weReturnSellRequisitionDetailsTableName}.grade_item_id`,
+        `${gradeItemTableName}.name as grade_item_name`,
     ])
       .from(`${weReturnSellRequisitionDetailsTableName}`)
       .innerJoin(`${weReturnSellRequisitionTableName}`, `${weReturnSellRequisitionTableName}.id`, `${weReturnSellRequisitionDetailsTableName}.we_return_sell_requisition_id`)
@@ -361,6 +374,9 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, dyedFabric
         .innerJoin(`${consigmentDyeingTableName}`, 
         `${consigmentDyeingTableName}.id`, 
         `${weReturnSellRequisitionDetailsTableName}.consigment_dyeing_id`)
+    .innerJoin(`${gradeItemTableName}`,
+      `${gradeItemTableName}.id`,
+      `${weReturnSellRequisitionDetailsTableName}.grade_item_id`)
       .where(whereCluse)
       .andWhere(`${weReturnSellRequisitionDetailsTableName}.quantity`, ">", 0)
       .as('t1')

@@ -21,7 +21,8 @@ const { consigmentManufacturingTableName, weSellRequisitionDetailsTableName,
   consigmentDyeingTableName,
   weTransitionBetweenWHRequisitionDetailsTableName,
   weExecuteOrderRequisitionDetailsTableName,
-  weReturnSellRequisitionDetailsTableName
+  weReturnSellRequisitionDetailsTableName,
+  gradeItemTableName
 } = require("../../../util/database-tables-name");
 
 exports.insert = async (weSellRequisitionDetails, items) => {
@@ -85,6 +86,8 @@ exports.selectByRequisitionId = async (requisitionId) => {
     `work_order_number`,
     `consigment_dyeing_id`,
     `consigment_dyeing_number`,
+    `grade_item_id`,
+    `grade_item_name`,
   ]
   await knex.select(columns).from(function () {
     this.select([
@@ -116,6 +119,8 @@ exports.selectByRequisitionId = async (requisitionId) => {
       `${weAddRequisitionDetailsTableName}.work_order_number`,
       `${consigmentDyeingTableName}.id as consigment_dyeing_id`,
       `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+      `${weAddRequisitionDetailsTableName}.grade_item_id`,
+      `${gradeItemTableName}.name as grade_item_name`,
     ])
       .from(`${weSellRequisitionDetailsTableName}`)
       .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
@@ -143,6 +148,9 @@ exports.selectByRequisitionId = async (requisitionId) => {
         .innerJoin(`${consigmentDyeingTableName}`, 
             `${consigmentDyeingTableName}.id`, 
             `${weAddRequisitionDetailsTableName}.consigment_dyeing_id`)
+            .innerJoin(`${gradeItemTableName}`, 
+          `${gradeItemTableName}.id`, 
+          `${weAddRequisitionDetailsTableName}.grade_item_id`)
         .where(whereCluse)
           .andWhere(`${weSellRequisitionDetailsTableName}.quantity`, ">", 0)
       .as('t1')
@@ -176,6 +184,8 @@ exports.selectByRequisitionId = async (requisitionId) => {
           `${weReconciliationRequisitionDetailsTableName}.work_order_number`,
           `${consigmentDyeingTableName}.id as consigment_dyeing_id`,
           `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+          `${weReconciliationRequisitionDetailsTableName}.grade_item_id`,
+          `${gradeItemTableName}.name as grade_item_name`,
         ])
           .from(`${weSellRequisitionDetailsTableName}`)
           .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
@@ -206,6 +216,9 @@ exports.selectByRequisitionId = async (requisitionId) => {
             .innerJoin(`${consigmentDyeingTableName}`, 
             `${consigmentDyeingTableName}.id`, 
             `${weReconciliationRequisitionDetailsTableName}.consigment_dyeing_id`)
+            .innerJoin(`${gradeItemTableName}`, 
+          `${gradeItemTableName}.id`, 
+          `${weReconciliationRequisitionDetailsTableName}.grade_item_id`)
           .where(whereCluse)
           .andWhere(`${weSellRequisitionDetailsTableName}.quantity`, ">", 0)
           .andWhere(`${weReconciliationRequisitionDetailsTableName}.quantity`, ">", 0)
@@ -240,6 +253,8 @@ exports.selectByRequisitionId = async (requisitionId) => {
           `${wdDyeingRequisitionDetailsTableName}.work_order_number`,
           `${consigmentDyeingTableName}.id as consigment_dyeing_id`,
           `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+          `${wdDyeingRequisitionDetailsTableName}.grade_item_id`,
+          `${gradeItemTableName}.name as grade_item_name`,
         ])
           .from(`${weSellRequisitionDetailsTableName}`)
           .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
@@ -273,6 +288,9 @@ exports.selectByRequisitionId = async (requisitionId) => {
             .innerJoin(`${consigmentDyeingTableName}`, 
             `${consigmentDyeingTableName}.id`, 
             `${wdFormDyeingRequisitionDetailsTableName}.consigment_dyeing_id`)
+            .innerJoin(`${gradeItemTableName}`, 
+          `${gradeItemTableName}.id`, 
+          `${wdDyeingRequisitionDetailsTableName}.grade_item_id`)
             .where(whereCluse)
             .andWhere(`${weSellRequisitionDetailsTableName}.quantity`, ">", 0)
       })
@@ -306,6 +324,8 @@ exports.selectByRequisitionId = async (requisitionId) => {
           `${weTransitionBetweenWHRequisitionDetailsTableName}.work_order_number`,
           `${consigmentDyeingTableName}.id as consigment_dyeing_id`,
           `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+          `${weTransitionBetweenWHRequisitionDetailsTableName}.grade_item_id`,
+          `${gradeItemTableName}.name as grade_item_name`,
         ])
         .from(`${weSellRequisitionDetailsTableName}`)
         .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
@@ -333,6 +353,9 @@ exports.selectByRequisitionId = async (requisitionId) => {
           .innerJoin(`${consigmentDyeingTableName}`, 
           `${consigmentDyeingTableName}.id`, 
           `${weTransitionBetweenWHRequisitionDetailsTableName}.consigment_dyeing_id`)
+          .innerJoin(`${gradeItemTableName}`, 
+        `${gradeItemTableName}.id`, 
+        `${weTransitionBetweenWHRequisitionDetailsTableName}.grade_item_id`)
           .where(whereCluse)
             .andWhere(`${weSellRequisitionDetailsTableName}.quantity`, ">", 0)
       })
@@ -366,6 +389,8 @@ exports.selectByRequisitionId = async (requisitionId) => {
           `${weExecuteOrderRequisitionDetailsTableName}.work_order_number`,
           `${consigmentDyeingTableName}.id as consigment_dyeing_id`,
           `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+          `${weExecuteOrderRequisitionDetailsTableName}.grade_item_id`,
+          `${gradeItemTableName}.name as grade_item_name`,
         ])
         .from(`${weSellRequisitionDetailsTableName}`)
         .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
@@ -393,6 +418,9 @@ exports.selectByRequisitionId = async (requisitionId) => {
           .innerJoin(`${consigmentDyeingTableName}`, 
           `${consigmentDyeingTableName}.id`, 
           `${weExecuteOrderRequisitionDetailsTableName}.consigment_dyeing_id`)
+          .innerJoin(`${gradeItemTableName}`, 
+        `${gradeItemTableName}.id`, 
+        `${weExecuteOrderRequisitionDetailsTableName}.grade_item_id`)
           .where(whereCluse)
             .andWhere(`${weSellRequisitionDetailsTableName}.quantity`, ">", 0)
       })
@@ -426,6 +454,8 @@ exports.selectByRequisitionId = async (requisitionId) => {
           `${weReturnSellRequisitionDetailsTableName}.work_order_number`,
           `${consigmentDyeingTableName}.id as consigment_dyeing_id`,
           `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+          `${weReturnSellRequisitionDetailsTableName}.grade_item_id`,
+          `${gradeItemTableName}.name as grade_item_name`,
         ])
         .from(`${weSellRequisitionDetailsTableName}`)
         .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
@@ -453,6 +483,9 @@ exports.selectByRequisitionId = async (requisitionId) => {
           .innerJoin(`${consigmentDyeingTableName}`, 
           `${consigmentDyeingTableName}.id`, 
           `${weReturnSellRequisitionDetailsTableName}.consigment_dyeing_id`)
+          .innerJoin(`${gradeItemTableName}`, 
+        `${gradeItemTableName}.id`, 
+        `${weReturnSellRequisitionDetailsTableName}.grade_item_id`)
           .where(whereCluse)
             .andWhere(`${weSellRequisitionDetailsTableName}.quantity`, ">", 0)
       })
@@ -528,6 +561,8 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
     `color_code`,
     `work_order_number`,
     `consigment_dyeing_number`,
+    `grade_item_id`,
+    `grade_item_name`,
   ]
   await knex.select(columns).from(function () {
     this.select([
@@ -555,8 +590,10 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
       `${colorCategoryTableName}.name as color_category_name`,
       `${colorTableName}.name as color_name`,
       `${weAddRequisitionDetailsTableName}.color_code`,
-      `${weAddRequisitionDetailsTableName}.work_order_number`,      
+      `${weAddRequisitionDetailsTableName}.work_order_number`,
       `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+      `${weAddRequisitionDetailsTableName}.grade_item_id`,
+      `${gradeItemTableName}.name as grade_item_name`,
     ])
       .from(`${weSellRequisitionDetailsTableName}`)
       .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
@@ -578,9 +615,12 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
       .innerJoin(`${colorTableName}`,
         `${colorTableName}.id`,
         `${weAddRequisitionDetailsTableName}.color_id`)
-        .innerJoin(`${consigmentDyeingTableName}`, 
-            `${consigmentDyeingTableName}.id`, 
-            `${weAddRequisitionDetailsTableName}.consigment_dyeing_id`)
+      .innerJoin(`${consigmentDyeingTableName}`,
+        `${consigmentDyeingTableName}.id`,
+        `${weAddRequisitionDetailsTableName}.consigment_dyeing_id`)
+    .innerJoin(`${gradeItemTableName}`,
+      `${gradeItemTableName}.id`,
+      `${weAddRequisitionDetailsTableName}.grade_item_id`)
       .where(whereCluse)
       .andWhere(`${weSellRequisitionDetailsTableName}.quantity`, ">", 0)
 
@@ -613,6 +653,8 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
           `${weReconciliationRequisitionDetailsTableName}.color_code`,
           `${weReconciliationRequisitionDetailsTableName}.work_order_number`,
           `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+      `${weReconciliationRequisitionDetailsTableName}.grade_item_id`,
+      `${gradeItemTableName}.name as grade_item_name`,
         ])
           .from(`${weSellRequisitionDetailsTableName}`)
           .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
@@ -640,6 +682,9 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
             .innerJoin(`${consigmentDyeingTableName}`, 
                 `${consigmentDyeingTableName}.id`, 
                 `${weReconciliationRequisitionDetailsTableName}.consigment_dyeing_id`)
+    .innerJoin(`${gradeItemTableName}`,
+      `${gradeItemTableName}.id`,
+      `${weReconciliationRequisitionDetailsTableName}.grade_item_id`)
           .where(whereCluse)
           .andWhere(`${weSellRequisitionDetailsTableName}.quantity`, ">", 0)
       })
@@ -671,6 +716,8 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
           `${anointedColorsPricesTableName}.code as color_code`,
           `${wdDyeingRequisitionDetailsTableName}.work_order_number`,
           `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+          `${wdDyeingRequisitionDetailsTableName}.grade_item_id`,
+          `${gradeItemTableName}.name as grade_item_name`,
         ])
           .from(`${weSellRequisitionDetailsTableName}`)
           .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
@@ -698,10 +745,12 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
           .innerJoin(`${colorTableName}`,
             `${colorTableName}.id`,
             `${anointedColorsPricesTableName}.color_id`)
-          .innerJoin(`${consigmentDyeingTableName}`, 
-          `${consigmentDyeingTableName}.id`, 
-          `${wdFormDyeingRequisitionDetailsTableName}.consigment_dyeing_id`)
-
+          .innerJoin(`${consigmentDyeingTableName}`,
+            `${consigmentDyeingTableName}.id`,
+            `${wdFormDyeingRequisitionDetailsTableName}.consigment_dyeing_id`)
+          .innerJoin(`${gradeItemTableName}`,
+            `${gradeItemTableName}.id`,
+            `${wdDyeingRequisitionDetailsTableName}.grade_item_id`)
           .where(whereCluse)
           .andWhere(`${weSellRequisitionDetailsTableName}.quantity`, ">", 0)
         })
@@ -733,30 +782,35 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
           `${weTransitionBetweenWHRequisitionDetailsTableName}.color_code`,
           `${weTransitionBetweenWHRequisitionDetailsTableName}.work_order_number`,
           `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+          `${weTransitionBetweenWHRequisitionDetailsTableName}.grade_item_id`,
+          `${gradeItemTableName}.name as grade_item_name`,
         ])
         .from(`${weSellRequisitionDetailsTableName}`)
         .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
         .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${weSellRequisitionTableName}.seller_id`)
         .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weSellRequisitionDetailsTableName}.dyed_fabric_id`)
         .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weSellRequisitionDetailsTableName}.warehouse_id`)
-        .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
-          `${weSellRequisitionDetailsWeTableName}.we_sell_requisition_details_id`,
-          `${weSellRequisitionDetailsTableName}.id`)
-        .innerJoin(`${weTableName}`,
-          `${weTableName}.id`,
-          `${weSellRequisitionDetailsWeTableName}.we_id`)
-        .innerJoin(`${weTransitionBetweenWHRequisitionDetailsTableName}`,
-          `${weTransitionBetweenWHRequisitionDetailsTableName}.id`,
-          `${weTableName}.we_transition_between_wh_requisitions_details_id`)
-        .innerJoin(`${colorCategoryTableName}`,
-          `${colorCategoryTableName}.id`,
-          `${weTransitionBetweenWHRequisitionDetailsTableName}.color_category_id`)
-        .innerJoin(`${colorTableName}`,
-          `${colorTableName}.id`,
-          `${weTransitionBetweenWHRequisitionDetailsTableName}.color_id`)
-          .innerJoin(`${consigmentDyeingTableName}`, 
-          `${consigmentDyeingTableName}.id`, 
-          `${weTransitionBetweenWHRequisitionDetailsTableName}.consigment_dyeing_id`)
+          .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
+            `${weSellRequisitionDetailsWeTableName}.we_sell_requisition_details_id`,
+            `${weSellRequisitionDetailsTableName}.id`)
+          .innerJoin(`${weTableName}`,
+            `${weTableName}.id`,
+            `${weSellRequisitionDetailsWeTableName}.we_id`)
+          .innerJoin(`${weTransitionBetweenWHRequisitionDetailsTableName}`,
+            `${weTransitionBetweenWHRequisitionDetailsTableName}.id`,
+            `${weTableName}.we_transition_between_wh_requisitions_details_id`)
+          .innerJoin(`${colorCategoryTableName}`,
+            `${colorCategoryTableName}.id`,
+            `${weTransitionBetweenWHRequisitionDetailsTableName}.color_category_id`)
+          .innerJoin(`${colorTableName}`,
+            `${colorTableName}.id`,
+            `${weTransitionBetweenWHRequisitionDetailsTableName}.color_id`)
+          .innerJoin(`${consigmentDyeingTableName}`,
+            `${consigmentDyeingTableName}.id`,
+            `${weTransitionBetweenWHRequisitionDetailsTableName}.consigment_dyeing_id`)
+          .innerJoin(`${gradeItemTableName}`,
+            `${gradeItemTableName}.id`,
+            `${weTransitionBetweenWHRequisitionDetailsTableName}.grade_item_id`)
         .where(whereCluse)
         .andWhere(`${weSellRequisitionDetailsTableName}.quantity`, ">", 0)
       })
@@ -788,6 +842,8 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
           `${weExecuteOrderRequisitionDetailsTableName}.color_code`,
           `${weExecuteOrderRequisitionDetailsTableName}.work_order_number`,
           `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+          `${weExecuteOrderRequisitionDetailsTableName}.grade_item_id`,
+          `${gradeItemTableName}.name as grade_item_name`,
         ])
         .from(`${weSellRequisitionDetailsTableName}`)
         .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
@@ -803,15 +859,18 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
         .innerJoin(`${weExecuteOrderRequisitionDetailsTableName}`,
           `${weExecuteOrderRequisitionDetailsTableName}.id`,
           `${weTableName}.we_execute_order_requisition_details_id`)
-        .innerJoin(`${colorCategoryTableName}`,
-          `${colorCategoryTableName}.id`,
-          `${weExecuteOrderRequisitionDetailsTableName}.color_category_id`)
-        .innerJoin(`${colorTableName}`,
-          `${colorTableName}.id`,
-          `${weExecuteOrderRequisitionDetailsTableName}.color_id`)
-          .innerJoin(`${consigmentDyeingTableName}`, 
-          `${consigmentDyeingTableName}.id`, 
-          `${weExecuteOrderRequisitionDetailsTableName}.consigment_dyeing_id`)
+          .innerJoin(`${colorCategoryTableName}`,
+            `${colorCategoryTableName}.id`,
+            `${weExecuteOrderRequisitionDetailsTableName}.color_category_id`)
+          .innerJoin(`${colorTableName}`,
+            `${colorTableName}.id`,
+            `${weExecuteOrderRequisitionDetailsTableName}.color_id`)
+          .innerJoin(`${consigmentDyeingTableName}`,
+            `${consigmentDyeingTableName}.id`,
+            `${weExecuteOrderRequisitionDetailsTableName}.consigment_dyeing_id`)
+          .innerJoin(`${gradeItemTableName}`,
+            `${gradeItemTableName}.id`,
+            `${weExecuteOrderRequisitionDetailsTableName}.grade_item_id`)
         .where(whereCluse)
         .andWhere(`${weSellRequisitionDetailsTableName}.quantity`, ">", 0)
       })
@@ -843,6 +902,8 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
           `${weReturnSellRequisitionDetailsTableName}.color_code`,
           `${weReturnSellRequisitionDetailsTableName}.work_order_number`,
           `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+          `${weReturnSellRequisitionDetailsTableName}.grade_item_id`,
+          `${gradeItemTableName}.name as grade_item_name`,
         ])
         .from(`${weSellRequisitionDetailsTableName}`)
         .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
@@ -861,12 +922,15 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
         .innerJoin(`${colorCategoryTableName}`,
           `${colorCategoryTableName}.id`,
           `${weReturnSellRequisitionDetailsTableName}.color_category_id`)
-        .innerJoin(`${colorTableName}`,
-          `${colorTableName}.id`,
-          `${weReturnSellRequisitionDetailsTableName}.color_id`)
-          .innerJoin(`${consigmentDyeingTableName}`, 
-          `${consigmentDyeingTableName}.id`, 
-          `${weReturnSellRequisitionDetailsTableName}.consigment_dyeing_id`)
+          .innerJoin(`${colorTableName}`,
+            `${colorTableName}.id`,
+            `${weReturnSellRequisitionDetailsTableName}.color_id`)
+          .innerJoin(`${consigmentDyeingTableName}`,
+            `${consigmentDyeingTableName}.id`,
+            `${weReturnSellRequisitionDetailsTableName}.consigment_dyeing_id`)
+          .innerJoin(`${gradeItemTableName}`,
+            `${gradeItemTableName}.id`,
+            `${weReturnSellRequisitionDetailsTableName}.grade_item_id`)
         .where(whereCluse)
         .andWhere(`${weSellRequisitionDetailsTableName}.quantity`, ">", 0)
       })
@@ -1238,6 +1302,8 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, fabricId) 
     `color_code`,
     `work_order_number`,
     `consigment_dyeing_number`,
+    `grade_item_id`,
+    `grade_item_name`,
   ]
   await knex.select(columns).from(function () {
     this.select([
@@ -1267,6 +1333,8 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, fabricId) 
       `${weAddRequisitionDetailsTableName}.color_code`,
       `${weAddRequisitionDetailsTableName}.work_order_number`,
       knex.raw('? as consigment_dyeing_number', ''),
+      `${weAddRequisitionDetailsTableName}.grade_item_id`,
+      `${gradeItemTableName}.name as grade_item_name`,
     ])
       .from(`${weSellRequisitionDetailsTableName}`)
       .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
@@ -1288,6 +1356,9 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, fabricId) 
       .innerJoin(`${colorTableName}`,
         `${colorTableName}.id`,
         `${weAddRequisitionDetailsTableName}.color_id`)
+      .innerJoin(`${gradeItemTableName}`,
+        `${gradeItemTableName}.id`,
+        `${weAddRequisitionDetailsTableName}.grade_item_id`)
       .where(whereCluse)
       .andWhere(`${weSellRequisitionDetailsTableName}.quantity`, ">", 0)
 
@@ -1320,6 +1391,8 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, fabricId) 
           `${weReconciliationRequisitionDetailsTableName}.color_code`,
           `${weReconciliationRequisitionDetailsTableName}.work_order_number`,
           knex.raw('? as consigment_dyeing_number', ''),
+          `${weReconciliationRequisitionDetailsTableName}.grade_item_id`,
+          `${gradeItemTableName}.name as grade_item_name`,
         ])
           .from(`${weSellRequisitionDetailsTableName}`)
           .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
@@ -1344,6 +1417,9 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, fabricId) 
           .innerJoin(`${colorTableName}`,
             `${colorTableName}.id`,
             `${weReconciliationRequisitionDetailsTableName}.color_id`)
+          .innerJoin(`${gradeItemTableName}`,
+            `${gradeItemTableName}.id`,
+            `${weReconciliationRequisitionDetailsTableName}.grade_item_id`)
           .where(whereCluse)
           .andWhere(`${weSellRequisitionDetailsTableName}.quantity`, ">", 0)
       })
@@ -1374,7 +1450,9 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, fabricId) 
           `${colorTableName}.name as color_name`,
           `${anointedColorsPricesTableName}.code as color_code`,
           `${wdDyeingRequisitionDetailsTableName}.work_order_number`,
-`${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+          `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+          `${wdDyeingRequisitionDetailsTableName}.grade_item_id`,
+          `${gradeItemTableName}.name as grade_item_name`,
         ])
           .from(`${weSellRequisitionDetailsTableName}`)
           .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
@@ -1402,10 +1480,12 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, fabricId) 
           .innerJoin(`${colorTableName}`,
             `${colorTableName}.id`,
             `${anointedColorsPricesTableName}.color_id`)
-                                    .innerJoin(`${consigmentDyeingTableName}`, 
-                                    `${consigmentDyeingTableName}.id`, 
-                                    `${wdFormDyeingRequisitionDetailsTableName}.consigment_dyeing_id`)
-
+          .innerJoin(`${consigmentDyeingTableName}`,
+            `${consigmentDyeingTableName}.id`,
+            `${wdFormDyeingRequisitionDetailsTableName}.consigment_dyeing_id`)
+          .innerJoin(`${gradeItemTableName}`,
+            `${gradeItemTableName}.id`,
+            `${wdDyeingRequisitionDetailsTableName}.grade_item_id`)
           .where(whereCluse)
           .andWhere(`${weSellRequisitionDetailsTableName}.quantity`, ">", 0)
       })
@@ -1437,6 +1517,8 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, fabricId) 
           `${weTransitionBetweenWHRequisitionDetailsTableName}.color_code`,
           `${weTransitionBetweenWHRequisitionDetailsTableName}.work_order_number`,
           `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+          `${weTransitionBetweenWHRequisitionDetailsTableName}.grade_item_id`,
+          `${gradeItemTableName}.name as grade_item_name`,
         ])
         .from(`${weSellRequisitionDetailsTableName}`)
         .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
@@ -1452,15 +1534,18 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, fabricId) 
         .innerJoin(`${weTransitionBetweenWHRequisitionDetailsTableName}`,
           `${weTransitionBetweenWHRequisitionDetailsTableName}.id`,
           `${weTableName}.we_transition_between_wh_requisitions_details_id`)
-        .innerJoin(`${colorCategoryTableName}`,
-          `${colorCategoryTableName}.id`,
-          `${weTransitionBetweenWHRequisitionDetailsTableName}.color_category_id`)
+          .innerJoin(`${colorCategoryTableName}`,
+            `${colorCategoryTableName}.id`,
+            `${weTransitionBetweenWHRequisitionDetailsTableName}.color_category_id`)
           .innerJoin(`${colorTableName}`,
             `${colorTableName}.id`,
             `${weTransitionBetweenWHRequisitionDetailsTableName}.color_id`)
           .innerJoin(`${consigmentDyeingTableName}`,
             `${consigmentDyeingTableName}.id`,
             `${weTransitionBetweenWHRequisitionDetailsTableName}.consigment_dyeing_id`)
+          .innerJoin(`${gradeItemTableName}`,
+            `${gradeItemTableName}.id`,
+            `${weTransitionBetweenWHRequisitionDetailsTableName}.grade_item_id`)
           .where(whereCluse)
           .andWhere(`${weSellRequisitionDetailsTableName}.quantity`, ">", 0)
       })

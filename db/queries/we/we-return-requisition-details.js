@@ -4,7 +4,8 @@ const knex = require("../../config/connection").getConnection();
 
 // Util
 const { weReturnRequisitionDetailsTableName, weReturnRequisitionTableName, fabricTableName,
-  bussinessmanTableName, warehouseTableName, weTableName, weReturnRequisitionDetailsWeTableName, weAddRequisitionDetailsTableName, colorCategoryTableName, colorTableName
+  bussinessmanTableName, warehouseTableName, weTableName, weReturnRequisitionDetailsWeTableName, weAddRequisitionDetailsTableName, colorCategoryTableName, colorTableName,
+  gradeItemTableName
 } = require("../../../util/database-tables-name");
 
 exports.insert = async (weReturnRequisitionDetails, items) => {
@@ -64,6 +65,8 @@ exports.selectByRequisitionId = async (requisitionId) => {
         `${colorTableName}.name as color_name`,
         `${weAddRequisitionDetailsTableName}.color_code`,
         `${weAddRequisitionDetailsTableName}.work_order_number`,
+        `${weAddRequisitionDetailsTableName}.grade_item_id`,
+        `${gradeItemTableName}.name as grade_item_name`,
       ],
     )
     .innerJoin(`${weReturnRequisitionTableName}`, `${weReturnRequisitionTableName}.id`, `${weReturnRequisitionDetailsTableName}.we_return_requisition_id`)
@@ -85,6 +88,9 @@ exports.selectByRequisitionId = async (requisitionId) => {
     .innerJoin(`${colorTableName}`,
       `${colorTableName}.id`,
       `${weAddRequisitionDetailsTableName}.color_id`)
+      .innerJoin(`${gradeItemTableName}`, 
+    `${gradeItemTableName}.id`, 
+    `${weAddRequisitionDetailsTableName}.grade_item_id`)
     .where(whereCluse)
     .andWhere(`${weReturnRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -211,7 +217,9 @@ exports.selectDetailsByWarehouseByFabric = async (warehouseId, dyedFabricId) => 
         knex.raw('? as input_output', '0')
       ],
     )
-    .innerJoin(`${weReturnRequisitionTableName}`, `${weReturnRequisitionTableName}.id`, `${weReturnRequisitionDetailsTableName}.we_return_requisition_id`)
+    .innerJoin(`${weReturnRequisitionTableName}`, 
+      `${weReturnRequisitionTableName}.id`, 
+      `${weReturnRequisitionDetailsTableName}.we_return_requisition_id`)
     .where(whereCluse)
     .andWhere(`${weReturnRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -257,10 +265,12 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, dyedFabric
         `${weAddRequisitionDetailsTableName}.color_code`,
         `${weAddRequisitionDetailsTableName}.work_order_number`,
         knex.raw(
-        `CASE WHEN ${weReturnRequisitionDetailsTableName}.is_defect = '1' THEN 'مرتجع شراء عيب بضاعة' 
+          `CASE WHEN ${weReturnRequisitionDetailsTableName}.is_defect = '1' THEN 'مرتجع شراء عيب بضاعة' 
         ELSE 'مرتجع شراء'  
         END as return_type_name`),
         knex.raw('? as consigment_dyeing_number', ''),
+        `${weAddRequisitionDetailsTableName}.grade_item_id`,
+        `${gradeItemTableName}.name as grade_item_name`,
       ],
     )
     .innerJoin(`${weReturnRequisitionTableName}`, `${weReturnRequisitionTableName}.id`, `${weReturnRequisitionDetailsTableName}.we_return_requisition_id`)
@@ -281,6 +291,9 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, dyedFabric
     .innerJoin(`${colorTableName}`,
       `${colorTableName}.id`,
       `${weAddRequisitionDetailsTableName}.color_id`)
+    .innerJoin(`${gradeItemTableName}`,
+      `${gradeItemTableName}.id`,
+      `${weAddRequisitionDetailsTableName}.grade_item_id`)
     .where(whereCluse)
     .andWhere(`${weReturnRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {

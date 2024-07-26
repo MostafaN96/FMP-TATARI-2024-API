@@ -10,6 +10,7 @@ exports.isValid = (wdDyeingRequisitionDetails) => {
             wdFormDyeingOrderRequisitionDetailsId: validations.joiNotRequiredText(0, 30),
             wdFormRequisitionDetailsId: validations.joiText(15, 30),
             dyedFabricId: validations.joiText(15, 30),
+            gradeItemId: validations.joiText(15, 30),
             dyeingFee:validations.joiText(1, 60),
             dyeingServices:joi.array(),
             price: validations.joiNumber(1, 60),

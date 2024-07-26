@@ -11,6 +11,7 @@ exports.isValid = (weTransitionBetweenWHRequisitionDetails) => {
             dyedFabricId: validations.joiText(15, 30),
             colorCategoryId: validations.joiText(15, 30),
             colorId: validations.joiText(15, 30),
+            gradeItemId: validations.joiText(15, 30),
             colorName: validations.joiNotRequiredText(0, 60),
             colorCode: validations.joiNotRequiredNumber(0, 60),
             fromConsigmentDyeingId: validations.joiText(15, 30),

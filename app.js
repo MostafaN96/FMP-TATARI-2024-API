@@ -39,6 +39,7 @@ const consigmentManufacturingRouter = require("./routers/general/consigment-manu
 const consigmentYarnRouter = require("./routers/general/consigment-yarn")
 const usersPermissionsRouter = require("./routers/general/users-permissions")
 const exchangeRateRouter = require("./routers/general/exchange-rate");
+const gradeItemRouter = require("./routers/general/grade-item");
 
 // WA
 const waRouter = require("./routers/wa/wa");
@@ -215,6 +216,7 @@ app.use('/api/consigment-manufacturing', consigmentManufacturingRouter)
 app.use('/api/consigment-yarn', consigmentYarnRouter)
 app.use('/api/user-permissions', usersPermissionsRouter)
 app.use("/api/exchange-rate", exchangeRateRouter);
+app.use("/api/grade-item", gradeItemRouter);
 
 // WA Yarn
 app.use("/api/wa", waRouter);

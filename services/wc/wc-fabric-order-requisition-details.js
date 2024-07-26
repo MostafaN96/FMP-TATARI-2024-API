@@ -243,7 +243,8 @@ exports.update = async (wcFabricOrderRequisitionDetails) => {
         callArray.push(wcFabricOrderRequisitionQueries.update({
             date: wcFabricOrderRequisitionDetails.date,
             name: wcFabricOrderRequisitionDetails.name,
-            note: wcFabricOrderRequisitionDetails.note
+            note: wcFabricOrderRequisitionDetails.note,
+            is_order: 1,
         },
             {
                 id: wcFabricOrderRequisitionDetails.wcFabricOrderRequisitionId
@@ -255,6 +256,7 @@ exports.update = async (wcFabricOrderRequisitionDetails) => {
                 fabric_width: wcFabricOrderRequisitionDetails.fabricWidth,
                 fabric_quantity_m2: wcFabricOrderRequisitionDetails.fabricQuantityM2,
                 note: wcFabricOrderRequisitionDetails.note2,
+                is_order: 1,
             },
                 {
                     id: wcFabricOrderRequisitionDetails.id

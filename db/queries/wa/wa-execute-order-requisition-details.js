@@ -630,6 +630,64 @@ exports.selectToWarehouseDetailsDetailsByWarehouseByYarnByLot = async (warehouse
   return queryResults;
 };
 
+
+exports.selectToPriceByYarnId = async (yarnId) => {
+  let queryResults = [];
+  let whereCluse = {};
+  whereCluse[`${waExecuteOrderRequisitionDetailsTableName}.yarn_id`] = yarnId;
+  whereCluse[`${waExecuteOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+  whereCluse[`${waExecuteOrderRequisitionDetailsTableName}.is_active`] = 1;
+
+  await knex.from(waExecuteOrderRequisitionDetailsTableName)
+    .select(
+      [
+        `${waExecuteOrderRequisitionDetailsTableName}.id`,
+        `${waExecuteOrderRequisitionDetailsTableName}.price`,
+        `${waExecuteOrderRequisitionDetailsTableName}.price_dollar`,
+        `${waExecuteOrderRequisitionDetailsTableName}.quantity`,
+        `${waExecuteOrderRequisitionDetailsTableName}.note`,
+        `${waExecuteOrderRequisitionTableName}.id as requisition_id`,
+        `${waExecuteOrderRequisitionTableName}.number`,
+        `${waExecuteOrderRequisitionTableName}.date`,
+        `${waExecuteOrderRequisitionTableName}.note as requisition_note`,
+        `${warehouseTableName}.id as warehouse_id`,
+        `${warehouseTableName}.name as warehouse_name`,
+        `${yarnTableName}.name as yarn_name`,
+        `${yarnTableName}.code as yarn_code`,
+        `${yarnLotTableName}.code as yarn_lot_code`,
+`${consigmentYarnTableName}.number as consigment_yarn_number`,
+        knex.raw('? as type_of_requisition', 'اذن تنفيذ طلبية'),
+        knex.raw('? as input_output','1'),
+        knex.raw(`CONCAT(${warehouseTableName}.name) as side_of`),
+      ],
+    )
+    .innerJoin(`${waExecuteOrderRequisitionTableName}`,
+      `${waExecuteOrderRequisitionTableName}.id`,
+      `${waExecuteOrderRequisitionDetailsTableName}.wa_execute_order_requisition_id`)
+    .innerJoin(`${waTableName}`,
+      `${waTableName}.wa_execute_order_requisition_details_id`,
+      `${waExecuteOrderRequisitionDetailsTableName}.id`)
+    .innerJoin(`${yarnTableName}`, 
+    `${yarnTableName}.id`, 
+    `${waExecuteOrderRequisitionDetailsTableName}.yarn_id`)
+    .innerJoin(`${yarnLotTableName}`, 
+    `${yarnLotTableName}.id`, 
+    `${waExecuteOrderRequisitionDetailsTableName}.yarn_lot_id`)
+    .innerJoin(`${warehouseTableName}`, 
+    `${warehouseTableName}.id`, 
+    `${waExecuteOrderRequisitionTableName}.warehouse_id`)
+    .innerJoin(`${consigmentYarnTableName}`, 
+    `${consigmentYarnTableName}.id`, 
+    `${waExecuteOrderRequisitionDetailsTableName}.consigment_yarn_id`)
+    .where(whereCluse)
+    .andWhere(`${waExecuteOrderRequisitionDetailsTableName}.quantity`, ">", 0)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
 exports.selectFromWarehouseTotalDetailsByDate = async (bodyPaylod) => {
   let queryResults = [];
 

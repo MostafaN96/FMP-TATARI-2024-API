@@ -7,7 +7,8 @@ const constants = require("../../../util/constants");
 const { 
   weReconciliationRequisitionTableName, weReconciliationRequisitionDetailsTableName, 
   weReconciliationRequisitionDetailsWeTableName,
-  fabricTableName, weTableName, warehouseTableName, colorTableName, colorCategoryTableName, consigmentDyeingTableName } = require("../../../util/database-tables-name");
+  fabricTableName, weTableName, warehouseTableName, colorTableName, colorCategoryTableName, consigmentDyeingTableName, 
+  gradeItemTableName} = require("../../../util/database-tables-name");
 
 exports.insert = async (weReconciliationRequisitionDetails, items) => {
   let queryResults = false;
@@ -21,6 +22,7 @@ exports.insert = async (weReconciliationRequisitionDetails, items) => {
       color_id: items.colorId,
       color_code: items.colorCode,
       consigment_dyeing_id: items.consigmentDyeingId,
+      grade_item_id: items.gradeItemId,
       fabric_piece: items.numberFabricPieces,
       work_order_number: items.workOrderNumber,
       price: items.price,
@@ -73,7 +75,8 @@ exports.selectByRequisitionId = async (requisitionId) => {
         `${colorCategoryTableName}.id as color_category_id`,
         `${colorCategoryTableName}.name as color_category_name`,
         `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
-
+        `${weReconciliationRequisitionDetailsTableName}.grade_item_id`,
+        `${gradeItemTableName}.name as grade_item_name`,
       ],
     )
     .innerJoin(`${weReconciliationRequisitionTableName}`, `${weReconciliationRequisitionTableName}.id`, `${weReconciliationRequisitionDetailsTableName}.we_reconcilition_requisition_id`)
@@ -82,6 +85,9 @@ exports.selectByRequisitionId = async (requisitionId) => {
     .innerJoin(`${colorTableName}`, `${colorTableName}.id`, `${weReconciliationRequisitionDetailsTableName}.color_id`)
     .innerJoin(`${colorCategoryTableName}`, `${colorCategoryTableName}.id`, `${weReconciliationRequisitionDetailsTableName}.color_category_id`)
     .innerJoin(`${consigmentDyeingTableName}`, `${consigmentDyeingTableName}.id`, `${weReconciliationRequisitionDetailsTableName}.consigment_dyeing_id`)
+    .innerJoin(`${gradeItemTableName}`,
+      `${gradeItemTableName}.id`,
+      `${weReconciliationRequisitionDetailsTableName}.grade_item_id`)
     .where(whereCluse)
     .andWhere(`${weReconciliationRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -228,12 +234,17 @@ exports.selectDetailsDetailsByWarehouseByFabric = async (warehouseId, dyedFabric
         knex.raw(`CONCAT(${warehouseTableName}.name) as side_of`),
         knex.raw('? as is_return_type', 'not_return'),
         `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+        `${weReconciliationRequisitionDetailsTableName}.grade_item_id`,
+        `${gradeItemTableName}.name as grade_item_name`,
       ],
     )
     .innerJoin(`${weReconciliationRequisitionTableName}`, `${weReconciliationRequisitionTableName}.id`, `${weReconciliationRequisitionDetailsTableName}.we_reconcilition_requisition_id`)
     .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weReconciliationRequisitionDetailsTableName}.dyed_fabric_id`)
     .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weReconciliationRequisitionDetailsTableName}.warehouse_id`)
     .innerJoin(`${consigmentDyeingTableName}`, `${consigmentDyeingTableName}.id`, `${weReconciliationRequisitionDetailsTableName}.consigment_dyeing_id`)
+    .innerJoin(`${gradeItemTableName}`,
+      `${gradeItemTableName}.id`,
+      `${weReconciliationRequisitionDetailsTableName}.grade_item_id`)
     .where(whereCluse)
     .andWhere(`${weReconciliationRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {

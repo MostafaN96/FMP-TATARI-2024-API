@@ -347,10 +347,11 @@ exports.selectPriceWa = async (yarnId, consigmentYarnId) => {
     callArray.push(waReconciliationRequisitionDetailsQueries.selectPriceByYarnId(yarnId))
     callArray.push(wbTransportWaWbDetailsQueries.selectPriceByYarnId(yarnId))
     callArray.push(wbTransportRequisitionWbWaDetailsQueries.selectPriceByYarnId(yarnId))
+    callArray.push(waExecuteOrderRequisitionDetailsQueries.selectToPriceByYarnId(yarnId))
     const requisitions = await Promise.all(callArray)
     const sortedAsc = [...requisitions[0], ...requisitions[1],
     ...requisitions[2], ...requisitions[3], ...requisitions[4],
-    ...requisitions[5]].sort(
+    ...requisitions[5], ...requisitions[6]].sort(
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );
 

@@ -10,7 +10,8 @@ const {
   weAddRequisitionTableName, weReconciliationRequisitionDetailsTableName, 
   weReconciliationRequisitionDetailsWeTableName, weReconciliationRequisitionTableName, 
   wdDyeingRequisitionDetailsTableName, wdDyeingRequisitionTableName, 
-  wdFormDyeingRequisitionDetailsTableName, fabricTableName, colorCategoryTableName, colorTableName, anointedColorsPricesTableName
+  wdFormDyeingRequisitionDetailsTableName, fabricTableName, colorCategoryTableName, colorTableName, anointedColorsPricesTableName,
+  gradeItemTableName
 } = require("../../../util/database-tables-name");
 
 exports.insert = async (dyedFabric) => {
@@ -230,7 +231,9 @@ exports.selectStoredDyedFabricsByDyedFabricIdWe = async (whereCluseArray, isGrea
     `requisition_details_id`,
     `price`,
     `quantity`,
-    `we_id`
+    `grade_item_id`,
+    `grade_item_name`,
+    `we_id`,
   ]
   await knex.select(columns).from(function () {
     this.select([
@@ -253,6 +256,8 @@ exports.selectStoredDyedFabricsByDyedFabricIdWe = async (whereCluseArray, isGrea
       `${weAddRequisitionDetailsTableName}.id as requisition_details_id`,
       `${weAddRequisitionDetailsTableName}.price`,
       `${weAddRequisitionDetailsTableName}.quantity`,
+      `${weAddRequisitionDetailsTableName}.grade_item_id`,
+      `${gradeItemTableName}.name as grade_item_name`,
       `${weTableName}.id as we_id`,
       `${weTableName}.current_quantity`,
     ])
@@ -278,6 +283,9 @@ exports.selectStoredDyedFabricsByDyedFabricIdWe = async (whereCluseArray, isGrea
       .innerJoin(`${colorTableName}`,
         `${colorTableName}.id`,
         `${weAddRequisitionDetailsTableName}.color_id`)
+      .innerJoin(`${gradeItemTableName}`,
+        `${gradeItemTableName}.id`,
+        `${weAddRequisitionDetailsTableName}.grade_item_id`)
       .where(whereCluseArray[0])
       .andWhere((qb) => {
         if (isGreaterThanZero) {
@@ -309,6 +317,8 @@ exports.selectStoredDyedFabricsByDyedFabricIdWe = async (whereCluseArray, isGrea
           `${weReconciliationRequisitionDetailsTableName}.id as requisition_details_id`,
           `${weReconciliationRequisitionDetailsTableName}.price`,
           `${weReconciliationRequisitionDetailsTableName}.quantity`,
+          `${weReconciliationRequisitionDetailsTableName}.grade_item_id`,
+          `${gradeItemTableName}.name as grade_item_name`,
           `${weTableName}.id as we_id`,
           `${weTableName}.current_quantity`
         ])
@@ -337,6 +347,9 @@ exports.selectStoredDyedFabricsByDyedFabricIdWe = async (whereCluseArray, isGrea
           .innerJoin(`${colorTableName}`,
             `${colorTableName}.id`,
             `${weReconciliationRequisitionDetailsTableName}.color_id`)
+          .innerJoin(`${gradeItemTableName}`,
+            `${gradeItemTableName}.id`,
+            `${weReconciliationRequisitionDetailsTableName}.grade_item_id`)
           .where(whereCluseArray[1])
           .andWhere(
             (qb) => {
@@ -370,6 +383,8 @@ exports.selectStoredDyedFabricsByDyedFabricIdWe = async (whereCluseArray, isGrea
           `${wdDyeingRequisitionDetailsTableName}.id as requisition_details_id`,
           `${wdDyeingRequisitionDetailsTableName}.cost_price as price`,
           `${wdDyeingRequisitionDetailsTableName}.dyeing_quantity as quantity`,
+          `${wdDyeingRequisitionDetailsTableName}.grade_item_id`,
+          `${gradeItemTableName}.name as grade_item_name`,
           `${weTableName}.id as we_id`,
           `${weTableName}.current_quantity`
         ])
@@ -396,11 +411,14 @@ exports.selectStoredDyedFabricsByDyedFabricIdWe = async (whereCluseArray, isGrea
             `${anointedColorsPricesTableName}.id`,
             `${wdFormDyeingRequisitionDetailsTableName}.dyeing_colors_prices_id`)
             .innerJoin(`${colorCategoryTableName}`,
-            `${colorCategoryTableName}.id`,
-            `${anointedColorsPricesTableName}.color_category_id`)
+              `${colorCategoryTableName}.id`,
+              `${anointedColorsPricesTableName}.color_category_id`)
           .innerJoin(`${colorTableName}`,
             `${colorTableName}.id`,
             `${anointedColorsPricesTableName}.color_id`)
+          .innerJoin(`${gradeItemTableName}`,
+            `${gradeItemTableName}.id`,
+            `${wdDyeingRequisitionDetailsTableName}.grade_item_id`)
           .where(whereCluseArray[2])
           .andWhere(
             (qb) => {

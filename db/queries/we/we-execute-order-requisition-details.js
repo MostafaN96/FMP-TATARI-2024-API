@@ -13,7 +13,8 @@ const {
   weDyedFabricOrderRequisitionTableName,
   weExecuteOrderRequisitionDetailsWeTableName,
   colorTableName,
-  colorCategoryTableName
+  colorCategoryTableName,
+  gradeItemTableName
 } = require("../../../util/database-tables-name");
 
 exports.insert = async (weExecuteOrderRequisitionDetails, items) => {
@@ -30,6 +31,7 @@ exports.insert = async (weExecuteOrderRequisitionDetails, items) => {
       from_consigment_dyeing_id: items.fromConsigmentDyeingId,
       color_category_id: items.colorCategoryId,
       color_id: items.colorId,
+      grade_item_id: items.gradeItemId,
       color_code: items.colorCode,
       price: items.price,
       price_dollar: items.priceDollar,
@@ -58,6 +60,7 @@ exports.selectByRequisitionId = async (whereCluse) => {
     `price`,
     `price_dollar`,
     `quantity`,
+    `fabric_piece`,
     `note`,
     `requisition_id`,
     `number`,
@@ -75,6 +78,8 @@ exports.selectByRequisitionId = async (whereCluse) => {
     `color_name`,
     `color_category_name`,
     `color_code`,
+    `grade_item_id`,
+    `grade_item_name`,
   ]
   await knex.select(columns).from(function () {
     this.select([
@@ -102,6 +107,8 @@ exports.selectByRequisitionId = async (whereCluse) => {
       `${colorTableName}.name as color_name`,
       `${colorCategoryTableName}.name as color_category_name`,
       `${weExecuteOrderRequisitionDetailsTableName}.color_code`,
+        `${weExecuteOrderRequisitionDetailsTableName}.grade_item_id`,
+        `${gradeItemTableName}.name as grade_item_name`,
     ])
       .from(`${weExecuteOrderRequisitionDetailsTableName}`)
       .innerJoin(`${weExecuteOrderRequisitionTableName}`, 
@@ -128,6 +135,9 @@ exports.selectByRequisitionId = async (whereCluse) => {
         .innerJoin(`${colorCategoryTableName}`, 
         `${colorCategoryTableName}.id`, 
         `${weExecuteOrderRequisitionDetailsTableName}.color_category_id`)
+        .innerJoin(`${gradeItemTableName}`,
+      `${gradeItemTableName}.id`,
+      `${weExecuteOrderRequisitionDetailsTableName}.grade_item_id`)
       .where(whereCluse)
       .andWhere(`${weExecuteOrderRequisitionDetailsTableName}.quantity`, ">", 0)
       .as('t1')

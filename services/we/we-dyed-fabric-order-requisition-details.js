@@ -3,6 +3,9 @@ const weDyedFabricOrderRequisitionDetailsQueries = require("../../db/queries/we/
 const weDyedFabricOrderRequisitionQueries = require("../../db/queries/we/we-dyed-fabric-order-requisition");
 const ordersRequisitionsQueries = require("../../db/queries/general/orders-requisitions");
 
+// Service
+const ordersRequisitionsService = require("../general/orders-requisitions");
+
 // Helper
 const trans = require("../../helpers/transform");
 
@@ -59,7 +62,10 @@ exports.selectByRequisitionIdOpenedOrder = async (requisitionId) => {
                 warehouseDetailsWhereCluse[`${weExecuteOrderRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_details_id`] = element.id;
                 element.warehouseDetails = await weDyedFabricOrderRequisitionDetailsQueries.selectWarehouseByRequisitionDetailsId(warehouseDetailsWhereCluse);
             }
+            results.yarnOrders = await ordersRequisitionsService.selectByDyeingIdForYarnOrder(requisitionId);
+            results.fabricOrders = await ordersRequisitionsService.selectByDyeingIdForFabricOrderWc(requisitionId);    
         }
+
         return results;
     } else {
         return constants.itemNotFound;
@@ -198,7 +204,8 @@ exports.update = async (weDyedFabricOrderRequisitionDetails) => {
         callArray.push(weDyedFabricOrderRequisitionQueries.update({
             date: weDyedFabricOrderRequisitionDetails.date,
             name: weDyedFabricOrderRequisitionDetails.name,
-            note: weDyedFabricOrderRequisitionDetails.note
+            note: weDyedFabricOrderRequisitionDetails.note,
+            is_order: 1,
         },
             {
                 id: weDyedFabricOrderRequisitionDetails.weDyedFabricOrderRequisitionId
@@ -207,12 +214,14 @@ exports.update = async (weDyedFabricOrderRequisitionDetails) => {
         // Update weDyedFabricOrderRequisitionDetails Without Quantity
         callArray.push(
             weDyedFabricOrderRequisitionDetailsQueries.update({
+                // dyed_fabric_id: weDyedFabricOrderRequisitionDetails.dyedFabricId,
                 fabric_width: weDyedFabricOrderRequisitionDetails.fabricWidth,
                 fabric_quantity_m2: weDyedFabricOrderRequisitionDetails.fabricQuantityM2,
                 waste_ratio: weDyedFabricOrderRequisitionDetails.wasteRatio,
                 price: weDyedFabricOrderRequisitionDetails.price,
                 price_dollar: weDyedFabricOrderRequisitionDetails.priceDollar,
                 note: weDyedFabricOrderRequisitionDetails.note2,
+                is_order: 1,
             },
                 {
                     id: weDyedFabricOrderRequisitionDetails.id
