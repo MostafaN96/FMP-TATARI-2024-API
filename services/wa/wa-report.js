@@ -27,7 +27,8 @@ const { warehouseTableName,
     waTableName,
     waReconciliationRequisitionDetailsTableName,
     waAddRequisitionTableName,
-    waAddRequisitionDetailsTableName
+    waAddRequisitionDetailsTableName,
+    wbTransportWaWbDetailsTableName
 
 } = require("../../util/database-tables-name");
 
@@ -449,6 +450,23 @@ exports.selectInventoryTotalByDate = async (bodyPalod) => {
     ...requisitions[2], ...requisitions[3], ...requisitions[4],
     ...requisitions[5], ...requisitions[6], ...requisitions[7],
     ...requisitions[8], ...requisitions[9]
+].sort(
+        (objA, objB) => moment(objA.date) - moment(objB.date)
+    );
+
+    return sortedAsc;
+};
+
+exports.selectInventoryByConsigmentsYarn = async (consigmentsYarn) => {
+    let callArray = []
+
+    let wbTransportWaWbWhereCluse = {};
+    wbTransportWaWbWhereCluse[`${wbTransportWaWbDetailsTableName}.is_deleted`] = 0;
+    wbTransportWaWbWhereCluse[`${wbTransportWaWbDetailsTableName}.is_active`] = 1;
+    callArray.push(wbTransportWaWbDetailsQueries.selectbyConsigmentYarnForDyedFabricOrder(wbTransportWaWbWhereCluse, consigmentsYarn))
+
+    const requisitions = await Promise.all(callArray)
+    const sortedAsc = [...requisitions[0]
 ].sort(
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );

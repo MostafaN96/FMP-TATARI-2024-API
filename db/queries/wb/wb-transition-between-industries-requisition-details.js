@@ -654,3 +654,101 @@ exports.selectToIndustryTotalDetailsByDate = async (bodyPaylod) => {
     .catch((error) => console.error(error));
   return queryResults;
 };
+
+exports.selectFromByConsigmentYarnForDyedFabricOrder = async (whereCluse, consigmentsYarn) => {
+  let queryResults = [];
+
+  await knex.from(wbTransitionBetweenIndustriesRequisitionDetailsTableName)
+    .select(
+      [
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.id`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price_dollar`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.quantity`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.statement`,
+        `${wbTransitionBetweenIndustriesRequisitionTableName}.id as requisition_id`,
+        `${wbTransitionBetweenIndustriesRequisitionTableName}.number`,
+        `${wbTransitionBetweenIndustriesRequisitionTableName}.date`,
+        `${wbTransitionBetweenIndustriesRequisitionTableName}.note`,
+        `${bussinessmanTableName}.id as bussinessman_id`,
+        `${bussinessmanTableName}.name as bussinessman_name`,
+        `${yarnTableName}.name as yarn_name`,
+        `${yarnTableName}.code as yarn_code`,
+        `${yarnLotTableName}.code as yarn_lot_code`,
+        `${consigmentYarnTableName}.number as consigment_yarn_number`,
+        knex.raw('? as type_of_requisition', 'اذن نقل بين المصانع'),
+        knex.raw('? as input_output', '0'),
+        knex.raw(`CONCAT(' اذن نقل من مصنع ', '( ', ${bussinessmanTableName}.name, ')', ' الى مصنع ', '(', to_industry.name, ')') as side_of`),
+      ],
+    )
+    .innerJoin(`${wbTransitionBetweenIndustriesRequisitionTableName}`,
+      `${wbTransitionBetweenIndustriesRequisitionTableName}.id`,
+      `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.wb_transition_between_industries_requisition_id`)
+    .innerJoin(`${wbTableName}`,
+      `${wbTableName}.wb_transition_between_industries_requisition_details_id`,
+      `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.id`)
+    .innerJoin(`${yarnTableName}`, `${yarnTableName}.id`, `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.yarn_id`)
+    .innerJoin(`${yarnLotTableName}`, `${yarnLotTableName}.id`, `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.yarn_lot_id`)
+    .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${wbTransitionBetweenIndustriesRequisitionTableName}.industry_id`)
+    .innerJoin(`${bussinessmanTableName} as to_industry`, `to_industry.id`, `${wbTableName}.industry_id`)
+    .innerJoin(`${consigmentYarnTableName}`,
+      `${consigmentYarnTableName}.id`,
+      `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.consigment_yarn_id`)
+    .where(whereCluse)
+    .andWhere(`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.quantity`, ">", 0)
+    .whereIn(`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.consigment_yarn_id`, consigmentsYarn)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.selectToByConsigmentYarnForDyedFabricOrder = async (whereCluse, consigmentsYarn) => {
+  let queryResults = [];
+
+  await knex.from(wbTransitionBetweenIndustriesRequisitionDetailsTableName)
+    .select(
+      [
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.id`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price_dollar`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.quantity`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.statement`,
+        `${wbTransitionBetweenIndustriesRequisitionTableName}.id as requisition_id`,
+        `${wbTransitionBetweenIndustriesRequisitionTableName}.number`,
+        `${wbTransitionBetweenIndustriesRequisitionTableName}.date`,
+        `${wbTransitionBetweenIndustriesRequisitionTableName}.note`,
+        `${bussinessmanTableName}.id as bussinessman_id`,
+        `${bussinessmanTableName}.name as bussinessman_name`,
+        `${yarnTableName}.name as yarn_name`,
+        `${yarnTableName}.code as yarn_code`,
+        `${yarnLotTableName}.code as yarn_lot_code`,
+        `${consigmentYarnTableName}.number as consigment_yarn_number`,
+        knex.raw('? as type_of_requisition', 'اذن نقل بين المصانع'),
+        knex.raw('? as input_output', '1'),
+        knex.raw(`CONCAT(' اذن نقل من مصنع ', '(', ${bussinessmanTableName}.name, ')', ' الى مصنع ', '(', to_industry.name, ')') as side_of`),
+      ],
+    )
+    .innerJoin(`${wbTransitionBetweenIndustriesRequisitionTableName}`,
+      `${wbTransitionBetweenIndustriesRequisitionTableName}.id`,
+      `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.wb_transition_between_industries_requisition_id`)
+    .innerJoin(`${wbTableName}`,
+      `${wbTableName}.wb_transition_between_industries_requisition_details_id`,
+      `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.id`)
+    .innerJoin(`${yarnTableName}`, `${yarnTableName}.id`, `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.yarn_id`)
+    .innerJoin(`${yarnLotTableName}`, `${yarnLotTableName}.id`, `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.yarn_lot_id`)
+    .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${wbTransitionBetweenIndustriesRequisitionTableName}.industry_id`)
+    .innerJoin(`${bussinessmanTableName} as to_industry`, `to_industry.id`, `${wbTableName}.industry_id`)
+    .innerJoin(`${consigmentYarnTableName}`,
+      `${consigmentYarnTableName}.id`,
+      `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.consigment_yarn_id`)
+    .where(whereCluse)
+    .andWhere(`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.quantity`, ">", 0)
+    .whereIn(`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.consigment_yarn_id`, consigmentsYarn)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};

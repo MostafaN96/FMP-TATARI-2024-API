@@ -576,3 +576,72 @@ exports.selectByFabricByConsigmentManufacturing = async (fabricId, consigmentMan
     .catch((error) => console.error(error));
   return queryResults;
 };
+
+exports.selectByConsigmentYarnForDyedFabricOrder = async (whereCluse, consigmentsYarn) => {
+  let queryResults = [];
+
+  await knex
+    .select(
+      [
+        `${wbManufacturingInputTableName}.id`,
+        `${wbManufacturingInputTableName}.price`,
+        `${wbManufacturingInputTableName}.price_dollar`,
+        `${wbManufacturingInputTableName}.quantity_with_waste as quantity`,
+        `${wbManufacturingInputTableName}.wast_ratio`,
+        `${wbManufacturingInputTableName}.statement`,
+        `${wbManufacturingRequisitionTableName}.id as requisition_id`,
+        `${wbManufacturingRequisitionTableName}.number`,
+        `${wbManufacturingRequisitionTableName}.status`,
+        `${wbManufacturingRequisitionTableName}.date`,
+        `${wbManufacturingRequisitionTableName}.note`,
+        `${wbManufacturingRequisitionTableName}.is_order`,
+        `${bussinessmanTableName}.id as bussinessman_id`,
+        `${bussinessmanTableName}.name as bussinessman_name`,
+        `${yarnTableName}.name as yarn_name`,
+        `${yarnTableName}.code as yarn_code`,
+        `${yarnLotTableName}.code as yarn_lot_code`,
+        `${consigmentYarnTableName}.number as consigment_yarn_number`,
+        `${fabricTableName}.id as fabric_id`,
+        `${fabricTableName}.name as fabric_name`,
+        `${fabricTableName}.code as fabric_code`,
+        `${wbManufacturingOutputTableName}.id as wb_manufacturing_output_id`,
+        `${wbManufacturingOutputTableName}.quantity as output_quantity`,
+        knex.raw('? as type_of_requisition', 'اذن تصنيع'),
+        knex.raw('? as input_output', '0'),
+        knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
+      ],
+    )
+    .from(wbManufacturingInputOutputTableName)
+    .innerJoin(`${wbManufacturingRequisitionTableName}`,
+      `${wbManufacturingRequisitionTableName}.id`,
+      `${wbManufacturingInputOutputTableName}.wb_manufacturing_requisition_id`)
+    .innerJoin(`${wbManufacturingInputTableName}`,
+      `${wbManufacturingInputTableName}.id`,
+      `${wbManufacturingInputOutputTableName}.wb_manufacturing_input_id`)
+    .innerJoin(`${yarnTableName}`,
+      `${yarnTableName}.id`,
+      `${wbManufacturingInputTableName}.yarn_id`)
+    .innerJoin(`${yarnLotTableName}`,
+      `${yarnLotTableName}.id`,
+      `${wbManufacturingInputTableName}.yarn_lot_id`)
+    .innerJoin(`${bussinessmanTableName}`,
+      `${bussinessmanTableName}.id`,
+      `${wbManufacturingRequisitionTableName}.industry_id`)
+    .innerJoin(`${wbManufacturingOutputTableName}`,
+      `${wbManufacturingOutputTableName}.id`,
+      `${wbManufacturingInputOutputTableName}.wb_manufacturing_output_id`)
+    .innerJoin(`${fabricTableName}`,
+      `${fabricTableName}.id`,
+      `${wbManufacturingOutputTableName}.fabric_id`)
+    .innerJoin(`${consigmentYarnTableName}`, 
+    `${consigmentYarnTableName}.id`, 
+    `${wbManufacturingInputTableName}.consigment_yarn_id`)
+    .where(whereCluse)
+    .andWhere(`${wbManufacturingInputTableName}.quantity_with_waste`, ">", 0)
+    .whereIn(`${wbManufacturingInputTableName}.consigment_yarn_id`, consigmentsYarn)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};

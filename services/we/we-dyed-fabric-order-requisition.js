@@ -15,24 +15,31 @@ const trans = require("../../helpers/transform");
 const { weDyedFabricOrderRequisitionTableName, weDyedFabricOrderRequisitionDetailsTableName } = require("../../util/database-tables-name");
 
 exports.create = async (weDyedFabricOrderRequisition) => {
-    weDyedFabricOrderRequisition.id = trans.transform();
 
-    // Select Max Number Of Requisition
-    const selectMaxRequisitionNumber = await generalQueries.selectMaxValue(weDyedFabricOrderRequisitionTableName, { number: 'number' })
-    if (selectMaxRequisitionNumber[0].number == null) {
-        selectMaxRequisitionNumber[0].number = 0
-    }
-    weDyedFabricOrderRequisition.number = selectMaxRequisitionNumber[0].number + 1
+    // insert orders requisitions
+    const  ordersRequisitionsResults = await ordersRequisitionsService.createForDyedFabricOrderwe(weDyedFabricOrderRequisition)
+    if (ordersRequisitionsResults) {
+        weDyedFabricOrderRequisition.id = trans.transform();
 
-    // Check Duplication Data
-    const selectOneResult = await weDyedFabricOrderRequisitionQueries.selectOne({ number: weDyedFabricOrderRequisition.number });
-    if (selectOneResult[0] != null) {
-        return constants.duplicatedData;
-    }
-
-    const results = await weDyedFabricOrderRequisitionQueries.insert(weDyedFabricOrderRequisition);
-    if (results) {
-        return await weDyedFabricOrderRequisitionDetailsService.create(weDyedFabricOrderRequisition);
+        // Select Max Number Of Requisition
+        const selectMaxRequisitionNumber = await generalQueries.selectMaxValue(weDyedFabricOrderRequisitionTableName, { number: 'number' })
+        if (selectMaxRequisitionNumber[0].number == null) {
+            selectMaxRequisitionNumber[0].number = 0
+        }
+        weDyedFabricOrderRequisition.number = selectMaxRequisitionNumber[0].number + 1
+    
+        // Check Duplication Data
+        const selectOneResult = await weDyedFabricOrderRequisitionQueries.selectOne({ number: weDyedFabricOrderRequisition.number });
+        if (selectOneResult[0] != null) {
+            return constants.duplicatedData;
+        }
+    
+        const results = await weDyedFabricOrderRequisitionQueries.insert(weDyedFabricOrderRequisition);
+        if (results) {
+            return await weDyedFabricOrderRequisitionDetailsService.create(weDyedFabricOrderRequisition);
+        } else {
+            return constants.insertError;
+        }
     } else {
         return constants.insertError;
     }

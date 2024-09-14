@@ -11,9 +11,9 @@ exports.insert = async (weDyedFabricOrderRequisition) => {
     await sqlFun
         .insert(weDyedFabricOrderRequisitionTableName, {
             id: weDyedFabricOrderRequisition.id,
+            orders_requisitions_id: weDyedFabricOrderRequisition.ordersRequisitionsId,
             seller_id: weDyedFabricOrderRequisition.sellerId,
             number: weDyedFabricOrderRequisition.number,
-            name: weDyedFabricOrderRequisition.name,
             date: weDyedFabricOrderRequisition.date,
             note: weDyedFabricOrderRequisition.note,
             creator_id: weDyedFabricOrderRequisition.personid,

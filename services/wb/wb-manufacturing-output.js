@@ -109,6 +109,12 @@ exports.selectConsigmentManufacturingByFabric = async (fabricId) => {
   return results;
 };
 
+exports.selectWcConsigmentsManufacturing = async (whereCluse, consigmentsYarn) => {
+
+  const results = await wbManufacturingOutputQueries.selectWcConsigmentsManufacturing(whereCluse, consigmentsYarn);
+  return results;
+};
+
 
 exports.confirm = async (wbManufacturingOutput) => {
   // check is found

@@ -28,7 +28,13 @@ const constantsPayloads = require("../../util/constants-payloads");
 const { wbManufacturingOutputTableName, wbManufacturingRequisitionTableName, 
     wbManufacturingInputOutputTableName, warehouseTableName,
     fabricTableName, wcTableName, wcReconciliationRequisitionDetailsTableName,
-    wcAddRequisitionTableName, wcAddRequisitionDetailsTableName
+    wcAddRequisitionTableName, wcAddRequisitionDetailsTableName,
+    wcSellRequisitionDetailsTableName,
+    wcReturnRequisitionDetailsTableName,
+    wdTransportWcWdDetailsTableName,
+    wdTransportRequisitionWdWcDetailsTableName,
+    wcExecuteOrderRequisitionDetailsTableName,
+    wcTransitionBetweenWHRequisitionDetailsTableName
 
 } = require("../../util/database-tables-name");
 
@@ -596,6 +602,69 @@ exports.selectInventoryTotalByDate = async (bodyPaylod) => {
     return sortedAsc;
 };
 
+exports.selectInventoryByConsigmentsManufacturing = async (consigmentsManufacturing) => {
+    let callArray = []
+
+    let wcAddRequisitionDetailsWhereCluse = {};
+    wcAddRequisitionDetailsWhereCluse[`${wcAddRequisitionDetailsTableName}.is_deleted`] = 0;
+    wcAddRequisitionDetailsWhereCluse[`${wcAddRequisitionDetailsTableName}.is_active`] = 1;
+    callArray.push(wcAddRequisitionDetailsQueries.selectByConsigmentManufacturingForDyedFabricOrder(wcAddRequisitionDetailsWhereCluse, consigmentsManufacturing))
+    
+    let wcSellRequisitionDetailsWhereCluse = {};
+    wcSellRequisitionDetailsWhereCluse[`${wcSellRequisitionDetailsTableName}.is_deleted`] = 0;
+    wcSellRequisitionDetailsWhereCluse[`${wcSellRequisitionDetailsTableName}.is_active`] = 1;
+    callArray.push(wcSellRequisitionDetailsQueries.selectByConsigmentManufacturingForDyedFabricOrder(wcSellRequisitionDetailsWhereCluse, consigmentsManufacturing))
+    
+    let wcReturnRequisitionDetailsWhereCluse = {};
+    wcReturnRequisitionDetailsWhereCluse[`${wcReturnRequisitionDetailsTableName}.is_deleted`] = 0;
+    wcReturnRequisitionDetailsWhereCluse[`${wcReturnRequisitionDetailsTableName}.is_active`] = 1;
+    callArray.push(wcReturnRequisitionDetailsQueries.selectByConsigmentManufacturingForDyedFabricOrder(wcReturnRequisitionDetailsWhereCluse, consigmentsManufacturing))
+    
+    let wcReconciliationRequisitionDetailsWhereCluse = {};
+    wcReconciliationRequisitionDetailsWhereCluse[`${wcReconciliationRequisitionDetailsTableName}.is_deleted`] = 0;
+    wcReconciliationRequisitionDetailsWhereCluse[`${wcReconciliationRequisitionDetailsTableName}.is_active`] = 1;
+    callArray.push(wcReconciliationRequisitionDetailsQueries.selectByConsigmentManufacturingForDyedFabricOrder(wcReconciliationRequisitionDetailsWhereCluse, consigmentsManufacturing))
+    
+    let wdTransportWcWdDetailsWhereCluse = {};
+    wdTransportWcWdDetailsWhereCluse[`${wdTransportWcWdDetailsTableName}.is_deleted`] = 0;
+    wdTransportWcWdDetailsWhereCluse[`${wdTransportWcWdDetailsTableName}.is_active`] = 1;
+    callArray.push(wdTransportWcWdDetailsQueries.selectByConsigmentManufacturingForDyedFabricOrder(wdTransportWcWdDetailsWhereCluse, consigmentsManufacturing))
+    
+    let wdTransportRequisitionWdWcDetailsWhereCluse = {};
+    wdTransportRequisitionWdWcDetailsWhereCluse[`${wdTransportRequisitionWdWcDetailsTableName}.is_deleted`] = 0;
+    wdTransportRequisitionWdWcDetailsWhereCluse[`${wdTransportRequisitionWdWcDetailsTableName}.is_active`] = 1;
+    callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectByConsigmentManufacturingForDyedFabricOrder(wdTransportRequisitionWdWcDetailsWhereCluse, consigmentsManufacturing))
+    
+    let wcExecuteOrderRequisitionDetailsFromWhereCluse = {};
+    wcExecuteOrderRequisitionDetailsFromWhereCluse[`${wcExecuteOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+    wcExecuteOrderRequisitionDetailsFromWhereCluse[`${wcExecuteOrderRequisitionDetailsTableName}.is_active`] = 1;
+    callArray.push(wcExecuteOrderRequisitionDetailsQueries.selectFromByConsigmentManufacturingForDyedFabricOrder(wcExecuteOrderRequisitionDetailsFromWhereCluse, consigmentsManufacturing))
+    
+    let wcExecuteOrderRequisitionDetailsToWhereCluse = {};
+    wcExecuteOrderRequisitionDetailsToWhereCluse[`${wcExecuteOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+    wcExecuteOrderRequisitionDetailsToWhereCluse[`${wcExecuteOrderRequisitionDetailsTableName}.is_active`] = 1;
+    callArray.push(wcExecuteOrderRequisitionDetailsQueries.selectToByConsigmentManufacturingForDyedFabricOrder(wcExecuteOrderRequisitionDetailsToWhereCluse, consigmentsManufacturing))
+    
+    let wcTransitionBetweenWHRequisitionDetailsFromWhereCluse = {};
+    wcTransitionBetweenWHRequisitionDetailsFromWhereCluse[`${wcTransitionBetweenWHRequisitionDetailsTableName}.is_deleted`] = 0;
+    wcTransitionBetweenWHRequisitionDetailsFromWhereCluse[`${wcTransitionBetweenWHRequisitionDetailsTableName}.is_active`] = 1;
+    callArray.push(wcTransitionBetweenWHRequisitionDetailsQueries.selectFromByConsigmentManufacturingForDyedFabricOrder(wcTransitionBetweenWHRequisitionDetailsFromWhereCluse, consigmentsManufacturing))
+    
+    let wcTransitionBetweenWHRequisitionDetailsToWhereCluse = {};
+    wcTransitionBetweenWHRequisitionDetailsToWhereCluse[`${wcTransitionBetweenWHRequisitionDetailsTableName}.is_deleted`] = 0;
+    wcTransitionBetweenWHRequisitionDetailsToWhereCluse[`${wcTransitionBetweenWHRequisitionDetailsTableName}.is_active`] = 1;
+    callArray.push(wcTransitionBetweenWHRequisitionDetailsQueries.selectToByConsigmentManufacturingForDyedFabricOrder(wcTransitionBetweenWHRequisitionDetailsToWhereCluse, consigmentsManufacturing))
+    
+    const requisitions = await Promise.all(callArray)
+    const sortedAsc = [...requisitions[0], ...requisitions[1],
+    ...requisitions[2], ...requisitions[3], ...requisitions[4],
+    ...requisitions[5], ...requisitions[6], ...requisitions[7],
+    ...requisitions[8], ...requisitions[9]
+].sort(
+        (objA, objB) => moment(objA.date) - moment(objB.date)
+    );
+    return sortedAsc;
+};
 
 exports.inquireFabricAvilabilityReportWc = async (fabric) => {
     

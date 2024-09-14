@@ -382,3 +382,46 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
     .catch((error) => console.error(error));
   return queryResults;
 };
+exports.selectByConsigmentManufacturingForDyedFabricOrder = async (whereCluse, consigmentsManufacturing) => {
+  let queryResults = [];
+
+  await knex.from(wcSellRequisitionDetailsTableName)
+    .select(
+      [
+        `${wcSellRequisitionDetailsTableName}.id`,
+        `${wcSellRequisitionDetailsTableName}.price`,
+        `${wcSellRequisitionDetailsTableName}.price_dollar`,
+        `${wcSellRequisitionDetailsTableName}.quantity`,
+        `${wcSellRequisitionDetailsTableName}.fabric_piece`,
+        `${wcSellRequisitionDetailsTableName}.document`,
+        `${wcSellRequisitionDetailsTableName}.statement`,
+        `${wcSellRequisitionTableName}.id as requisition_id`,
+        `${wcSellRequisitionTableName}.number`,
+        `${wcSellRequisitionTableName}.date`,
+        `${wcSellRequisitionTableName}.note`,
+        `${bussinessmanTableName}.id as bussinessman_id`,
+        `${bussinessmanTableName}.name as bussinessman_name`,
+        `${fabricTableName}.name as fabric_name`,
+        `${fabricTableName}.code as fabric_code`,
+        `${consigmentManufacturingTableName}.id as consigment_manufacturing_id`,
+        `${consigmentManufacturingTableName}.number as consigment_manufacturing_number`,
+        `${warehouseTableName}.name as warehouse_name`,
+        knex.raw('? as type_of_requisition', 'اذن بيع'),
+        knex.raw('? as input_output', '0'),
+        knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
+      ],
+    )
+    .innerJoin(`${wcSellRequisitionTableName}`, `${wcSellRequisitionTableName}.id`, `${wcSellRequisitionDetailsTableName}.wc_sell_requisition_id`)
+    .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${wcSellRequisitionTableName}.seller_id`)
+    .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${wcSellRequisitionDetailsTableName}.fabric_id`)
+    .innerJoin(`${consigmentManufacturingTableName}`, `${consigmentManufacturingTableName}.id`, `${wcSellRequisitionDetailsTableName}.consigment_manufacturing_id`)
+    .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${wcSellRequisitionTableName}.warehouse_id`)
+    .where(whereCluse)
+    .andWhere(`${wcSellRequisitionDetailsTableName}.quantity`, ">", 0)
+    .whereIn(`${wcSellRequisitionDetailsTableName}.consigment_manufacturing_id`, consigmentsManufacturing)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};

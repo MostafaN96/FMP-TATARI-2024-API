@@ -110,6 +110,13 @@ exports.selectByRequisitionId = async (requisitionId) => {
 //     }
 // };
 
+
+exports.selectWdConsigmentsDyeing = async (whereCluse, consigmentsManufacturing) => {
+
+    const results = await wdTransportWcWdDetailsQueries.selectWdConsigmentsDyeing(whereCluse, consigmentsManufacturing);
+    return results;
+  };
+
 exports.update = async (wdTransportWcWdRequisitionDetails) => {
     // Array for Promise
     let callArray = []

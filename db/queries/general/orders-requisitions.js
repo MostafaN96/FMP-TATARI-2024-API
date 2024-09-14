@@ -3,7 +3,7 @@ const sqlFun = require("../../config/sql-fun");
 const knex = require("../../config/connection").getConnection();
 
 // Util
-const { ordersRequisitionsTableName, waYarnOrderRequisitionTableName, waYarnOrderRequisitionDetailsTableName, wcFabricOrderRequisitionDetailsTableName, wcFabricOrderRequisitionTableName } = require("../../../util/database-tables-name");
+const { ordersRequisitionsTableName, waYarnOrderRequisitionTableName, waYarnOrderRequisitionDetailsTableName, wcFabricOrderRequisitionDetailsTableName, wcFabricOrderRequisitionTableName, waExecuteOrderRequisitionDetailsTableName, waExecuteOrderRequisitionTableName, weDyedFabricOrderRequisitionTableName } = require("../../../util/database-tables-name");
 
 exports.insertForDyeingOrder = async (orderRequisitions) => {
     let queryResults = false;
@@ -62,7 +62,8 @@ exports.insertForDyedFabricOrderwe = async (orderRequisitions) => {
     let queryResults = false;
     await sqlFun
         .insert(ordersRequisitionsTableName, {
-            we_dyed_fabric_order_requisition_id: orderRequisitions.id,
+            id: orderRequisitions.ordersRequisitionsId,
+            name: orderRequisitions.name,
             creator_id: orderRequisitions.personid,
             ip_address: orderRequisitions.ipaddress
         })
@@ -146,3 +147,33 @@ exports.selectByDyeingIdForFabricOrderWc = async (whereCluse) => {
     return queryResults;
   };
   
+  
+exports.selectWaYarnConsigmentsOrder = async (whereCluse) => {
+    let queryResults = [];
+  
+    await knex
+    //   .select([
+    //     `${waExecuteOrderRequisitionDetailsTableName}.consigment_yarn_id`,
+    //   ])
+      .pluck(`${waExecuteOrderRequisitionDetailsTableName}.consigment_yarn_id`)
+      .from(`${ordersRequisitionsTableName}`)
+      .innerJoin(`${weDyedFabricOrderRequisitionTableName}`,
+        `${weDyedFabricOrderRequisitionTableName}.id`,
+        `${ordersRequisitionsTableName}.we_dyed_fabric_order_requisition_id`)
+      .innerJoin(`${waExecuteOrderRequisitionDetailsTableName}`,
+        `${waExecuteOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_id`,
+        `${ordersRequisitionsTableName}.wa_yarn_order_requisition_id`)
+      .innerJoin(`${waExecuteOrderRequisitionTableName}`,
+        `${waExecuteOrderRequisitionTableName}.id`,
+        `${waExecuteOrderRequisitionDetailsTableName}.wa_execute_order_requisition_id`)
+      .where(whereCluse)
+      .andWhere(`${waExecuteOrderRequisitionDetailsTableName}.quantity`, ">", 0)
+      .whereNotNull(`${ordersRequisitionsTableName}.wa_yarn_order_requisition_id`)
+      .groupBy( `${waExecuteOrderRequisitionDetailsTableName}.consigment_yarn_id`)
+    //   .returning(`${waExecuteOrderRequisitionDetailsTableName}.consigment_yarn_id`)
+      .then((data) => {
+        queryResults = data;
+      })
+      .catch((error) => console.error(error));
+    return queryResults;
+  };

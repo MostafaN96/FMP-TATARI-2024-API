@@ -710,3 +710,108 @@ exports.selectToWarehouseTotalDetailsByDate = async (bodyPaylod) => {
     .catch((error) => console.error(error));
   return queryResults;
 };
+
+exports.selectFromByConsigmentManufacturingForDyedFabricOrder = async (whereCluse, consigmentsManufacturing) => {
+  let queryResults = [];
+
+  await knex.from(wcExecuteOrderRequisitionDetailsTableName)
+    .select(
+      [
+        `${wcExecuteOrderRequisitionDetailsTableName}.id`,
+        `${wcExecuteOrderRequisitionDetailsTableName}.price`,
+        `${wcExecuteOrderRequisitionDetailsTableName}.price_dollar`,
+        `${wcExecuteOrderRequisitionDetailsTableName}.quantity`,
+        `${wcExecuteOrderRequisitionDetailsTableName}.fabric_piece`,
+        `${wcExecuteOrderRequisitionDetailsTableName}.note`,
+        `${wcExecuteOrderRequisitionTableName}.id as requisition_id`,
+        `${wcExecuteOrderRequisitionTableName}.number`,
+        `${wcExecuteOrderRequisitionTableName}.date`,
+        `${wcExecuteOrderRequisitionTableName}.note as requisition_note`,
+        `${warehouseTableName}.id as warehouse_id`,
+        `${warehouseTableName}.name as warehouse_name`,
+        `${fabricTableName}.name as fabric_name`,
+        `${fabricTableName}.code as fabric_code`,
+        `${consigmentManufacturingTableName}.number as consigment_manufacturing_number`,
+        knex.raw('? as type_of_requisition', 'اذن تنفيذ طلبية'),
+        knex.raw('? as input_output', '0'),
+        knex.raw(`CONCAT(${warehouseTableName}.name) as side_of`),
+      ],
+    )
+    .innerJoin(`${wcExecuteOrderRequisitionTableName}`,
+      `${wcExecuteOrderRequisitionTableName}.id`,
+      `${wcExecuteOrderRequisitionDetailsTableName}.wc_execute_order_requisition_id`)
+      .innerJoin(`${wcExecuteOrderRequisitionDetailsWcTableName}`,
+      `${wcExecuteOrderRequisitionDetailsWcTableName}.wc_execute_order_requisition_details_id`,
+      `${wcExecuteOrderRequisitionDetailsTableName}.id`)
+    .innerJoin(`${wcTableName}`,
+      `${wcTableName}.id`,
+      `${wcExecuteOrderRequisitionDetailsWcTableName}.wc_id`)
+    .innerJoin(`${fabricTableName}`, 
+    `${fabricTableName}.id`, 
+    `${wcExecuteOrderRequisitionDetailsTableName}.fabric_id`)
+    .innerJoin(`${warehouseTableName}`, 
+    `${warehouseTableName}.id`, 
+    `${wcExecuteOrderRequisitionDetailsTableName}.from_warehouse_id`)
+    .innerJoin(`${consigmentManufacturingTableName}`, 
+    `${consigmentManufacturingTableName}.id`, 
+    `${wcExecuteOrderRequisitionDetailsTableName}.consigment_manufacturing_id`)
+    .where(whereCluse)
+    .andWhere(`${wcExecuteOrderRequisitionDetailsTableName}.quantity`, ">", 0)
+    .whereIn(`${wcExecuteOrderRequisitionDetailsTableName}.consigment_manufacturing_id`, consigmentsManufacturing)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.selectToByConsigmentManufacturingForDyedFabricOrder = async (whereCluse, consigmentsManufacturing) => {
+  let queryResults = [];
+
+  await knex.from(wcExecuteOrderRequisitionDetailsTableName)
+    .select(
+      [
+        `${wcExecuteOrderRequisitionDetailsTableName}.id`,
+        `${wcExecuteOrderRequisitionDetailsTableName}.price`,
+        `${wcExecuteOrderRequisitionDetailsTableName}.price_dollar`,
+        `${wcExecuteOrderRequisitionDetailsTableName}.quantity`,
+        `${wcExecuteOrderRequisitionDetailsTableName}.fabric_piece`,
+        `${wcExecuteOrderRequisitionDetailsTableName}.note`,
+        `${wcExecuteOrderRequisitionTableName}.id as requisition_id`,
+        `${wcExecuteOrderRequisitionTableName}.number`,
+        `${wcExecuteOrderRequisitionTableName}.date`,
+        `${wcExecuteOrderRequisitionTableName}.note as requisition_note`,
+        `${warehouseTableName}.id as warehouse_id`,
+        `${warehouseTableName}.name as warehouse_name`,
+        `${fabricTableName}.name as fabric_name`,
+        `${fabricTableName}.code as fabric_code`,
+        `${consigmentManufacturingTableName}.number as consigment_manufacturing_number`,
+        knex.raw('? as type_of_requisition', 'اذن تنفيذ طلبية'),
+        knex.raw('? as input_output', '1'),
+        knex.raw(`CONCAT(${warehouseTableName}.name) as side_of`),
+      ],
+    )
+    .innerJoin(`${wcExecuteOrderRequisitionTableName}`,
+      `${wcExecuteOrderRequisitionTableName}.id`,
+      `${wcExecuteOrderRequisitionDetailsTableName}.wc_execute_order_requisition_id`)
+    .innerJoin(`${wcTableName}`,
+      `${wcTableName}.wc_execute_order_requisition_details_id`,
+      `${wcExecuteOrderRequisitionDetailsTableName}.id`)
+    .innerJoin(`${fabricTableName}`, 
+    `${fabricTableName}.id`, 
+    `${wcExecuteOrderRequisitionDetailsTableName}.fabric_id`)
+    .innerJoin(`${warehouseTableName}`, 
+    `${warehouseTableName}.id`, 
+    `${wcExecuteOrderRequisitionTableName}.warehouse_id`)
+    .innerJoin(`${consigmentManufacturingTableName}`, 
+    `${consigmentManufacturingTableName}.id`, 
+    `${wcExecuteOrderRequisitionDetailsTableName}.consigment_manufacturing_id`)
+    .where(whereCluse)
+    .andWhere(`${wcExecuteOrderRequisitionDetailsTableName}.quantity`, ">", 0)
+    .whereIn(`${wcExecuteOrderRequisitionDetailsTableName}.consigment_manufacturing_id`, consigmentsManufacturing)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};

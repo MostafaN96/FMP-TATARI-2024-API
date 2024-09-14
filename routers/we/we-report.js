@@ -54,6 +54,15 @@ router.get(
   weReportController.salesReport
 );
 
+// Get Queries
+router.get(
+  "/dyed-fabric-order-by-order-by-seller/:id/:sellerId",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  middleWeres.checkInt(),
+  weReportController.dyedFabricReportByOrderBySeller
+);
+
 // Post Queries
 router.post(
   "/select-inventory-total",

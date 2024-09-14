@@ -594,3 +594,42 @@ exports.selectOutputTotalByFabricId = async (fabricId) => {
     .catch((error) => console.error(error));
   return queryResults;
 };
+
+exports.selectByConsigmentDyeingForDyedFabricOrder = async (whereCluse, consigmentsDyeing) => {
+  let queryResults = [];
+
+  await knex.from(wdReconciliationRequisitionDetailsTableName)
+    .select(
+      [
+        `${wdReconciliationRequisitionDetailsTableName}.id`,
+        `${wdReconciliationRequisitionDetailsTableName}.price`,
+        `${wdReconciliationRequisitionDetailsTableName}.price_dollar`,
+        `${wdReconciliationRequisitionDetailsTableName}.quantity`,
+        `${wdReconciliationRequisitionDetailsTableName}.statement`,
+        `${wdReconciliationRequisitionTableName}.id as requisition_id`,
+        `${wdReconciliationRequisitionTableName}.number`,
+        `${wdReconciliationRequisitionTableName}.date`,
+        `${wdReconciliationRequisitionTableName}.note`,
+        `${bussinessmanTableName}.id as bussinessman_id`,
+        `${bussinessmanTableName}.name as bussinessman_name`,
+        `${fabricTableName}.name as fabric_name`,
+        `${fabricTableName}.code as fabric_code`,
+        `${consigmentDyeingTableName}.number as consigment_number`,
+        knex.raw('? as type_of_requisition', 'اذن تسوية'),
+        `${wdReconciliationRequisitionDetailsTableName}.input_output`,
+        knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
+      ],
+    )
+    .innerJoin(`${wdReconciliationRequisitionTableName}`, `${wdReconciliationRequisitionTableName}.id`, `${wdReconciliationRequisitionDetailsTableName}.wd_reconcilition_requisition_id`)
+    .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${wdReconciliationRequisitionDetailsTableName}.fabric_id`)
+    .innerJoin(`${consigmentDyeingTableName}`, `${consigmentDyeingTableName}.id`, `${wdReconciliationRequisitionDetailsTableName}.consigment_dyeing_id`)
+    .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${wdReconciliationRequisitionTableName}.dyeing_id`)
+    .where(whereCluse)
+    .andWhere(`${wdReconciliationRequisitionDetailsTableName}.quantity`, ">", 0)
+    .whereIn(`${wdReconciliationRequisitionDetailsTableName}.consigment_dyeing_id`, consigmentsDyeing)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};

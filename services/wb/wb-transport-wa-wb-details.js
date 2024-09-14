@@ -112,6 +112,13 @@ exports.selectWithFabricManufacturedByRequisitionId = async (requisitionId) => {
     }
 };
 
+exports.selectWbConsigmentsYarn = async (whereCluse, consigmentsYarn) => {
+
+    const results = await wbTransportWaWbDetailsQueries.selectWbConsigmentsYarn(whereCluse, consigmentsYarn);
+    return results;
+
+};
+
 exports.update = async (wbTransportWaWbRequisitionDetails) => {
     // Array for Promise
     let callArray = []

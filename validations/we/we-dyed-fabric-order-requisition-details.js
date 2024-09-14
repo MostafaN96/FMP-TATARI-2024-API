@@ -41,6 +41,7 @@ exports.isValidUpdate = (weDyedFabricOrderRequisitionDetails) => {
         colorCategoryId: validations.joiText(15, 30),
         colorId: validations.joiText(15, 30),
         colorCode: validations.joiText(1, 90),
+        dyedFabricId: validations.joiText(15, 30),
         date: validations.joiText(5, 50),
         name: validations.joiText(1, 90),
         note: validations.joiNotRequiredText(0, 100000),

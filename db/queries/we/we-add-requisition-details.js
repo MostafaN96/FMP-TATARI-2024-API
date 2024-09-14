@@ -454,3 +454,65 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
     .catch((error) => console.error(error));
   return queryResults;
 };
+
+exports.selectByConsigmentDyeingForDyedFabricOrder = async (whereCluse, consigmentsDyeing) => {
+  let queryResults = [];
+
+  await knex.from(weAddRequisitionDetailsTableName)
+    .select(
+      [
+        `${weAddRequisitionDetailsTableName}.id`,
+        `${weAddRequisitionDetailsTableName}.price`,
+        `${weAddRequisitionDetailsTableName}.price_dollar`,
+        `${weAddRequisitionDetailsTableName}.quantity`,
+        `${weAddRequisitionDetailsTableName}.document`,
+        `${weAddRequisitionDetailsTableName}.statement`,
+        `${weAddRequisitionDetailsTableName}.fabric_piece`,
+        `${weAddRequisitionDetailsTableName}.work_order_number`,
+        `${weAddRequisitionDetailsTableName}.dyeing_code`,
+        `${weAddRequisitionDetailsTableName}.color_code`,
+        `${weAddRequisitionTableName}.id as requisition_id`,
+        `${weAddRequisitionTableName}.number`,
+        `${weAddRequisitionTableName}.date`,
+        `${weAddRequisitionTableName}.note`,
+        `${bussinessmanTableName}.id as bussinessman_id`,
+        `${bussinessmanTableName}.name as bussinessman_name`,
+        `${fabricTableName}.name as fabric_name`,
+        `${fabricTableName}.code as fabric_code`,
+        `${warehouseTableName}.name as warehouse_name`,
+        knex.raw('? as type_of_requisition', 'اذن اضافة'),
+        knex.raw('? as input_output', '1'),
+        knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
+        knex.raw('? as is_return_type', 'not_return'),
+        `${colorCategoryTableName}.name as color_category_name`,
+        `${colorTableName}.name as color_name`,
+        `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+        `${weAddRequisitionDetailsTableName}.grade_item_id`,
+        `${gradeItemTableName}.name as grade_item_name`,
+      ],
+    )
+    .innerJoin(`${weAddRequisitionTableName}`, `${weAddRequisitionTableName}.id`, `${weAddRequisitionDetailsTableName}.we_add_requisition_id`)
+    .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${weAddRequisitionTableName}.supplier_id`)
+    .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weAddRequisitionDetailsTableName}.dyed_fabric_id`)
+    .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weAddRequisitionDetailsTableName}.warehouse_id`)
+    .innerJoin(`${colorCategoryTableName}`, 
+    `${colorCategoryTableName}.id`, 
+    `${weAddRequisitionDetailsTableName}.color_category_id`)
+    .innerJoin(`${colorTableName}`, 
+    `${colorTableName}.id`, 
+    `${weAddRequisitionDetailsTableName}.color_id`)
+    .innerJoin(`${consigmentDyeingTableName}`, 
+    `${consigmentDyeingTableName}.id`, 
+    `${weAddRequisitionDetailsTableName}.consigment_dyeing_id`)
+    .innerJoin(`${gradeItemTableName}`,
+      `${gradeItemTableName}.id`,
+      `${weAddRequisitionDetailsTableName}.grade_item_id`)
+    .where(whereCluse)
+    .andWhere(`${weAddRequisitionDetailsTableName}.quantity`, ">", 0)
+    .whereIn(`${weAddRequisitionDetailsTableName}.consigment_dyeing_id`, consigmentsDyeing)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};

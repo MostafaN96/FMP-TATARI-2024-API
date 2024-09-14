@@ -631,6 +631,181 @@ exports.selectToWarehouseDetailsDetailsByWarehouseByFabricByConsigmentManufactur
   return queryResults;
 };
 
+exports.selectFromWarehouseDetailsByWarehouseByFabric = async (warehouseId, dyedFabricId) => {
+  let queryResults = [];
+  let whereCluse = {};
+  whereCluse[`${weExecuteOrderRequisitionDetailsTableName}.from_warehouse_id`] = warehouseId;
+  whereCluse[`${weExecuteOrderRequisitionDetailsTableName}.dyed_fabric_id`] = dyedFabricId;
+  whereCluse[`${weExecuteOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+  whereCluse[`${weExecuteOrderRequisitionDetailsTableName}.is_active`] = 1;
+
+  await knex.from(weExecuteOrderRequisitionDetailsTableName)
+    .select(
+      [
+        `${weExecuteOrderRequisitionDetailsTableName}.price`,
+        `${weExecuteOrderRequisitionDetailsTableName}.price_dollar`,
+        `${weExecuteOrderRequisitionDetailsTableName}.quantity`,
+        `${weExecuteOrderRequisitionTableName}.date`,
+        knex.raw('? as type_of_requisition', 'اذن تنفيذ طلبية'),
+        knex.raw('? as input_output', '0'),
+      ],
+    )
+    .innerJoin(`${weExecuteOrderRequisitionTableName}`,
+      `${weExecuteOrderRequisitionTableName}.id`,
+      `${weExecuteOrderRequisitionDetailsTableName}.we_execute_order_requisition_id`)
+    .where(whereCluse)
+    .andWhere(`${weExecuteOrderRequisitionDetailsTableName}.quantity`, ">", 0)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.selectToWarehouseDetailsByWarehouseByFabric = async (warehouseId, dyedFabricId) => {
+  let queryResults = [];
+  let whereCluse = {};
+  whereCluse[`${weExecuteOrderRequisitionTableName}.warehouse_id`] = warehouseId;
+  whereCluse[`${weExecuteOrderRequisitionDetailsTableName}.dyed_fabric_id`] = dyedFabricId;
+  whereCluse[`${weExecuteOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+  whereCluse[`${weExecuteOrderRequisitionDetailsTableName}.is_active`] = 1;
+
+  await knex.from(weExecuteOrderRequisitionDetailsTableName)
+    .select(
+      [
+        `${weExecuteOrderRequisitionDetailsTableName}.price`,
+        `${weExecuteOrderRequisitionDetailsTableName}.price_dollar`,
+        `${weExecuteOrderRequisitionDetailsTableName}.quantity`,
+        `${weExecuteOrderRequisitionTableName}.date`,
+        knex.raw('? as type_of_requisition', 'اذن تنفيذ طلبية'),
+        knex.raw('? as input_output', '1'),
+      ],
+    )
+    .innerJoin(`${weExecuteOrderRequisitionTableName}`,
+      `${weExecuteOrderRequisitionTableName}.id`,
+      `${weExecuteOrderRequisitionDetailsTableName}.we_execute_order_requisition_id`)
+    .where(whereCluse)
+    .andWhere(`${weExecuteOrderRequisitionDetailsTableName}.quantity`, ">", 0)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.selectFromWarehouseDetailsDetailsByWarehouseByFabric = async (warehouseId, dyedFabricId) => {
+  let queryResults = [];
+  let whereCluse = {};
+  whereCluse[`${weExecuteOrderRequisitionDetailsTableName}.from_warehouse_id`] = warehouseId;
+  whereCluse[`${weExecuteOrderRequisitionDetailsTableName}.dyed_fabric_id`] = dyedFabricId;
+  whereCluse[`${weExecuteOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+  whereCluse[`${weExecuteOrderRequisitionDetailsTableName}.is_active`] = 1;
+
+  await knex.from(weExecuteOrderRequisitionDetailsTableName)
+    .select(
+      [
+        `${weExecuteOrderRequisitionDetailsTableName}.id`,
+        `${weExecuteOrderRequisitionDetailsTableName}.price`,
+        `${weExecuteOrderRequisitionDetailsTableName}.price_dollar`,
+        `${weExecuteOrderRequisitionDetailsTableName}.quantity`,
+        `${weExecuteOrderRequisitionDetailsTableName}.fabric_piece`,
+        `${weExecuteOrderRequisitionDetailsTableName}.note`,
+        `${weExecuteOrderRequisitionTableName}.id as requisition_id`,
+        `${weExecuteOrderRequisitionTableName}.number`,
+        `${weExecuteOrderRequisitionTableName}.date`,
+        `${weExecuteOrderRequisitionTableName}.note as requisition_note`,
+        `${warehouseTableName}.id as warehouse_id`,
+        `${warehouseTableName}.name as warehouse_name`,
+        `${fabricTableName}.name as dyed_fabric_name`,
+        `${fabricTableName}.code as dyed_fabric_code`,
+        `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+        knex.raw('? as type_of_requisition', 'اذن تنفيذ طلبية'),
+        knex.raw('? as input_output', '0'),
+        knex.raw(`CONCAT(${warehouseTableName}.name) as side_of`),
+      ],
+    )
+    .innerJoin(`${weExecuteOrderRequisitionTableName}`,
+      `${weExecuteOrderRequisitionTableName}.id`,
+      `${weExecuteOrderRequisitionDetailsTableName}.we_execute_order_requisition_id`)
+      .innerJoin(`${weExecuteOrderRequisitionDetailsWeTableName}`,
+      `${weExecuteOrderRequisitionDetailsWeTableName}.we_execute_order_requisition_details_id`,
+      `${weExecuteOrderRequisitionDetailsTableName}.id`)
+    .innerJoin(`${weTableName}`,
+      `${weTableName}.id`,
+      `${weExecuteOrderRequisitionDetailsWeTableName}.we_id`)
+    .innerJoin(`${fabricTableName}`, 
+    `${fabricTableName}.id`, 
+    `${weExecuteOrderRequisitionDetailsTableName}.dyed_fabric_id`)
+    .innerJoin(`${warehouseTableName}`, 
+    `${warehouseTableName}.id`, 
+    `${weExecuteOrderRequisitionDetailsTableName}.from_warehouse_id`)
+    .innerJoin(`${consigmentDyeingTableName}`, 
+    `${consigmentDyeingTableName}.id`, 
+    `${weExecuteOrderRequisitionDetailsTableName}.from_consigment_dyeing_id`)
+    .where(whereCluse)
+    .andWhere(`${weExecuteOrderRequisitionDetailsTableName}.quantity`, ">", 0)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.selectToWarehouseDetailsDetailsByWarehouseByFabric = async (warehouseId, dyedFabricId) => {
+  let queryResults = [];
+  let whereCluse = {};
+  whereCluse[`${weExecuteOrderRequisitionTableName}.warehouse_id`] = warehouseId;
+  whereCluse[`${weExecuteOrderRequisitionDetailsTableName}.dyed_fabric_id`] = dyedFabricId;
+  whereCluse[`${weExecuteOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+  whereCluse[`${weExecuteOrderRequisitionDetailsTableName}.is_active`] = 1;
+
+  await knex.from(weExecuteOrderRequisitionDetailsTableName)
+    .select(
+      [
+        `${weExecuteOrderRequisitionDetailsTableName}.id`,
+        `${weExecuteOrderRequisitionDetailsTableName}.price`,
+        `${weExecuteOrderRequisitionDetailsTableName}.price_dollar`,
+        `${weExecuteOrderRequisitionDetailsTableName}.quantity`,
+        `${weExecuteOrderRequisitionDetailsTableName}.fabric_piece`,
+        `${weExecuteOrderRequisitionDetailsTableName}.note`,
+        `${weExecuteOrderRequisitionTableName}.id as requisition_id`,
+        `${weExecuteOrderRequisitionTableName}.number`,
+        `${weExecuteOrderRequisitionTableName}.date`,
+        `${weExecuteOrderRequisitionTableName}.note as requisition_note`,
+        `${warehouseTableName}.id as warehouse_id`,
+        `${warehouseTableName}.name as warehouse_name`,
+        `${fabricTableName}.name as dyed_fabric_name`,
+        `${fabricTableName}.code as dyed_fabric_code`,
+        `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+        knex.raw('? as type_of_requisition', 'اذن تنفيذ طلبية'),
+        knex.raw('? as input_output', '1'),
+        knex.raw(`CONCAT(${warehouseTableName}.name) as side_of`),
+      ],
+    )
+    .innerJoin(`${weExecuteOrderRequisitionTableName}`,
+      `${weExecuteOrderRequisitionTableName}.id`,
+      `${weExecuteOrderRequisitionDetailsTableName}.we_execute_order_requisition_id`)
+    .innerJoin(`${weTableName}`,
+      `${weTableName}.we_execute_order_requisition_details_id`,
+      `${weExecuteOrderRequisitionDetailsTableName}.id`)
+    .innerJoin(`${fabricTableName}`, 
+    `${fabricTableName}.id`, 
+    `${weExecuteOrderRequisitionDetailsTableName}.dyed_fabric_id`)
+    .innerJoin(`${warehouseTableName}`, 
+    `${warehouseTableName}.id`, 
+    `${weExecuteOrderRequisitionTableName}.warehouse_id`)
+    .innerJoin(`${consigmentDyeingTableName}`, 
+    `${consigmentDyeingTableName}.id`, 
+    `${weExecuteOrderRequisitionDetailsTableName}.consigment_dyeing_id`)
+    .where(whereCluse)
+    .andWhere(`${weExecuteOrderRequisitionDetailsTableName}.quantity`, ">", 0)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
 exports.selectFromWarehouseTotalDetailsByDate = async (bodyPaylod) => {
   let queryResults = [];
 

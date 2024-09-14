@@ -249,6 +249,9 @@ exports.selectStoredFabricsWc = async (whereCluse, wcWhereCluse) => {
     .orWhereIn(`${fabricTableName}.id`, function () {
       this.select(`${wcReconciliationRequisitionDetailsTableName}.fabric_id as id`)
         .from(`${wcReconciliationRequisitionDetailsTableName}`)
+        .innerJoin(`${wcReconciliationRequisitionTableName}`,
+          `${wcReconciliationRequisitionTableName}.id`,
+          `${wcReconciliationRequisitionDetailsTableName}.wc_reconcilition_requisition_id`)
         .innerJoin(`${wcReconciliationRequisitionDetailsWcTableName}`,
           `${wcReconciliationRequisitionDetailsWcTableName}.wc_reconcilition_requisition_details_id`,
           `${wcReconciliationRequisitionDetailsTableName}.id`)

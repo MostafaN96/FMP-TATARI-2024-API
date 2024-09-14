@@ -163,6 +163,7 @@ exports.selectByWarehouseWc = async (warehouseId) => {
   let wcWhereCluse = {};
   wcWhereCluse[`${wcTableName}.is_deleted`] = 0;
   wcWhereCluse[`${wcTableName}.is_active`] = 1;
+  wcWhereCluse[`warehouse_id`] = warehouseId;
 
   const results = await fabricQueries.selectStoredFabricsWc(whereCluse, wcWhereCluse);
   return results;

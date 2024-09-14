@@ -22,7 +22,7 @@ const wbManufacturingInputQueries = require("../../db/queries/wb/wb-manufacturin
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-const { wbTransportWaWbTableName, bussinessmanTableName } = require("../../util/database-tables-name");
+const { wbTransportWaWbTableName, bussinessmanTableName, wbTransportRequisitionWbWaDetailsTableName, wbTransitionBetweenIndustriesRequisitionDetailsTableName, wbManufacturingInputTableName } = require("../../util/database-tables-name");
 const yarnTableName = require("../../util/database-tables-name").yarnTableName;
 const wbTableName = require("../../util/database-tables-name").wbTableName;
 const wbReconciliationRequisitionDetailsTableName = require("../../util/database-tables-name").wbReconciliationRequisitionDetailsTableName;
@@ -443,6 +443,42 @@ exports.selectByFabricByConsigmentManufacturing = async (fabricId, consigmentMan
         const result = await Promise.all(callArray)
         const data = [result[0], result[1]]
     return data;
+};
+
+exports.selectInventoryByConsigmentsYarn = async (consigmentsYarn) => {
+    let callArray = []
+
+    let wbTransportRequisitionWbWaDetailsWhereCluse = {};
+    wbTransportRequisitionWbWaDetailsWhereCluse[`${wbTransportRequisitionWbWaDetailsTableName}.is_deleted`] = 0;
+    wbTransportRequisitionWbWaDetailsWhereCluse[`${wbTransportRequisitionWbWaDetailsTableName}.is_active`] = 1;
+    callArray.push(wbTransportRequisitionWbWaDetailsQueries.selectByConsigmentYarnForDyedFabricOrder(wbTransportRequisitionWbWaDetailsWhereCluse, consigmentsYarn))
+
+    let wbReconciliationRequisitionDetailsWhereCluse = {};
+    wbReconciliationRequisitionDetailsWhereCluse[`${wbReconciliationRequisitionDetailsTableName}.is_deleted`] = 0;
+    wbReconciliationRequisitionDetailsWhereCluse[`${wbReconciliationRequisitionDetailsTableName}.is_active`] = 1;
+    callArray.push(wbReconciliationRequisitionDetailsQueries.selectByConsigmentYarnForDyedFabricOrder(wbReconciliationRequisitionDetailsWhereCluse, consigmentsYarn))
+    
+    let wbTransitionBetweenIndustriesRequisitionDetailsWhereCluse = {};
+    wbTransitionBetweenIndustriesRequisitionDetailsWhereCluse[`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.is_deleted`] = 0;
+    wbTransitionBetweenIndustriesRequisitionDetailsWhereCluse[`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.is_active`] = 1;
+    callArray.push(wbTransitionBetweenIndustriesRequisitionDetailsQueries.selectFromByConsigmentYarnForDyedFabricOrder(wbTransitionBetweenIndustriesRequisitionDetailsWhereCluse, consigmentsYarn))
+    callArray.push(wbTransitionBetweenIndustriesRequisitionDetailsQueries.selectToByConsigmentYarnForDyedFabricOrder(wbTransitionBetweenIndustriesRequisitionDetailsWhereCluse, consigmentsYarn))
+    
+    
+    let wbManufacturingInputWhereCluse = {};
+    wbManufacturingInputWhereCluse[`${wbManufacturingInputTableName}.is_deleted`] = 0;
+    wbManufacturingInputWhereCluse[`${wbManufacturingInputTableName}.is_active`] = 1;
+    callArray.push(wbManufacturingInputQueries.selectByConsigmentYarnForDyedFabricOrder(wbManufacturingInputWhereCluse, consigmentsYarn))
+
+    const requisitions = await Promise.all(callArray)
+    const sortedAsc = [
+        ...requisitions[0], ...requisitions[1], ...requisitions[2],
+        ...requisitions[3], ...requisitions[4]
+].sort(
+        (objA, objB) => moment(objA.date) - moment(objB.date)
+    );
+
+    return sortedAsc;
 };
 
 exports.inquireYarnAvilabilityReportWb = async (fabric, yarnId) => {

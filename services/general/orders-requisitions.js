@@ -19,6 +19,16 @@ exports.create = async (orderRequisitions) => {
   }
 };
 
+exports.createForDyedFabricOrderwe = async (orderRequisitions) => {
+  orderRequisitions.ordersRequisitionsId = trans.transform();
+  const results = await ordersRequisitionsQueries.insertForDyedFabricOrderwe(orderRequisitions);
+  if (results) {
+    return constants.insertSuccess;
+  } else {
+    return constants.insertError;
+  }
+};
+
 exports.selectByDyeingIdForYarnOrder = async (wedyedFabricOrderId) => {
   let whereCluse = {};
   whereCluse[`${ordersRequisitionsTableName}.we_dyed_fabric_order_requisition_id`] = wedyedFabricOrderId;
@@ -39,4 +49,10 @@ exports.selectByDyeingIdForFabricOrderWc = async (wedyedFabricOrderId) => {
     const results = await ordersRequisitionsQueries.selectByDyeingIdForFabricOrderWc(whereCluse);
     return results;
 
+};
+
+
+exports.selectWaYarnConsigmentsOrder = async (whereCluse) => {
+  const results = await ordersRequisitionsQueries.selectWaYarnConsigmentsOrder(whereCluse);
+  return results;
 };

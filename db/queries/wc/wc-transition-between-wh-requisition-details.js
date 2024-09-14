@@ -713,3 +713,110 @@ exports.selectToWarehouseTotalDetailsByDate = async (bodyPaylod) => {
     .catch((error) => console.error(error));
   return queryResults;
 };
+
+exports.selectFromByConsigmentManufacturingForDyedFabricOrder = async (whereCluse, consigmentsManufacturing) => {
+  let queryResults = [];
+
+  await knex.from(wcTransitionBetweenWHRequisitionDetailsTableName)
+    .select(
+      [
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.fabric_piece`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.document`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.statement`,
+        `${wcTransitionBetweenWHRequisitionTableName}.id as requisition_id`,
+        `${wcTransitionBetweenWHRequisitionTableName}.number`,
+        `${wcTransitionBetweenWHRequisitionTableName}.date`,
+        `${wcTransitionBetweenWHRequisitionTableName}.note`,
+        `${warehouseTableName}.id as warehouse_id`,
+        `${warehouseTableName}.name as warehouse_name`,
+        `${fabricTableName}.name as fabric_name`,
+        `${fabricTableName}.code as fabric_code`,
+        `${consigmentManufacturingTableName}.number as consigment_manufacturing_number`,
+        knex.raw('? as type_of_requisition', 'اذن نقل بين المخازن'),
+        knex.raw('? as input_output', '0'),
+        knex.raw(`CONCAT(${warehouseTableName}.name) as side_of`),
+      ],
+    )
+    .innerJoin(`${wcTransitionBetweenWHRequisitionTableName}`,
+      `${wcTransitionBetweenWHRequisitionTableName}.id`,
+      `${wcTransitionBetweenWHRequisitionDetailsTableName}.wc_transition_between_wh_requisitions_id`)
+      .innerJoin(`${wcTransitionBetweenWHRequisitionDetailsWcTableName}`,
+      `${wcTransitionBetweenWHRequisitionDetailsWcTableName}.wc_transition_between_wh_requisitions_details_id`,
+      `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`)
+    .innerJoin(`${wcTableName}`,
+      `${wcTableName}.id`,
+      `${wcTransitionBetweenWHRequisitionDetailsWcTableName}.wc_id`)
+    .innerJoin(`${fabricTableName}`, 
+    `${fabricTableName}.id`, 
+    `${wcTransitionBetweenWHRequisitionDetailsTableName}.fabric_id`)
+    .innerJoin(`${warehouseTableName}`, 
+    `${warehouseTableName}.id`, 
+    `${wcTransitionBetweenWHRequisitionDetailsTableName}.from_warehouse_id`)
+    .innerJoin(`${consigmentManufacturingTableName}`, 
+    `${consigmentManufacturingTableName}.id`, 
+    `${wcTransitionBetweenWHRequisitionDetailsTableName}.consigment_manufacturing_id`)
+    .where(whereCluse)
+    .andWhere(`${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`, ">", 0)
+    .whereIn(`${wcTransitionBetweenWHRequisitionDetailsTableName}.consigment_manufacturing_id`, consigmentsManufacturing)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.selectToByConsigmentManufacturingForDyedFabricOrder = async (whereCluse, consigmentsManufacturing) => {
+  let queryResults = [];
+
+  await knex.from(wcTransitionBetweenWHRequisitionDetailsTableName)
+    .select(
+      [
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.fabric_piece`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.document`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.statement`,
+        `${wcTransitionBetweenWHRequisitionTableName}.id as requisition_id`,
+        `${wcTransitionBetweenWHRequisitionTableName}.number`,
+        `${wcTransitionBetweenWHRequisitionTableName}.date`,
+        `${wcTransitionBetweenWHRequisitionTableName}.note`,
+        `${warehouseTableName}.id as warehouse_id`,
+        `${warehouseTableName}.name as warehouse_name`,
+        `${fabricTableName}.name as fabric_name`,
+        `${fabricTableName}.code as fabric_code`,
+        `${consigmentManufacturingTableName}.number as consigment_manufacturing_number`,
+        knex.raw('? as type_of_requisition', 'اذن نقل بين المخازن'),
+        knex.raw('? as input_output', '1'),
+        knex.raw(`CONCAT(${warehouseTableName}.name) as side_of`),
+      ],
+    )
+    .innerJoin(`${wcTransitionBetweenWHRequisitionTableName}`,
+      `${wcTransitionBetweenWHRequisitionTableName}.id`,
+      `${wcTransitionBetweenWHRequisitionDetailsTableName}.wc_transition_between_wh_requisitions_id`)
+    .innerJoin(`${wcTableName}`,
+      `${wcTableName}.wc_transition_between_wh_requisitions_details_id`,
+      `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`)
+    .innerJoin(`${fabricTableName}`, 
+    `${fabricTableName}.id`, 
+    `${wcTransitionBetweenWHRequisitionDetailsTableName}.fabric_id`)
+    .innerJoin(`${warehouseTableName}`, 
+    `${warehouseTableName}.id`, 
+    `${wcTransitionBetweenWHRequisitionTableName}.to_warehouse_id`)
+    .innerJoin(`${consigmentManufacturingTableName}`, 
+    `${consigmentManufacturingTableName}.id`, 
+    `${wcTransitionBetweenWHRequisitionDetailsTableName}.consigment_manufacturing_id`)
+    .where(whereCluse)
+    .andWhere(`${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`, ">", 0)
+    .whereIn(`${wcTransitionBetweenWHRequisitionDetailsTableName}.consigment_manufacturing_id`, consigmentsManufacturing)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};

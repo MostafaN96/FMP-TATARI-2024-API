@@ -23,7 +23,11 @@ const constantsPayloads = require("../../util/constants-payloads");
 const { wdTransportWcWdTableName, fabricTableName, wdTableName, 
     wdReconciliationRequisitionDetailsTableName, wdTransportWcWdDetailsTableName, 
     anointedColorsPricesTableName, 
-    bussinessmanTableName} = require("../../util/database-tables-name");
+    bussinessmanTableName,
+    wdTransportRequisitionWdWcDetailsTableName,
+    wdTransitionBetweenDyersRequisitionDetailsTableName,
+    wdDyeingRequisitionDetailsTableName,
+    wdFormDyeingRequisitionDetailsTableName} = require("../../util/database-tables-name");
 
 exports.selectInventoryTotal = async (fabricReport) => {
     let data = []
@@ -432,6 +436,49 @@ exports.selectPriceByFabricByDyeingByConsigmentDyeingInWd = async (fabricId, dye
     return sortedAsc;
 };
 
+exports.selectInventoryByConsigmentsDyeing = async (consigmentsDyeing) => {
+    let callArray = []
+    
+    let wdTransportWcWdDetailsWhereCluse = {};
+    wdTransportWcWdDetailsWhereCluse[`${wdTransportWcWdDetailsTableName}.is_deleted`] = 0;
+    wdTransportWcWdDetailsWhereCluse[`${wdTransportWcWdDetailsTableName}.is_active`] = 1;
+    callArray.push(wdTransportRequisitionWcWdDetailsQueries.selectByConsigmentDyeingForDyedFabricOrder(wdTransportWcWdDetailsWhereCluse, consigmentsDyeing))
+    
+    let wdTransportRequisitionWdWcWhereCluse = {};
+    wdTransportRequisitionWdWcWhereCluse[`${wdTransportRequisitionWdWcDetailsTableName}.is_deleted`] = 0;
+    wdTransportRequisitionWdWcWhereCluse[`${wdTransportRequisitionWdWcDetailsTableName}.is_active`] = 1;
+    callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectByConsigmentDyeingForDyedFabricOrder(wdTransportRequisitionWdWcWhereCluse, consigmentsDyeing))
+    
+    let wdReconciliationRequisitionDetailsWhereCluse = {};
+    wdReconciliationRequisitionDetailsWhereCluse[`${wdReconciliationRequisitionDetailsTableName}.is_deleted`] = 0;
+    wdReconciliationRequisitionDetailsWhereCluse[`${wdReconciliationRequisitionDetailsTableName}.is_active`] = 1;
+    callArray.push(wdReconciliationRequisitionDetailsQueries.selectByConsigmentDyeingForDyedFabricOrder(wdReconciliationRequisitionDetailsWhereCluse, consigmentsDyeing))
+    
+    let wdTransitionBetweenDyersRequisitionDetailsWhereCluse = {};
+    wdTransitionBetweenDyersRequisitionDetailsWhereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.is_deleted`] = 0;
+    wdTransitionBetweenDyersRequisitionDetailsWhereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.is_active`] = 1;
+    callArray.push(wdTransitionBetweenDyersRequisitionDetailsQueries.selectFromByConsigmentDyeingForDyedFabricOrder(wdTransitionBetweenDyersRequisitionDetailsWhereCluse, consigmentsDyeing))
+    callArray.push(wdTransitionBetweenDyersRequisitionDetailsQueries.selectToByConsigmentDyeingForDyedFabricOrder(wdTransitionBetweenDyersRequisitionDetailsWhereCluse, consigmentsDyeing))
+    
+    let wdDyeingRequisitionDetailsWhereCluse = {};
+    wdDyeingRequisitionDetailsWhereCluse[`${wdDyeingRequisitionDetailsTableName}.is_deleted`] = 0;
+    wdDyeingRequisitionDetailsWhereCluse[`${wdDyeingRequisitionDetailsTableName}.is_active`] = 1;
+    callArray.push(wdDyeingRequisitionDetailsQueries.selectByConsigmentDyeingForDyedFabricOrder(wdDyeingRequisitionDetailsWhereCluse, consigmentsDyeing))
+    
+    let wdFormDyeingRequisitionDetailsWhereCluse = {};
+    wdFormDyeingRequisitionDetailsWhereCluse[`${wdFormDyeingRequisitionDetailsTableName}.is_deleted`] = 0;
+    wdFormDyeingRequisitionDetailsWhereCluse[`${wdFormDyeingRequisitionDetailsTableName}.is_active`] = 1;
+    callArray.push(wdFormDyeingRequisitionDetailsQueries.selectByConsigmentDyeingForDyedFabricOrder(wdFormDyeingRequisitionDetailsWhereCluse, consigmentsDyeing))
+    
+    const requisitions = await Promise.all(callArray)
+    const sortedAsc = [...requisitions[0], ...requisitions[1],
+    ...requisitions[2], ...requisitions[3], ...requisitions[4],
+    ...requisitions[5], ...requisitions[6]].sort(
+        (objA, objB) => moment(objA.date) - moment(objB.date)
+    );
+
+    return sortedAsc;
+};
 
 exports.selectInventoryTotalByDate = async (bodyPaylod) => {
     let callArray = []

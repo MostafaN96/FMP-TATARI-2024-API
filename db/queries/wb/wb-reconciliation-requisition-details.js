@@ -468,3 +468,46 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
     .catch((error) => console.error(error));
   return queryResults;
 };
+
+exports.selectByConsigmentYarnForDyedFabricOrder = async (whereCluse, consigmentsYarn) => {
+  let queryResults = [];
+
+  await knex.from(wbReconciliationRequisitionDetailsTableName)
+    .select(
+      [
+        `${wbReconciliationRequisitionDetailsTableName}.id`,
+        `${wbReconciliationRequisitionDetailsTableName}.price`,
+        `${wbReconciliationRequisitionDetailsTableName}.price_dollar`,
+        `${wbReconciliationRequisitionDetailsTableName}.quantity`,
+        `${wbReconciliationRequisitionDetailsTableName}.statement`,
+        `${wbReconciliationRequisitionTableName}.id as requisition_id`,
+        `${wbReconciliationRequisitionTableName}.number`,
+        `${wbReconciliationRequisitionTableName}.date`,
+        `${wbReconciliationRequisitionTableName}.note`,
+        `${bussinessmanTableName}.id as bussinessman_id`,
+        `${bussinessmanTableName}.name as bussinessman_name`,
+        `${yarnTableName}.name as yarn_name`,
+        `${yarnTableName}.code as yarn_code`,
+        `${yarnLotTableName}.code as yarn_lot_code`,
+    `${consigmentYarnTableName}.number as consigment_yarn_number`,
+        knex.raw('? as type_of_requisition', 'اذن تسوية'),
+        `${wbReconciliationRequisitionDetailsTableName}.input_output`,
+        knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
+      ],
+    )
+    .innerJoin(`${wbReconciliationRequisitionTableName}`, `${wbReconciliationRequisitionTableName}.id`, `${wbReconciliationRequisitionDetailsTableName}.wb_reconcilition_requisition_id`)
+    .innerJoin(`${yarnTableName}`, `${yarnTableName}.id`, `${wbReconciliationRequisitionDetailsTableName}.yarn_id`)
+    .innerJoin(`${yarnLotTableName}`, `${yarnLotTableName}.id`, `${wbReconciliationRequisitionDetailsTableName}.yarn_lot_id`)
+    .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${wbReconciliationRequisitionTableName}.industry_id`)
+    .innerJoin(`${consigmentYarnTableName}`,
+      `${consigmentYarnTableName}.id`,
+      `${wbReconciliationRequisitionDetailsTableName}.consigment_yarn_id`)
+    .where(whereCluse)
+    .andWhere(`${wbReconciliationRequisitionDetailsTableName}.quantity`, ">", 0)
+    .whereIn(`${wbReconciliationRequisitionDetailsTableName}.consigment_yarn_id`, consigmentsYarn)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};

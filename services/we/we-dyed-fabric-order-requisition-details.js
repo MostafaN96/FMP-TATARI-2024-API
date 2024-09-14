@@ -23,8 +23,6 @@ exports.create = async (weDyedFabricOrderRequisitionDetails) => {
             return constants.insertError;
         }
     }
-    await ordersRequisitionsQueries.insertForDyedFabricOrderwe(weDyedFabricOrderRequisitionDetails)
-
     return { ...constants.insertSuccess, ...{ id: weDyedFabricOrderRequisitionDetails.id } };
 };
 
@@ -234,6 +232,15 @@ exports.update = async (weDyedFabricOrderRequisitionDetails) => {
         let oldQuantity = isFound[0].initial_quantity
         let newQuantity = weDyedFabricOrderRequisitionDetails.quantity
         let defferenceQuantity = 0
+
+        if (currentQuantity == oldQuantity) {
+            await weDyedFabricOrderRequisitionDetailsQueries.update({
+                dyed_fabric_id: weDyedFabricOrderRequisitionDetails.dyedFabricId,
+            },
+                {
+                    id: weDyedFabricOrderRequisitionDetails.id
+                })
+        }
 
         // Check Quantity
         if (newQuantity > oldQuantity) {

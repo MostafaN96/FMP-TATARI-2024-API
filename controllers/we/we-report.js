@@ -60,6 +60,15 @@ exports.dyeingReportByFabric = async (request, response) => {
   response.status(200).json(results);
 };
 
+exports.dyedFabricReportByOrderBySeller = async (request, response) => {
+  // logging
+  const { id } = request.params;
+  const { sellerId } = request.params;
+
+  const results = await weReportService.dyedFabricReportByOrderBySeller(id, sellerId);
+  response.status(200).json(results);
+};
+
 exports.salesReport = async (request, response) => {
 
   const results = await weReportService.salesReport();

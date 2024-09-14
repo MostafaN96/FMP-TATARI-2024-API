@@ -176,6 +176,23 @@ exports.selectWithFabricManufacturedByRequisitionId = async (requisitionId) => {
   return queryResults;
 };
 
+exports.selectWbConsigmentsYarn = async (whereCluse, consigmentsYarn) => {
+  let queryResults = [];
+
+  await knex
+  .pluck(`${wbTransportWaWbDetailsTableName}.consigment_yarn_id`)
+    .from(`${wbTransportWaWbDetailsTableName}`)
+    .where(whereCluse)
+    .andWhere(`${wbTransportWaWbDetailsTableName}.quantity`, ">", 0)
+    .whereIn(`${wbTransportWaWbDetailsTableName}.from_consigment_yarn_id`, consigmentsYarn)
+    .groupBy( `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
 exports.selectOne = async (whereCluse) => {
   let queryResults = false;
   await knex
@@ -578,6 +595,70 @@ exports.selectTotalDetailsByYarnId = async (yarnId) => {
       `from_consigment_yarn.id`,
       `${wbTransportWaWbDetailsTableName}.from_consigment_yarn_id`)
     .where(whereCluse)
+    .andWhere(`${wbTransportWaWbDetailsTableName}.quantity`, ">", 0)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+
+exports.selectbyConsigmentYarnForDyedFabricOrder = async (whereCluse, consigmentsYarn) => {
+  let queryResults = [];
+
+  await knex.from(wbTransportWaWbDetailsTableName)
+    .select(
+      [
+        `${wbTransportWaWbDetailsTableName}.id`,
+        `${wbTransportWaWbDetailsTableName}.price`,
+        `${wbTransportWaWbDetailsTableName}.price_dollar`,
+        `${wbTransportWaWbDetailsTableName}.quantity`,
+        `${wbTransportWaWbDetailsTableName}.document`,
+        `${wbTransportWaWbDetailsTableName}.statement`,
+        `${wbTransportWaWbTableName}.id as requisition_id`,
+        `${wbTransportWaWbTableName}.number`,
+        `${wbTransportWaWbTableName}.date`,
+        `${wbTransportWaWbTableName}.note`,
+        `${bussinessmanTableName}.id as bussinessman_id`,
+        `${bussinessmanTableName}.name as bussinessman_name`,
+        `${yarnTableName}.name as yarn_name`,
+        `${yarnTableName}.code as yarn_code`,
+        `${yarnLotTableName}.code as yarn_lot_code`,
+        `${consigmentYarnTableName}.number as consigment_yarn_number`,
+        `from_consigment_yarn.number as from_consigment_yarn_number`,
+        `${warehouseTableName}.name as warehouse_name`,
+        knex.raw('? as type_of_requisition', 'اذن نقل من (A) الى (B)'),
+        knex.raw('? as input_output', '0'),
+        knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
+      ],
+    )
+    .innerJoin(`${wbTransportWaWbTableName}`, 
+    `${wbTransportWaWbTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
+    .innerJoin(`${wbTableName}`, 
+    `${wbTableName}.wb_transport_wa_wb_details_id`, 
+    `${wbTransportWaWbDetailsTableName}.id`)
+    .innerJoin(`${warehouseTableName}`, 
+    `${warehouseTableName}.id`, 
+    `${wbTransportWaWbTableName}.warehouse_id`)
+    .innerJoin(`${yarnTableName}`, 
+    `${yarnTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.yarn_id`)
+    .innerJoin(`${yarnLotTableName}`, 
+    `${yarnLotTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.yarn_lot_id`)
+    .innerJoin(`${bussinessmanTableName}`, 
+    `${bussinessmanTableName}.id`, 
+    `${wbTableName}.industry_id`)
+    .innerJoin(`${consigmentYarnTableName}`, 
+    `${consigmentYarnTableName}.id`, 
+    `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`)
+    .innerJoin(`${consigmentYarnTableName} as from_consigment_yarn`,
+      `from_consigment_yarn.id`,
+      `${wbTransportWaWbDetailsTableName}.from_consigment_yarn_id`)
+    .where(whereCluse)
+    .whereIn(`${wbTransportWaWbDetailsTableName}.from_consigment_yarn_id`, consigmentsYarn)
     .andWhere(`${wbTransportWaWbDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
       queryResults = data;

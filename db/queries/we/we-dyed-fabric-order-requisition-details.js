@@ -13,6 +13,7 @@ exports.insert = async (weDyedFabricOrderRequisitionDetails, items) => {
         .insert(weDyedFabricOrderRequisitionDetailsTableName, {
             id: items.weDyedFabricOrderRequisitionDetailsId,
             we_dyed_fabric_order_requisition_id: weDyedFabricOrderRequisitionDetails.id,
+            orders_requisitions_id: weDyedFabricOrderRequisitionDetails.ordersRequisitionsId,
             color_category_id: items.colorCategoryId,
             color_id: items.colorId,
             dyed_fabric_id: items.dyedFabricId,
