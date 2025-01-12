@@ -33,6 +33,9 @@ exports.insert = async (weSellRequisitionDetails, items) => {
       we_sell_requisition_id: weSellRequisitionDetails.id,
       dyed_fabric_id: items.dyedFabricId,
       warehouse_id: items.warehouseId,
+      we_dyed_fabric_order_requisition_details_id: items.weDyedFabricOrderRequisitionDetailsId,
+      we_dyed_fabric_order_requisition_id: items.dyedFabricOrderId,
+      orders_requisitions_id: items.ordersRequisitionsId,
       price: items.price,
       price_dollar: items.priceDollar,
       quantity: items.quantity,
@@ -1619,6 +1622,8 @@ exports.selectOne = async (whereCluse) => {
       `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`,
       `${weSellRequisitionDetailsTableName}.dyed_fabric_id`,
       `${weSellRequisitionDetailsTableName}.warehouse_id`,
+      `${weSellRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`,
+      `${weSellRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_details_id`,
       `${weSellRequisitionDetailsTableName}.quantity`,
       `${weSellRequisitionDetailsTableName}.current_quantity`
     ])

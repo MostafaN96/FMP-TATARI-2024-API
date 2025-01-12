@@ -8,7 +8,9 @@ const constantsPayloads = require("../../util/constants-payloads");
 
 // Helpers
 const trans = require("../../helpers/transform");
-const { ordersRequisitionsTableName } = require("../../util/database-tables-name");
+const { 
+  ordersRequisitionsTableName
+} = require("../../util/database-tables-name");
 
 exports.create = async (orderRequisitions) => {
   const results = await ordersRequisitionsQueries.insertForDyeingOrder(orderRequisitions);
@@ -29,20 +31,35 @@ exports.createForDyedFabricOrderwe = async (orderRequisitions) => {
   }
 };
 
-exports.selectByDyeingIdForYarnOrder = async (wedyedFabricOrderId) => {
+
+exports.checkForCreateOrder = async (orderRequisitions) => {
+  if(orderRequisitions.ordersRequisitionsId == "") {
+    orderRequisitions.ordersRequisitionsId = trans.transform();
+    const results = await ordersRequisitionsQueries.insert(orderRequisitions);
+    if (results) {
+      return true;
+    } else {
+      return false;
+    }
+  } else {
+    return true
+  }
+};
+
+exports.selectByDyeingIdForYarnOrder = async (ordersRequisitionsId) => {  
   let whereCluse = {};
-  whereCluse[`${ordersRequisitionsTableName}.we_dyed_fabric_order_requisition_id`] = wedyedFabricOrderId;
+  whereCluse[`${ordersRequisitionsTableName}.id`] = ordersRequisitionsId;
   whereCluse[`${ordersRequisitionsTableName}.is_deleted`] = 0;
   whereCluse[`${ordersRequisitionsTableName}.is_active`] = 1;
 
-    const results = await ordersRequisitionsQueries.selectByDyeingIdForYarnOrder(whereCluse);
+    const results = await ordersRequisitionsQueries.selectByDyeingIdForYarnOrder(whereCluse);    
     return results;
 
 };
 
-exports.selectByDyeingIdForFabricOrderWc = async (wedyedFabricOrderId) => {
+exports.selectByDyeingIdForFabricOrderWc = async (ordersRequisitionsId) => {
   let whereCluse = {};
-  whereCluse[`${ordersRequisitionsTableName}.we_dyed_fabric_order_requisition_id`] = wedyedFabricOrderId;
+  whereCluse[`${ordersRequisitionsTableName}.id`] = ordersRequisitionsId;
   whereCluse[`${ordersRequisitionsTableName}.is_deleted`] = 0;
   whereCluse[`${ordersRequisitionsTableName}.is_active`] = 1;
 

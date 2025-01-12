@@ -5,6 +5,13 @@ const weReturnSellRequisitionDetailsReturnDetailsQueries = require("../../db/que
 const weReturnSellRequisitionDetailsWeQueries = require("../../db/queries/we/we-return-sell-requisition-details-we");
 const weSellRequisitionDetailsQueries = require("../../db/queries/we/we-sell-requisition-details");
 const weQueries = require("../../db/queries/we/we");
+const weDyedFabricOrderRequisitionDetailsQueries = require("../../db/queries/we/we-dyed-fabric-order-requisition-details");
+
+// Services
+const weService = require("./we");
+const weSellRequisitionDetailsService = require("./we-sell-requisition-details");
+const weReturnSellRequisitionDetailsReturnDetailsService = require("./we-return-sell-requisition-details-return-details");
+const weDyedFabricOrderRequisitionDetailsService = require("./we-dyed-fabric-order-requisition-details");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -12,14 +19,14 @@ const trans = require("../../helpers/transform");
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-const weReturnSellRequisitionDetailsReturnDetailsTableName = require("../../util/database-tables-name").weReturnSellRequisitionDetailsReturnDetailsTableName;
-const weReturnSellRequisitionDetailsTableName = require("../../util/database-tables-name").weReturnSellRequisitionDetailsTableName;
-
-// Services
-const weService = require("./we");
-const weSellRequisitionDetailsService = require("./we-sell-requisition-details");
-const weReturnSellRequisitionDetailsReturnDetailsService = require("./we-return-sell-requisition-details-return-details");
-const { weSellRequisitionDetailsTableName, weTableName, weReturnSellRequisitionDetailsWeTableName } = require("../../util/database-tables-name");
+const { 
+    weReturnSellRequisitionDetailsReturnDetailsTableName,
+    weReturnSellRequisitionDetailsTableName,
+    weSellRequisitionDetailsTableName, 
+    weTableName, 
+    weReturnSellRequisitionDetailsWeTableName, 
+    weDyedFabricOrderRequisitionDetailsTableName 
+} = require("../../util/database-tables-name");
 
 exports.create = async (weReturnSellRequisitionDetails) => {
     // check is found
@@ -32,6 +39,18 @@ exports.create = async (weReturnSellRequisitionDetails) => {
 
         for (let i = 0; i < weReturnSellRequisitionDetails.items.length; i++) {
             weReturnSellRequisitionDetails.items[i].weReturnSellRequisitionDetailsId = trans.transform();
+            
+        // Get we fabric order by order requisition id
+        let weDyedFabricOrderRequisitionDetailsWhereCluse = {};
+        weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+        weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+        // weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_order`] = 1;
+        weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`] = weReturnSellRequisitionDetails.items[i].ordersRequisitionsId;
+        weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.dyed_fabric_id`] = weReturnSellRequisitionDetails.items[i].dyedFabricId;
+
+        const selectWeDyedFabricOrderRequisitionDetailsResult = await weDyedFabricOrderRequisitionDetailsQueries.selectByRequisitionId(weDyedFabricOrderRequisitionDetailsWhereCluse)
+        if (Array.isArray(selectWeDyedFabricOrderRequisitionDetailsResult) && selectWeDyedFabricOrderRequisitionDetailsResult.length > 0) {
+            weReturnSellRequisitionDetails.items[i].weDyedFabricOrderRequisitionDetailsId = selectWeDyedFabricOrderRequisitionDetailsResult[0].id
 
             let newQuantity = parseFloat(weReturnSellRequisitionDetails.items[i].quantity)
 
@@ -63,6 +82,9 @@ exports.create = async (weReturnSellRequisitionDetails) => {
                         // Add we Return Requisition Details sell details
                         await weReturnSellRequisitionDetailsReturnDetailsService.create(weReturnSellRequisitionDetails, weReturnSellRequisitionDetails.items[i])
 
+                        // update order quantity
+                        await weDyedFabricOrderRequisitionDetailsService.updateForIncrementQuantity(selectWeDyedFabricOrderRequisitionDetailsResult[0].id, updatedQuantity)
+
                         // insert we
                         const weResult = await weQueries.createForReturnSell(weReturnSellRequisitionDetails, weReturnSellRequisitionDetails.items[i])
                         if (weResult) {
@@ -82,7 +104,9 @@ exports.create = async (weReturnSellRequisitionDetails) => {
                     newQuantity: newQuantity
                 }
             }
+        } else {
 
+        }
         }
         return { ...constants.insertSuccess, ...{ id: weReturnSellRequisitionDetails.id } };
     } else {
@@ -180,6 +204,9 @@ exports.update = async (weReturnSellRequisitionDetails) => {
                         const sumCurrentQuantity = selectCurrentQuantityWeSellRequisitionDetails[0].current_quantity
                         if (sumCurrentQuantity >= defferenceQuantity) {
 
+                        // update order quantity
+                        await weDyedFabricOrderRequisitionDetailsService.updateForIncrementQuantity(isFound[0].we_dyed_fabric_order_requisition_details_id, defferenceQuantity)
+
                             // update quantity we return sell requisition details we
                             await weReturnSellRequisitionDetailsWeQueries.update({
                                 quantity: newQuantity
@@ -268,6 +295,9 @@ exports.update = async (weReturnSellRequisitionDetails) => {
                     defferenceQuantity = parseFloat((oldQuantity - newQuantity).toFixed(3))
 
                     if (weCurrentQuantity >= defferenceQuantity) {
+
+                        // update order quantity
+                        await weDyedFabricOrderRequisitionDetailsService.updateForDecrementQuantity(isFound[0].we_dyed_fabric_order_requisition_details_id, defferenceQuantity)
 
                         // update quantity we return sell requisition details we
                         await weReturnSellRequisitionDetailsWeQueries.update({

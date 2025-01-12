@@ -236,13 +236,18 @@ exports.selectTotalDetailsByYarnIdByWarehouseId = async (yarnId, warehouseId) =>
   return queryResults;
 };
 
-exports.selectDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLotId, consigmentYarnId) => {
+exports.selectDetailsByWarehouseByYarnByLot = async (
+  warehouseId, yarnId, 
+  yarnLotId, consigmentYarnId,
+  yarnOrderId
+) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${waSellRequisitionTableName}.warehouse_id`] = warehouseId;
   whereCluse[`${waSellRequisitionDetailsTableName}.yarn_id`] = yarnId;
   whereCluse[`${waSellRequisitionDetailsTableName}.yarn_lot_id`] = yarnLotId;
-    whereCluse[`${waSellRequisitionDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
+  whereCluse[`${waSellRequisitionDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
+  whereCluse[`${waSellRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
   whereCluse[`${waSellRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${waSellRequisitionDetailsTableName}.is_active`] = 1;
 
@@ -267,13 +272,14 @@ exports.selectDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLo
   return queryResults;
 };
 
-exports.selectDetailsDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLotId, consigmentYarnId) => {
+exports.selectDetailsDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${waSellRequisitionTableName}.warehouse_id`] = warehouseId;
   whereCluse[`${waSellRequisitionDetailsTableName}.yarn_id`] = yarnId;
   whereCluse[`${waSellRequisitionDetailsTableName}.yarn_lot_id`] = yarnLotId;
     whereCluse[`${waSellRequisitionDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
+    whereCluse[`${waSellRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
   whereCluse[`${waSellRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${waSellRequisitionDetailsTableName}.is_active`] = 1;
 

@@ -5,7 +5,8 @@ const knex = require("../../config/connection").getConnection();
 // Util
 const { weDyedFabricOrderRequisitionTableName, weDyedFabricOrderRequisitionDetailsTableName,
     fabricTableName, bussinessmanTableName, 
-    colorCategoryTableName, colorTableName,warehouseTableName, weExecuteOrderRequisitionDetailsTableName, weExecuteOrderRequisitionTableName } = require("../../../util/database-tables-name");
+    colorCategoryTableName, colorTableName,warehouseTableName, weExecuteOrderRequisitionDetailsTableName, weExecuteOrderRequisitionTableName, 
+    ordersRequisitionsTableName} = require("../../../util/database-tables-name");
 
 exports.insert = async (weDyedFabricOrderRequisitionDetails, items) => {
     let queryResults = false;
@@ -20,7 +21,7 @@ exports.insert = async (weDyedFabricOrderRequisitionDetails, items) => {
             color_code: items.colorCode,
             initial_quantity: items.quantity,
             current_quantity: items.quantity,
-            waste_ratio: items.wastRatio,
+            waste_ratio: items.wasteRatio,
             fabric_width: items.fabricWidth,
             fabric_quantity_m2: items.fabricQuantityM2,
             price: items.price,
@@ -42,10 +43,11 @@ exports.selectByRequisitionId = async (whereCluse) => {
     let queryResults = [];
 
     await knex.select([
+        `${ordersRequisitionsTableName}.name as order_name`,
         `${weDyedFabricOrderRequisitionTableName}.id as requisition_id`,
+        `${weDyedFabricOrderRequisitionTableName}.orders_requisitions_id`,
         `${weDyedFabricOrderRequisitionTableName}.date`,
         `${weDyedFabricOrderRequisitionTableName}.number`,
-        `${weDyedFabricOrderRequisitionTableName}.name as order_name`,
         `${weDyedFabricOrderRequisitionTableName}.note`,
         `${weDyedFabricOrderRequisitionDetailsTableName}.id`,
         `${weDyedFabricOrderRequisitionDetailsTableName}.note as details_note`,
@@ -80,6 +82,9 @@ exports.selectByRequisitionId = async (whereCluse) => {
         knex.raw(`CONCAT(${colorTableName}.name, ' (كود: ', ${weDyedFabricOrderRequisitionDetailsTableName}.color_code, ')' ) as "color_name_code"`),
     ])
         .from(`${weDyedFabricOrderRequisitionDetailsTableName}`)
+        .innerJoin(`${ordersRequisitionsTableName}`,
+            `${ordersRequisitionsTableName}.id`,
+            `${weDyedFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`)
         .innerJoin(`${weDyedFabricOrderRequisitionTableName}`,
             `${weDyedFabricOrderRequisitionTableName}.id`,
             `${weDyedFabricOrderRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`)
@@ -119,7 +124,7 @@ exports.selectByRequisitionIds = async (whereCluse, requisitionsIds) => {
         `${weDyedFabricOrderRequisitionDetailsTableName}.fabric_quantity_m2`,
         `${weDyedFabricOrderRequisitionDetailsTableName}.price`,
         `${weDyedFabricOrderRequisitionDetailsTableName}.price_dollar`,
-        `${weDyedFabricOrderRequisitionTableName}.name as order_name`,
+        `${ordersRequisitionsTableName}.name as order_name`,
         `${fabricTableName}.fabric_id as fabricId`,
         `${fabricTableName}.id as dyedFabricId`,
         `${fabricTableName}.name as dyed_fabric_name`,
@@ -139,6 +144,9 @@ exports.selectByRequisitionIds = async (whereCluse, requisitionsIds) => {
     .sum(`${weDyedFabricOrderRequisitionDetailsTableName}.initial_quantity  as quantity`)
     .sum(`${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity as current_quantity`)
         .from(`${weDyedFabricOrderRequisitionDetailsTableName}`)
+        .innerJoin(`${ordersRequisitionsTableName}`,
+            `${ordersRequisitionsTableName}.id`,
+            `${weDyedFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`)
         .innerJoin(`${weDyedFabricOrderRequisitionTableName}`,
             `${weDyedFabricOrderRequisitionTableName}.id`,
             `${weDyedFabricOrderRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`)
@@ -173,32 +181,79 @@ exports.selectByRequisitionIds = async (whereCluse, requisitionsIds) => {
 };
 
 exports.selectWarehouseByRequisitionDetailsId = async (whereCluse) => {
-    let queryResults = [];
+//     let queryResults = [];
+//     let columns = [
+//         "dyed_fabric_id",
+//         "we_dyed_fabric_order_requisition_details_id",
+//         "warehouse_id",
+//         "warehouse_name",
+//         "is_grade",
+//         "quantity"
+//     ]
 
-    await knex.select([
-        `${warehouseTableName}.name as warehouse_name`,
-        `${warehouseTableName}.is_grade`,
-    ])
-        .sum(`${weExecuteOrderRequisitionDetailsTableName}.quantity as quantity`)
-        .from(`${weExecuteOrderRequisitionDetailsTableName}`)
-        .innerJoin(`${weDyedFabricOrderRequisitionDetailsTableName}`,
-            `${weDyedFabricOrderRequisitionDetailsTableName}.id`,
-            `${weExecuteOrderRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_details_id`)
-        .innerJoin(`${weExecuteOrderRequisitionTableName}`,
-            `${weExecuteOrderRequisitionTableName}.id`,
-            `${weExecuteOrderRequisitionDetailsTableName}.we_execute_order_requisition_id`)
-        .innerJoin(`${warehouseTableName}`,
-            `${warehouseTableName}.id`,
-            `${weExecuteOrderRequisitionTableName}.warehouse_id`)
-        .where(whereCluse)
-        .andWhere(`${weExecuteOrderRequisitionDetailsTableName}.quantity`, ">", 0)
-        .groupBy(`${weExecuteOrderRequisitionDetailsTableName}.dyed_fabric_id`,
-            `${weExecuteOrderRequisitionTableName}.warehouse_id`)
-        .then((data) => {
-            queryResults = data;
-        })
-    .catch((error) => console.error(error));
-  return queryResults;
+//     await knex.select(columns).from(function () {
+//         this.select(
+//             [
+//                 `${wdDyeingRequisitionDetailsTableName}.dyed_fabric_id`,
+//                 `${wdDyeingRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_details_id`,
+//                 `${wdDyeingRequisitionTableName}.warehouse_id`,
+//                 `${warehouseTableName}.name as warehouse_name`,
+//                 `${warehouseTableName}.is_grade`,
+//                 `${wdDyeingRequisitionDetailsTableName}.dyeing_quantity as quantity`,
+
+//             ])
+//             .from(`${wdDyeingRequisitionDetailsTableName}`)
+//             .innerJoin(`${wdDyeingRequisitionTableName}`,
+//                 `${wdDyeingRequisitionTableName}.id`,
+//                 `${wdDyeingRequisitionDetailsTableName}.wd_dyeing_requisition_id`)
+//             .innerJoin(`${warehouseTableName}`,
+//                 `${warehouseTableName}.id`,
+//                 `${wdDyeingRequisitionTableName}.warehouse_id`)
+//             .where(`${wdDyeingRequisitionDetailsTableName}.dyeing_quantity`, ">", 0)
+//             .as('t1')
+//             .union(function () {
+//                 this.select([
+
+//                 ])
+//                 .from(`${wdDyeingRequisitionDetailsTableName}`)
+//             .innerJoin(`${wdDyeingRequisitionTableName}`,
+//                 `${wdDyeingRequisitionTableName}.id`,
+//                 `${wdDyeingRequisitionDetailsTableName}.wd_dyeing_requisition_id`)
+//             .innerJoin(`${warehouseTableName}`,
+//                 `${warehouseTableName}.id`,
+//                 `${wdDyeingRequisitionTableName}.warehouse_id`)
+//             .where(`${wdDyeingRequisitionDetailsTableName}.dyeing_quantity`, ">", 0)
+//             })
+//     }).as('temp')
+//     .sum("quantity as quantity")
+//     .groupBy(`${weExecuteOrderRequisitionDetailsTableName}.dyed_fabric_id`,
+//         `${weExecuteOrderRequisitionTableName}.warehouse_id`)
+
+//     await knex.select([
+//         `${weDyedFabricOrderRequisitionDetailsTableName}.id as we_dyed_fabric_order_requisition_details_id`,
+//         `${warehouseTableName}.name as warehouse_name`,
+//         `${warehouseTableName}.is_grade`,
+//     ])
+//         .sum(`${weExecuteOrderRequisitionDetailsTableName}.quantity as quantity`)
+//         .from(`${weExecuteOrderRequisitionDetailsTableName}`)
+//         .innerJoin(`${weDyedFabricOrderRequisitionDetailsTableName}`,
+//             `${weDyedFabricOrderRequisitionDetailsTableName}.id`,
+//             `${weExecuteOrderRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_details_id`)
+//         .innerJoin(`${weExecuteOrderRequisitionTableName}`,
+//             `${weExecuteOrderRequisitionTableName}.id`,
+//             `${weExecuteOrderRequisitionDetailsTableName}.we_execute_order_requisition_id`)
+//         .innerJoin(`${warehouseTableName}`,
+//             `${warehouseTableName}.id`,
+//             `${weExecuteOrderRequisitionTableName}.warehouse_id`)
+//         .where(whereCluse)
+//         .andWhere(`${weExecuteOrderRequisitionDetailsTableName}.quantity`, ">", 0)
+//         .groupBy(`${weExecuteOrderRequisitionDetailsTableName}.dyed_fabric_id`,
+//             `${weExecuteOrderRequisitionTableName}.warehouse_id`)
+//         .then((data) => {
+//             queryResults = data;
+//         })
+//     .catch((error) => console.error(error));
+//   return queryResults;
 };
 
 exports.selectOne = async (whereCluse) => {

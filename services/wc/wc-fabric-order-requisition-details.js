@@ -13,9 +13,9 @@ const trans = require("../../helpers/transform");
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-const { wcFabricOrderRequisitionTableName, wcFabricOrderRequisitionDetailsTableName, 
-    wcExecuteOrderRequisitionDetailsTableName, 
-    ordersRequisitionsTableName 
+const { wcFabricOrderRequisitionTableName, wcFabricOrderRequisitionDetailsTableName,
+    wcExecuteOrderRequisitionDetailsTableName,
+    ordersRequisitionsTableName
 } = require("../../util/database-tables-name");
 
 exports.create = async (wcFabricOrderRequisitionDetails) => {
@@ -27,11 +27,7 @@ exports.create = async (wcFabricOrderRequisitionDetails) => {
             return constants.insertError;
         }
     }
-    if (wcFabricOrderRequisitionDetails.orderId != "") {
-        // let ordersRequisitionsWhereCluse = {}
-        // ordersRequisitionsWhereCluse[`${ordersRequisitionsTableName}.wd_form_dyeing_order_requisition_id`] = wcFabricOrderRequisitionDetails.orderId;
-        await ordersRequisitionsQueries.insertForWcFabricOrder(wcFabricOrderRequisitionDetails)
-    }
+
     return { ...constants.insertSuccess, ...{ id: wcFabricOrderRequisitionDetails.id } };
 };
 
@@ -48,17 +44,22 @@ exports.createDetails = async (wcFabricOrderRequisitionDetails) => {
 };
 
 exports.createOrderWithYarnOrder = async (wcFabricOrderRequisitionDetails) => {
+    const ordersRequisitionsId = wcFabricOrderRequisitionDetails.ordersRequisitionsId
     const dyedFabricOrderRequisitionId = wcFabricOrderRequisitionDetails.orderId
     const yarnOrderRequisitionId = wcFabricOrderRequisitionDetails.id
     wcFabricOrderRequisitionDetails.items = []
 
     // check if not created fabric order before
-    const selectFabricOrderResult = await ordersRequisitionsService.selectByDyeingIdForFabricOrderWc(dyedFabricOrderRequisitionId)
+    let whereCluse = {};
+    whereCluse[`${wcFabricOrderRequisitionTableName}.is_deleted`] = 0;
+    whereCluse[`${wcFabricOrderRequisitionTableName}.is_active`] = 1;
+    whereCluse[`${wcFabricOrderRequisitionTableName}.orders_requisitions_id`] = ordersRequisitionsId;
+    const selectFabricOrderResult = await wcFabricOrderRequisitionService.select(whereCluse)
 
     if (selectFabricOrderResult.length < 1) {
-        
+
         const selectInquireFabricResults = await wcFabricOrderRequisitionService.inquireFabricsForOrderWc(dyedFabricOrderRequisitionId)
-        
+
         if (Array.isArray(selectInquireFabricResults) && selectInquireFabricResults.length > 0) {
             for (let i = 0; i < selectInquireFabricResults.length; i++) {
                 const element = selectInquireFabricResults[i];
@@ -79,9 +80,13 @@ exports.createOrderWithYarnOrder = async (wcFabricOrderRequisitionDetails) => {
             wcFabricOrderRequisitionDetails.id = yarnOrderRequisitionId
         }
     }
-    
+
 };
 
+exports.selectOne = async (whereCluse) => {
+    const results = await wcFabricOrderRequisitionDetailsQueries.selectOne(whereCluse);
+    return results;
+};
 
 exports.selectByRequisitionIdOpenedOrder = async (requisitionId) => {
     // check is found
@@ -218,6 +223,38 @@ exports.updateIncrementForExecuteOrder = async (objectOrderData) => {
             current_quantity: selectWcFabricOrderRequisitionDetailsQueriesOneResult[0].current_quantity + parseFloat(objectOrderData.quantity)
         }, {
             id: objectOrderData.wcFabricOrderRequisitionDetailsId
+        })
+        return true
+    }
+}
+
+exports.updateForIncrementQuantity = async (wcFabricOrderRequisitionDetailsId, newQuantity) => {
+    let wcFabricOrderRequisitionDetailsWhereCluse = {}
+    wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.id`] = wcFabricOrderRequisitionDetailsId;
+    wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+    wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+    const selectWcFabricOrderRequisitionDetailsQueriesOneResult = await wcFabricOrderRequisitionDetailsQueries.selectOne(wcFabricOrderRequisitionDetailsWhereCluse)
+    if (Array.isArray(selectWcFabricOrderRequisitionDetailsQueriesOneResult) && selectWcFabricOrderRequisitionDetailsQueriesOneResult.length > 0) {
+        await wcFabricOrderRequisitionDetailsQueries.update({
+            current_quantity: selectWcFabricOrderRequisitionDetailsQueriesOneResult[0].current_quantity + parseFloat(newQuantity)
+        }, {
+            id: wcFabricOrderRequisitionDetailsId
+        })
+        return true
+    }
+}
+
+exports.updateForDecrementQuantity = async (wcFabricOrderRequisitionDetailsId, newQuantity) => {
+    let wcFabricOrderRequisitionDetailsWhereCluse = {}
+    wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.id`] = wcFabricOrderRequisitionDetailsId;
+    wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+    wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+    const selectWcFabricOrderRequisitionDetailsQueriesOneResult = await wcFabricOrderRequisitionDetailsQueries.selectOne(wcFabricOrderRequisitionDetailsWhereCluse)
+    if (Array.isArray(selectWcFabricOrderRequisitionDetailsQueriesOneResult) && selectWcFabricOrderRequisitionDetailsQueriesOneResult.length > 0) {
+        await wcFabricOrderRequisitionDetailsQueries.update({
+            current_quantity: selectWcFabricOrderRequisitionDetailsQueriesOneResult[0].current_quantity - parseFloat(newQuantity)
+        }, {
+            id: wcFabricOrderRequisitionDetailsId
         })
         return true
     }

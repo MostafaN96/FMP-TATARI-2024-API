@@ -231,13 +231,18 @@ exports.selectTotalDetailsByYarnIdByWarehouseId = async (yarnId, warehouseId) =>
   return queryResults;
 };
 
-exports.selectDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLotId, consigmentYarnId) => {
+exports.selectDetailsByWarehouseByYarnByLot = async (
+  warehouseId, yarnId, 
+  yarnLotId, consigmentYarnId,
+  yarnOrderId
+) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${waReturnRequisitionTableName}.warehouse_id`] = warehouseId;
   whereCluse[`${waReturnRequisitionDetailsTableName}.yarn_id`] = yarnId;
   whereCluse[`${waReturnRequisitionDetailsTableName}.yarn_lot_id`] = yarnLotId;
       whereCluse[`${waReturnRequisitionDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
+      whereCluse[`${waReturnRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
   whereCluse[`${waReturnRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${waReturnRequisitionDetailsTableName}.is_active`] = 1;
 
@@ -262,13 +267,14 @@ exports.selectDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLo
   return queryResults;
 };
 
-exports.selectDetailsDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLotId, consigmentYarnId) => {
+exports.selectDetailsDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${waReturnRequisitionTableName}.warehouse_id`] = warehouseId;
   whereCluse[`${waReturnRequisitionDetailsTableName}.yarn_id`] = yarnId;
   whereCluse[`${waReturnRequisitionDetailsTableName}.yarn_lot_id`] = yarnLotId;
       whereCluse[`${waReturnRequisitionDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
+      whereCluse[`${waReturnRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
   whereCluse[`${waReturnRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${waReturnRequisitionDetailsTableName}.is_active`] = 1;
 

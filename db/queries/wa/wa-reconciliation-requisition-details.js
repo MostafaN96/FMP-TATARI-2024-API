@@ -20,6 +20,9 @@ exports.insert = async (waReconciliationRequisitionDetails, items) => {
     .insert(waReconciliationRequisitionDetailsTableName, {
       id: items.waReconciliationRequisitionDetailsId,
       wa_reconcilition_requisition_id: waReconciliationRequisitionDetails.id,
+      wa_yarn_order_requisition_details_id: items.waYarnOrderRequisitionDetailsId,
+      wa_yarn_order_requisition_id: items.yarnOrderId,
+      orders_requisitions_id: items.ordersRequisitionsId,
       yarn_id: items.yarnId,
       yarn_lot_id: items.yarnLotId,
       consigment_yarn_id: items.consigmentYarnId,
@@ -234,13 +237,18 @@ exports.selectTotalDetailsByYarnIdByWarehouseId = async (yarnId, warehouseId) =>
   return queryResults;
 };
 
-exports.selectDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLotId, consigmentYarnId) => {
+exports.selectDetailsByWarehouseByYarnByLot = async (
+  warehouseId, yarnId, 
+  yarnLotId, consigmentYarnId,
+  yarnOrderId
+) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${waReconciliationRequisitionTableName}.warehouse_id`] = warehouseId;
   whereCluse[`${waReconciliationRequisitionDetailsTableName}.yarn_id`] = yarnId;
   whereCluse[`${waReconciliationRequisitionDetailsTableName}.yarn_lot_id`] = yarnLotId;
         whereCluse[`${waReconciliationRequisitionDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
+        whereCluse[`${waReconciliationRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
   whereCluse[`${waReconciliationRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${waReconciliationRequisitionDetailsTableName}.is_active`] = 1;
 
@@ -265,13 +273,14 @@ exports.selectDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLo
   return queryResults;
 };
 
-exports.selectDetailsDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLotId, consigmentYarnId) => {
+exports.selectDetailsDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${waReconciliationRequisitionTableName}.warehouse_id`] = warehouseId;
   whereCluse[`${waReconciliationRequisitionDetailsTableName}.yarn_id`] = yarnId;
   whereCluse[`${waReconciliationRequisitionDetailsTableName}.yarn_lot_id`] = yarnLotId;
         whereCluse[`${waReconciliationRequisitionDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
+        whereCluse[`${waReconciliationRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
   whereCluse[`${waReconciliationRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${waReconciliationRequisitionDetailsTableName}.is_active`] = 1;
 
@@ -386,6 +395,8 @@ exports.selectOne = async (whereCluse) => {
     `${waReconciliationRequisitionDetailsTableName}.yarn_lot_id`, 
     `${waReconciliationRequisitionDetailsTableName}.yarn_id`, 
     `${waReconciliationRequisitionDetailsTableName}.consigment_yarn_id`, 
+    `${waReconciliationRequisitionDetailsTableName}.wa_yarn_order_requisition_details_id`, 
+    `${waReconciliationRequisitionDetailsTableName}.wa_yarn_order_requisition_id`, 
     `${waReconciliationRequisitionTableName}.warehouse_id`, 
     `${waReconciliationRequisitionDetailsTableName}.quantity`
   ])

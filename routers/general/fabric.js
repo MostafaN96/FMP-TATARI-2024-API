@@ -26,8 +26,13 @@ router.get("/select-fabric-to-be-manufactured-by-industry/:industryId",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   fabricController.selectFabricToBeManufacturedWb);
+
+router.get("/fabric-by-order/:orderRequisitionId",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  fabricController.selectFabricsByOrderWc);
   
-  router.get("/by-warehouse-wc/:id",
+  router.get("/by-warehouse-wc/:id/:fabricOrderId",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   fabricController.selectByWarehouseWc);

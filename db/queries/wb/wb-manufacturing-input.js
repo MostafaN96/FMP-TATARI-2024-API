@@ -3,7 +3,7 @@ const sqlFun = require("../../config/sql-fun");
 const knex = require("../../config/connection").getConnection();
 
 // Util
-const { wbManufacturingInputTableName, wbManufacturingRequisitionTableName, yarnTableName, yarnLotTableName, bussinessmanTableName, wbManufacturingInputOutputTableName, wbManufacturingOutputTableName, fabricTableName, consigmentYarnTableName } = require("../../../util/database-tables-name");
+const { wbManufacturingInputTableName, wbManufacturingRequisitionTableName, yarnTableName, yarnLotTableName, bussinessmanTableName, wbManufacturingInputOutputTableName, wbManufacturingOutputTableName, fabricTableName, consigmentYarnTableName, waYarnOrderRequisitionTableName } = require("../../../util/database-tables-name");
 
 exports.insert = async (wbManufacturingInput, items) => {
   let queryResults = false;
@@ -94,6 +94,8 @@ exports.selectOneByRequisitionId = async (requisitionId) => {
     `${wbManufacturingInputTableName}.ratio`,
     `${wbManufacturingInputTableName}.wast_ratio`,
     `${wbManufacturingInputTableName}.statement`,
+    `${wbManufacturingInputOutputTableName}.orders_requisitions_id`,
+    `${wbManufacturingInputOutputTableName}.wa_yarn_order_requisition_id`,
     `${bussinessmanTableName}.id as manufacturer_id`,
     `${bussinessmanTableName}.name as manufacturer_name`,
   ])
@@ -151,6 +153,8 @@ exports.selectByRequisitionId = async (requisitionId) => {
     `${wbManufacturingInputTableName}.ratio`,
     `${wbManufacturingInputTableName}.wast_ratio`,
     `${wbManufacturingInputTableName}.statement`,
+    `${wbManufacturingInputOutputTableName}.orders_requisitions_id`,
+    `${wbManufacturingInputOutputTableName}.wa_yarn_order_requisition_id`,
     `${bussinessmanTableName}.id as manufacturer_id`,
     `${bussinessmanTableName}.name as manufacturer_name`,
   ])
@@ -327,13 +331,14 @@ exports.selectTotalDetailsByYarnIdByIndustryId = async (yarnId, manufacturerId) 
   return queryResults;
 };
 
-exports.selectDetailsByIndustryByYarnByLot = async (manufacturerId, yarnId, yarnLotId, consigmentYarnId) => {
+exports.selectDetailsByIndustryByYarnByLot = async (manufacturerId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${wbManufacturingRequisitionTableName}.industry_id`] = manufacturerId;
   whereCluse[`${wbManufacturingInputTableName}.yarn_id`] = yarnId;
   whereCluse[`${wbManufacturingInputTableName}.yarn_lot_id`] = yarnLotId;
   whereCluse[`${wbManufacturingInputTableName}.consigment_yarn_id`] = consigmentYarnId;
+  whereCluse[`${wbManufacturingInputOutputTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
   whereCluse[`${wbManufacturingInputTableName}.is_deleted`] = 0;
   whereCluse[`${wbManufacturingInputTableName}.is_active`] = 1;
 
@@ -363,13 +368,14 @@ exports.selectDetailsByIndustryByYarnByLot = async (manufacturerId, yarnId, yarn
   return queryResults;
 };
 
-exports.selectDetailsDetailsByIndustryByYarnByLot = async (industryId, yarnId, yarnLotId, consigmentYarnId) => {
+exports.selectDetailsDetailsByIndustryByYarnByLot = async (industryId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${wbManufacturingRequisitionTableName}.industry_id`] = industryId;
   whereCluse[`${wbManufacturingInputTableName}.yarn_id`] = yarnId;
   whereCluse[`${wbManufacturingInputTableName}.yarn_lot_id`] = yarnLotId;
   whereCluse[`${wbManufacturingInputTableName}.consigment_yarn_id`] = consigmentYarnId;
+  whereCluse[`${wbManufacturingInputOutputTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
   whereCluse[`${wbManufacturingInputTableName}.is_deleted`] = 0;
   whereCluse[`${wbManufacturingInputTableName}.is_active`] = 1;
 
@@ -401,6 +407,8 @@ exports.selectDetailsDetailsByIndustryByYarnByLot = async (industryId, yarnId, y
         `${fabricTableName}.code as fabric_code`,
         `${wbManufacturingOutputTableName}.id as wb_manufacturing_output_id`,
         `${wbManufacturingOutputTableName}.quantity as output_quantity`,
+        `${waYarnOrderRequisitionTableName}.id as wa_yarn_order_requisition_id`,
+        `${waYarnOrderRequisitionTableName}.name as wa_yarn_order_requisition_name`,
         knex.raw('? as type_of_requisition', 'اذن تصنيع'),
         knex.raw('? as input_output', '0'),
         knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
@@ -412,6 +420,9 @@ exports.selectDetailsDetailsByIndustryByYarnByLot = async (industryId, yarnId, y
     .innerJoin(`${wbManufacturingInputTableName}`,
       `${wbManufacturingInputTableName}.id`,
       `${wbManufacturingInputOutputTableName}.wb_manufacturing_input_id`)
+    .innerJoin(`${waYarnOrderRequisitionTableName}`, 
+      `${waYarnOrderRequisitionTableName}.id`, 
+      `${wbManufacturingInputOutputTableName}.wa_yarn_order_requisition_id`)
     .innerJoin(`${yarnTableName}`, `${yarnTableName}.id`, `${wbManufacturingInputTableName}.yarn_id`)
     .innerJoin(`${yarnLotTableName}`, `${yarnLotTableName}.id`, `${wbManufacturingInputTableName}.yarn_lot_id`)
     .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${wbManufacturingRequisitionTableName}.industry_id`)

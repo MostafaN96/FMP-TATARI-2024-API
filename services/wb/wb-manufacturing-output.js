@@ -19,7 +19,13 @@ const trans = require("../../helpers/transform");
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-const { wbManufacturingRequisitionTableName, wbManufacturingOutputTableName, wcTableName, wbManufacturingOrderRequisitionDetailsTableName, wbManufacturingInputOutputTableName, wbManufacturingInputTableName } = require("../../util/database-tables-name");
+const { wbManufacturingRequisitionTableName, 
+  wbManufacturingOutputTableName, 
+  wcTableName, 
+  wbManufacturingOrderRequisitionDetailsTableName, 
+  wbManufacturingInputOutputTableName, 
+  wbManufacturingInputTableName 
+} = require("../../util/database-tables-name");
 
 exports.create = async (wbManufacturingOutput) => {
   if (wbManufacturingOutput.isNewConsigment) {

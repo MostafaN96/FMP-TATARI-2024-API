@@ -8,7 +8,7 @@ const trans = require("../../helpers/transform");
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-const { wbTableName, fabricTableName, wbManufacturingOutputTableName, wcTableName, wcReconciliationRequisitionDetailsTableName } = require("../../util/database-tables-name");
+const { wbTableName, fabricTableName, wbManufacturingOutputTableName, wcTableName, wcReconciliationRequisitionDetailsTableName, wcFabricOrderRequisitionDetailsTableName } = require("../../util/database-tables-name");
 
 // Services
 const fabricYarnsService = require("./fabric-yarns");
@@ -154,7 +154,21 @@ exports.selectManufacturedFabricWb = async () => {
   return results;
 };
 
-exports.selectByWarehouseWc = async (warehouseId) => {
+exports.selectFabricsByOrderWc = async (orderRequisitionId) => {
+  
+  let whereCluse = {};
+  whereCluse[`${fabricTableName}.is_deleted`] = 0;
+  whereCluse[`${fabricTableName}.is_active`] = 1;
+
+  let whereInWhereCluse = {};
+  whereInWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`] = orderRequisitionId;
+  whereInWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+  whereInWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+  const results = await fabricQueries.selectFabricsByOrder(whereCluse, whereInWhereCluse);
+  return results;
+};
+
+exports.selectByWarehouseWc = async (warehouseId, fabricOrderId) => {
   
   let whereCluse = {};
   whereCluse[`${fabricTableName}.is_deleted`] = 0;
@@ -164,8 +178,9 @@ exports.selectByWarehouseWc = async (warehouseId) => {
   wcWhereCluse[`${wcTableName}.is_deleted`] = 0;
   wcWhereCluse[`${wcTableName}.is_active`] = 1;
   wcWhereCluse[`warehouse_id`] = warehouseId;
+  wcWhereCluse[`wc_fabric_order_requisition_id`] = fabricOrderId;
 
-  const results = await fabricQueries.selectStoredFabricsWc(whereCluse, wcWhereCluse);
+  const results = await fabricQueries.selectStoredFabricsWc(whereCluse, wcWhereCluse, warehouseId);
   return results;
 };
 

@@ -3,6 +3,11 @@ const wcAddRequisitionDetailsQueries = require("../../db/queries/wc/wc-add-requi
 const wcAddRequisitionQueries = require("../../db/queries/wc/wc-add-requisition");
 const wcQueries = require("../../db/queries/wc/wc");
 const consigmentManufacturingQueries = require("../../db/queries/general/consigment-manufacturing");
+const wcFabricOrderRequisitionDetailsQueries = require("../../db/queries/wc/wc-fabric-order-requisition-details");
+
+// Services
+const wcService = require("./wc");
+const wcAddRequisitionDetailsFabricOrderService = require("./wc-add-requisition-details-fabric-order");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -10,9 +15,9 @@ const trans = require("../../helpers/transform");
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-
-// Services
-const wcService = require("./wc");
+const { 
+    wcFabricOrderRequisitionDetailsTableName 
+} = require("../../util/database-tables-name");
 
 exports.create = async (wcAddRequisitionDetails) => {
     for (let i = 0; i < wcAddRequisitionDetails.items.length; i++) {
@@ -37,6 +42,28 @@ exports.create = async (wcAddRequisitionDetails) => {
             return constants.insertError;
         } else {
             await wcService.create(wcAddRequisitionDetails, wcAddRequisitionDetails.items[i])
+
+            
+        for (let j = 0; j < wcAddRequisitionDetails.orderId.length; j++) {
+            const orderElement = wcAddRequisitionDetails.orderId[j];
+  
+            let fabricOrderRequisitionDetailsWhereCluse = {};
+            fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+            fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+            fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_order`] = 1;
+            fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`] = orderElement.ordersRequisitionsId;
+            fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.fabric_id`] = wcAddRequisitionDetails.items[i].fabricId;
+  
+            const selectFabricOrderRequisitionDetailsResult = await wcFabricOrderRequisitionDetailsQueries.selectByRequisitionId(fabricOrderRequisitionDetailsWhereCluse)
+            if (Array.isArray(selectFabricOrderRequisitionDetailsResult) && selectFabricOrderRequisitionDetailsResult.length > 0) {
+              for (let f = 0; f < selectFabricOrderRequisitionDetailsResult.length; f++) {
+                const fabricOrderRequisitionDetailsElement = selectFabricOrderRequisitionDetailsResult[f];
+  
+                await wcAddRequisitionDetailsFabricOrderService.create({ ...fabricOrderRequisitionDetailsElement, ...wcAddRequisitionDetails }, orderElement)
+  
+              }
+            }
+          }
         }
     }
     return { ...constants.insertSuccess, ...{ id: wcAddRequisitionDetails.id } };

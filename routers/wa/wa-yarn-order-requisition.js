@@ -30,6 +30,22 @@ router.get("/closed-orders",
     middleWeres.checkInt(),
     waYarnOrderRequisitionController.inquireYarnsOfFabricForOrderWa);
 
+    
+  router.get("/by-warehouse-wa/:id",
+    middleWeres.checkAuth(),
+    middleWeres.checkIdentity(usersType.ADMIN_STR),
+    waYarnOrderRequisitionController.selectByWarehouseWa);
+    
+  router.get("/by-industry-wb/:id",
+    middleWeres.checkAuth(),
+    middleWeres.checkIdentity(usersType.ADMIN_STR),
+    waYarnOrderRequisitionController.selectByIndustryWb);
+    
+  router.get("/by-industry-by-fabric-wb/:id/:fabricId",
+    middleWeres.checkAuth(),
+    middleWeres.checkIdentity(usersType.ADMIN_STR),
+    waYarnOrderRequisitionController.selectByIndustryByFabricWb);
+
 // Post Queries
 router.post(
   "",

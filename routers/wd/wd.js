@@ -8,7 +8,7 @@ const middleWeres = require("../../middlewares/middlewares");
 const usersType = require("../../util/user-types");
 
 // get Queries
-router.get("/select-consigment-dyeing-by-fabric-by-dyeing/:fabricId/:dyeingId",
+router.get("/select-consigment-dyeing-by-fabric-by-dyeing/:fabricId/:dyeingId/:fabricOrderId",
     middleWeres.checkAuth(),
     middleWeres.checkIdentity(usersType.ADMIN_STR),
     wdController.selectConsigmentDyeingQuantityByFabricByDyeingWd);
@@ -18,6 +18,11 @@ router.get("/select-by-dyeing/:dyeingId",
     middleWeres.checkAuth(),
     middleWeres.checkIdentity(usersType.ADMIN_STR),
     wdController.selectQuantityByDyeingWd);
+
+router.get("/select-by-dyeing-by-fabric-order/:dyeingId/:fabricOrderId",
+    middleWeres.checkAuth(),
+    middleWeres.checkIdentity(usersType.ADMIN_STR),
+    wdController.selectQuantityByDyeingByFabricOrderWd);
 
 router.get("/select-by-dyeing-group-by-fabric/:dyeingId",
     middleWeres.checkAuth(),

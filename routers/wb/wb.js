@@ -8,7 +8,7 @@ const middleWeres = require("../../middlewares/middlewares");
 const usersType = require("../../util/user-types");
 
 // get Queries
-router.get("/select-consigment-yarn-by-yarn-by-industry-by-lot/:yarnId/:industryId/:yarnLotId",
+router.get("/select-consigment-yarn-by-yarn-by-industry-by-lot/:yarnId/:industryId/:yarnLotId/:yarnOrderId",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   wbController.selectConsigmentYarnQuantityByYarnByIndustryByLotWb);
@@ -34,7 +34,7 @@ router.post("/select-by-industry-by-nedded-fabric-not-included-yarns-and-lots/:i
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   wbController.selectByIndustryByNeededFabricToBeManufacturedNotIncludedYarnsAndLotsWb);
 
-router.get("/select-by-industry-by-fabric/:industryId/:fabricId",
+router.get("/select-by-industry-by-fabric/:industryId/:fabricId/:yarnOrderId",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   wbController.selectQuantityByIndustryByFabricWb);

@@ -5,18 +5,20 @@ const wcTransitionBetweenWHRequisitionQueries = require("../../db/queries/wc/wc-
 const wcQueries = require("../../db/queries/wc/wc");
 const consigmentManufacturingQueries = require("../../db/queries/general/consigment-manufacturing");
 
+// Services
+const wcTransitionBetweenWHRequisitionDetailsWcService = require("./wc-transition-between-wh-requisition-details-wc");
+const wcService = require("./wc");
+const wcFabricOrderRequisitionDetailsService = require("./wc-fabric-order-requisition-details");
+
 // Helper
 const trans = require("../../helpers/transform");
 
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-
-// Services
-const wcTransitionBetweenWHRequisitionDetailsWcService = require("./wc-transition-between-wh-requisition-details-wc");
-const wcService = require("./wc");
 const { wcTransitionBetweenWHRequisitionDetailsTableName,
-    wcTransitionBetweenWHRequisitionDetailsWcTableName
+    wcTransitionBetweenWHRequisitionDetailsWcTableName,
+    wcFabricOrderRequisitionDetailsTableName
 } = require("../../util/database-tables-name");
 
 exports.create = async (wcTransitionBetweenWHRequisitionDetails) => {
@@ -34,6 +36,16 @@ exports.create = async (wcTransitionBetweenWHRequisitionDetails) => {
             await consigmentManufacturingQueries.insertForWcExecuteOrder(wcTransitionBetweenWHRequisitionDetails, wcTransitionBetweenWHRequisitionDetails.items[i]);
         }
 
+        // Get fabric order requisitions details id
+        let fabricOrderRequisitionDetailsWhereCluse = {};
+        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = wcTransitionBetweenWHRequisitionDetails.items[i].fabricOrderId;
+        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.fabric_id`] = wcTransitionBetweenWHRequisitionDetails.items[i].fabricId;
+        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+        const selectFabricOrderRequisitionDetailsResult = await wcFabricOrderRequisitionDetailsService.selectOne(fabricOrderRequisitionDetailsWhereCluse)
+        if (Array.isArray(selectFabricOrderRequisitionDetailsResult) && selectFabricOrderRequisitionDetailsResult.length > 0) {
+            wcTransitionBetweenWHRequisitionDetails.items[i].wcFabricOrderRequisitionDetailsId = selectFabricOrderRequisitionDetailsResult[0].id
+
         const results = await wcTransitionBetweenWHRequisitionDetailsQueries.insert(wcTransitionBetweenWHRequisitionDetails, wcTransitionBetweenWHRequisitionDetails.items[i]);
         if (!results) {
             return constants.insertError;
@@ -44,7 +56,9 @@ exports.create = async (wcTransitionBetweenWHRequisitionDetails) => {
             const fabricsStoredInWcResult = await wcService.selectByFabricForSell(
                 wcTransitionBetweenWHRequisitionDetails.items[i].fromWarehouseId, 
                 wcTransitionBetweenWHRequisitionDetails.items[i].fabricId, 
-                wcTransitionBetweenWHRequisitionDetails.items[i].fromConsigmentManufacturingId)
+                wcTransitionBetweenWHRequisitionDetails.items[i].fromConsigmentManufacturingId,
+                wcTransitionBetweenWHRequisitionDetails.items[i].fabricOrderId
+            )
             if (fabricsStoredInWcResult[0] != null) {
 
                 for (let j = 0; j < fabricsStoredInWcResult.length; j++) {
@@ -78,6 +92,9 @@ exports.create = async (wcTransitionBetweenWHRequisitionDetails) => {
             }
 
         }
+    } else {
+
+    }
     }
     return { ...constants.insertSuccess, ...{ id: wcTransitionBetweenWHRequisitionDetails.id } };
 };
@@ -173,7 +190,8 @@ exports.update = async (wcTransitionBetweenWHRequisitionDetails) => {
                 const sumCurrentQuantityWc = await wcService.selectSumCurrentQuantityByWarehouseByFabricByConsigmentManufacturingLotWc(
                     isFound[0].from_warehouse_id, 
                     isFound[0].fabric_id, 
-                    isFound[0].from_consigment_manufacturing_id
+                    isFound[0].from_consigment_manufacturing_id,
+                    isFound[0].wc_fabric_order_requisition_id
                     )
                 if(sumCurrentQuantityWc[0] != null) {
                     const sumCurrentQuantity = sumCurrentQuantityWc[0].current_quantity
@@ -197,7 +215,8 @@ exports.update = async (wcTransitionBetweenWHRequisitionDetails) => {
                         const wcRecords = await wcService.selectByFabricForSell(
                             isFound[0].from_warehouse_id, 
                             isFound[0].fabric_id, 
-                            isFound[0].from_consigment_manufacturing_id
+                            isFound[0].from_consigment_manufacturing_id,
+                            isFound[0].wc_fabric_order_requisition_id
                             )
                         if(wcRecords[0] != null) {
                             for (let i = 0; i < wcRecords.length; i++) {

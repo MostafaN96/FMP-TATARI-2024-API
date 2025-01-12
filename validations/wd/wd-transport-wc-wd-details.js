@@ -8,6 +8,8 @@ exports.isValid = (wdTransportWcWdRequisition) => {
         personid: validations.joiText(3, 50),
         ipaddress: validations.joiText(3, 50),
         items: joi.array().items({
+            ordersRequisitionsId: validations.joiText(15, 30),
+            fabricOrderId: validations.joiText(15, 30),
             fabricId: validations.joiText(15, 30),
             dyeingId: validations.joiText(15, 30),
             consigmentManufacturingId: validations.joiText(15, 30),
@@ -15,6 +17,7 @@ exports.isValid = (wdTransportWcWdRequisition) => {
             price: validations.joiNumber(1, 60),
             priceDollar: validations.joiNotRequiredText(0, 50),
             quantity: validations.joiNumber(1, 60),
+            numberFabricPieces:validations.joiNotRequiredText(0, 50),
             document: validations.joiNotRequiredNumber(0, 50),
             statement: validations.joiNotRequiredText(0, 10000),
         })
@@ -41,6 +44,7 @@ exports.isValidUpdate = (wdTransportWcWdRequisition) => {
         price: validations.joiNumber(1, 60),
         priceDollar: validations.joiNotRequiredText(0, 50),
         quantity: validations.joiNumber(1, 60),
+        numberFabricPieces:validations.joiNotRequiredText(0, 50),
         document: validations.joiNotRequiredNumber(0, 50),
         statement: validations.joiNotRequiredText(0, 10000),
         personid: validations.joiText(1, 90),

@@ -6,17 +6,22 @@ const wdQueries = require("../../db/queries/wd/wd");
 const wcQueries = require("../../db/queries/wc/wc");
 const consigmentDyeingQueries = require("../../db/queries/general/consigment-dyeing");
 
+// Services
+const wcService = require("../wc/wc");
+const wdTransportWcWdRequisitionDetailsWcService = require("./wd-transport-wc-wd-details-wc");
+const wcFabricOrderRequisitionDetailsService = require("../wc/wc-fabric-order-requisition-details");
+
 // Helper
 const trans = require("../../helpers/transform");
 
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-
-// Services
-const wcService = require("../wc/wc");
-const wdTransportWcWdRequisitionDetailsWcService = require("./wd-transport-wc-wd-details-wc");
-const { wdTransportWcWdDetailsWcTableName, wdTransportWcWdDetailsTableName } = require("../../util/database-tables-name");
+const { 
+    wdTransportWcWdDetailsWcTableName, 
+    wdTransportWcWdDetailsTableName, 
+    wcFabricOrderRequisitionDetailsTableName 
+} = require("../../util/database-tables-name");
 
 exports.create = async (wdTransportWcWdRequisitionDetails) => {
     for (let i = 0; i < wdTransportWcWdRequisitionDetails.items.length; i++) {
@@ -32,6 +37,16 @@ exports.create = async (wdTransportWcWdRequisitionDetails) => {
             await consigmentDyeingQueries.insertForTransport(wdTransportWcWdRequisitionDetails, wdTransportWcWdRequisitionDetails.items[i]);
         }
         
+        // Get fabric order requisitions details id
+        let fabricOrderRequisitionDetailsWhereCluse = {};
+        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = wdTransportWcWdRequisitionDetails.items[i].fabricOrderId;
+        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.fabric_id`] = wdTransportWcWdRequisitionDetails.items[i].fabricId;
+        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+        const selectFabricOrderRequisitionDetailsResult = await wcFabricOrderRequisitionDetailsService.selectOne(fabricOrderRequisitionDetailsWhereCluse)
+        if (Array.isArray(selectFabricOrderRequisitionDetailsResult) && selectFabricOrderRequisitionDetailsResult.length > 0) {
+            wdTransportWcWdRequisitionDetails.items[i].wcFabricOrderRequisitionDetailsId = selectFabricOrderRequisitionDetailsResult[0].id
+
         const results = await wdTransportWcWdDetailsQueries.insert(wdTransportWcWdRequisitionDetails, wdTransportWcWdRequisitionDetails.items[i]);
         if (!results) {
             return constants.insertError;
@@ -42,7 +57,9 @@ exports.create = async (wdTransportWcWdRequisitionDetails) => {
             const fabricsStoredInWcResult = await wcService.selectByFabricForSell(
                 wdTransportWcWdRequisitionDetails.warehouseId,
                 wdTransportWcWdRequisitionDetails.items[i].fabricId,
-                wdTransportWcWdRequisitionDetails.items[i].consigmentManufacturingId)
+                wdTransportWcWdRequisitionDetails.items[i].consigmentManufacturingId,
+                wdTransportWcWdRequisitionDetails.items[i].fabricOrderId
+            )
             if (fabricsStoredInWcResult[0] != null) {
 
                 for (let j = 0; j < fabricsStoredInWcResult.length; j++) {
@@ -60,6 +77,9 @@ exports.create = async (wdTransportWcWdRequisitionDetails) => {
                     // Add wdTransportWcWdRequisitionDetailsWc
                     await wdTransportWcWdRequisitionDetailsWcService.create(wdTransportWcWdRequisitionDetails, wdTransportWcWdRequisitionDetails.items[i])
 
+                    // update order quantity
+                    await wcFabricOrderRequisitionDetailsService.updateForDecrementQuantity(selectFabricOrderRequisitionDetailsResult[0].id, updatedQuantity)
+
                     // Enter to if condition when stock runs out
                     if (newQuantity == 0) {
                         break;
@@ -76,6 +96,9 @@ exports.create = async (wdTransportWcWdRequisitionDetails) => {
             }
 
         }
+    } else {
+
+    }
     }
     return { ...constants.insertSuccess, ...{ id: wdTransportWcWdRequisitionDetails.id } };
 };
@@ -147,6 +170,7 @@ exports.update = async (wdTransportWcWdRequisitionDetails) => {
             wdTransportWcWdDetailsQueries.update({
                 price: wdTransportWcWdRequisitionDetails.price,
                 price_dollar: wdTransportWcWdRequisitionDetails.priceDollar,
+                fabric_piece: wdTransportWcWdRequisitionDetails.numberFabricPieces,
                 document: wdTransportWcWdRequisitionDetails.document,
                 statement: wdTransportWcWdRequisitionDetails.statement
             },
@@ -175,12 +199,16 @@ exports.update = async (wdTransportWcWdRequisitionDetails) => {
                 const sumCurrentQuantityWc = await wcService.selectSumCurrentQuantityByWarehouseByFabricByConsigmentManufacturingLotWc(
                     isFound[0].warehouse_id,
                     isFound[0].fabric_id,
-                    isFound[0].consigment_manufacturing_id
+                    isFound[0].consigment_manufacturing_id,
+                    isFound[0].wc_fabric_order_requisition_id
                 )
                 if (sumCurrentQuantityWc[0] != null) {
-                    console.log("sumCurrentQuantityWc ::: ", sumCurrentQuantityWc);
+                    // console.log("sumCurrentQuantityWc ::: ", sumCurrentQuantityWc);
                     const sumCurrentQuantity = sumCurrentQuantityWc[0].current_quantity
                     if (sumCurrentQuantity >= defferenceQuantity) {
+
+                        // update order quantity
+                        await wcFabricOrderRequisitionDetailsService.updateForDecrementQuantity(isFound[0].wc_fabric_order_requisition_details_id, defferenceQuantity)
 
                         // Step 2 => Increment quantity in  wc_sell_requisition_details
                         await wdTransportWcWdDetailsQueries.update({
@@ -193,7 +221,8 @@ exports.update = async (wdTransportWcWdRequisitionDetails) => {
                         const wcRecords = await wcService.selectByFabricForSell(
                             isFound[0].warehouse_id,
                             isFound[0].fabric_id,
-                            isFound[0].consigment_manufacturing_id
+                            isFound[0].consigment_manufacturing_id,
+                            isFound[0].wc_fabric_order_requisition_id
                         )
                         if (wcRecords[0] != null) {
 
@@ -265,6 +294,9 @@ exports.update = async (wdTransportWcWdRequisitionDetails) => {
                 defferenceQuantity = parseFloat((oldQuantity - newQuantity).toFixed(3))
 
                 if (selectOneWbRecord[0].current_quantity >= defferenceQuantity) {
+
+                    // update order quantity
+                    await wcFabricOrderRequisitionDetailsService.updateForIncrementQuantity(isFound[0].wc_fabric_order_requisition_details_id, defferenceQuantity)
 
                     // Step 1 => Decrement quantity in  wb_transport_wa_wb_details
                     await wdTransportWcWdDetailsQueries.update({

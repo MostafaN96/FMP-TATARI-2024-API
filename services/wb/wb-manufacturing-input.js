@@ -6,13 +6,7 @@ const wbManufacturingInputWbQueries = require("../../db/queries/wb/wb-manufactur
 const wbManufacturingRequisitionQueries = require("../../db/queries/wb/wb-manufacturing-requisition");
 const wbManufacturingOrderRequisitionDetailsQueries = require("../../db/queries/wb/wb-manufacturing-order-requisition-details");
 const wbQueries = require("../../db/queries/wb/wb");
-
-// Helper
-const trans = require("../../helpers/transform");
-
-// Util
-const constants = require("../../util/constants");
-const constantsPayloads = require("../../util/constants-payloads");
+const wcFabricOrderRequisitionDetailsQueries = require("../../db/queries/wc/wc-fabric-order-requisition-details");
 
 // Services
 const wbService = require("./wb");
@@ -21,76 +15,106 @@ const wbManufacturingOutputService = require("./wb-manufacturing-output");
 const wbManufacturingInputOutputService = require("./wb-manufacturing-input-output");
 const wbManufacturingOutputOrderService = require("./wb-manufacturing-output-order");
 const wcService = require("../wc/wc");
-const { wbManufacturingOrderRequisitionDetailsTableName, wbManufacturingInputTableName, wbManufacturingInputWbTableName, wbManufacturingInputOutputTableName } = require("../../util/database-tables-name");
+
+// Helper
+const trans = require("../../helpers/transform");
+
+// Util
+const constants = require("../../util/constants");
+const constantsPayloads = require("../../util/constants-payloads");
+const {
+    wbManufacturingOrderRequisitionDetailsTableName,
+    wbManufacturingInputTableName,
+    wbManufacturingInputWbTableName,
+    wbManufacturingInputOutputTableName,
+    wcFabricOrderRequisitionDetailsTableName
+} = require("../../util/database-tables-name");
 
 exports.create = async (wbManufacturingInput, isOrder) => {
-    // wbManufacturingOutput
-    wbManufacturingInput.wbManufacturingOutputId = trans.transform();
-    const wbManufacturingOutputResult = await wbManufacturingOutputService.create(wbManufacturingInput)
 
-    if(wbManufacturingOutputResult == constants.insertSuccess) {
-        for (let i = 0; i < wbManufacturingInput.items.length; i++) {
-            wbManufacturingInput.items[i].wbManufacturingInputId = trans.transform();
+    // Get wc fabric order by order requisition id
+    let wcFabricOrderRequisitionDetailsWhereCluse = {};
+    wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+    wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+    // wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_order`] = 1;
+    wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`] = wbManufacturingInput.ordersRequisitionsId;
+    wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.fabric_id`] = wbManufacturingInput.fabricId;
 
-            // Add wbManufacturingInput
-            const results = await wbManufacturingInputQueries.insert(wbManufacturingInput, wbManufacturingInput.items[i]);
-            if (!results) {
-                return constants.insertError;
-            } else {
-                let newQuantity = parseFloat(wbManufacturingInput.items[i].quantityWithWaste)
-                // select wb Yarn for decrement current quantity
-                const yarnsStoredInWaResult = await wbService.selectRecordsByIndustryByYarnByYarnLot(wbManufacturingInput.industryId, 
-                    wbManufacturingInput.items[i].yarnId, 
-                    wbManufacturingInput.items[i].yarnLotId, 
-                    wbManufacturingInput.items[i].consigmentYarnId
+    const selectWcFabricOrderRequisitionDetailsResult = await wcFabricOrderRequisitionDetailsQueries.selectByRequisitionId(wcFabricOrderRequisitionDetailsWhereCluse)
+    if (Array.isArray(selectWcFabricOrderRequisitionDetailsResult) && selectWcFabricOrderRequisitionDetailsResult.length > 0) {
+        wbManufacturingInput.wcFabricOrderRequisitionDetailsId = selectWcFabricOrderRequisitionDetailsResult[0].id
+        wbManufacturingInput.fabricOrderId = selectWcFabricOrderRequisitionDetailsResult[0].requisition_id
+
+        // wbManufacturingOutput
+        wbManufacturingInput.wbManufacturingOutputId = trans.transform();
+        const wbManufacturingOutputResult = await wbManufacturingOutputService.create(wbManufacturingInput)
+
+        if (wbManufacturingOutputResult == constants.insertSuccess) {
+            for (let i = 0; i < wbManufacturingInput.items.length; i++) {
+                wbManufacturingInput.items[i].wbManufacturingInputId = trans.transform();
+
+                // Add wbManufacturingInput
+                const results = await wbManufacturingInputQueries.insert(wbManufacturingInput, wbManufacturingInput.items[i]);
+                if (!results) {
+                    return constants.insertError;
+                } else {
+                    let newQuantity = parseFloat(wbManufacturingInput.items[i].quantityWithWaste)
+                    // select wb Yarn for decrement current quantity
+                    const yarnsStoredInWaResult = await wbService.selectRecordsByIndustryByYarnByYarnLot(
+                        wbManufacturingInput.industryId,
+                        wbManufacturingInput.items[i].yarnId,
+                        wbManufacturingInput.items[i].yarnLotId,
+                        wbManufacturingInput.items[i].consigmentYarnId,
+                        wbManufacturingInput.yarnOrderId
                     )
-                if (yarnsStoredInWaResult[0] != null) {
+                    if (yarnsStoredInWaResult[0] != null) {
 
-                    for (let j = 0; j < yarnsStoredInWaResult.length; j++) {
-                        const yarnStoredInWb = yarnsStoredInWaResult[j];
-                        let currentQuantity = yarnStoredInWb.current_quantity
-                        let updatedQuantity = 0
-    
-                        // decrement wb Yarn CurrentQuantity
-                        let returnedQuantityObj = await wbService.decrementWbCurrentQuantity(newQuantity, currentQuantity, yarnStoredInWb, updatedQuantity);
-                        newQuantity = returnedQuantityObj.newQuantity
-                        updatedQuantity = returnedQuantityObj.updatedQuantity
-                        wbManufacturingInput.items[i].wbId = yarnStoredInWb.id
-                        wbManufacturingInput.items[i].updatedQuantity = updatedQuantity
-    
-                        // Add wb Manufacturing Input wb
-                        await wbManufacturingInputWbService.create(wbManufacturingInput, wbManufacturingInput.items[i])
-    
-                        // Enter to if condition when stock runs out
-                        if (newQuantity == 0) {
-                            break;
+                        for (let j = 0; j < yarnsStoredInWaResult.length; j++) {
+                            const yarnStoredInWb = yarnsStoredInWaResult[j];
+                            let currentQuantity = yarnStoredInWb.current_quantity
+                            let updatedQuantity = 0
+
+                            // decrement wb Yarn CurrentQuantity
+                            let returnedQuantityObj = await wbService.decrementWbCurrentQuantity(newQuantity, currentQuantity, yarnStoredInWb, updatedQuantity);
+                            newQuantity = returnedQuantityObj.newQuantity
+                            updatedQuantity = returnedQuantityObj.updatedQuantity
+                            wbManufacturingInput.items[i].wbId = yarnStoredInWb.id
+                            wbManufacturingInput.items[i].updatedQuantity = updatedQuantity
+
+                            // Add wb Manufacturing Input wb
+                            await wbManufacturingInputWbService.create(wbManufacturingInput, wbManufacturingInput.items[i])
+
+                            // Enter to if condition when stock runs out
+                            if (newQuantity == 0) {
+                                break;
+                            }
+                        }
+
+                        // Add wb Manufacturing Input Output
+                        await wbManufacturingInputOutputService.create(wbManufacturingInput, wbManufacturingInput.items[i], isOrder)
+
+                    } else {
+                        return {
+                            ...constants.wrongQuantity,
+                            spentQuantity: 0,
+                            newQuantity: newQuantity
                         }
                     }
-    
-                    // Add wb Manufacturing Input Output
-                    await wbManufacturingInputOutputService.create(wbManufacturingInput, wbManufacturingInput.items[i], isOrder)
-    
-                } else {
-                    return {
-                        ...constants.wrongQuantity,
-                        spentQuantity: 0,
-                        newQuantity: newQuantity
-                    }
                 }
-            }
-            if(i == wbManufacturingInput.items.length-1) {
-                // Add Wc
-                await wcService.createForManufacturing(wbManufacturingInput)
-                // manufacturing order
-                if (isOrder) {
-                    await this.createOrder(wbManufacturingInput)
+                if (i == wbManufacturingInput.items.length - 1) {
+                    // Add Wc
+                    await wcService.createForManufacturing(wbManufacturingInput)
+                    // manufacturing order
+                    if (isOrder) {
+                        await this.createOrder(wbManufacturingInput)
+                    }
                 }
             }
         }
+
+
+        return { ...constants.insertSuccess, ...{ id: wbManufacturingInput.id } };
     }
-
-
-    return { ...constants.insertSuccess, ...{ id: wbManufacturingInput.id } };
 };
 
 
@@ -106,9 +130,9 @@ exports.createInputDetails = async (wbManufacturingInput, isOrder) => {
             let newQuantity = parseFloat(wbManufacturingInput.items[i].quantityWithWaste)
             // select wb Yarn for decrement current quantity
             const yarnsStoredInWaResult = await wbService.selectRecordsByIndustryByYarnByYarnLot(
-                wbManufacturingInput.industryId, 
-                wbManufacturingInput.items[i].yarnId, 
-                wbManufacturingInput.items[i].yarnLotId, 
+                wbManufacturingInput.industryId,
+                wbManufacturingInput.items[i].yarnId,
+                wbManufacturingInput.items[i].yarnLotId,
                 wbManufacturingInput.items[i].consigmentYarnId)
             if (yarnsStoredInWaResult[0] != null) {
 
@@ -184,7 +208,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
     if (isFound[0] != null) {
 
         let results = await wbManufacturingInputQueries.selectByRequisitionId(requisitionId);
-        if(results[0] == null) {
+        if (results[0] == null) {
             results = await wbManufacturingInputQueries.selectOneByRequisitionId(requisitionId);
         }
         return results;
@@ -319,7 +343,7 @@ exports.update = async (wbManufacturingInput) => {
                         isFound[0].consigment_yarn_id,
                     )
                     if (wbRecords[0] != null) {
-                        console.log("wbRecords ::: ", wbRecords);
+                        // console.log("wbRecords ::: ", wbRecords);
                         for (let i = 0; i < wbRecords.length; i++) {
                             const wbRecord = wbRecords[i];
                             let currentQuantity = wbRecord.current_quantity
@@ -511,4 +535,4 @@ async function calculateInputsRatios(isFound) {
 exports.selectByFabricByConsigmentManufacturing = async (fabricId, consigmentManufacturingId) => {
     const results = await wbManufacturingInputQueries.selectByFabricByConsigmentManufacturing(fabricId, consigmentManufacturingId);
     return results;
-  };
+};

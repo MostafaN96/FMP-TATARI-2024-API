@@ -5,6 +5,7 @@ exports.isValidUpdateFabricToBeManufactured = (wb) => {
     const wbSchema = joi.object({
         requisitionType: validations.joiText(1, 50),
         industryId: validations.joiText(15, 30),
+        yarnOrderId: validations.joiText(15, 30),
         yarnId: validations.joiText(15, 30),
         yarnLotId: validations.joiText(15, 30),
         consigmentYarnId: validations.joiText(15, 30),

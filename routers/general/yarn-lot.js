@@ -27,7 +27,7 @@ router.get("/deleted",
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   yarnLotController.selectByYarn);
   
-  router.get("/by-warehouse-by-yarn-wa/:id/:yarnId",
+  router.get("/by-warehouse-by-yarn-wa/:id/:yarnId/:yarnOrderId",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   yarnLotController.selectByWarehouseByYarnWa);
@@ -37,7 +37,7 @@ router.get("/deleted",
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   yarnLotController.selectBySupplierByWarehouseByYarnWa);
 
-  router.get("/by-industry-by-yarn-wb/:id/:yarnId",
+  router.get("/by-industry-by-yarn-wb/:id/:yarnId/:yarnOrderId",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   yarnLotController.selectByIndustryByYarnWb);

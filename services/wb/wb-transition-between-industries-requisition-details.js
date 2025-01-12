@@ -7,14 +7,20 @@ const wbQueries = require("../../db/queries/wb/wb");
 // Helper
 const trans = require("../../helpers/transform");
 
-// Util
-const constants = require("../../util/constants");
-const constantsPayloads = require("../../util/constants-payloads");
-
 // Services
 const wbTransitionBetweenIndustriesRequisitionDetailsWbService = require("./wb-transition-between-industries-requisition-details-wb");
 const wbService = require("./wb");
-const { wbTransportWaWbTableName, wbTransitionBetweenIndustriesRequisitionDetailsTableName, wbTransitionBetweenIndustriesRequisitionDetailsWbTableName } = require("../../util/database-tables-name");
+const waYarnOrderRequisitionDetailsService = require("../wa/wa-yarn-order-requisition-details");
+
+// Util
+const constants = require("../../util/constants");
+const constantsPayloads = require("../../util/constants-payloads");
+const { 
+    wbTransportWaWbTableName, 
+    wbTransitionBetweenIndustriesRequisitionDetailsTableName, 
+    wbTransitionBetweenIndustriesRequisitionDetailsWbTableName, 
+    waYarnOrderRequisitionDetailsTableName
+} = require("../../util/database-tables-name");
 
 exports.create = async (wbTransitionBetweenIndustriesRequisitionDetails) => {
 
@@ -22,6 +28,16 @@ exports.create = async (wbTransitionBetweenIndustriesRequisitionDetails) => {
         wbTransitionBetweenIndustriesRequisitionDetails.wbId = trans.transform();
 
         wbTransitionBetweenIndustriesRequisitionDetails.items[i].wbTransitionBetweenIndustriesRequisitionDetailsId = trans.transform();
+
+        // Get yarn order requisitions details id
+        let yarnOrderRequisitionDetailsWhereCluse = {};
+        yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = wbTransitionBetweenIndustriesRequisitionDetails.items[i].yarnOrderId;
+        yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.yarn_id`] = wbTransitionBetweenIndustriesRequisitionDetails.items[i].yarnId;
+        yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+        yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_active`] = 1;
+        const selectYarnOrderRequisitionDetailsResult = await waYarnOrderRequisitionDetailsService.selectOne(yarnOrderRequisitionDetailsWhereCluse)
+        if (Array.isArray(selectYarnOrderRequisitionDetailsResult) && selectYarnOrderRequisitionDetailsResult.length > 0) {
+            wbTransitionBetweenIndustriesRequisitionDetails.items[i].waYarnOrderRequisitionDetailsId = selectYarnOrderRequisitionDetailsResult[0].id
 
         const results = await wbTransitionBetweenIndustriesRequisitionDetailsQueries.insert(wbTransitionBetweenIndustriesRequisitionDetails, wbTransitionBetweenIndustriesRequisitionDetails.items[i]);
         if (!results) {
@@ -34,7 +50,9 @@ exports.create = async (wbTransitionBetweenIndustriesRequisitionDetails) => {
                 wbTransitionBetweenIndustriesRequisitionDetails.fromIndustryId,
                 wbTransitionBetweenIndustriesRequisitionDetails.items[i].yarnId,
                 wbTransitionBetweenIndustriesRequisitionDetails.items[i].yarnLotId,
-                wbTransitionBetweenIndustriesRequisitionDetails.items[i].consigmentYarnId)
+                wbTransitionBetweenIndustriesRequisitionDetails.items[i].consigmentYarnId,
+                wbTransitionBetweenIndustriesRequisitionDetails.items[i].yarnOrderId
+            )
             if (yarnsStoredInWbResult[0] != null) {
 
                 for (let j = 0; j < yarnsStoredInWbResult.length; j++) {
@@ -67,7 +85,10 @@ exports.create = async (wbTransitionBetweenIndustriesRequisitionDetails) => {
                 }
             }
 
-        }
+        } 
+    } else {
+
+    }
     }
     return { ...constants.insertSuccess, ...{ id: wbTransitionBetweenIndustriesRequisitionDetails.id } };
 };
@@ -145,7 +166,8 @@ exports.update = async (wbTransitionBetweenIndustriesRequisitionDetails) => {
                     isFound[0].industry_id,
                     isFound[0].yarn_id,
                     isFound[0].yarn_lot_id,
-                    isFound[0].consigment_yarn_id
+                    isFound[0].consigment_yarn_id,
+                    isFound[0].wa_yarn_order_requisition_id
                 )
                 if (sumCurrentQuantityWb[0] != null) {
                     console.log("sumCurrentQuantityWb ::: ", sumCurrentQuantityWb);
@@ -164,7 +186,8 @@ exports.update = async (wbTransitionBetweenIndustriesRequisitionDetails) => {
                             isFound[0].industry_id,
                             isFound[0].yarn_id,
                             isFound[0].yarn_lot_id,
-                            isFound[0].consigment_yarn_id
+                            isFound[0].consigment_yarn_id,
+                            isFound[0].wa_yarn_order_requisition_id
                         )
                         if (wbRecords[0] != null) {
 

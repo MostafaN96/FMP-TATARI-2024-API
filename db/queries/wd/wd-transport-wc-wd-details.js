@@ -8,7 +8,8 @@ const wdFormDyeingRequisitionDetailsQueries = require("./wd-form-dyeing-requisit
 // Util
 const { wdTransportWcWdTableName, wdTransportWcWdDetailsTableName,
   warehouseTableName, fabricTableName, consigmentManufacturingTableName,
-  bussinessmanTableName, wdTableName, consigmentDyeingTableName, wdFormDyeingRequisitionDetailsWdTableName, wdFormDyeingRequisitionDetailsTableName } = require("../../../util/database-tables-name");
+  bussinessmanTableName, wdTableName, consigmentDyeingTableName, wdFormDyeingRequisitionDetailsWdTableName, wdFormDyeingRequisitionDetailsTableName, 
+  wcFabricOrderRequisitionTableName} = require("../../../util/database-tables-name");
   const constantsPayloads = require("../../../util/constants-payloads");
 
 exports.insert = async (wdTransportWcWd, items) => {
@@ -20,9 +21,13 @@ exports.insert = async (wdTransportWcWd, items) => {
       fabric_id: items.fabricId,
       consigment_dyeing_id: items.consigmentDyeingId,
       consigment_manufacturing_id: items.consigmentManufacturingId,
+      wc_fabric_order_requisition_details_id: items.wcFabricOrderRequisitionDetailsId,
+      wc_fabric_order_requisition_id: items.fabricOrderId,
+      orders_requisitions_id: items.ordersRequisitionsId,
       price: items.price,
       price_dollar: items.priceDollar,
       quantity: items.quantity,
+      fabric_piece: items.numberFabricPieces,
       document: items.document ?? '',
       statement: items.statement ?? '',
       creator_id: wdTransportWcWd.personid,
@@ -58,6 +63,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
     `${consigmentManufacturingTableName}.number as consigment_manufacturing_number`,
     `${wdTransportWcWdDetailsTableName}.id`,
     `${wdTransportWcWdDetailsTableName}.document`,
+    `${wdTransportWcWdDetailsTableName}.fabric_piece`,
     `${wdTransportWcWdDetailsTableName}.statement`,
     `${wdTransportWcWdDetailsTableName}.price`,
     `${wdTransportWcWdDetailsTableName}.price_dollar`,
@@ -179,6 +185,8 @@ exports.selectOne = async (whereCluse) => {
       `${wdTransportWcWdDetailsTableName}.wd_transport_wc_wd_id`,
       `${wdTransportWcWdDetailsTableName}.fabric_id`,
       `${wdTransportWcWdDetailsTableName}.consigment_manufacturing_id`,
+      `${wdTransportWcWdDetailsTableName}.wc_fabric_order_requisition_id`,
+      `${wdTransportWcWdDetailsTableName}.wc_fabric_order_requisition_details_id`,
       `${wdTransportWcWdDetailsTableName}.quantity`,
       `${wdTransportWcWdTableName}.warehouse_id`,
     ])
@@ -293,6 +301,7 @@ exports.selectTotalDetailsByFabricIdByDyeingId = async (fabricId, dyeingId) => {
         `${wdTransportWcWdDetailsTableName}.id`,
         `${wdTransportWcWdDetailsTableName}.price`,
         `${wdTransportWcWdDetailsTableName}.quantity`,
+        `${wdTransportWcWdDetailsTableName}.fabric_piece`,
         `${wdTransportWcWdDetailsTableName}.document`,
         `${wdTransportWcWdDetailsTableName}.statement`,
         `${wdTransportWcWdTableName}.id as requisition_id`,
@@ -359,12 +368,13 @@ exports.selectDetailsByDyeingByFabricByConsigmentManufacturing = async (dyeingId
   return queryResults;
 };
 
-exports.selectDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId, fabricId, consigmentDyeingId) => {
+exports.selectDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId, fabricId, consigmentDyeingId, fabricOrderId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${wdTableName}.dyeing_id`] = dyeingId;
   whereCluse[`${wdTransportWcWdDetailsTableName}.fabric_id`] = fabricId;
   whereCluse[`${wdTransportWcWdDetailsTableName}.consigment_dyeing_id`] = consigmentDyeingId;
+  whereCluse[`${wdTransportWcWdDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
   whereCluse[`${wdTransportWcWdDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${wdTransportWcWdDetailsTableName}.is_active`] = 1;
 
@@ -443,12 +453,13 @@ exports.selectDetailsDetailsByDyeingByFabricByConsigmentManufacturing = async (d
   return queryResults;
 };
 
-exports.selectDetailsDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId, fabricId, consigmentDyeingId) => {
+exports.selectDetailsDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId, fabricId, consigmentDyeingId, fabricOrderId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${wdTableName}.dyeing_id`] = dyeingId;
   whereCluse[`${wdTransportWcWdDetailsTableName}.fabric_id`] = fabricId;
   whereCluse[`${wdTransportWcWdDetailsTableName}.consigment_dyeing_id`] = consigmentDyeingId;
+  whereCluse[`${wdTransportWcWdDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
   whereCluse[`${wdTransportWcWdDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${wdTransportWcWdDetailsTableName}.is_active`] = 1;
 
@@ -458,6 +469,7 @@ exports.selectDetailsDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId
         `${wdTransportWcWdDetailsTableName}.id`,
         `${wdTransportWcWdDetailsTableName}.price`,
         `${wdTransportWcWdDetailsTableName}.quantity`,
+        `${wdTransportWcWdDetailsTableName}.fabric_piece`,
         `${wdTransportWcWdDetailsTableName}.statement`,
         `${wdTransportWcWdTableName}.id as requisition_id`,
         `${wdTransportWcWdTableName}.number`,
@@ -468,12 +480,17 @@ exports.selectDetailsDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId
         `${fabricTableName}.name as fabric_name`,
         `${fabricTableName}.code as fabric_code`,
         `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+        `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
+        `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
         knex.raw('? as type_of_requisition', 'اذن نقل من (C) الى (D)'),
         knex.raw('? as input_output', '1'),
         knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
       ],
     )
     .innerJoin(`${wdTransportWcWdTableName}`, `${wdTransportWcWdTableName}.id`, `${wdTransportWcWdDetailsTableName}.wd_transport_wc_wd_id`)
+    .innerJoin(`${wcFabricOrderRequisitionTableName}`,
+      `${wcFabricOrderRequisitionTableName}.id`,
+      `${wdTransportWcWdDetailsTableName}.wc_fabric_order_requisition_id`)
     .innerJoin(`${wdTableName}`, `${wdTableName}.wd_transport_wc_wd_details_id`, `${wdTransportWcWdDetailsTableName}.id`)
     .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${wdTransportWcWdDetailsTableName}.fabric_id`)
     .innerJoin(`${consigmentDyeingTableName}`, `${consigmentDyeingTableName}.id`, `${wdTransportWcWdDetailsTableName}.consigment_dyeing_id`)
@@ -589,6 +606,7 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
         `${wdTransportWcWdDetailsTableName}.id`,
         `${wdTransportWcWdDetailsTableName}.price`,
         `${wdTransportWcWdDetailsTableName}.quantity`,
+        `${wdTransportWcWdDetailsTableName}.fabric_piece`,
         `${wdTransportWcWdDetailsTableName}.document`,
         `${wdTransportWcWdDetailsTableName}.statement`,
         `${wdTransportWcWdTableName}.id as requisition_id`,
@@ -622,12 +640,13 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
   return queryResults;
 };
 
-exports.selectDetailsByWarehouseByFabricByConsigmentManufacturing = async (warehouseId, fabricId, consigmentManufacturingId) => {
+exports.selectDetailsByWarehouseByFabricByConsigmentManufacturing = async (warehouseId, fabricId, consigmentManufacturingId, fabricOrderId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${wdTransportWcWdTableName}.warehouse_id`] = warehouseId;
   whereCluse[`${wdTransportWcWdDetailsTableName}.fabric_id`] = fabricId;
   whereCluse[`${wdTransportWcWdDetailsTableName}.consigment_manufacturing_id`] = consigmentManufacturingId;
+  whereCluse[`${wdTransportWcWdDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
   whereCluse[`${wdTransportWcWdDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${wdTransportWcWdDetailsTableName}.is_active`] = 1;
 
@@ -651,12 +670,13 @@ exports.selectDetailsByWarehouseByFabricByConsigmentManufacturing = async (wareh
   return queryResults;
 };
 
-exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async (warehouseId, fabricId, consigmentManufacturingId) => {
+exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async (warehouseId, fabricId, consigmentManufacturingId, fabricOrderId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${wdTransportWcWdTableName}.warehouse_id`] = warehouseId;
   whereCluse[`${wdTransportWcWdDetailsTableName}.fabric_id`] = fabricId;
   whereCluse[`${wdTransportWcWdDetailsTableName}.consigment_manufacturing_id`] = consigmentManufacturingId;
+  whereCluse[`${wdTransportWcWdDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
   whereCluse[`${wdTransportWcWdDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${wdTransportWcWdDetailsTableName}.is_active`] = 1;
 
@@ -666,11 +686,14 @@ exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async
         `${wdTransportWcWdDetailsTableName}.id`,
         `${wdTransportWcWdDetailsTableName}.price`,
         `${wdTransportWcWdDetailsTableName}.quantity`,
+        `${wdTransportWcWdDetailsTableName}.fabric_piece`,
         `${wdTransportWcWdDetailsTableName}.statement`,
         `${wdTransportWcWdTableName}.id as requisition_id`,
         `${wdTransportWcWdTableName}.number`,
         `${wdTransportWcWdTableName}.date`,
         `${wdTransportWcWdTableName}.note`,
+        `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
+        `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
         knex.raw('? as bussinessman_id', ''),
         knex.raw('? as bussinessman_name', ''),
         `${fabricTableName}.name as fabric_name`,
@@ -682,6 +705,9 @@ exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async
       ],
     )
     .innerJoin(`${wdTransportWcWdTableName}`, `${wdTransportWcWdTableName}.id`, `${wdTransportWcWdDetailsTableName}.wd_transport_wc_wd_id`)
+    .innerJoin(`${wcFabricOrderRequisitionTableName}`,
+      `${wcFabricOrderRequisitionTableName}.id`,
+      `${wdTransportWcWdDetailsTableName}.wc_fabric_order_requisition_id`)
     .innerJoin(`${wdTableName}`, `${wdTableName}.wd_transport_wc_wd_details_id`, `${wdTransportWcWdDetailsTableName}.id`)
     .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${wdTransportWcWdDetailsTableName}.fabric_id`)
     .innerJoin(`${consigmentManufacturingTableName}`, `${consigmentManufacturingTableName}.id`, `${wdTransportWcWdDetailsTableName}.consigment_manufacturing_id`)
@@ -762,6 +788,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
         `${wdTransportWcWdDetailsTableName}.id`,
         `${wdTransportWcWdDetailsTableName}.price`,
         `${wdTransportWcWdDetailsTableName}.quantity`,
+        `${wdTransportWcWdDetailsTableName}.fabric_piece`,
         `${wdTransportWcWdDetailsTableName}.document`,
         `${wdTransportWcWdDetailsTableName}.statement`,
         `${wdTransportWcWdTableName}.id as requisition_id`,
@@ -806,6 +833,7 @@ exports.selectTotalDetailsByDateWd = async (bodyPaylod) => {
         `${wdTransportWcWdDetailsTableName}.id`,
         `${wdTransportWcWdDetailsTableName}.price`,
         `${wdTransportWcWdDetailsTableName}.quantity`,
+        `${wdTransportWcWdDetailsTableName}.fabric_piece`,
         `${wdTransportWcWdDetailsTableName}.document`,
         `${wdTransportWcWdDetailsTableName}.statement`,
         `${wdTransportWcWdTableName}.id as requisition_id`,
@@ -886,6 +914,7 @@ exports.selectByConsigmentManufacturingForDyedFabricOrder = async (whereCluse, c
         `${wdTransportWcWdDetailsTableName}.id`,
         `${wdTransportWcWdDetailsTableName}.price`,
         `${wdTransportWcWdDetailsTableName}.quantity`,
+        `${wdTransportWcWdDetailsTableName}.fabric_piece`,
         `${wdTransportWcWdDetailsTableName}.document`,
         `${wdTransportWcWdDetailsTableName}.statement`,
         `${wdTransportWcWdTableName}.id as requisition_id`,
@@ -929,6 +958,7 @@ exports.selectByConsigmentDyeingForDyedFabricOrder = async (whereCluse, consigme
         `${wdTransportWcWdDetailsTableName}.id`,
         `${wdTransportWcWdDetailsTableName}.price`,
         `${wdTransportWcWdDetailsTableName}.quantity`,
+        `${wdTransportWcWdDetailsTableName}.fabric_piece`,
         `${wdTransportWcWdDetailsTableName}.document`,
         `${wdTransportWcWdDetailsTableName}.statement`,
         `${wdTransportWcWdTableName}.id as requisition_id`,

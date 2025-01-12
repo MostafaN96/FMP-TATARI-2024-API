@@ -79,11 +79,6 @@ exports.selectStoreWe = async () => {
     transitionBetweenWhWhereCluse[`${weTableName}.is_active`] = 1;
     transitionBetweenWhWhereCluse[`${weTableName}.type`] = constantsPayloads.transportBetweenType;
 
-    let executeOrderWhereCluse = {};
-    executeOrderWhereCluse[`${weTableName}.is_deleted`] = 0;
-    executeOrderWhereCluse[`${weTableName}.is_active`] = 1;
-    executeOrderWhereCluse[`${weTableName}.type`] = constantsPayloads.executeOrderType;
-
     let returnSellWhereCluse = {};
     returnSellWhereCluse[`${weTableName}.is_deleted`] = 0;
     returnSellWhereCluse[`${weTableName}.is_active`] = 1;
@@ -93,7 +88,7 @@ exports.selectStoreWe = async () => {
     let whereCluseArray = [
         whereCluse, reconciliationWhereCluse, 
         andWhereCluse, dyeingWhereCluse, 
-        transitionBetweenWhWhereCluse, executeOrderWhereCluse,
+        transitionBetweenWhWhereCluse,
         returnSellWhereCluse
     ]
     let orderByCluse = {attributeName: `date`, value: "desc"}

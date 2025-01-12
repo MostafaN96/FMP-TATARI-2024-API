@@ -6,9 +6,10 @@ exports.selectConsigmentManufacturingQuantityByWarehouseByFabricWc = async (requ
     // logging
     const { warehouseId } = request.params;
     const { fabricId } = request.params;
+    const { fabricOrderId } = request.params;
   
     // call service
-    const results = await wcService.selectConsigmentManufacturingQuantityByWarehouseByFabricWc(warehouseId, fabricId);
+    const results = await wcService.selectConsigmentManufacturingQuantityByWarehouseByFabricWc(warehouseId, fabricId, fabricOrderId);
     response.status(200).json(results);
   };
   

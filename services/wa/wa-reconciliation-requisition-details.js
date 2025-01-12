@@ -10,71 +10,91 @@ const trans = require("../../helpers/transform");
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-const waReconciliationRequisitionDetailsWaTableName = require("../../util/database-tables-name").waReconciliationRequisitionDetailsWaTableName;
-const waReconciliationRequisitionDetailsTableName = require("../../util/database-tables-name").waReconciliationRequisitionDetailsTableName;
+const {
+    waReconciliationRequisitionDetailsTableName,
+    waReconciliationRequisitionDetailsWaTableName,
+    waYarnOrderRequisitionDetailsTableName
+} = require("../../util/database-tables-name");
 
 // Services
 const waService = require("./wa");
 const waReconciliationRequisitionDetailsWaService = require("./wa-reconciliation-requisition-details-wa");
+const waYarnOrderRequisitionDetailsService = require("./wa-yarn-order-requisition-details");
+
 
 exports.create = async (waReconciliationRequisitionDetails) => {
     for (let i = 0; i < waReconciliationRequisitionDetails.items.length; i++) {
         waReconciliationRequisitionDetails.items[i].waReconciliationRequisitionDetailsId = trans.transform();
 
-        const results = await waReconciliationRequisitionDetailsQueries.insert(waReconciliationRequisitionDetails, waReconciliationRequisitionDetails.items[i]);
-        if (!results) {
-            return constants.insertError;
-        } else {
-            // Check Reconciliation Type is it Input or Output
-            // Output
-            if (waReconciliationRequisitionDetails.items[i].inputOutput == 0) {
-                let newQuantity = parseFloat(waReconciliationRequisitionDetails.items[i].quantity)
-                // select Wa Yarn for decrement current quantity
-                const yarnsStoredInWaResult = await waService.selectByYarnForSell(
-                    waReconciliationRequisitionDetails.warehouseId, 
-                    waReconciliationRequisitionDetails.items[i].yarnId, 
-                    waReconciliationRequisitionDetails.items[i].yarnLotId,
-                    waReconciliationRequisitionDetails.items[i].consigmentYarnId)
-                if (yarnsStoredInWaResult[0] != null) {
+        // Get yarn order requisitions details id
+        let yarnOrderRequisitionDetailsWhereCluse = {};
+        yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = waReconciliationRequisitionDetails.items[i].yarnOrderId;
+        yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.yarn_id`] = waReconciliationRequisitionDetails.items[i].yarnId;
+        yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+        yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_active`] = 1;
+        const selectYarnOrderRequisitionDetailsResult = await waYarnOrderRequisitionDetailsService.selectOne(yarnOrderRequisitionDetailsWhereCluse)
+        if (Array.isArray(selectYarnOrderRequisitionDetailsResult) && selectYarnOrderRequisitionDetailsResult.length > 0) {
+            waReconciliationRequisitionDetails.items[i].waYarnOrderRequisitionDetailsId = selectYarnOrderRequisitionDetailsResult[0].id
 
-                    for (let j = 0; j < yarnsStoredInWaResult.length; j++) {
-                        const yarnStoredInWa = yarnsStoredInWaResult[j];
-                        let currentQuantity = yarnStoredInWa.current_quantity
-                        let updatedQuantity = 0
+            const results = await waReconciliationRequisitionDetailsQueries.insert(waReconciliationRequisitionDetails, waReconciliationRequisitionDetails.items[i]);
+            if (!results) {
+                return constants.insertError;
+            } else {
+                // Check Reconciliation Type is it Input or Output
+                // Output
+                if (waReconciliationRequisitionDetails.items[i].inputOutput == 0) {
+                    let newQuantity = parseFloat(waReconciliationRequisitionDetails.items[i].quantity)
+                    // select Wa Yarn for decrement current quantity
+                    const yarnsStoredInWaResult = await waService.selectByYarnForSell(
+                        waReconciliationRequisitionDetails.warehouseId,
+                        waReconciliationRequisitionDetails.items[i].yarnId,
+                        waReconciliationRequisitionDetails.items[i].yarnLotId,
+                        waReconciliationRequisitionDetails.items[i].consigmentYarnId,
+                        waReconciliationRequisitionDetails.items[i].yarnOrderId
+                    )
+                    if (yarnsStoredInWaResult[0] != null) {
 
-                        // decrement Wa Yarn CurrentQuantity
-                        let returnedQuantityObj = await waService.decrementWaCurrentQuantity(newQuantity, currentQuantity, yarnStoredInWa, updatedQuantity);
-                        newQuantity = returnedQuantityObj.newQuantity
-                        updatedQuantity = returnedQuantityObj.updatedQuantity
-                        waReconciliationRequisitionDetails.items[i].waId = yarnStoredInWa.id
-                        waReconciliationRequisitionDetails.items[i].updatedQuantity = updatedQuantity
+                        for (let j = 0; j < yarnsStoredInWaResult.length; j++) {
+                            const yarnStoredInWa = yarnsStoredInWaResult[j];
+                            let currentQuantity = yarnStoredInWa.current_quantity
+                            let updatedQuantity = 0
 
-                        // Add wa Yarn Reconciliation Requisition Details Wa
-                        await waReconciliationRequisitionDetailsWaService.createForOutput(waReconciliationRequisitionDetails, waReconciliationRequisitionDetails.items[i])
+                            // decrement Wa Yarn CurrentQuantity
+                            let returnedQuantityObj = await waService.decrementWaCurrentQuantity(newQuantity, currentQuantity, yarnStoredInWa, updatedQuantity);
+                            newQuantity = returnedQuantityObj.newQuantity
+                            updatedQuantity = returnedQuantityObj.updatedQuantity
+                            waReconciliationRequisitionDetails.items[i].waId = yarnStoredInWa.id
+                            waReconciliationRequisitionDetails.items[i].updatedQuantity = updatedQuantity
 
-                        // Enter to if condition when stock runs out
-                        if (newQuantity == 0) {
-                            break;
+                            // Add wa Yarn Reconciliation Requisition Details Wa
+                            await waReconciliationRequisitionDetailsWaService.createForOutput(waReconciliationRequisitionDetails, waReconciliationRequisitionDetails.items[i])
+
+                            // Enter to if condition when stock runs out
+                            if (newQuantity == 0) {
+                                break;
+                            }
+                        }
+                    } else {
+                        return {
+                            ...constants.wrongQuantity,
+                            spentQuantity: 0,
+                            newQuantity: newQuantity
                         }
                     }
-                } else {
-                    return {
-                        ...constants.wrongQuantity,
-                        spentQuantity: 0,
-                        newQuantity: newQuantity
+                } else if (waReconciliationRequisitionDetails.items[i].inputOutput == 1) {
+                    // Add Wa Yarn Result
+                    const waResult = await waService.createForReconciliation(waReconciliationRequisitionDetails, waReconciliationRequisitionDetails.items[i])
+                    if (waResult) {
+                        // Add wa Yarn Reconciliation Requisition Details Wa
+                        await waReconciliationRequisitionDetailsWaService.createForInput(waReconciliationRequisitionDetails, waReconciliationRequisitionDetails.items[i])
+                    } else {
+                        return constants.insertError;
                     }
-                }
-            } else if (waReconciliationRequisitionDetails.items[i].inputOutput == 1) {
-                // Add Wa Yarn Result
-                const waResult = await waService.createForReconciliation(waReconciliationRequisitionDetails, waReconciliationRequisitionDetails.items[i])
-                if (waResult) {
-                    // Add wa Yarn Reconciliation Requisition Details Wa
-                    await waReconciliationRequisitionDetailsWaService.createForInput(waReconciliationRequisitionDetails, waReconciliationRequisitionDetails.items[i])
-                } else {
-                    return constants.insertError;
-                }
 
+                }
             }
+        } else {
+
         }
     }
     return { ...constants.insertSuccess, ...{ id: waReconciliationRequisitionDetails.id } };
@@ -143,10 +163,12 @@ exports.update = async (waReconciliationRequisitionDetails) => {
                 // we will decrement current quantity from store (wa Yarn) by following Steps :
                 // Step 1 => Check If has current quantity in store (wa Yarn)
                 const sumCurrentQuantityWa = await waService.selectSumCurrentQuantityByWarehouseByYarnByYarnLotByConsigmentYarnWa(
-                    isFound[0].warehouse_id, 
-                    isFound[0].yarn_id, 
+                    isFound[0].warehouse_id,
+                    isFound[0].yarn_id,
                     isFound[0].yarn_lot_id,
-                    isFound[0].consigment_yarn_id)
+                    isFound[0].consigment_yarn_id,
+                    isFound[0].wa_yarn_order_requisition_id
+                )
                 if (sumCurrentQuantityWa[0] != null) {
                     const sumCurrentQuantity = sumCurrentQuantityWa[0].current_quantity
                     if (sumCurrentQuantity >= defferenceQuantity) {
@@ -160,10 +182,12 @@ exports.update = async (waReconciliationRequisitionDetails) => {
 
                         // Step 3 => select from (WA Yarn) Records for decrement current quantity
                         const waRecords = await waService.selectByYarnForSell(
-                            isFound[0].warehouse_id, 
-                            isFound[0].yarn_id, 
+                            isFound[0].warehouse_id,
+                            isFound[0].yarn_id,
                             isFound[0].yarn_lot_id,
-                            isFound[0].consigment_yarn_id)
+                            isFound[0].consigment_yarn_id,
+                            isFound[0].wa_yarn_order_requisition_id
+                        )
                         if (waRecords[0] != null) {
                             for (let i = 0; i < waRecords.length; i++) {
                                 const waRecord = waRecords[i];

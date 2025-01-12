@@ -13,6 +13,7 @@ exports.insert = async (weDyedFabricOrderRequisition) => {
             id: weDyedFabricOrderRequisition.id,
             orders_requisitions_id: weDyedFabricOrderRequisition.ordersRequisitionsId,
             seller_id: weDyedFabricOrderRequisition.sellerId,
+            name: weDyedFabricOrderRequisition.name,
             number: weDyedFabricOrderRequisition.number,
             date: weDyedFabricOrderRequisition.date,
             note: weDyedFabricOrderRequisition.note,
@@ -31,7 +32,14 @@ exports.insert = async (weDyedFabricOrderRequisition) => {
 exports.selectOne = async (whereCluse) => {
     let queryResults = false;
     await sqlFun
-        .limitedSelect(weDyedFabricOrderRequisitionTableName, ["is_deleted"], whereCluse, 1)
+        .limitedSelect(
+            weDyedFabricOrderRequisitionTableName, 
+            [
+                "orders_requisitions_id", 
+                "is_deleted"
+            ], 
+            whereCluse, 
+            1)
         .then((data) => {
             queryResults = data;
         })
@@ -48,6 +56,7 @@ exports.select = async (whereCluse, isOrder) => {
     await knex(weDyedFabricOrderRequisitionTableName)
         .select([
             `${weDyedFabricOrderRequisitionTableName}.id`,
+            `${weDyedFabricOrderRequisitionTableName}.orders_requisitions_id`,
             `${weDyedFabricOrderRequisitionTableName}.number`,
             `${weDyedFabricOrderRequisitionTableName}.name`,
             `${weDyedFabricOrderRequisitionTableName}.date`,

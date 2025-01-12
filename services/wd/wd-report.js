@@ -206,10 +206,11 @@ exports.selectInventoryDetails = async (fabricReport) => {
         if(fabricReport.isShowClosedBalances == 0) {
             formFabrics = await wdQueries.selectStoredDyeingAndFabricAndConsigmentDyeingForm(whereCluseArray)
             if(formFabrics[0] != null) {
-                let uniqueFabrics = arrayUniqueTwoColumn(
+                let uniqueFabrics = arrayUniqueThreeColumn(
                     dyersFabricsLots.concat(formFabrics), 
                     'fabric_id', 'fabric_id', 
-                'consigment_dyeing_id', 'consigment_dyeing_id');
+                'consigment_dyeing_id', 'consigment_dyeing_id',
+            'wc_fabric_order_requisition_id', 'wc_fabric_order_requisition_id');
                 dyersFabricsLots = uniqueFabrics
             }
         }
@@ -256,31 +257,40 @@ exports.selectInventoryDetails = async (fabricReport) => {
             data.push(dyerFabricLots)
 
             callArray.push(wdTransportRequisitionWcWdDetailsQueries.selectDetailsByDyeingByFabricByConsigmentDyeing(
-                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id
+                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
+                dyerFabricLots.wc_fabric_order_requisition_id
             ))
             callArray.push(wdReconciliationRequisitionDetailsQueries.selectInputDetailsByDyeingByFabricByConsigmentDyeing(
-                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id
+                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
+                dyerFabricLots.wc_fabric_order_requisition_id
             ))
             callArray.push(wdReconciliationRequisitionDetailsQueries.selectOutputDetailsByDyeingByFabricByConsigmentDyeing(
-                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id
+                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
+                dyerFabricLots.wc_fabric_order_requisition_id
             ))
             callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectDetailsByDyeingByFabricByConsigmentDyeing(
-                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id
+                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
+                dyerFabricLots.wc_fabric_order_requisition_id
             ))
             callArray.push(wdTransitionBetweenDyersRequisitionDetailsQueries.selectFromDyeingDetailsByDyeingByFabricByConsigmentDyeing(
-                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id
+                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
+                dyerFabricLots.wc_fabric_order_requisition_id
             ))
             callArray.push(wdTransitionBetweenDyersRequisitionDetailsQueries.selectToDyeingDetailsByDyeingByFabricByConsigmentDyeing(
-                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id
+                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
+                dyerFabricLots.wc_fabric_order_requisition_id
             ))
             callArray.push(wdDyeingRequisitionDetailsQueries.selectDetailsByDyeingByFabricByConsigmentDyeing(
-                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id
+                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
+                dyerFabricLots.wc_fabric_order_requisition_id
             ))
             callArray.push(wdFormDyeingRequisitionDetailsQueries.selectDetailsByDyeingByFabricByConsigmentDyeing(
-                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id
+                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
+                dyerFabricLots.wc_fabric_order_requisition_id
             ))
             callArray.push(wdFormDyeingRequisitionDetailsQueries.selectDetailsByDyeingByFabricByConsigmentDyeingPreparedDyeing(
-                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id
+                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
+                dyerFabricLots.wc_fabric_order_requisition_id
             ))
 
             const requisitions = await Promise.all(callArray)
@@ -299,16 +309,16 @@ exports.selectInventoryDetails = async (fabricReport) => {
     return data;
 };
 
-exports.selectInventoryDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId, fabricId, consigmentDyeingId) => {
+exports.selectInventoryDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId, fabricId, consigmentDyeingId, fabricOrderId) => {
     let callArray = []
 
-    callArray.push(wdTransportRequisitionWcWdDetailsQueries.selectDetailsDetailsByDyeingByFabricByConsigmentDyeing(dyeingId, fabricId, consigmentDyeingId))
-    callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectDetailsDetailsByDyeingByFabricByConsigmentDyeing(dyeingId, fabricId, consigmentDyeingId))
-    callArray.push(wdReconciliationRequisitionDetailsQueries.selectDetailsDetailsByDyeingByFabricByConsigmentDyeing(dyeingId, fabricId, consigmentDyeingId))
-    callArray.push(wdTransitionBetweenDyersRequisitionDetailsQueries.selectFromDyeingDetailsDetailsByDyeingByFabricByConsigmentDyeing(dyeingId, fabricId, consigmentDyeingId))
-    callArray.push(wdTransitionBetweenDyersRequisitionDetailsQueries.selectToDyeingDetailsDetailsByDyeingByFabricByConsigmentDyeing(dyeingId, fabricId, consigmentDyeingId))
-    callArray.push(wdFormDyeingRequisitionDetailsQueries.selectDetailsDetailsByDyeingByFabricByConsigmentDyeing(dyeingId, fabricId, consigmentDyeingId))
-    callArray.push(wdDyeingRequisitionDetailsQueries.selectDetailsDetailsByDyeingByFabricByConsigmentDyeing(dyeingId, fabricId, consigmentDyeingId))
+    callArray.push(wdTransportRequisitionWcWdDetailsQueries.selectDetailsDetailsByDyeingByFabricByConsigmentDyeing(dyeingId, fabricId, consigmentDyeingId, fabricOrderId))
+    callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectDetailsDetailsByDyeingByFabricByConsigmentDyeing(dyeingId, fabricId, consigmentDyeingId, fabricOrderId))
+    callArray.push(wdReconciliationRequisitionDetailsQueries.selectDetailsDetailsByDyeingByFabricByConsigmentDyeing(dyeingId, fabricId, consigmentDyeingId, fabricOrderId))
+    callArray.push(wdTransitionBetweenDyersRequisitionDetailsQueries.selectFromDyeingDetailsDetailsByDyeingByFabricByConsigmentDyeing(dyeingId, fabricId, consigmentDyeingId, fabricOrderId))
+    callArray.push(wdTransitionBetweenDyersRequisitionDetailsQueries.selectToDyeingDetailsDetailsByDyeingByFabricByConsigmentDyeing(dyeingId, fabricId, consigmentDyeingId, fabricOrderId))
+    callArray.push(wdFormDyeingRequisitionDetailsQueries.selectDetailsDetailsByDyeingByFabricByConsigmentDyeing(dyeingId, fabricId, consigmentDyeingId, fabricOrderId))
+    callArray.push(wdDyeingRequisitionDetailsQueries.selectDetailsDetailsByDyeingByFabricByConsigmentDyeing(dyeingId, fabricId, consigmentDyeingId, fabricOrderId))
     const requisitions = await Promise.all(callArray)
     const sortedAsc = [...requisitions[0], ...requisitions[1],
     ...requisitions[2], ...requisitions[3], ...requisitions[4],
@@ -608,14 +618,16 @@ function arrayUnique(array, leftColumn, rightColumn) {
     return a;
 }
 
-function arrayUniqueTwoColumn(array, 
+function arrayUniqueThreeColumn(array, 
     leftColumn, rightColumn,
-    leftColumn2, rightColumn2) {
+    leftColumn2, rightColumn2,
+    leftColumn3, rightColumn3) {
     var a = array.concat();
     for(var i=0; i<a.length; ++i) {
         for(var j=i+1; j<a.length; ++j) {
             if(a[i][leftColumn] === a[j][rightColumn] && 
                 a[i][leftColumn2] === a[j][rightColumn2] &&
+                a[i][leftColumn3] === a[j][rightColumn3] &&
                 a[i]['dyeing_id'] === a[j]['dyeing_id'])
                 a.splice(j--, 1);
         }

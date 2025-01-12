@@ -91,7 +91,7 @@ exports.selectByFabricIdByYarnId = async (fabricId, yarnId) => {
   whereCluse[`${fabricYarnsTableName}.is_deleted`] = 0;
   whereCluse[`${fabricYarnsTableName}.is_active`] = 1;
 
-  const results = await fabricYarnsQueries.select(whereCluse);
+  const results = await fabricYarnsQueries.selectByFabricIdByYarnId(whereCluse);
 
   return results;
 };

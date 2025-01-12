@@ -90,9 +90,10 @@ exports.selectStoredWaYarns = async (request, response) => {
 exports.selectByWarehouseWa = async (request, response) => {
   // logging
   const { id } = request.params;
+  const { yarnOrderId } = request.params;
 
   // call service
-  const results = await yarnService.selectByWarehouseWa(id);
+  const results = await yarnService.selectByWarehouseWa(id, yarnOrderId);
   response.status(200).json(results);
 };
 
@@ -108,9 +109,10 @@ exports.selectStoredWaYarnsByYarnId = async (request, response) => {
 exports.selectByIndustryWb = async (request, response) => {
   // logging
   const { id } = request.params;
+  const { yarnOrderId } = request.params;
 
   // call service
-  const results = await yarnService.selectByIndustryWb(id);
+  const results = await yarnService.selectByIndustryWb(id, yarnOrderId);
   response.status(200).json(results);
 };
 

@@ -3,13 +3,16 @@ const sqlFun = require("../../config/sql-fun");
 const knex = require("../../config/connection").getConnection();
 
 // Util
-const { wbManufacturingOutputTableName, wbManufacturingRequisitionTableName, wbManufacturingInputOutputTableName, fabricTableName, circularKnittingMachineTableName, consigmentManufacturingTableName, circularKnittingMachineBussinessmanTableName, warehouseTableName, wbManufacturingOutputOrderTableName, wbManufacturingOrderRequisitionDetailsTableName, wbManufacturingOrderRequisitionTableName, bussinessmanTableName, wcTableName, wbManufacturingInputTableName } = require("../../../util/database-tables-name");
+const { wbManufacturingOutputTableName, wbManufacturingRequisitionTableName, wbManufacturingInputOutputTableName, fabricTableName, circularKnittingMachineTableName, consigmentManufacturingTableName, circularKnittingMachineBussinessmanTableName, warehouseTableName, wbManufacturingOutputOrderTableName, wbManufacturingOrderRequisitionDetailsTableName, wbManufacturingOrderRequisitionTableName, bussinessmanTableName, wcTableName, wbManufacturingInputTableName, wcFabricOrderRequisitionTableName } = require("../../../util/database-tables-name");
 
 exports.insert = async (wbManufacturingOutput, items) => {
   let queryResults = false;
   await sqlFun
     .insert(wbManufacturingOutputTableName, {
       id: wbManufacturingOutput.wbManufacturingOutputId,
+      wc_fabric_order_requisition_details_id: wbManufacturingOutput.wcFabricOrderRequisitionDetailsId,
+      wc_fabric_order_requisition_id: wbManufacturingOutput.fabricOrderId,
+      orders_requisitions_id: wbManufacturingOutput.ordersRequisitionsId,
       fabric_id: wbManufacturingOutput.fabricId,
       consigment_manufacturing_id: wbManufacturingOutput.consigmentManufacturingId,
       circular_knitting_machine_bussiness_man_id: wbManufacturingOutput.circularKnittingMachineId,
@@ -427,12 +430,13 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
   return queryResults;
 };
 
-exports.selectDetailsByWarehouseByFabricByConsigmentManufacturing = async (warehouseId, fabricId, consigmentManufacturingId) => {
+exports.selectDetailsByWarehouseByFabricByConsigmentManufacturing = async (warehouseId, fabricId, consigmentManufacturingId, fabricOrderId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${wbManufacturingOutputTableName}.warehouse_id`] = warehouseId;
   whereCluse[`${wbManufacturingOutputTableName}.fabric_id`] = fabricId;
   whereCluse[`${wbManufacturingOutputTableName}.consigment_manufacturing_id`] = consigmentManufacturingId;
+  whereCluse[`${wbManufacturingOutputTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
   whereCluse[`${wbManufacturingOutputTableName}.is_deleted`] = 0;
   whereCluse[`${wbManufacturingOutputTableName}.is_active`] = 1;
 
@@ -464,12 +468,13 @@ exports.selectDetailsByWarehouseByFabricByConsigmentManufacturing = async (wareh
   return queryResults;
 };
 
-exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async (warehouseId, fabricId, consigmentManufacturingId) => {
+exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async (warehouseId, fabricId, consigmentManufacturingId, fabricOrderId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${wbManufacturingOutputTableName}.warehouse_id`] = warehouseId;
   whereCluse[`${wbManufacturingOutputTableName}.fabric_id`] = fabricId;
   whereCluse[`${wbManufacturingOutputTableName}.consigment_manufacturing_id`] = consigmentManufacturingId;
+  whereCluse[`${wbManufacturingOutputTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
   whereCluse[`${wbManufacturingOutputTableName}.is_deleted`] = 0;
   whereCluse[`${wbManufacturingOutputTableName}.is_active`] = 1;
 
@@ -489,6 +494,8 @@ exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async
         `${wbManufacturingRequisitionTableName}.date`,
         `${wbManufacturingRequisitionTableName}.note`,
         `${wbManufacturingRequisitionTableName}.is_order`,
+        `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
+        `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
         `${bussinessmanTableName}.id as bussinessman_id`,
         `${bussinessmanTableName}.name as bussinessman_name`,
         `${fabricTableName}.id as fabric_id`,
@@ -508,6 +515,9 @@ exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async
     .innerJoin(`${wbManufacturingRequisitionTableName}`, 
     `${wbManufacturingRequisitionTableName}.id`, 
     `${wbManufacturingInputOutputTableName}.wb_manufacturing_requisition_id`)    
+    .innerJoin(`${wcFabricOrderRequisitionTableName}`,
+      `${wcFabricOrderRequisitionTableName}.id`,
+      `${wbManufacturingOutputTableName}.wc_fabric_order_requisition_id`)
     .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${wbManufacturingRequisitionTableName}.industry_id`)
     .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${wbManufacturingOutputTableName}.fabric_id`)
     .innerJoin(`${consigmentManufacturingTableName}`, `${consigmentManufacturingTableName}.id`, `${wbManufacturingOutputTableName}.consigment_manufacturing_id`)

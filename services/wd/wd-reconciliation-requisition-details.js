@@ -4,22 +4,36 @@ const wdReconciliationRequisitionQueries = require("../../db/queries/wd/wd-recon
 const wdReconciliationRequisitionDetailsWdQueries = require("../../db/queries/wd/wd-reconciliation-requisition-details-wd");
 const wdQueries = require("../../db/queries/wd/wd");
 
+// Services
+const wdService = require("./wd");
+const wdReconciliationRequisitionDetailsWdService = require("./wd-reconciliation-requisition-details-wd");
+const wcFabricOrderRequisitionDetailsService = require("../wc/wc-fabric-order-requisition-details");
+
 // Helper
 const trans = require("../../helpers/transform");
 
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-const wdReconciliationRequisitionDetailsWdTableName = require("../../util/database-tables-name").wdReconciliationRequisitionDetailsWdTableName;
-const wdReconciliationRequisitionDetailsTableName = require("../../util/database-tables-name").wdReconciliationRequisitionDetailsTableName;
-
-// Services
-const wdService = require("./wd");
-const wdReconciliationRequisitionDetailsWdService = require("./wd-reconciliation-requisition-details-wd");
+const { 
+    wcFabricOrderRequisitionDetailsTableName,
+    wdReconciliationRequisitionDetailsWdTableName,
+    wdReconciliationRequisitionDetailsTableName
+ } = require("../../util/database-tables-name");
 
 exports.create = async (wdReconciliationRequisitionDetails) => {
     for (let i = 0; i < wdReconciliationRequisitionDetails.items.length; i++) {
         wdReconciliationRequisitionDetails.items[i].wdReconciliationRequisitionDetailsId = trans.transform();
+
+        // Get fabric order requisitions details id
+        let fabricOrderRequisitionDetailsWhereCluse = {};
+        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = wdReconciliationRequisitionDetails.items[i].fabricOrderId;
+        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.fabric_id`] = wdReconciliationRequisitionDetails.items[i].fabricId;
+        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+        const selectFabricOrderRequisitionDetailsResult = await wcFabricOrderRequisitionDetailsService.selectOne(fabricOrderRequisitionDetailsWhereCluse)
+        if (Array.isArray(selectFabricOrderRequisitionDetailsResult) && selectFabricOrderRequisitionDetailsResult.length > 0) {
+            wdReconciliationRequisitionDetails.items[i].wcFabricOrderRequisitionDetailsId = selectFabricOrderRequisitionDetailsResult[0].id
 
         const results = await wdReconciliationRequisitionDetailsQueries.insert(wdReconciliationRequisitionDetails, wdReconciliationRequisitionDetails.items[i]);
         if (!results) {
@@ -30,7 +44,12 @@ exports.create = async (wdReconciliationRequisitionDetails) => {
             if (wdReconciliationRequisitionDetails.items[i].inputOutput == 0) {
                 let newQuantity = parseFloat(wdReconciliationRequisitionDetails.items[i].quantity)
                 // select wd for decrement current quantity
-                const fabricsStoredInWdResult = await wdService.selectRecordsByDyeingByFabricByConsigmentDyeing(wdReconciliationRequisitionDetails.dyeingId, wdReconciliationRequisitionDetails.items[i].fabricId, wdReconciliationRequisitionDetails.items[i].consigmentDyeingId)
+                const fabricsStoredInWdResult = await wdService.selectRecordsByDyeingByFabricByConsigmentDyeing(
+                    wdReconciliationRequisitionDetails.dyeingId, 
+                    wdReconciliationRequisitionDetails.items[i].fabricId, 
+                    wdReconciliationRequisitionDetails.items[i].consigmentDyeingId, 
+                    wdReconciliationRequisitionDetails.items[i].fabricOrderId
+                )
                 if (fabricsStoredInWdResult[0] != null) {
 
                     for (let j = 0; j < fabricsStoredInWdResult.length; j++) {
@@ -47,6 +66,9 @@ exports.create = async (wdReconciliationRequisitionDetails) => {
 
                         // Add wd Reconciliation Requisition Details wd
                         await wdReconciliationRequisitionDetailsWdService.createForOutput(wdReconciliationRequisitionDetails, wdReconciliationRequisitionDetails.items[i])
+
+                        // update order quantity
+                        await wcFabricOrderRequisitionDetailsService.updateForIncrementQuantity(selectFabricOrderRequisitionDetailsResult[0].id, updatedQuantity)
 
                         // Enter to if condition when stock runs out
                         if (newQuantity == 0) {
@@ -66,12 +88,19 @@ exports.create = async (wdReconciliationRequisitionDetails) => {
                 if (wdResult) {
                     // Add wd Reconciliation Requisition Details wd
                     await wdReconciliationRequisitionDetailsWdService.createForInput(wdReconciliationRequisitionDetails, wdReconciliationRequisitionDetails.items[i])
+                
+                    // update order quantity
+                    await wcFabricOrderRequisitionDetailsService.updateForDecrementQuantity(selectFabricOrderRequisitionDetailsResult[0].id, wdReconciliationRequisitionDetails.items[i].quantity)
+
                 } else {
                     return constants.insertError;
                 }
 
             }
         }
+    } else {
+
+    }
     }
     return { ...constants.insertSuccess, ...{ id: wdReconciliationRequisitionDetails.id } };
 };
@@ -138,10 +167,18 @@ exports.update = async (wdReconciliationRequisitionDetails) => {
 
                 // we will decrement current quantity from store (wd) by following Steps :
                 // Step 1 => Check If has current quantity in store (wd)
-                const sumCurrentQuantityWd = await wdService.selectSumCurrentQuantityByDyeingByFabricByConsigmentDyeingInWd(isFound[0].dyeing_id, isFound[0].fabric_id, isFound[0].consigment_dyeing_id)
+                const sumCurrentQuantityWd = await wdService.selectSumCurrentQuantityByDyeingByFabricByConsigmentDyeingInWd(
+                    isFound[0].dyeing_id, 
+                    isFound[0].fabric_id, 
+                    isFound[0].consigment_dyeing_id,
+                    isFound[0].wc_fabric_order_requisition_id
+                )
                 if (sumCurrentQuantityWd[0] != null) {
                     const sumCurrentQuantity = sumCurrentQuantityWd[0].current_quantity
                     if (sumCurrentQuantity >= defferenceQuantity) {
+
+                        // update order quantity
+                        await wcFabricOrderRequisitionDetailsService.updateForIncrementQuantity(isFound[0].wc_fabric_order_requisition_details_id, defferenceQuantity)
 
                         // Step 2 => Increment quantity in  wd_reconciliation_requisition_details
                         await wdReconciliationRequisitionDetailsQueries.update({
@@ -151,7 +188,12 @@ exports.update = async (wdReconciliationRequisitionDetails) => {
                         })
 
                         // Step 3 => select from (Wd) Records for decrement current quantity
-                        const wdRecords = await wdService.selectRecordsByDyeingByFabricByConsigmentDyeing(isFound[0].dyeing_id, isFound[0].fabric_id, isFound[0].consigment_dyeing_id)
+                        const wdRecords = await wdService.selectRecordsByDyeingByFabricByConsigmentDyeing(
+                            isFound[0].dyeing_id, 
+                            isFound[0].fabric_id, 
+                            isFound[0].consigment_dyeing_id,
+                            isFound[0].wc_fabric_order_requisition_id
+                        )
                         if (wdRecords[0] != null) {
                             for (let i = 0; i < wdRecords.length; i++) {
                                 const wdRecord = wdRecords[i];
@@ -213,6 +255,9 @@ exports.update = async (wdReconciliationRequisitionDetails) => {
 
             } else if (newQuantity < oldQuantity) {
                 defferenceQuantity = parseFloat((oldQuantity - newQuantity).toFixed(3))
+
+                // update order quantity
+                await wcFabricOrderRequisitionDetailsService.updateForDecrementQuantity(isFound[0].wc_fabric_order_requisition_details_id, defferenceQuantity)
 
                 // Step 1 => Decrement quantity in  wb_reconciliation_requisition_details
                 await wdReconciliationRequisitionDetailsQueries.update({
@@ -298,6 +343,9 @@ exports.update = async (wdReconciliationRequisitionDetails) => {
                 if (newQuantity > oldQuantity) {
                     defferenceQuantity = parseFloat((newQuantity - oldQuantity).toFixed(3))
 
+                    // update order quantity
+                    await wcFabricOrderRequisitionDetailsService.updateForDecrementQuantity(isFound[0].wc_fabric_order_requisition_details_id, defferenceQuantity)
+
                     // increase quantity in  wd_reconciliation_requisition_details
                     updateResults = await wdReconciliationRequisitionDetailsQueries.update({
                         quantity: oldQuantity + defferenceQuantity
@@ -327,6 +375,9 @@ exports.update = async (wdReconciliationRequisitionDetails) => {
                     }
                 } else if (newQuantity < oldQuantity) {
                     defferenceQuantity = parseFloat((oldQuantity - newQuantity).toFixed(3))
+
+                    // update order quantity
+                    await wcFabricOrderRequisitionDetailsService.updateForIncrementQuantity(isFound[0].wc_fabric_order_requisition_details_id, defferenceQuantity)
 
                     // Check current quantity in stock (wd) can decrease 
                     // select from wd to update quantity

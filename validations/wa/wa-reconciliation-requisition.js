@@ -8,6 +8,7 @@ exports.isValid = (waReconciliationRequisition) => {
         personid: validations.joiText(3, 50),
         ipaddress: validations.joiText(3, 50),
         items:joi.array().items( {
+            ordersRequisitionsId: validations.joiText(15, 30),
             yarnId: validations.joiText(15, 30),
             yarnLotId: validations.joiText(15, 30),
             consigmentYarnId: validations.joiText(15, 30),

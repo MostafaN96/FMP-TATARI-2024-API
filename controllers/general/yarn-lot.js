@@ -134,9 +134,10 @@ exports.selectByWarehouseByYarnWa = async (request, response) => {
   // logging
   const { id } = request.params;
   const { yarnId } = request.params;
+  const { yarnOrderId } = request.params;
 
   // call service
-  const results = await yarnLotService.selectByWarehouseByYarnWa(id, yarnId);
+  const results = await yarnLotService.selectByWarehouseByYarnWa(id, yarnId, yarnOrderId);
   response.status(200).json(results);
 };
 
@@ -155,8 +156,9 @@ exports.selectByIndustryByYarnWb = async (request, response) => {
   // logging
   const { id } = request.params;
   const { yarnId } = request.params;
+  const { yarnOrderId } = request.params;
 
   // call service
-  const results = await yarnLotService.selectByIndustryByYarnWb(id, yarnId);
+  const results = await yarnLotService.selectByIndustryByYarnWb(id, yarnId, yarnOrderId);
   response.status(200).json(results);
 };

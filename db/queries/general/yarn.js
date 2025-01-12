@@ -5,7 +5,7 @@ const knex = require("../../config/connection").getConnection();
 // Util
 const constants = require("../../../util/constants");
 const constantsPayloads = require("../../../util/constants-payloads");
-const { waAddRequisitionTableName, wbTableName, wbTransportWaWbDetailsTableName, wbTransportWaWbTableName, bussinessmanTableName, wbReconciliationRequisitionDetailsTableName, wbReconciliationRequisitionDetailsWbTableName, wbTransportRequisitionWbWaDetailsTableName, wbTransitionBetweenIndustriesRequisitionDetailsTableName, wbTransitionBetweenIndustriesRequisitionDetailsWbTableName, warehouseTableName, waReconciliationRequisitionTableName, wbTransportRequisitionWbWaTableName, yarnLotTableName, consigmentYarnTableName, waExecuteOrderRequisitionDetailsTableName, waExecuteOrderRequisitionTableName, waTransitionBetweenWHRequisitionDetailsTableName, waTransitionBetweenWHRequisitionTableName } = require("../../../util/database-tables-name");
+const { waAddRequisitionTableName, wbTableName, wbTransportWaWbDetailsTableName, wbTransportWaWbTableName, bussinessmanTableName, wbReconciliationRequisitionDetailsTableName, wbReconciliationRequisitionDetailsWbTableName, wbTransportRequisitionWbWaDetailsTableName, wbTransitionBetweenIndustriesRequisitionDetailsTableName, wbTransitionBetweenIndustriesRequisitionDetailsWbTableName, warehouseTableName, waReconciliationRequisitionTableName, wbTransportRequisitionWbWaTableName, yarnLotTableName, consigmentYarnTableName, waExecuteOrderRequisitionDetailsTableName, waExecuteOrderRequisitionTableName, waTransitionBetweenWHRequisitionDetailsTableName, waTransitionBetweenWHRequisitionTableName, waAddRequisitionDetailsYarnOrderTableName } = require("../../../util/database-tables-name");
 const yarnTableName = require("../../../util/database-tables-name").yarnTableName;
 const waTableName = require("../../../util/database-tables-name").waTableName;
 const waAddRequisitionDetailsTableName = require("../../../util/database-tables-name").waAddRequisitionDetailsTableName;
@@ -738,6 +738,9 @@ exports.selectByWarehouseWa = async (whereCluseArray) => {
       .innerJoin(`${waAddRequisitionDetailsTableName}`,
         `${waAddRequisitionDetailsTableName}.id`,
         `${waTableName}.wa_add_requisition_details_id`)
+        .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`,
+          `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`,
+          `${waAddRequisitionDetailsTableName}.id`)
       .innerJoin(`${yarnTableName}`,
         `${yarnTableName}.id`,
         `${waAddRequisitionDetailsTableName}.yarn_id`)
@@ -792,25 +795,6 @@ exports.selectByWarehouseWa = async (whereCluseArray) => {
             `${waTableName}.current_quantity`,
           ])
             .from(`${waTableName}`)
-            .innerJoin(`${waExecuteOrderRequisitionDetailsTableName}`,
-              `${waExecuteOrderRequisitionDetailsTableName}.id`,
-              `${waTableName}.wa_execute_order_requisition_details_id`)
-              .innerJoin(`${waExecuteOrderRequisitionTableName}`,
-              `${waExecuteOrderRequisitionTableName}.id`,
-              `${waExecuteOrderRequisitionDetailsTableName}.wa_execute_order_requisition_id`)
-            .innerJoin(`${yarnTableName}`,
-              `${yarnTableName}.id`,
-              `${waExecuteOrderRequisitionDetailsTableName}.yarn_id`)
-            .where(whereCluseArray[4])
-          })
-        .union(function () {
-          this.select([
-            `${yarnTableName}.id`,
-            `${yarnTableName}.name`,
-            `${yarnTableName}.code`,
-            `${waTableName}.current_quantity`,
-          ])
-            .from(`${waTableName}`)
             .innerJoin(`${waTransitionBetweenWHRequisitionDetailsTableName}`,
               `${waTransitionBetweenWHRequisitionDetailsTableName}.id`,
               `${waTableName}.wa_transition_between_wh_requisitions_details_id`)
@@ -820,7 +804,7 @@ exports.selectByWarehouseWa = async (whereCluseArray) => {
             .innerJoin(`${yarnTableName}`,
               `${yarnTableName}.id`,
               `${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_id`)
-            .where(whereCluseArray[5])
+            .where(whereCluseArray[4])
           })
   }).as('temp')
     .where(whereCluseArray[2].whereTableName, whereCluseArray[2].operator, whereCluseArray[2].value)

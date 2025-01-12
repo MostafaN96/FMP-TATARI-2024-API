@@ -110,6 +110,9 @@ const wcExcuteOrderRequisitionDetailsRouter = require("./routers/wc/wc-execute-o
 const wcTransitionBetweenWHRequisitionRouter = require("./routers/wc/wc-transition-between-wh-requisition");
 const wcTransitionBetweenWHRequisitionDetailsRouter = require("./routers/wc/wc-transition-between-wh-requisition-details");
 
+const wcTransitionBetweenOrdersRequisitionRouter = require("./routers/wc/wc-transition-between-orders-requisition");
+const wcTransitionBetweenOrdersRequisitionDetailsRouter = require("./routers/wc/wc-transition-between-orders-requisition-details");
+
 const wcReportRouter = require("./routers/wc/wc-report");
 
 // WD
@@ -287,6 +290,9 @@ app.use('/api/wc-execute-order-requisition-details', wcExcuteOrderRequisitionDet
 
 app.use('/api/wc-transition-between-wh-requisition', wcTransitionBetweenWHRequisitionRouter)
 app.use('/api/wc-transition-between-wh-requisition-details', wcTransitionBetweenWHRequisitionDetailsRouter)
+
+app.use('/api/wc-transition-between-orders-requisition', wcTransitionBetweenOrdersRequisitionRouter)
+app.use('/api/wc-transition-between-orders-requisition-details', wcTransitionBetweenOrdersRequisitionDetailsRouter)
 
 app.use("/api/wc-report", wcReportRouter);
 

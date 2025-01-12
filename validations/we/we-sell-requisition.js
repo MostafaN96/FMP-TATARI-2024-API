@@ -9,6 +9,9 @@ exports.isValid = (weSellRequisition) => {
         personid: validations.joiText(3, 50),
         ipaddress: validations.joiText(3, 50),
         items:joi.array().items( {
+            ordersRequisitionsId: validations.joiText(15, 30),
+            dyedFabricOrderId: validations.joiText(15, 30),
+            dyedFabricOrderName: validations.joiNotRequiredText(0, 10000),
             weId: validations.joiText(15, 30),
             dyedFabricId: validations.joiText(15, 30),
             warehouseId: validations.joiText(15, 30),

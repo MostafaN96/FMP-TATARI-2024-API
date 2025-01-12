@@ -25,7 +25,7 @@ router.get(
 
 // Get Queries
 router.get(
-  "/select-inventory-details-by-dyeing-by-fabric-by-lot/:id/:fabricId/:consigmentDyeingId",
+  "/select-inventory-details-by-dyeing-by-fabric-by-lot/:id/:fabricId/:consigmentDyeingId/:fabricOrderId",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   middleWeres.checkInt(),

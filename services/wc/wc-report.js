@@ -21,6 +21,7 @@ const bussinessmanService = require("../../services/general/bussinessman");
 const wdDyeingOrderRequisitionDetailsService = require("../../services/wd/wd-dyeing-order-requisition-details");
 const wcExecuteOrderRequisitionDetailsQueries = require("../../db/queries/wc/wc-execute-order-requisition-details");
 const wcTransitionBetweenWHRequisitionDetailsQueries = require("../../db/queries/wc/wc-transition-between-wh-requisition-details");
+const wcTransitionBetweenOrdersRequisitionDetailsQueries = require("../../db/queries/wc/wc-transition-between-orders-requisition-details");
 
 // Util
 const constants = require("../../util/constants");
@@ -68,13 +69,6 @@ exports.selectInventoryTotal = async (fabricReport) => {
     manufacturingOutputWhereCluse[`${wcTableName}.is_active`] = 1;
     manufacturingOutputWhereCluse[`${wcTableName}.type`] = constantsPayloads.manufactruingType;
 
-    let executeOrderWhereCluse = {};
-    executeOrderWhereCluse[`${fabricTableName}.is_deleted`] = 0;
-    executeOrderWhereCluse[`${fabricTableName}.is_active`] = 1;
-    executeOrderWhereCluse[`${wcTableName}.is_deleted`] = 0;
-    executeOrderWhereCluse[`${wcTableName}.is_active`] = 1;
-    executeOrderWhereCluse[`${wcTableName}.type`] = constantsPayloads.executeOrderType;
-
     let transitionBetweenWhWhereCluse = {};
     transitionBetweenWhWhereCluse[`${fabricTableName}.is_deleted`] = 0;
     transitionBetweenWhWhereCluse[`${fabricTableName}.is_active`] = 1;
@@ -82,10 +76,17 @@ exports.selectInventoryTotal = async (fabricReport) => {
     transitionBetweenWhWhereCluse[`${wcTableName}.is_active`] = 1;
     transitionBetweenWhWhereCluse[`${wcTableName}.type`] = constantsPayloads.transportBetweenType;
 
+    let transitionBetweenOrdersWhereCluse = {};
+    transitionBetweenOrdersWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    transitionBetweenOrdersWhereCluse[`${fabricTableName}.is_active`] = 1;
+    transitionBetweenOrdersWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    transitionBetweenOrdersWhereCluse[`${wcTableName}.is_active`] = 1;
+    transitionBetweenOrdersWhereCluse[`${wcTableName}.type`] = constantsPayloads.transportBetweenOrdersType;
+
     let whereCluseArray = [
         fabricWhereCluse, reconciliationWhereCluse, 
         transportWdWcWhereCluse, manufacturingOutputWhereCluse,
-        executeOrderWhereCluse, transitionBetweenWhWhereCluse
+        transitionBetweenWhWhereCluse, transitionBetweenOrdersWhereCluse,
     ]
 
     // select fabrics 
@@ -152,10 +153,10 @@ exports.selectInventoryTotal = async (fabricReport) => {
             callArray.push(wdTransportWcWdDetailsQueries.selectTotalByFabricId(fabric.id))
             callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectTotalByFabricIdForInput(fabric.id))
             callArray.push(wbManufacturingOutputQueries.selectTotalByFabricId(fabric.id))
-            callArray.push(wcExecuteOrderRequisitionDetailsQueries.selectFromTotalByFabricId(fabric.id))
-            callArray.push(wcExecuteOrderRequisitionDetailsQueries.selectToTotalByFabricId(fabric.id))
             callArray.push(wcTransitionBetweenWHRequisitionDetailsQueries.selectFromTotalByFabricId(fabric.id))
             callArray.push(wcTransitionBetweenWHRequisitionDetailsQueries.selectToTotalByFabricId(fabric.id))
+            callArray.push(wcTransitionBetweenOrdersRequisitionDetailsQueries.selectFromTotalByFabricId(fabric.id))
+            callArray.push(wcTransitionBetweenOrdersRequisitionDetailsQueries.selectToTotalByFabricId(fabric.id))
 
             const requisitions = await Promise.all(callArray)
             const sortedAsc = [...requisitions[0], ...requisitions[1],
@@ -183,10 +184,10 @@ exports.selectInventoryTotalByFabric = async (fabricId) => {
     callArray.push(wdTransportWcWdDetailsQueries.selectTotalDetailsByFabricId(fabricId))
     callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectTotalDetailsByFabricId(fabricId))
     callArray.push(wbManufacturingOutputQueries.selectTotalDetailsByFabricId(fabricId))
-    callArray.push(wcExecuteOrderRequisitionDetailsQueries.selectFromTotalDetailsByFabricId(fabricId))
-    callArray.push(wcExecuteOrderRequisitionDetailsQueries.selectToTotalDetailsByFabricId(fabricId))
     callArray.push(wcTransitionBetweenWHRequisitionDetailsQueries.selectFromTotalDetailsByFabricId(fabricId))
     callArray.push(wcTransitionBetweenWHRequisitionDetailsQueries.selectToTotalDetailsByFabricId(fabricId))
+    callArray.push(wcTransitionBetweenOrdersRequisitionDetailsQueries.selectFromTotalDetailsByFabricId(fabricId))
+    callArray.push(wcTransitionBetweenOrdersRequisitionDetailsQueries.selectToTotalDetailsByFabricId(fabricId))
     const requisitions = await Promise.all(callArray)
     const sortedAsc = [...requisitions[0], ...requisitions[1],
     ...requisitions[2], ...requisitions[3], ...requisitions[4],
@@ -241,20 +242,20 @@ exports.selectInventoryDetails = async (fabricReport) => {
     manufacturingOutputWhereCluse[`${wcTableName}.is_active`] = 1;
     manufacturingOutputWhereCluse[`${wcTableName}.type`] = constantsPayloads.manufactruingType;
 
-    let executeOrderWhereCluse = {};
-    executeOrderWhereCluse[`${wcTableName}.is_deleted`] = 0;
-    executeOrderWhereCluse[`${wcTableName}.is_active`] = 1;
-    executeOrderWhereCluse[`${wcTableName}.type`] = constantsPayloads.executeOrderType;
-
     let transitionBetweenWhWhereCluse = {};
     transitionBetweenWhWhereCluse[`${wcTableName}.is_deleted`] = 0;
     transitionBetweenWhWhereCluse[`${wcTableName}.is_active`] = 1;
     transitionBetweenWhWhereCluse[`${wcTableName}.type`] = constantsPayloads.transportBetweenType;
 
+    let transitionBetweenOrdersWhereCluse = {};
+    transitionBetweenOrdersWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    transitionBetweenOrdersWhereCluse[`${wcTableName}.is_active`] = 1;
+    transitionBetweenOrdersWhereCluse[`${wcTableName}.type`] = constantsPayloads.transportBetweenOrdersType;
+
     let whereCluseArray = [
         fabricWhereCluse, reconciliationWhereCluse, 
         transportWdWcWhereCluse, manufacturingOutputWhereCluse,
-        executeOrderWhereCluse, transitionBetweenWhWhereCluse
+        transitionBetweenWhWhereCluse, transitionBetweenOrdersWhereCluse
     ]
 
     // select warehousesFabricsConsigmentsManufacturing 
@@ -318,43 +319,64 @@ exports.selectInventoryDetails = async (fabricReport) => {
             data.push(warehousesFabricConsigmentManufacturing)
 
             callArray.push(wcAddRequisitionDetailsQueries.selectDetailsByWarehouseByFabricByConsigmentManufacturing(
-                warehousesFabricConsigmentManufacturing.warehouse_id, warehousesFabricConsigmentManufacturing.fabric_id, warehousesFabricConsigmentManufacturing.consigment_manufacturing_id
+                warehousesFabricConsigmentManufacturing.warehouse_id, 
+                warehousesFabricConsigmentManufacturing.fabric_id, 
+                warehousesFabricConsigmentManufacturing.consigment_manufacturing_id,
+                warehousesFabricConsigmentManufacturing.wc_fabric_order_requisition_id
             ))
             callArray.push(wcSellRequisitionDetailsQueries.selectDetailsByWarehouseByFabricByConsigmentManufacturing(
-                warehousesFabricConsigmentManufacturing.warehouse_id, warehousesFabricConsigmentManufacturing.fabric_id, warehousesFabricConsigmentManufacturing.consigment_manufacturing_id
+                warehousesFabricConsigmentManufacturing.warehouse_id, 
+                warehousesFabricConsigmentManufacturing.fabric_id, 
+                warehousesFabricConsigmentManufacturing.consigment_manufacturing_id,
+                warehousesFabricConsigmentManufacturing.wc_fabric_order_requisition_id
             ))
             callArray.push(wcReturnRequisitionDetailsQueries.selectDetailsByWarehouseByFabricByConsigmentManufacturing(
-                warehousesFabricConsigmentManufacturing.warehouse_id, warehousesFabricConsigmentManufacturing.fabric_id, warehousesFabricConsigmentManufacturing.consigment_manufacturing_id
+                warehousesFabricConsigmentManufacturing.warehouse_id, 
+                warehousesFabricConsigmentManufacturing.fabric_id, 
+                warehousesFabricConsigmentManufacturing.consigment_manufacturing_id,
+                warehousesFabricConsigmentManufacturing.wc_fabric_order_requisition_id
             ))
             callArray.push(wcReconciliationRequisitionDetailsQueries.selectDetailsByWarehouseByFabricByConsigmentManufacturing(
-                warehousesFabricConsigmentManufacturing.warehouse_id, warehousesFabricConsigmentManufacturing.fabric_id, warehousesFabricConsigmentManufacturing.consigment_manufacturing_id
+                warehousesFabricConsigmentManufacturing.warehouse_id, 
+                warehousesFabricConsigmentManufacturing.fabric_id, 
+                warehousesFabricConsigmentManufacturing.consigment_manufacturing_id,
+                warehousesFabricConsigmentManufacturing.wc_fabric_order_requisition_id
             ))
             callArray.push(wdTransportWcWdDetailsQueries.selectDetailsByWarehouseByFabricByConsigmentManufacturing(
-                warehousesFabricConsigmentManufacturing.warehouse_id, warehousesFabricConsigmentManufacturing.fabric_id, warehousesFabricConsigmentManufacturing.consigment_manufacturing_id
+                warehousesFabricConsigmentManufacturing.warehouse_id, 
+                warehousesFabricConsigmentManufacturing.fabric_id, 
+                warehousesFabricConsigmentManufacturing.consigment_manufacturing_id,
+                warehousesFabricConsigmentManufacturing.wc_fabric_order_requisition_id
             ))
             callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectDetailsByWarehouseByFabricByConsigmentManufacturing(
-                warehousesFabricConsigmentManufacturing.warehouse_id, warehousesFabricConsigmentManufacturing.fabric_id, warehousesFabricConsigmentManufacturing.consigment_manufacturing_id
+                warehousesFabricConsigmentManufacturing.warehouse_id, 
+                warehousesFabricConsigmentManufacturing.fabric_id, 
+                warehousesFabricConsigmentManufacturing.consigment_manufacturing_id,
+                warehousesFabricConsigmentManufacturing.wc_fabric_order_requisition_id
             ))
             callArray.push(wbManufacturingOutputQueries.selectDetailsByWarehouseByFabricByConsigmentManufacturing(
-                warehousesFabricConsigmentManufacturing.warehouse_id, warehousesFabricConsigmentManufacturing.fabric_id, warehousesFabricConsigmentManufacturing.consigment_manufacturing_id
-            ))
-            callArray.push(wcExecuteOrderRequisitionDetailsQueries.selectFromWarehouseDetailsByWarehouseByFabricByConsigmentManufacturing(
-                warehousesFabricConsigmentManufacturing.warehouse_id, warehousesFabricConsigmentManufacturing.fabric_id, warehousesFabricConsigmentManufacturing.consigment_manufacturing_id
-            ))
-            callArray.push(wcExecuteOrderRequisitionDetailsQueries.selectToWarehouseDetailsByWarehouseByFabricByConsigmentManufacturing(
-                warehousesFabricConsigmentManufacturing.warehouse_id, warehousesFabricConsigmentManufacturing.fabric_id, warehousesFabricConsigmentManufacturing.consigment_manufacturing_id
+                warehousesFabricConsigmentManufacturing.warehouse_id, 
+                warehousesFabricConsigmentManufacturing.fabric_id, 
+                warehousesFabricConsigmentManufacturing.consigment_manufacturing_id,
+                warehousesFabricConsigmentManufacturing.wc_fabric_order_requisition_id
             ))
             callArray.push(wcTransitionBetweenWHRequisitionDetailsQueries.selectFromWarehouseDetailsByWarehouseByFabricByConsigmentManufacturing(
-                warehousesFabricConsigmentManufacturing.warehouse_id, warehousesFabricConsigmentManufacturing.fabric_id, warehousesFabricConsigmentManufacturing.consigment_manufacturing_id
+                warehousesFabricConsigmentManufacturing.warehouse_id, 
+                warehousesFabricConsigmentManufacturing.fabric_id, 
+                warehousesFabricConsigmentManufacturing.consigment_manufacturing_id,
+                warehousesFabricConsigmentManufacturing.wc_fabric_order_requisition_id
             ))
             callArray.push(wcTransitionBetweenWHRequisitionDetailsQueries.selectToWarehouseDetailsByWarehouseByFabricByConsigmentManufacturing(
-                warehousesFabricConsigmentManufacturing.warehouse_id, warehousesFabricConsigmentManufacturing.fabric_id, warehousesFabricConsigmentManufacturing.consigment_manufacturing_id
+                warehousesFabricConsigmentManufacturing.warehouse_id, 
+                warehousesFabricConsigmentManufacturing.fabric_id, 
+                warehousesFabricConsigmentManufacturing.consigment_manufacturing_id,
+                warehousesFabricConsigmentManufacturing.wc_fabric_order_requisition_id
             ))
             const requisitions = await Promise.all(callArray)
             const sortedAsc = [...requisitions[0], ...requisitions[1],
             ...requisitions[2], ...requisitions[3], ...requisitions[4],
             ...requisitions[5], ...requisitions[6], ...requisitions[7],
-            ...requisitions[8], ...requisitions[9], ...requisitions[10]
+            ...requisitions[8]
         ].sort(
                 (objA, objB) => moment(objA.date) - moment(objB.date)
             );
@@ -366,25 +388,23 @@ exports.selectInventoryDetails = async (fabricReport) => {
     return data;
 };
 
-exports.selectInventoryDetailsByWarehouseByFabricByConsigmentManufacturing = async (fabricId, warehouseId, consigmentManufacturingId) => {
+exports.selectInventoryDetailsByWarehouseByFabricByConsigmentManufacturing = async (fabricId, warehouseId, consigmentManufacturingId, fabricOrderId) => {
     let callArray = []
 
-    callArray.push(wcAddRequisitionDetailsQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId))
-    callArray.push(wcSellRequisitionDetailsQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId))
-    callArray.push(wcReturnRequisitionDetailsQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId))
-    callArray.push(wcReconciliationRequisitionDetailsQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId))
-    callArray.push(wdTransportWcWdDetailsQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId))
-    callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId))
-    callArray.push(wbManufacturingOutputQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId))
-    callArray.push(wcExecuteOrderRequisitionDetailsQueries.selectFromWarehouseDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId))
-    callArray.push(wcExecuteOrderRequisitionDetailsQueries.selectToWarehouseDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId))
-    callArray.push(wcTransitionBetweenWHRequisitionDetailsQueries.selectFromWarehouseDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId))
-    callArray.push(wcTransitionBetweenWHRequisitionDetailsQueries.selectToWarehouseDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId))
+    callArray.push(wcAddRequisitionDetailsQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId, fabricOrderId))
+    callArray.push(wcSellRequisitionDetailsQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId, fabricOrderId))
+    callArray.push(wcReturnRequisitionDetailsQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId, fabricOrderId))
+    callArray.push(wcReconciliationRequisitionDetailsQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId, fabricOrderId))
+    callArray.push(wdTransportWcWdDetailsQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId, fabricOrderId))
+    callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId, fabricOrderId))
+    callArray.push(wbManufacturingOutputQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId, fabricOrderId))
+    callArray.push(wcTransitionBetweenWHRequisitionDetailsQueries.selectFromWarehouseDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId, fabricOrderId))
+    callArray.push(wcTransitionBetweenWHRequisitionDetailsQueries.selectToWarehouseDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId, fabricOrderId))
     const requisitions = await Promise.all(callArray)
     let sortedAsc = [...requisitions[0], ...requisitions[1],
     ...requisitions[2], ...requisitions[3], ...requisitions[4],
     ...requisitions[5], ...requisitions[6], ...requisitions[7],
-    ...requisitions[8], ...requisitions[9], ...requisitions[10]
+    ...requisitions[8]
 ].sort(
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );

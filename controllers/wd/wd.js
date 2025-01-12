@@ -11,19 +11,45 @@ exports.selectConsigmentDyeingQuantityByFabricByDyeingWd = async (request, respo
   // logging
   const { fabricId } = request.params;
   const { dyeingId } = request.params;
+  const { fabricOrderId } = request.params;
 
   // call service
-  const results = await wdService.selectConsigmentDyeingQuantityByFabricByDyeingWd(fabricId, dyeingId);
+  const results = await wdService.selectConsigmentDyeingQuantityByFabricByDyeingWd(
+    fabricId, 
+    dyeingId, 
+    fabricOrderId
+  );
   response.status(200).json(results);
 };
 
 exports.selectQuantityByDyeingWd = async (request, response) => {
   // logging
   const { dyeingId } = request.params;
-  const groupBy = [`fabric_id`, `consigment_dyeing_id`]
+
+  const groupBy = [
+    `fabric_id`, 
+    `consigment_dyeing_id`, 
+    `wc_fabric_order_requisition_id`
+  ]
 
   // call service
   const results = await wdService.selectQuantityByDyeingWd(dyeingId, groupBy.toString().split(','));
+  response.status(200).json(results);
+};
+
+exports.selectQuantityByDyeingByFabricOrderWd = async (request, response) => {
+  // logging
+  const { dyeingId } = request.params;
+  const { fabricOrderId } = request.params;
+
+  const groupBy = [
+    `fabric_id`, 
+    `consigment_dyeing_id`, 
+    `wc_fabric_order_requisition_id`
+  ]
+
+  // call service
+  const results = await wdService.selectQuantityByDyeingByFabricOrderWd(dyeingId, fabricOrderId, groupBy.toString().split(','));
   response.status(200).json(results);
 };
 

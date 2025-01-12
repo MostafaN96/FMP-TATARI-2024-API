@@ -32,7 +32,7 @@ router.get("/deleted",
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   yarnController.selectStoredWaYarnsBySupplier);
 
-  router.get("/by-warehouse-wa/:id",
+  router.get("/by-warehouse-wa/:id/:yarnOrderId",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   yarnController.selectByWarehouseWa);
@@ -42,7 +42,7 @@ router.get("/deleted",
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   yarnController.selectStoredWaYarnsByYarnId);
 
-  router.get("/by-industry-wb/:id",
+  router.get("/by-industry-wb/:id/:yarnOrderId",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   yarnController.selectByIndustryWb);

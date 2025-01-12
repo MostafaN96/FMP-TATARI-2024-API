@@ -4,6 +4,11 @@ const waSellRequisitionQueries = require("../../db/queries/wa/wa-sell-requisitio
 const waSellRequisitionDetailsWaQueries = require("../../db/queries/wa/wa-sell-requisition-details-wa");
 const waQueries = require("../../db/queries/wa/wa");
 
+// Services
+const waService = require("./wa");
+const waSellRequisitionDetailsWaService = require("./wa-sell-requisition-details-wa");
+// const waYarnOrderRequisitionDetailsService = require("./wa-yarn-order-requisition-details");
+
 // Helper
 const trans = require("../../helpers/transform");
 
@@ -12,10 +17,6 @@ const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
 const waSellRequisitionDetailsWaTableName = require("../../util/database-tables-name").waSellRequisitionDetailsWaTableName;
 const waSellRequisitionDetailsTableName = require("../../util/database-tables-name").waSellRequisitionDetailsTableName;
-
-// Services
-const waService = require("./wa");
-const waSellRequisitionDetailsWaService = require("./wa-sell-requisition-details-wa");
 
 exports.create = async (waSellRequisitionDetails) => {
     for (let i = 0; i < waSellRequisitionDetails.items.length; i++) {

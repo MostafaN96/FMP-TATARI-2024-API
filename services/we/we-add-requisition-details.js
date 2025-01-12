@@ -3,6 +3,11 @@ const weAddRequisitionDetailsQueries = require("../../db/queries/we/we-add-requi
 const weAddRequisitionQueries = require("../../db/queries/we/we-add-requisition");
 const consigmentDyeingQueries = require("../../db/queries/general/consigment-dyeing");
 const weQueries = require("../../db/queries/we/we");
+const weDyedFabricOrderRequisitionDetailsQueries = require("../../db/queries/we/we-dyed-fabric-order-requisition-details");
+
+// Services
+const weService = require("./we");
+const weAddRequisitionDetailsDyedFabricOrderService = require("./we-add-requisition-details-dyed-fabric-order");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -10,9 +15,9 @@ const trans = require("../../helpers/transform");
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-
-// Services
-const weService = require("./we");
+const { 
+    weDyedFabricOrderRequisitionDetailsTableName 
+} = require("../../util/database-tables-name");
 
 exports.create = async (weAddRequisitionDetails) => {
     for (let i = 0; i < weAddRequisitionDetails.items.length; i++) {
@@ -33,6 +38,29 @@ exports.create = async (weAddRequisitionDetails) => {
             return constants.insertError;
         } else {
             await weService.create(weAddRequisitionDetails, weAddRequisitionDetails.items[i])
+
+            
+        for (let j = 0; j < weAddRequisitionDetails.orderId.length; j++) {
+            const orderElement = weAddRequisitionDetails.orderId[j];
+  
+            let weDyedFabricOrderRequisitionDetailsWhereCluse = {};
+            weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+            weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+            weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_order`] = 1;
+            weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`] = orderElement.ordersRequisitionsId;
+            weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.dyed_fabric_id`] = weAddRequisitionDetails.items[i].dyedFabricId;
+  
+            const selectDyedFabricOrderRequisitionDetailsResult = await weDyedFabricOrderRequisitionDetailsQueries.selectByRequisitionId(weDyedFabricOrderRequisitionDetailsWhereCluse)
+            if (Array.isArray(selectDyedFabricOrderRequisitionDetailsResult) && selectDyedFabricOrderRequisitionDetailsResult.length > 0) {
+              for (let f = 0; f < selectDyedFabricOrderRequisitionDetailsResult.length; f++) {
+                const dyedFabricOrderRequisitionDetailsElement = selectDyedFabricOrderRequisitionDetailsResult[f];
+  
+                await weAddRequisitionDetailsDyedFabricOrderService.create({ ...dyedFabricOrderRequisitionDetailsElement, ...weAddRequisitionDetails }, orderElement)
+  
+              }
+            }
+          }
+          
         }
     }
     return { ...constants.insertSuccess, ...{ id: weAddRequisitionDetails.id } };

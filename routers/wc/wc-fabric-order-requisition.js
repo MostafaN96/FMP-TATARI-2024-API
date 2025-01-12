@@ -18,17 +18,27 @@ router.get("/closed-orders",
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   wcFabricOrderRequisitionController.selectClosedOrders);
 
-  router.get("/fabrics-order-requisition/:id",
-    middleWeres.checkAuth(),
-    middleWeres.checkIdentity(usersType.ADMIN_STR),
-    middleWeres.checkInt(),
-    wcFabricOrderRequisitionController.selectFabricsOrderRequisition);
+router.get("/fabrics-order-requisition/:id",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  middleWeres.checkInt(),
+  wcFabricOrderRequisitionController.selectFabricsOrderRequisition);
 
-  router.get("/inquire-fabrics-order-requisition/:id",
-    middleWeres.checkAuth(),
-    middleWeres.checkIdentity(usersType.ADMIN_STR),
-    middleWeres.checkInt(),
-    wcFabricOrderRequisitionController.inquireFabricsForOrderWc);
+router.get("/inquire-fabrics-order-requisition/:id",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  middleWeres.checkInt(),
+  wcFabricOrderRequisitionController.inquireFabricsForOrderWc);
+
+router.get("/by-warehouse-wc/:id",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  wcFabricOrderRequisitionController.selectByWarehouseWc);
+
+router.get("/by-dyeing-wd/:id",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  wcFabricOrderRequisitionController.selectByDyeingWd);
 
 // Post Queries
 router.post(

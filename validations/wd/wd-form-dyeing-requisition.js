@@ -8,6 +8,9 @@ exports.isValid = (wdFormDyeingRequisition) => {
         personid: validations.joiText(3, 50),
         ipaddress: validations.joiText(3, 50),
         items:joi.array().items({
+            ordersRequisitionsId: validations.joiText(15, 30),
+            fabricOrderId: validations.joiText(15, 30),
+            fabricOrderName: validations.joiNotRequiredText(0, 10000),
             fabricId: validations.joiText(15, 30),
             consigmentDyeingId: validations.joiText(15, 30),
             dyedFabricId: validations.joiText(15, 30),
@@ -18,6 +21,7 @@ exports.isValid = (wdFormDyeingRequisition) => {
             quantity:validations.joiNumber(1, 60),
             fabricWidth:validations.joiText(1, 60),
             fabricQuantityM2:validations.joiText(1, 60),
+            workOrderNumberDetails: validations.joiText(1, 60),
             document: validations.joiNotRequiredNumber(0, 50),
             statement: validations.joiNotRequiredText(0, 10000),
         })

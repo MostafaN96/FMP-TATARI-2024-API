@@ -19,7 +19,7 @@ exports.create = async (waPurchaseOrder) => {
     waPurchaseOrder.id = trans.transform();
 
     // For Add wa requisition (optional)
-    waPurchaseOrder.orderId = waPurchaseOrder.id;
+    waPurchaseOrder.purchaseOrderId = waPurchaseOrder.id;
 
     // Select Max Number Of Requisition
     const selectMaxRequisitionNumber = await generalQueries.selectMaxValue(waPurchaseOrderTableName, { number: 'number' })

@@ -296,13 +296,18 @@ exports.selectTotalDetailsByYarnIdByWarehouseId = async (yarnId, warehouseId) =>
   return queryResults;
 };
 
-exports.selectDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLotId, consigmentYarnId) => {
+exports.selectDetailsByWarehouseByYarnByLot = async (
+  warehouseId, yarnId, 
+  yarnLotId, consigmentYarnId,
+  yarnOrderId
+) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${waAddRequisitionDetailsTableName}.warehouse_id`] = warehouseId;
   whereCluse[`${waAddRequisitionDetailsTableName}.yarn_id`] = yarnId;
   whereCluse[`${waAddRequisitionDetailsTableName}.yarn_lot_id`] = yarnLotId;
   whereCluse[`${waAddRequisitionDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
+  whereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
   whereCluse[`${waAddRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${waAddRequisitionDetailsTableName}.is_active`] = 1;
 
@@ -317,7 +322,12 @@ exports.selectDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLo
         knex.raw('? as input_output', '1')
       ],
     )
-    .innerJoin(`${waAddRequisitionTableName}`, `${waAddRequisitionTableName}.id`, `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
+    .innerJoin(`${waAddRequisitionTableName}`, 
+      `${waAddRequisitionTableName}.id`, 
+      `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
+      .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`,
+        `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`,
+        `${waAddRequisitionDetailsTableName}.id`)
     .where(whereCluse)
     .andWhere(`${waAddRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -327,13 +337,14 @@ exports.selectDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLo
   return queryResults;
 };
 
-exports.selectDetailsDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLotId, consigmentYarnId) => {
+exports.selectDetailsDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${waAddRequisitionDetailsTableName}.warehouse_id`] = warehouseId;
   whereCluse[`${waAddRequisitionDetailsTableName}.yarn_id`] = yarnId;
   whereCluse[`${waAddRequisitionDetailsTableName}.yarn_lot_id`] = yarnLotId;
   whereCluse[`${waAddRequisitionDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
+  whereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
   whereCluse[`${waAddRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${waAddRequisitionDetailsTableName}.is_active`] = 1;
 
@@ -346,6 +357,8 @@ exports.selectDetailsDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId,
         `${waAddRequisitionDetailsTableName}.quantity`,
         `${waAddRequisitionDetailsTableName}.document`,
         `${waAddRequisitionDetailsTableName}.statement`,
+        `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`,
+        `${waYarnOrderRequisitionTableName}.name as wa_yarn_order_requisition_name`,
         `${waAddRequisitionTableName}.id as requisition_id`,
         `${waAddRequisitionTableName}.number`,
         `${waAddRequisitionTableName}.date`,
@@ -364,7 +377,15 @@ exports.selectDetailsDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId,
         `${waPurchaseOrderTableName}.name as order_purchase_name`,
       ],
     )
-    .innerJoin(`${waAddRequisitionTableName}`, `${waAddRequisitionTableName}.id`, `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
+    .innerJoin(`${waAddRequisitionTableName}`, 
+      `${waAddRequisitionTableName}.id`, 
+      `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
+    .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`, 
+      `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`, 
+      `${waAddRequisitionDetailsTableName}.id`)
+    .innerJoin(`${waYarnOrderRequisitionTableName}`, 
+      `${waYarnOrderRequisitionTableName}.id`, 
+      `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`)
     .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${waAddRequisitionTableName}.supplier_id`)
     .innerJoin(`${yarnTableName}`, `${yarnTableName}.id`, `${waAddRequisitionDetailsTableName}.yarn_id`)
     .innerJoin(`${yarnLotTableName}`, `${yarnLotTableName}.id`, `${waAddRequisitionDetailsTableName}.yarn_lot_id`)
@@ -449,6 +470,9 @@ exports.selectSumCurrentQuantityByWarehouseByYarnWa = async (whereCluse) => {
       .innerJoin(`${waAddRequisitionDetailsTableName}`, 
       `${waAddRequisitionDetailsTableName}.yarn_lot_id`, 
       `${yarnLotTableName}.id`)
+      .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`, 
+        `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`, 
+        `${waAddRequisitionDetailsTableName}.id`)
       .innerJoin(`${waTableName}`, 
       `${waTableName}.wa_add_requisition_details_id`, 
       `${waAddRequisitionDetailsTableName}.id`)

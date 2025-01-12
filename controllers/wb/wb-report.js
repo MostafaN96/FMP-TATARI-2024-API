@@ -32,8 +32,9 @@ exports.selectInventoryTotal = async (request, response) => {
     const { yarnId } = request.params;
     const { yarnLotId } = request.params;
     const { consigmentYarnId } = request.params;
+    const { yarnOrderId } = request.params;
 
-    const results = await wbReportService.selectInventoryDetailsByIndustryByYarnByLot(id, yarnId, yarnLotId, consigmentYarnId);
+    const results = await wbReportService.selectInventoryDetailsByIndustryByYarnByLot(id, yarnId, yarnLotId, consigmentYarnId, yarnOrderId);
     response.status(200).json(results);
   };
 

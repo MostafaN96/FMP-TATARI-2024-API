@@ -4,6 +4,11 @@ const weTransitionBetweenWHRequisitionDetailsQueries = require("../../db/queries
 const weTransitionBetweenWHRequisitionQueries = require("../../db/queries/we/we-transition-between-wh-requisition");
 const weQueries = require("../../db/queries/we/we");
 const consigmentDyeingQueries = require("../../db/queries/general/consigment-dyeing");
+const weDyedFabricOrderRequisitionDetailsQueries = require("../../db/queries/we/we-dyed-fabric-order-requisition-details");
+
+// Services
+const weTransitionBetweenWHRequisitionDetailsWeService = require("./we-transition-between-wh-requisition-details-we");
+const weService = require("./we");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -11,13 +16,10 @@ const trans = require("../../helpers/transform");
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-
-// Services
-const weTransitionBetweenWHRequisitionDetailsWeService = require("./we-transition-between-wh-requisition-details-we");
-const weService = require("./we");
 const { weTransitionBetweenWHRequisitionDetailsTableName,
     weTransitionBetweenWHRequisitionDetailsWeTableName,
-    weTableName
+    weTableName,
+    weDyedFabricOrderRequisitionDetailsTableName
 } = require("../../util/database-tables-name");
 
 exports.create = async (weTransitionBetweenWHRequisitionDetails) => {
@@ -35,6 +37,18 @@ exports.create = async (weTransitionBetweenWHRequisitionDetails) => {
             weTransitionBetweenWHRequisitionDetails.items[i].consigmentDyeingId = trans.transform();
             await consigmentDyeingQueries.insertForTransitionBetween(weTransitionBetweenWHRequisitionDetails, weTransitionBetweenWHRequisitionDetails.items[i]);
         }
+
+        // Get we fabric order by order requisition id
+        let weDyedFabricOrderRequisitionDetailsWhereCluse = {};
+        weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+        weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+        // weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_order`] = 1;
+        weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`] = weTransitionBetweenWHRequisitionDetails.items[i].ordersRequisitionsId;
+        weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.dyed_fabric_id`] = weTransitionBetweenWHRequisitionDetails.items[i].dyedFabricId;
+
+        const selectWeDyedFabricOrderRequisitionDetailsResult = await weDyedFabricOrderRequisitionDetailsQueries.selectByRequisitionId(weDyedFabricOrderRequisitionDetailsWhereCluse)
+        if (Array.isArray(selectWeDyedFabricOrderRequisitionDetailsResult) && selectWeDyedFabricOrderRequisitionDetailsResult.length > 0) {
+            weTransitionBetweenWHRequisitionDetails.items[i].weDyedFabricOrderRequisitionDetailsId = selectWeDyedFabricOrderRequisitionDetailsResult[0].id
 
         const results = await weTransitionBetweenWHRequisitionDetailsQueries.insert(weTransitionBetweenWHRequisitionDetails, weTransitionBetweenWHRequisitionDetails.items[i]);
         if (!results) {
@@ -79,6 +93,9 @@ exports.create = async (weTransitionBetweenWHRequisitionDetails) => {
             }
 
         }
+    } else {
+
+    }
     }
     return { ...constants.insertSuccess, ...{ id: weTransitionBetweenWHRequisitionDetails.id } };
 };

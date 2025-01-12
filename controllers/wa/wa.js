@@ -7,9 +7,10 @@ exports.selectYarnLotQuantityByWarehouseByYarnByLotWa = async (request, response
     const { warehouseId } = request.params;
     const { yarnId } = request.params;
     const { yarnLotId } = request.params;
+    const { yarnOrderId } = request.params;
   
     // call service
-    const results = await waService.selectYarnLotQuantityByWarehouseByYarnByLotWa(warehouseId, yarnId, yarnLotId);
+    const results = await waService.selectYarnLotQuantityByWarehouseByYarnByLotWa(warehouseId, yarnId, yarnLotId, yarnOrderId);
     response.status(200).json(results);
   };
 

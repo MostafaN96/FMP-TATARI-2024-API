@@ -31,8 +31,9 @@ exports.selectInventoryTotal = async (request, response) => {
     const { id } = request.params;
     const { fabricId } = request.params;
     const { consigmentDyeingId } = request.params;
+    const { fabricOrderId } = request.params;
 
-    const results = await wdReportService.selectInventoryDetailsByDyeingByFabricByConsigmentDyeing(id, fabricId, consigmentDyeingId);
+    const results = await wdReportService.selectInventoryDetailsByDyeingByFabricByConsigmentDyeing(id, fabricId, consigmentDyeingId, fabricOrderId);
     response.status(200).json(results);
   };
 

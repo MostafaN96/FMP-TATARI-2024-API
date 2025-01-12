@@ -23,6 +23,9 @@ exports.insert = async (weReconciliationRequisitionDetails, items) => {
       color_code: items.colorCode,
       consigment_dyeing_id: items.consigmentDyeingId,
       grade_item_id: items.gradeItemId,
+      we_dyed_fabric_order_requisition_details_id: items.weDyedFabricOrderRequisitionDetailsId,
+      we_dyed_fabric_order_requisition_id: items.dyedFabricOrderId,
+      orders_requisitions_id: items.ordersRequisitionsId,
       fabric_piece: items.numberFabricPieces,
       work_order_number: items.workOrderNumber,
       price: items.price,
@@ -313,6 +316,8 @@ exports.selectOne = async (whereCluse) => {
   .select([
     `${weReconciliationRequisitionDetailsTableName}.we_reconcilition_requisition_id`,
     `${weReconciliationRequisitionDetailsTableName}.dyed_fabric_id`, 
+    `${weReconciliationRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`, 
+    `${weReconciliationRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_details_id`, 
     `${weReconciliationRequisitionDetailsTableName}.quantity`
   ])
   .from(`${weReconciliationRequisitionDetailsTableName}`)

@@ -5,66 +5,88 @@ const wbTransportRequisitionWbWaQueries = require("../../db/queries/wb/wb-transp
 const wbQueries = require("../../db/queries/wb/wb");
 const waQueries = require("../../db/queries/wa/wa");
 
+// Services
+const wbService = require("../wb/wb");
+const wbTransportRequisitionWbWaDetailsWbService = require("./wb-transport-requisition-wb-wa-details-wb");
+const waYarnOrderRequisitionDetailsService = require("../wa/wa-yarn-order-requisition-details");
+
 // Helper
 const trans = require("../../helpers/transform");
 
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-
-// Services
-const wbService = require("../wb/wb");
-const wbTransportRequisitionWbWaDetailsWbService = require("./wb-transport-requisition-wb-wa-details-wb");
-const { wbTransportRequisitionWbWaDetailsWbTableName, wbTransportRequisitionWbWaDetailsTableName, wbTransportRequisitionWbWaTableName } = require("../../util/database-tables-name");
+const { wbTransportRequisitionWbWaDetailsWbTableName,
+    wbTransportRequisitionWbWaDetailsTableName,
+    wbTransportRequisitionWbWaTableName,
+    waYarnOrderRequisitionDetailsTableName
+} = require("../../util/database-tables-name");
 
 exports.create = async (wbTransportRequisitionWbWaDetails) => {
     for (let i = 0; i < wbTransportRequisitionWbWaDetails.items.length; i++) {
         wbTransportRequisitionWbWaDetails.items[i].wbTransportRequisitionWbWaDetailsId = trans.transform();
         wbTransportRequisitionWbWaDetails.items[i].waId = trans.transform();
 
-        const results = await wbTransportRequisitionWbWaDetailsQueries.insert(wbTransportRequisitionWbWaDetails, wbTransportRequisitionWbWaDetails.items[i]);
-        if (!results) {
-            return constants.insertError;
-        } else {
-            let newQuantity = parseFloat(wbTransportRequisitionWbWaDetails.items[i].quantity)
+        // Get yarn order requisitions details id
+        let yarnOrderRequisitionDetailsWhereCluse = {};
+        yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = wbTransportRequisitionWbWaDetails.items[i].yarnOrderId;
+        yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.yarn_id`] = wbTransportRequisitionWbWaDetails.items[i].yarnId;
+        yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+        yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_active`] = 1;
+        const selectYarnOrderRequisitionDetailsResult = await waYarnOrderRequisitionDetailsService.selectOne(yarnOrderRequisitionDetailsWhereCluse)
+        if (Array.isArray(selectYarnOrderRequisitionDetailsResult) && selectYarnOrderRequisitionDetailsResult.length > 0) {
+            wbTransportRequisitionWbWaDetails.items[i].waYarnOrderRequisitionDetailsId = selectYarnOrderRequisitionDetailsResult[0].id
 
-            // select Wb for decrement current quantity
-            const yarnsStoredInWbResult = await wbService.selectRecordsByIndustryByYarnByYarnLot(
-                wbTransportRequisitionWbWaDetails.industryId,
-                wbTransportRequisitionWbWaDetails.items[i].yarnId,
-                wbTransportRequisitionWbWaDetails.items[i].yarnLotId,
-                wbTransportRequisitionWbWaDetails.items[i].consigmentYarnId)
-            if (yarnsStoredInWbResult[0] != null) {
+            const results = await wbTransportRequisitionWbWaDetailsQueries.insert(wbTransportRequisitionWbWaDetails, wbTransportRequisitionWbWaDetails.items[i]);
+            if (!results) {
+                return constants.insertError;
+            } else {
+                let newQuantity = parseFloat(wbTransportRequisitionWbWaDetails.items[i].quantity)
 
-                for (let j = 0; j < yarnsStoredInWbResult.length; j++) {
-                    const yarnStoredInWb = yarnsStoredInWbResult[j];
-                    let currentQuantity = yarnStoredInWb.current_quantity
-                    let updatedQuantity = 0
+                // select Wb for decrement current quantity
+                const yarnsStoredInWbResult = await wbService.selectRecordsByIndustryByYarnByYarnLot(
+                    wbTransportRequisitionWbWaDetails.industryId,
+                    wbTransportRequisitionWbWaDetails.items[i].yarnId,
+                    wbTransportRequisitionWbWaDetails.items[i].yarnLotId,
+                    wbTransportRequisitionWbWaDetails.items[i].consigmentYarnId,
+                    wbTransportRequisitionWbWaDetails.items[i].yarnOrderId
+                )
+                if (yarnsStoredInWbResult[0] != null) {
 
-                    // decrement Wb CurrentQuantity
-                    let returnedQuantityObj = await wbService.decrementWbCurrentQuantity(newQuantity, currentQuantity, yarnStoredInWb, updatedQuantity);
-                    newQuantity = returnedQuantityObj.newQuantity
-                    updatedQuantity = returnedQuantityObj.updatedQuantity
-                    wbTransportRequisitionWbWaDetails.items[i].wbId = yarnStoredInWb.id
-                    wbTransportRequisitionWbWaDetails.items[i].updatedQuantity = updatedQuantity
+                    for (let j = 0; j < yarnsStoredInWbResult.length; j++) {
+                        const yarnStoredInWb = yarnsStoredInWbResult[j];
+                        let currentQuantity = yarnStoredInWb.current_quantity
+                        let updatedQuantity = 0
 
-                    // Add wb Transport Wb Wa Requisition Details Wb
-                    await wbTransportRequisitionWbWaDetailsWbService.create(wbTransportRequisitionWbWaDetails, wbTransportRequisitionWbWaDetails.items[i])
+                        // decrement Wb CurrentQuantity
+                        let returnedQuantityObj = await wbService.decrementWbCurrentQuantity(newQuantity, currentQuantity, yarnStoredInWb, updatedQuantity);
+                        newQuantity = returnedQuantityObj.newQuantity
+                        updatedQuantity = returnedQuantityObj.updatedQuantity
+                        wbTransportRequisitionWbWaDetails.items[i].wbId = yarnStoredInWb.id
+                        wbTransportRequisitionWbWaDetails.items[i].updatedQuantity = updatedQuantity
 
-                    // Enter to if condition when stock runs out
-                    if (newQuantity == 0) {
-                        break;
+                        // Add wb Transport Wb Wa Requisition Details Wb
+                        await wbTransportRequisitionWbWaDetailsWbService.create(wbTransportRequisitionWbWaDetails, wbTransportRequisitionWbWaDetails.items[i])
+
+                        // update order quantity
+                        await waYarnOrderRequisitionDetailsService.updateForIncrementQuantity(selectYarnOrderRequisitionDetailsResult[0].id, updatedQuantity)
+
+                        // Enter to if condition when stock runs out
+                        if (newQuantity == 0) {
+                            break;
+                        }
+                    }
+                    // Insert WA
+                    await waQueries.insertForTransportRequisitionWbWa(wbTransportRequisitionWbWaDetails, wbTransportRequisitionWbWaDetails.items[i])
+                } else {
+                    return {
+                        ...constants.wrongQuantity,
+                        spentQuantity: 0,
+                        newQuantity: newQuantity
                     }
                 }
-                // Insert WA
-                await waQueries.insertForTransportRequisitionWbWa(wbTransportRequisitionWbWaDetails, wbTransportRequisitionWbWaDetails.items[i])
-            } else {
-                return {
-                    ...constants.wrongQuantity,
-                    spentQuantity: 0,
-                    newQuantity: newQuantity
-                }
             }
+        } else {
 
         }
     }
@@ -161,11 +183,15 @@ exports.update = async (wbTransportRequisitionWbWaDetails) => {
                     isFound[0].industry_id,
                     isFound[0].yarn_id,
                     isFound[0].yarn_lot_id,
-                    isFound[0].consigment_yarn_id
+                    isFound[0].consigment_yarn_id,
+                    isFound[0].wa_yarn_order_requisition_id
                 )
                 if (sumCurrentQuantityWb[0] != null) {
                     const sumCurrentQuantity = sumCurrentQuantityWb[0].current_quantity
                     if (sumCurrentQuantity >= defferenceQuantity) {
+
+                        // update order quantity
+                        await waYarnOrderRequisitionDetailsService.updateForIncrementQuantity(isFound[0].wa_yarn_order_requisition_details_id, defferenceQuantity)
 
                         // Step 2 => Increment quantity in  wb_transport_requisition_wb_wa_details
                         await wbTransportRequisitionWbWaDetailsQueries.update({
@@ -179,7 +205,8 @@ exports.update = async (wbTransportRequisitionWbWaDetails) => {
                             isFound[0].industry_id,
                             isFound[0].yarn_id,
                             isFound[0].yarn_lot_id,
-                            isFound[0].consigment_yarn_id
+                            isFound[0].consigment_yarn_id,
+                            isFound[0].wa_yarn_order_requisition_id
                         )
                         if (wbRecords[0] != null) {
 
@@ -251,6 +278,9 @@ exports.update = async (wbTransportRequisitionWbWaDetails) => {
                 defferenceQuantity = parseFloat((oldQuantity - newQuantity).toFixed(3))
 
                 if (selectOneWaRecord[0].current_quantity >= defferenceQuantity) {
+
+                    // update order quantity
+                    await waYarnOrderRequisitionDetailsService.updateForDecrementQuantity(isFound[0].wa_yarn_order_requisition_details_id, defferenceQuantity)
 
                     // Step 1 => Decrement quantity in  wb_transport_requisition_wb_wa_details
                     await wbTransportRequisitionWbWaDetailsQueries.update({

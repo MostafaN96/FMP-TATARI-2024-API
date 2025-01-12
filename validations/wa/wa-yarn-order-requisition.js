@@ -4,6 +4,7 @@ exports.isValid = (waYarnOrderRequisition) => {
     const waYarnOrderRequisitionSchema = joi.object({
         sellerId: validations.joiText(15, 30),
         orderId: validations.joiText(15, 30),
+        ordersRequisitionsId: validations.joiText(15, 30),
         orderName: validations.joiNotRequiredText(0, 100000),
         date: validations.joiText(5, 50),
         name: validations.joiText(1, 90),

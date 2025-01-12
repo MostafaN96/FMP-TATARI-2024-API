@@ -3,6 +3,8 @@ const validations = require("../../helpers/validations");
 exports.isValid = (wbManufacturingRequisition) => {
     const wbManufacturingRequisitionSchema = joi.object({
         industryId: validations.joiText(15, 30),
+        ordersRequisitionsId: validations.joiText(15, 30),
+        yarnOrderId: validations.joiText(15, 30),
         consigmentManufacturingId: validations.joiNotRequiredText(0, 30),
         circularKnittingMachineId: validations.joiNotRequiredText(0, 100),
         isNewConsigment: validations.joiBoolean,
@@ -23,6 +25,7 @@ exports.isValid = (wbManufacturingRequisition) => {
         personid: validations.joiText(3, 50),
         ipaddress: validations.joiText(3, 50),
         items:joi.array().items({
+            waYarnOrderRequisitionDetailsId: validations.joiText(15, 30),
             yarnId: validations.joiText(15, 30),
             yarnLotId: validations.joiText(15, 30),
             consigmentYarnId: validations.joiText(15, 30),
@@ -53,6 +56,8 @@ exports.isValid = (wbManufacturingRequisition) => {
 exports.isValidOrder = (wbManufacturingRequisition) => {
     const wbManufacturingRequisitionSchema = joi.object({
         industryId: validations.joiText(15, 30),
+        ordersRequisitionsId: validations.joiText(15, 30),
+        yarnOrderId: validations.joiText(15, 30),
         sellerId: validations.joiText(15, 30),
         consigmentManufacturingId: validations.joiNotRequiredText(0, 30),
         circularKnittingMachineId: validations.joiNotRequiredText(0, 100),
@@ -74,6 +79,7 @@ exports.isValidOrder = (wbManufacturingRequisition) => {
         personid: validations.joiText(3, 50),
         ipaddress: validations.joiText(3, 50),
         items:joi.array().items({
+            waYarnOrderRequisitionDetailsId: validations.joiText(15, 30),
             yarnId: validations.joiText(15, 30),
             yarnLotId: validations.joiText(15, 30),
             consigmentYarnId: validations.joiText(15, 30),

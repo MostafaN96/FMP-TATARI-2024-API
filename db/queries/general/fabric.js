@@ -25,7 +25,10 @@ const { fabricTableName, wbTableName, wcTableName,
   wcTransitionBetweenWHRequisitionDetailsTableName, wcTransitionBetweenWHRequisitionTableName, 
   weExecuteOrderRequisitionDetailsTableName,
   weExecuteOrderRequisitionTableName,
-  weReturnSellRequisitionTableName
+  weReturnSellRequisitionTableName,
+  wcAddRequisitionDetailsFabricOrderTableName,
+  wcFabricOrderRequisitionDetailsTableName,
+  wcTransitionBetweenOrdersRequisitionDetailsTableName
 } = require("../../../util/database-tables-name");
 
 exports.insert = async (fabric) => {
@@ -228,7 +231,32 @@ exports.selectManufacturedFabricWb = async (whereCluse, whereInWhereCluse) => {
   return queryResults;
 };
 
-exports.selectStoredFabricsWc = async (whereCluse, wcWhereCluse) => {
+exports.selectFabricsByOrder = async (whereCluse, whereInWhereCluse) => {
+  let queryResults = [];
+  await knex.select([
+    `${fabricTableName}.id`,
+    `${fabricTableName}.name`,
+    `${fabricTableName}.code`,
+    `${fabricTableName}.dyeing_code`,
+  ])
+    .from(`${fabricTableName}`)
+    .whereIn(`${fabricTableName}.id`, function () {
+      this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id`)
+        .from(`${wcFabricOrderRequisitionDetailsTableName}`)
+        .where(whereInWhereCluse)
+        // .andWhere(`${wcFabricOrderRequisitionDetailsTableName}.current_quantity`, `>`, 0);
+    })
+    .andWhere(whereCluse)
+
+    .then((data) => {
+      console.log(data);
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.selectStoredFabricsWc = async (whereCluse, wcWhereCluse, warehouseId) => {
   let queryResults = []
 
   await knex(fabricTableName)
@@ -243,6 +271,9 @@ exports.selectStoredFabricsWc = async (whereCluse, wcWhereCluse) => {
         .innerJoin(`${wcTableName}`,
           `${wcTableName}.wc_add_requisition_details_id`,
           `${wcAddRequisitionDetailsTableName}.id`)
+          .innerJoin(`${wcAddRequisitionDetailsFabricOrderTableName}`,
+            `${wcAddRequisitionDetailsFabricOrderTableName}.wc_add_requisition_details_id`,
+            `${wcAddRequisitionDetailsTableName}.id`)
         .where(`${wcTableName}.current_quantity`, ">", "0")
         .andWhere(wcWhereCluse)
     })
@@ -283,16 +314,16 @@ exports.selectStoredFabricsWc = async (whereCluse, wcWhereCluse) => {
         .andWhere(wcWhereCluse)
     })
     .orWhereIn(`${fabricTableName}.id`, function () {
-      this.select(`${wcExecuteOrderRequisitionDetailsTableName}.fabric_id as id`)
-        .from(`${wcExecuteOrderRequisitionTableName}`)
-        .innerJoin(`${wcExecuteOrderRequisitionDetailsTableName}`,
-          `${wcExecuteOrderRequisitionDetailsTableName}.wc_execute_order_requisition_id`,
-          `${wcExecuteOrderRequisitionTableName}.id`)
+      this.select(`${wcTransitionBetweenWHRequisitionDetailsTableName}.fabric_id as id`)
+        .from(`${wcTransitionBetweenWHRequisitionDetailsTableName}`)
         .innerJoin(`${wcTableName}`,
-          `${wcTableName}.wc_execute_order_requisition_details_id`,
-          `${wcExecuteOrderRequisitionDetailsTableName}.id`)
+          `${wcTableName}.wc_transition_between_wh_requisitions_details_id`,
+          `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`)
+        .innerJoin(`${wcTransitionBetweenWHRequisitionTableName}`,
+          `${wcTransitionBetweenWHRequisitionTableName}.id`,
+          `${wcTransitionBetweenWHRequisitionDetailsTableName}.wc_transition_between_wh_requisitions_id`)
         .where(`${wcTableName}.current_quantity`, ">", "0")
-        .andWhere(wcWhereCluse)
+        .andWhere(`${wcTransitionBetweenWHRequisitionTableName}.to_warehouse_id`, warehouseId)
     })
     .andWhere(whereCluse)
     .groupBy(`${fabricTableName}.id`)
@@ -643,17 +674,17 @@ exports.selectStoredWcFabrics = async (whereCluseArray, isGreaterThanZero = 1) =
           `${fabricTableName}.name`,
           `${fabricTableName}.dyeing_code`,
           `${fabricTableName}.code`,
-          `${wcExecuteOrderRequisitionDetailsTableName}.id as requisition_details_id`,
-          `${wcExecuteOrderRequisitionDetailsTableName}.quantity`,
+          `${wcTransitionBetweenWHRequisitionDetailsTableName}.id as requisition_details_id`,
+          `${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
           `${wcTableName}.current_quantity`
         ])
           .from(`${fabricTableName}`)
-          .innerJoin(`${wcExecuteOrderRequisitionDetailsTableName}`,
-            `${wcExecuteOrderRequisitionDetailsTableName}.fabric_id`,
+          .innerJoin(`${wcTransitionBetweenWHRequisitionDetailsTableName}`,
+            `${wcTransitionBetweenWHRequisitionDetailsTableName}.fabric_id`,
             `${fabricTableName}.id`)
           .innerJoin(`${wcTableName}`,
-            `${wcTableName}.wc_execute_order_requisition_details_id`,
-            `${wcExecuteOrderRequisitionDetailsTableName}.id`)
+            `${wcTableName}.wc_transition_between_wh_requisitions_details_id`,
+            `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`)
           .where(whereCluseArray[4])
           .andWhere(
             (qb) => {
@@ -670,17 +701,17 @@ exports.selectStoredWcFabrics = async (whereCluseArray, isGreaterThanZero = 1) =
           `${fabricTableName}.name`,
           `${fabricTableName}.dyeing_code`,
           `${fabricTableName}.code`,
-          `${wcTransitionBetweenWHRequisitionDetailsTableName}.id as requisition_details_id`,
-          `${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
+          `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.id as requisition_details_id`,
+          `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.quantity`,
           `${wcTableName}.current_quantity`
         ])
           .from(`${fabricTableName}`)
-          .innerJoin(`${wcTransitionBetweenWHRequisitionDetailsTableName}`,
-            `${wcTransitionBetweenWHRequisitionDetailsTableName}.fabric_id`,
+          .innerJoin(`${wcTransitionBetweenOrdersRequisitionDetailsTableName}`,
+            `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.fabric_id`,
             `${fabricTableName}.id`)
           .innerJoin(`${wcTableName}`,
-            `${wcTableName}.wc_transition_between_wh_requisitions_details_id`,
-            `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`)
+            `${wcTableName}.wc_transition_between_orders_requisitions_details_id`,
+            `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.id`)
           .where(whereCluseArray[5])
           .andWhere(
             (qb) => {

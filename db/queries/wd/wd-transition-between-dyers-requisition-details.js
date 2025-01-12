@@ -8,7 +8,8 @@ const wdFormDyeingRequisitionDetailsQueries = require("./wd-form-dyeing-requisit
 // Util
 const { wdTransitionBetweenDyersRequisitionDetailsTableName, 
   wdTransitionBetweenDyersRequisitionTableName, bussinessmanTableName, 
-  fabricTableName, consigmentDyeingTableName, wdTableName, wdFormDyeingRequisitionDetailsWdTableName, wdFormDyeingRequisitionDetailsTableName } = require("../../../util/database-tables-name");
+  fabricTableName, consigmentDyeingTableName, wdTableName, wdFormDyeingRequisitionDetailsWdTableName, wdFormDyeingRequisitionDetailsTableName, 
+  wcFabricOrderRequisitionTableName} = require("../../../util/database-tables-name");
 
 exports.insert = async (wdTransitionBetweenDyersRequisitionDetails, items) => {
   let queryResults = false;
@@ -18,6 +19,9 @@ exports.insert = async (wdTransitionBetweenDyersRequisitionDetails, items) => {
       wd_transition_between_dyers_requisition_id: wdTransitionBetweenDyersRequisitionDetails.id,
       fabric_id: items.fabricId,
       consigment_dyeing_id: items.consigmentDyeingId,
+      wc_fabric_order_requisition_details_id: items.wcFabricOrderRequisitionDetailsId,
+      wc_fabric_order_requisition_id: items.fabricOrderId,
+      orders_requisitions_id: items.ordersRequisitionsId,
       price: items.price,
       price_dollar: items.priceDollar,
       quantity: items.quantity,
@@ -101,6 +105,7 @@ exports.selectOne = async (whereCluse) => {
     `${wdTransitionBetweenDyersRequisitionDetailsTableName}.wd_transition_between_dyers_requisition_id`, 
     `${wdTransitionBetweenDyersRequisitionDetailsTableName}.fabric_id`, 
     `${wdTransitionBetweenDyersRequisitionDetailsTableName}.consigment_dyeing_id`, 
+    `${wdTransitionBetweenDyersRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, 
     `${wdTransitionBetweenDyersRequisitionDetailsTableName}.quantity`, 
     `${wdTransitionBetweenDyersRequisitionTableName}.dyeing_id`, 
     `${wdTableName}.dyeing_id as to_dyeing_id`, 
@@ -319,12 +324,13 @@ exports.selectToDyeingTotalDetailsByFabricIdByDyeingId = async (fabricId, dyeing
   return queryResults;
 };
 
-exports.selectFromDyeingDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId, fabricId, consigmentDyeingId) => {
+exports.selectFromDyeingDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId, fabricId, consigmentDyeingId, fabricOrderId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${wdTransitionBetweenDyersRequisitionTableName}.dyeing_id`] = dyeingId;
   whereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.fabric_id`] = fabricId;
   whereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.consigment_dyeing_id`] = consigmentDyeingId;
+  whereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
   whereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.is_active`] = 1;
 
@@ -369,12 +375,13 @@ exports.selectFromDyeingDetailsByDyeingByFabricByConsigmentDyeing = async (dyein
   return queryResults;
 };
 
-exports.selectToDyeingDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId, fabricId, consigmentDyeingId) => {
+exports.selectToDyeingDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId, fabricId, consigmentDyeingId, fabricOrderId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${wdTableName}.dyeing_id`] = dyeingId;
   whereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.fabric_id`] = fabricId;
   whereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.consigment_dyeing_id`] = consigmentDyeingId;
+  whereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
   whereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.is_active`] = 1;
 
@@ -417,12 +424,13 @@ exports.selectToDyeingDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingI
   return queryResults;
 };
 
-exports.selectFromDyeingDetailsDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId, fabricId, consigmentDyeingId) => {
+exports.selectFromDyeingDetailsDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId, fabricId, consigmentDyeingId, fabricOrderId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${wdTransitionBetweenDyersRequisitionTableName}.dyeing_id`] = dyeingId;
   whereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.fabric_id`] = fabricId;
   whereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.consigment_dyeing_id`] = consigmentDyeingId;
+  whereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
   whereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.is_active`] = 1;
 
@@ -443,6 +451,8 @@ exports.selectFromDyeingDetailsDetailsByDyeingByFabricByConsigmentDyeing = async
         `${fabricTableName}.name as fabric_name`,
         `${fabricTableName}.code as fabric_code`,
         `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+        `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
+        `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
         knex.raw('? as type_of_requisition', 'اذن نقل بين المصابغ'),
         knex.raw('? as input_output', '0'),
         knex.raw(`CONCAT(' اذن نقل من مصبغة ', '(', ${bussinessmanTableName}.name, ')', ' الى مصبغة ', '(', to_dyeing.name, ')') as side_of`),
@@ -451,6 +461,9 @@ exports.selectFromDyeingDetailsDetailsByDyeingByFabricByConsigmentDyeing = async
     .innerJoin(`${wdTransitionBetweenDyersRequisitionTableName}`, 
     `${wdTransitionBetweenDyersRequisitionTableName}.id`, 
     `${wdTransitionBetweenDyersRequisitionDetailsTableName}.wd_transition_between_dyers_requisition_id`)
+    .innerJoin(`${wcFabricOrderRequisitionTableName}`,
+      `${wcFabricOrderRequisitionTableName}.id`,
+      `${wdTransitionBetweenDyersRequisitionDetailsTableName}.wc_fabric_order_requisition_id`)
     .innerJoin(`${wdTableName}`, 
     `${wdTableName}.wd_transition_between_dyers_requisition_details_id`, 
     `${wdTransitionBetweenDyersRequisitionDetailsTableName}.id`)
@@ -467,12 +480,13 @@ exports.selectFromDyeingDetailsDetailsByDyeingByFabricByConsigmentDyeing = async
   return queryResults;
 };
 
-exports.selectToDyeingDetailsDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId, fabricId, consigmentDyeingId) => {
+exports.selectToDyeingDetailsDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId, fabricId, consigmentDyeingId, fabricOrderId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${wdTableName}.dyeing_id`] = dyeingId;
   whereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.fabric_id`] = fabricId;
   whereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.consigment_dyeing_id`] = consigmentDyeingId;
+  whereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
   whereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.is_active`] = 1;
 
@@ -493,6 +507,8 @@ exports.selectToDyeingDetailsDetailsByDyeingByFabricByConsigmentDyeing = async (
         `${fabricTableName}.name as fabric_name`,
         `${fabricTableName}.code as fabric_code`,
         `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+        `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
+        `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
         knex.raw('? as type_of_requisition', 'اذن نقل بين المصابغ'),
         knex.raw('? as input_output', '1'),
         knex.raw(`CONCAT(' اذن نقل من مصنع ', '(', ${bussinessmanTableName}.name, ')', ' الى مصنع ', '(', to_dyeing.name, ')') as side_of`),
@@ -501,6 +517,9 @@ exports.selectToDyeingDetailsDetailsByDyeingByFabricByConsigmentDyeing = async (
     .innerJoin(`${wdTransitionBetweenDyersRequisitionTableName}`, 
     `${wdTransitionBetweenDyersRequisitionTableName}.id`, 
     `${wdTransitionBetweenDyersRequisitionDetailsTableName}.wd_transition_between_dyers_requisition_id`)
+    .innerJoin(`${wcFabricOrderRequisitionTableName}`,
+      `${wcFabricOrderRequisitionTableName}.id`,
+      `${wdTransitionBetweenDyersRequisitionDetailsTableName}.wc_fabric_order_requisition_id`)
     .innerJoin(`${wdTableName}`, 
     `${wdTableName}.wd_transition_between_dyers_requisition_details_id`, 
     `${wdTransitionBetweenDyersRequisitionDetailsTableName}.id`)

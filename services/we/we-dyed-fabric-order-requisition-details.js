@@ -27,15 +27,25 @@ exports.create = async (weDyedFabricOrderRequisitionDetails) => {
 };
 
 exports.createDetails = async (weDyedFabricOrderRequisitionDetails) => {
-    for (let i = 0; i < weDyedFabricOrderRequisitionDetails.items.length; i++) {
-        weDyedFabricOrderRequisitionDetails.items[i].weDyedFabricOrderRequisitionDetailsId = trans.transform();
+    // check is found
+    const isFound = await weDyedFabricOrderRequisitionQueries.selectOne({
+        ...constantsPayloads.deletePayload,
+        id: weDyedFabricOrderRequisitionDetails.id,
+    });
+    if (isFound[0] != null) {
+        weDyedFabricOrderRequisitionDetails.ordersRequisitionsId = isFound[0].orders_requisitions_id
+        for (let i = 0; i < weDyedFabricOrderRequisitionDetails.items.length; i++) {
+            weDyedFabricOrderRequisitionDetails.items[i].weDyedFabricOrderRequisitionDetailsId = trans.transform();
 
-        const results = await weDyedFabricOrderRequisitionDetailsQueries.insert(weDyedFabricOrderRequisitionDetails, weDyedFabricOrderRequisitionDetails.items[i]);
-        if (!results) {
-            return constants.insertError;
+            const results = await weDyedFabricOrderRequisitionDetailsQueries.insert(weDyedFabricOrderRequisitionDetails, weDyedFabricOrderRequisitionDetails.items[i]);
+            if (!results) {
+                return constants.insertError;
+            }
         }
+        return { ...constants.insertSuccess, ...{ id: weDyedFabricOrderRequisitionDetails.id } };
+    } else {
+        return constants.itemNotFound;
     }
-    return { ...constants.insertSuccess, ...{ id: weDyedFabricOrderRequisitionDetails.id } };
 };
 
 exports.selectByRequisitionIdOpenedOrder = async (requisitionId) => {
@@ -53,15 +63,15 @@ exports.selectByRequisitionIdOpenedOrder = async (requisitionId) => {
 
         let results = await weDyedFabricOrderRequisitionDetailsQueries.selectByRequisitionId(whereCluse);
         if (Array.isArray(results) && results.length > 0) {
-            for (let i = 0; i < results.length; i++) {
-                const element = results[i];
-                // console.log("element.id ::: ", element.id);
-                let warehouseDetailsWhereCluse = {};
-                warehouseDetailsWhereCluse[`${weExecuteOrderRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_details_id`] = element.id;
-                element.warehouseDetails = await weDyedFabricOrderRequisitionDetailsQueries.selectWarehouseByRequisitionDetailsId(warehouseDetailsWhereCluse);
-            }
-            results.yarnOrders = await ordersRequisitionsService.selectByDyeingIdForYarnOrder(requisitionId);
-            results.fabricOrders = await ordersRequisitionsService.selectByDyeingIdForFabricOrderWc(requisitionId);    
+            // for (let i = 0; i < results.length; i++) {
+            //     const element = results[i];
+
+            //     let warehouseDetailsWhereCluse = {};
+            //     warehouseDetailsWhereCluse[`we_dyed_fabric_order_requisition_details_id`] = element.id;
+            //     element.warehouseDetails = await weDyedFabricOrderRequisitionDetailsQueries.selectWarehouseByRequisitionDetailsId(warehouseDetailsWhereCluse);
+            // }
+            results.yarnOrders = await ordersRequisitionsService.selectByDyeingIdForYarnOrder(results[0].orders_requisitions_id);            
+            results.fabricOrders = await ordersRequisitionsService.selectByDyeingIdForFabricOrderWc(results[0].orders_requisitions_id);    
         }
 
         return results;
@@ -84,14 +94,14 @@ exports.selectByRequisitionIdClosedOrder = async (requisitionId) => {
         whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_order`] = 0;
 
         let results = await weDyedFabricOrderRequisitionDetailsQueries.selectByRequisitionId(whereCluse);
-        if (Array.isArray(results) && results.length > 0) {
-            for (let i = 0; i < results.length; i++) {
-                const element = results[i];
-                let warehouseDetailsWhereCluse = {};
-                warehouseDetailsWhereCluse[`${weExecuteOrderRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_details_id`] = element.id;
-                element.warehouseDetails = await weDyedFabricOrderRequisitionDetailsQueries.selectWarehouseByRequisitionDetailsId(warehouseDetailsWhereCluse);
-            }
-        }
+        // if (Array.isArray(results) && results.length > 0) {
+        //     for (let i = 0; i < results.length; i++) {
+        //         const element = results[i];
+        //         let warehouseDetailsWhereCluse = {};
+        //         warehouseDetailsWhereCluse[`${weExecuteOrderRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_details_id`] = element.id;
+        //         element.warehouseDetails = await weDyedFabricOrderRequisitionDetailsQueries.selectWarehouseByRequisitionDetailsId(warehouseDetailsWhereCluse);
+        //     }
+        // }
         return results;
     } else {
         return constants.itemNotFound;
@@ -181,6 +191,37 @@ exports.updateIncrementForExecuteOrder = async (objectOrderData) => {
     }
 }
 
+exports.updateForIncrementQuantity = async (weDyedFabricOrderRequisitionDetailsId, newQuantity) => {
+    let weDyedFabricOrderRequisitionDetailsWhereCluse = {}
+    weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.id`] = weDyedFabricOrderRequisitionDetailsId;
+    weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+    weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+    const selectWeDyedFabricOrderRequisitionDetailsQueriesOneResult = await weDyedFabricOrderRequisitionDetailsQueries.selectOne(weDyedFabricOrderRequisitionDetailsWhereCluse)
+    if (Array.isArray(selectWeDyedFabricOrderRequisitionDetailsQueriesOneResult) && selectWeDyedFabricOrderRequisitionDetailsQueriesOneResult.length > 0) {
+        await weDyedFabricOrderRequisitionDetailsQueries.update({
+            current_quantity: selectWeDyedFabricOrderRequisitionDetailsQueriesOneResult[0].current_quantity + parseFloat(newQuantity)
+        }, {
+            id: weDyedFabricOrderRequisitionDetailsId
+        })
+        return true
+    }
+}
+
+exports.updateForDecrementQuantity = async (weDyedFabricOrderRequisitionDetailsId, newQuantity) => {
+    let weDyedFabricOrderRequisitionDetailsWhereCluse = {}
+    weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.id`] = weDyedFabricOrderRequisitionDetailsId;
+    weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+    weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+    const selectWeDyedFabricOrderRequisitionDetailsQueriesOneResult = await weDyedFabricOrderRequisitionDetailsQueries.selectOne(weDyedFabricOrderRequisitionDetailsWhereCluse)
+    if (Array.isArray(selectWeDyedFabricOrderRequisitionDetailsQueriesOneResult) && selectWeDyedFabricOrderRequisitionDetailsQueriesOneResult.length > 0) {
+        await weDyedFabricOrderRequisitionDetailsQueries.update({
+            current_quantity: selectWeDyedFabricOrderRequisitionDetailsQueriesOneResult[0].current_quantity - parseFloat(newQuantity)
+        }, {
+            id: weDyedFabricOrderRequisitionDetailsId
+        })
+        return true
+    }
+}
 
 exports.update = async (weDyedFabricOrderRequisitionDetails) => {
     // Array for Promise

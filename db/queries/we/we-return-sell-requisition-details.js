@@ -22,6 +22,9 @@ exports.insert = async (weReturnSellRequisitionDetails, items) => {
       color_id: items.colorId,
       consigment_dyeing_id: items.consigmentDyeingId,
       grade_item_id: items.gradeItemId,
+      we_dyed_fabric_order_requisition_details_id: items.weDyedFabricOrderRequisitionDetailsId,
+      we_dyed_fabric_order_requisition_id: items.dyedFabricOrderId,
+      orders_requisitions_id: items.ordersRequisitionsId,
       color_code: items.colorCode,
       work_order_number: items.workOrderNumber,
       price: items.price,
@@ -448,6 +451,8 @@ exports.selectOne = async (whereCluse) => {
     .select([
       `${weReturnSellRequisitionDetailsTableName}.we_return_sell_requisition_id`,
       `${weReturnSellRequisitionDetailsTableName}.dyed_fabric_id`,
+      `${weReturnSellRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`,
+      `${weReturnSellRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_details_id`,
       `${weReturnSellRequisitionDetailsTableName}.quantity`
     ])
     .from(`${weReturnSellRequisitionDetailsTableName}`)

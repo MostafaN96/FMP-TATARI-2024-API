@@ -1,5 +1,5 @@
 // Config
-const { consigmentManufacturingTableName } = require("../../../util/database-tables-name");
+const { consigmentManufacturingTableName, wcFabricOrderRequisitionTableName } = require("../../../util/database-tables-name");
 const sqlFun = require("../../config/sql-fun");
 const knex = require("../../config/connection").getConnection();
 
@@ -159,12 +159,13 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
   return queryResults;
 };
 
-exports.selectDetailsByWarehouseByFabricByConsigmentManufacturing = async (warehouseId, fabricId, consigmentManufacturingId) => {
+exports.selectDetailsByWarehouseByFabricByConsigmentManufacturing = async (warehouseId, fabricId, consigmentManufacturingId, fabricOrderId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${wcSellRequisitionTableName}.warehouse_id`] = warehouseId;
   whereCluse[`${wcSellRequisitionDetailsTableName}.fabric_id`] = fabricId;
   whereCluse[`${wcSellRequisitionDetailsTableName}.consigment_manufacturing_id`] = consigmentManufacturingId;
+  whereCluse[`${wcSellRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
   whereCluse[`${wcSellRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${wcSellRequisitionDetailsTableName}.is_active`] = 1;
 
@@ -190,12 +191,13 @@ exports.selectDetailsByWarehouseByFabricByConsigmentManufacturing = async (wareh
   return queryResults;
 };
 
-exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async (warehouseId, fabricId, consigmentManufacturingId) => {
+exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async (warehouseId, fabricId, consigmentManufacturingId, fabricOrderId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${wcSellRequisitionTableName}.warehouse_id`] = warehouseId;
   whereCluse[`${wcSellRequisitionDetailsTableName}.fabric_id`] = fabricId;
   whereCluse[`${wcSellRequisitionDetailsTableName}.consigment_manufacturing_id`] = consigmentManufacturingId;
+  whereCluse[`${wcSellRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
   whereCluse[`${wcSellRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${wcSellRequisitionDetailsTableName}.is_active`] = 1;
 
@@ -213,6 +215,8 @@ exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async
         `${wcSellRequisitionTableName}.number`,
         `${wcSellRequisitionTableName}.date`,
         `${wcSellRequisitionTableName}.note`,
+        `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
+        `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
         `${bussinessmanTableName}.id as bussinessman_id`,
         `${bussinessmanTableName}.name as bussinessman_name`,
         `${fabricTableName}.name as fabric_name`,
@@ -225,6 +229,9 @@ exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async
       ],
     )
     .innerJoin(`${wcSellRequisitionTableName}`, `${wcSellRequisitionTableName}.id`, `${wcSellRequisitionDetailsTableName}.wc_sell_requisition_id`)
+    .innerJoin(`${wcFabricOrderRequisitionTableName}`,
+      `${wcFabricOrderRequisitionTableName}.id`,
+      `${wcSellRequisitionDetailsTableName}.wc_fabric_order_requisition_id`)
     .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${wcSellRequisitionTableName}.seller_id`)
     .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${wcSellRequisitionDetailsTableName}.fabric_id`)
     .innerJoin(`${consigmentManufacturingTableName}`, `${consigmentManufacturingTableName}.id`, `${wcSellRequisitionDetailsTableName}.consigment_manufacturing_id`)

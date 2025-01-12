@@ -79,3 +79,31 @@ exports.inquireYarnsOfFabricForOrderWa = async (request, response) => {
     const results = await waYarnOrderRequisitionService.inquireYarnsOfFabricForOrderWa(id);
     response.status(200).json(results);
   };
+  
+exports.selectByWarehouseWa = async (request, response) => {
+    // logging
+    const { id } = request.params;
+  
+    // call service
+    const results = await waYarnOrderRequisitionService.selectByWarehouseWa(id);
+    response.status(200).json(results);
+  };
+  
+exports.selectByIndustryWb = async (request, response) => {
+    // logging
+    const { id } = request.params;
+  
+    // call service
+    const results = await waYarnOrderRequisitionService.selectByIndustryWb(id);
+    response.status(200).json(results);
+  };
+  
+exports.selectByIndustryByFabricWb = async (request, response) => {
+    // logging
+    const { id } = request.params;
+    const { fabricId } = request.params;
+  
+    // call service
+    const results = await waYarnOrderRequisitionService.selectByIndustryByFabricWb(id, fabricId);
+    response.status(200).json(results);
+  };

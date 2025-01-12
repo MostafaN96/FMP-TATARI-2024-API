@@ -4,6 +4,7 @@ const weSellRequisitionDetailsService = require("./we-sell-requisition-details")
 // Queries
 const weSellRequisitionQueries = require("../../db/queries/we/we-sell-requisition");
 const generalQueries = require("../../db/queries/general/general");
+const deliveryCarQueries = require("../../db/queries/general/delivery-car");
 
 // Util
 const constants = require("../../util/constants");
@@ -27,6 +28,14 @@ exports.create = async (weSellRequisition) => {
     const selectOneResult = await weSellRequisitionQueries.selectOne({ number: weSellRequisition.number });
     if (selectOneResult[0] != null) {
         return constants.duplicatedData;
+    }
+
+    // Check Delivery Car
+    const selectOneDeliveryCarResult = await deliveryCarQueries.selectOne({ id: weSellRequisition.deliveryCarId });
+    if (Array.isArray(selectOneDeliveryCarResult) && selectOneDeliveryCarResult.length > 0) {
+      //
+    } else {
+      weSellRequisition.deliveryCarId = null
     }
 
     const results = await weSellRequisitionQueries.insert(weSellRequisition);

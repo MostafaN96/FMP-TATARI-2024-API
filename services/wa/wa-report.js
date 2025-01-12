@@ -248,40 +248,49 @@ exports.selectInventoryDetails = async (yarnReport) => {
             data.push(warehouseYarnLot)
 
             callArray.push(waAddRequisitionDetailsQueries.selectDetailsByWarehouseByYarnByLot(
-                warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id
+                warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, 
+                warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id,
+                warehouseYarnLot.wa_yarn_order_requisition_id
             ))
             callArray.push(waSellRequisitionDetailsQueries.selectDetailsByWarehouseByYarnByLot(
-                warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id
+                warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, 
+                warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id, 
+                warehouseYarnLot.wa_yarn_order_requisition_id
             ))
             callArray.push(waReturnRequisitionDetailsQueries.selectDetailsByWarehouseByYarnByLot(
-                warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id
+                warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, 
+                warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id,
+                warehouseYarnLot.wa_yarn_order_requisition_id
             ))
             callArray.push(waReconciliationRequisitionDetailsQueries.selectDetailsByWarehouseByYarnByLot(
-                warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id
+                warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, 
+                warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id,
+                warehouseYarnLot.wa_yarn_order_requisition_id
             ))
             callArray.push(wbTransportWaWbDetailsQueries.selectDetailsByWarehouseByYarnByLot(
-                warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id
+                warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, 
+                warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id,
+                warehouseYarnLot.wa_yarn_order_requisition_id
             ))
             callArray.push(wbTransportRequisitionWbWaDetailsQueries.selectDetailsByWarehouseByYarnByLot(
-                warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id
-            ))
-            callArray.push(waExecuteOrderRequisitionDetailsQueries.selectFromWarehouseDetailsByWarehouseByYarnByLot(
-                warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id,
-            ))
-            callArray.push(waExecuteOrderRequisitionDetailsQueries.selectToWarehouseDetailsByWarehouseByYarnByLot(
-                warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id
+                warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, 
+                warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id,
+                warehouseYarnLot.wa_yarn_order_requisition_id
             ))
             callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectFromWarehouseDetailsByWarehouseByYarnByLot(
-                warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id,
+                warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, 
+                warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id,
+                warehouseYarnLot.wa_yarn_order_requisition_id
             ))
             callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectToWarehouseDetailsByWarehouseByYarnByLot(
-                warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id
+                warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, 
+                warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id,
+                warehouseYarnLot.wa_yarn_order_requisition_id
             ))
             const requisitions = await Promise.all(callArray)
             const sortedAsc = [...requisitions[0], ...requisitions[1],
             ...requisitions[2], ...requisitions[3], ...requisitions[4],
-            ...requisitions[5], ...requisitions[6], ...requisitions[7],
-            ...requisitions[8], ...requisitions[9]
+            ...requisitions[5], ...requisitions[6], ...requisitions[7]
         ].sort(
                 (objA, objB) => moment(objA.date) - moment(objB.date)
             );
@@ -293,24 +302,21 @@ exports.selectInventoryDetails = async (yarnReport) => {
     return data;
 };
 
-exports.selectInventoryDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLotId, consigmentYarnId) => {
+exports.selectInventoryDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId) => {
     let callArray = []
 
-    callArray.push(waAddRequisitionDetailsQueries.selectDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId))
-    callArray.push(waSellRequisitionDetailsQueries.selectDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId))
-    callArray.push(waReturnRequisitionDetailsQueries.selectDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId))
-    callArray.push(waReconciliationRequisitionDetailsQueries.selectDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId))
-    callArray.push(wbTransportWaWbDetailsQueries.selectDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId))
-    callArray.push(wbTransportRequisitionWbWaDetailsQueries.selectDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId))
-    callArray.push(waExecuteOrderRequisitionDetailsQueries.selectFromWarehouseDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId))
-    callArray.push(waExecuteOrderRequisitionDetailsQueries.selectToWarehouseDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId))
-    callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectFromWarehouseDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId))
-    callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectToWarehouseDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId))
+    callArray.push(waAddRequisitionDetailsQueries.selectDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId))
+    callArray.push(waSellRequisitionDetailsQueries.selectDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId))
+    callArray.push(waReturnRequisitionDetailsQueries.selectDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId))
+    callArray.push(waReconciliationRequisitionDetailsQueries.selectDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId))
+    callArray.push(wbTransportWaWbDetailsQueries.selectDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId))
+    callArray.push(wbTransportRequisitionWbWaDetailsQueries.selectDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId))
+    callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectFromWarehouseDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId))
+    callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectToWarehouseDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId))
     const requisitions = await Promise.all(callArray)
     const sortedAsc = [...requisitions[0], ...requisitions[1],
     ...requisitions[2], ...requisitions[3], ...requisitions[4],
-    ...requisitions[5], ...requisitions[6], ...requisitions[7],
-    ...requisitions[8], ...requisitions[9]
+    ...requisitions[5], ...requisitions[6], ...requisitions[7]
 ].sort(
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );
@@ -348,7 +354,7 @@ exports.selectPriceWa = async (yarnId, consigmentYarnId) => {
     callArray.push(waReconciliationRequisitionDetailsQueries.selectPriceByYarnId(yarnId))
     callArray.push(wbTransportWaWbDetailsQueries.selectPriceByYarnId(yarnId))
     callArray.push(wbTransportRequisitionWbWaDetailsQueries.selectPriceByYarnId(yarnId))
-    callArray.push(waExecuteOrderRequisitionDetailsQueries.selectToPriceByYarnId(yarnId))
+    callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectToPriceByYarnId(yarnId))
     const requisitions = await Promise.all(callArray)
     const sortedAsc = [...requisitions[0], ...requisitions[1],
     ...requisitions[2], ...requisitions[3], ...requisitions[4],

@@ -4,6 +4,12 @@ const weReconciliationRequisitionQueries = require("../../db/queries/we/we-recon
 const weReconciliationRequisitionDetailsWeQueries = require("../../db/queries/we/we-reconciliation-requisition-details-we");
 const weQueries = require("../../db/queries/we/we");
 const consigmentDyeingQueries = require("../../db/queries/general/consigment-dyeing");
+const weDyedFabricOrderRequisitionDetailsQueries = require("../../db/queries/we/we-dyed-fabric-order-requisition-details");
+
+// Services
+const weService = require("./we");
+const weReconciliationRequisitionDetailsWeService = require("./we-reconciliation-requisition-details-we");
+const weDyedFabricOrderRequisitionDetailsService = require("./we-dyed-fabric-order-requisition-details");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -11,11 +17,11 @@ const trans = require("../../helpers/transform");
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-const { weReconciliationRequisitionDetailsWeTableName, weReconciliationRequisitionDetailsTableName, weTableName } = require("../../util/database-tables-name");
-
-// Services
-const weService = require("./we");
-const weReconciliationRequisitionDetailsWeService = require("./we-reconciliation-requisition-details-we");
+const { weReconciliationRequisitionDetailsWeTableName, 
+    weReconciliationRequisitionDetailsTableName, 
+    weTableName, 
+    weDyedFabricOrderRequisitionDetailsTableName 
+} = require("../../util/database-tables-name");
 
 exports.create = async (weReconciliationRequisitionDetails) => {
     for (let i = 0; i < weReconciliationRequisitionDetails.items.length; i++) {
@@ -29,6 +35,18 @@ exports.create = async (weReconciliationRequisitionDetails) => {
             weReconciliationRequisitionDetails.items[i].consigmentDyeingId = trans.transform();
             await consigmentDyeingQueries.insertForAdd(weReconciliationRequisitionDetails, weReconciliationRequisitionDetails.items[i]);
         }
+
+        // Get we fabric order by order requisition id
+        let weDyedFabricOrderRequisitionDetailsWhereCluse = {};
+        weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+        weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+        // weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_order`] = 1;
+        weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`] = weReconciliationRequisitionDetails.items[i].ordersRequisitionsId;
+        weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.dyed_fabric_id`] = weReconciliationRequisitionDetails.items[i].dyedFabricId;
+
+        const selectWeDyedFabricOrderRequisitionDetailsResult = await weDyedFabricOrderRequisitionDetailsQueries.selectByRequisitionId(weDyedFabricOrderRequisitionDetailsWhereCluse)
+        if (Array.isArray(selectWeDyedFabricOrderRequisitionDetailsResult) && selectWeDyedFabricOrderRequisitionDetailsResult.length > 0) {
+            weReconciliationRequisitionDetails.items[i].weDyedFabricOrderRequisitionDetailsId = selectWeDyedFabricOrderRequisitionDetailsResult[0].id
 
         const results = await weReconciliationRequisitionDetailsQueries.insert(weReconciliationRequisitionDetails, weReconciliationRequisitionDetails.items[i]);
         if (!results) {
@@ -59,6 +77,9 @@ exports.create = async (weReconciliationRequisitionDetails) => {
                         // Add wc fabric Reconciliation Requisition Details wc
                         await weReconciliationRequisitionDetailsWeService.createForOutput(weReconciliationRequisitionDetails, weReconciliationRequisitionDetails.items[i])
 
+                        // update order quantity
+                        await weDyedFabricOrderRequisitionDetailsService.updateForIncrementQuantity(selectWeDyedFabricOrderRequisitionDetailsResult[0].id, updatedQuantity)
+
                         // Enter to if condition when stock runs out
                         if (newQuantity == 0) {
                             break;
@@ -78,12 +99,19 @@ exports.create = async (weReconciliationRequisitionDetails) => {
                 if (weResult) {
                     // Add wc Fabric Reconciliation Requisition Details wc
                     await weReconciliationRequisitionDetailsWeService.createForInput(weReconciliationRequisitionDetails, weReconciliationRequisitionDetails.items[i])
+                
+                    // update order quantity
+                    await weDyedFabricOrderRequisitionDetailsService.updateForDecrementQuantity(selectWeDyedFabricOrderRequisitionDetailsResult[0].id, weReconciliationRequisitionDetails.items[i].quantity)
+
                 } else {
                     return constants.insertError;
                 }
 
             }
         }
+    } else {
+
+    }
     }
     return { ...constants.insertSuccess, ...{ id: weReconciliationRequisitionDetails.id } };
 };
@@ -167,6 +195,9 @@ exports.update = async (weReconciliationRequisitionDetails) => {
                         const sumCurrentQuantity = sumCurrentQuantityWe[0].current_quantity
                         if (sumCurrentQuantity >= defferenceQuantity) {
 
+                        // update order quantity
+                        await weDyedFabricOrderRequisitionDetailsService.updateForIncrementQuantity(isFound[0].we_dyed_fabric_order_requisition_details_id, defferenceQuantity)
+
                             // Step 2 => Increment quantity in  we_reconciliation_requisition_details
                             await weReconciliationRequisitionDetailsQueries.update({
                                 quantity: oldQuantity + defferenceQuantity
@@ -239,6 +270,9 @@ exports.update = async (weReconciliationRequisitionDetails) => {
 
                 } else if (newQuantity < oldQuantity) {
                     defferenceQuantity = parseFloat((oldQuantity - newQuantity).toFixed(3))
+
+                // update order quantity
+                await weDyedFabricOrderRequisitionDetailsService.updateForDecrementQuantity(isFound[0].we_dyed_fabric_order_requisition_details_id, defferenceQuantity)
 
                     // Step 1 => Decrement quantity in  we_reconciliation_requisition_details
                     await weReconciliationRequisitionDetailsQueries.update({
@@ -324,6 +358,9 @@ exports.update = async (weReconciliationRequisitionDetails) => {
                     if (newQuantity > oldQuantity) {
                         defferenceQuantity = parseFloat((newQuantity - oldQuantity).toFixed(3))
 
+                    // update order quantity
+                    await weDyedFabricOrderRequisitionDetailsService.updateForDecrementQuantity(isFound[0].we_dyed_fabric_order_requisition_details_id, defferenceQuantity)
+
                         // increase quantity in  we_reconciliation_requisition_details
                         updateResults = await weReconciliationRequisitionDetailsQueries.update({
                             quantity: oldQuantity + defferenceQuantity
@@ -353,6 +390,9 @@ exports.update = async (weReconciliationRequisitionDetails) => {
                         }
                     } else if (newQuantity < oldQuantity) {
                         defferenceQuantity = parseFloat((oldQuantity - newQuantity).toFixed(3))
+
+                    // update order quantity
+                    await weDyedFabricOrderRequisitionDetailsService.updateForIncrementQuantity(isFound[0].we_dyed_fabric_order_requisition_details_id, defferenceQuantity)
 
                         // Check current quantity in stock (we) can decrease 
                         // select from we to update quantity

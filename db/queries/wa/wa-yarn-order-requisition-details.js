@@ -19,6 +19,7 @@ exports.insert = async (waYarnOrderRequisitionDetails, items) => {
     .insert(waYarnOrderRequisitionDetailsTableName, {
       id: items.waYarnOrderRequisitionDetailsId,
       wa_yarn_order_requisition_id: waYarnOrderRequisitionDetails.id,
+      orders_requisitions_id: waYarnOrderRequisitionDetails.ordersRequisitionsId,
       yarn_id: items.yarnId,
       initial_quantity: items.quantity,
       current_quantity: items.quantity,
@@ -126,7 +127,6 @@ exports.selectOne = async (whereCluse) => {
     .where(whereCluse)
     .limit(1)
     .then((data) => {
-      console.log("data ::: ", data);
       queryResults = data;
     })
     .catch((error) => {

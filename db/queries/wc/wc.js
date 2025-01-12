@@ -3,8 +3,9 @@ const sqlFun = require("../../config/sql-fun");
 const knex = require("../../config/connection").getConnection();
 
 // Util
+const constants = require("../../../util/constants");
 const constantsPayloads = require("../../../util/constants-payloads");
-const { wcTableName, consigmentManufacturingTableName, wcAddRequisitionDetailsTableName, wcAddRequisitionTableName, wcReconciliationRequisitionDetailsWcTableName, wcReconciliationRequisitionDetailsTableName, wcReconciliationRequisitionTableName, wdTransportRequisitionWdWcDetailsTableName, wdTransportRequisitionWdWcTableName, fabricTableName, warehouseTableName, wbManufacturingOutputTableName, wbManufacturingRequisitionTableName, wbManufacturingInputOutputTableName, wcExecuteOrderRequisitionDetailsTableName, wcExecuteOrderRequisitionTableName, wcTransitionBetweenWHRequisitionDetailsTableName, wcTransitionBetweenWHRequisitionTableName } = require("../../../util/database-tables-name");
+const { wcTableName, consigmentManufacturingTableName, wcAddRequisitionDetailsTableName, wcAddRequisitionTableName, wcReconciliationRequisitionDetailsWcTableName, wcReconciliationRequisitionDetailsTableName, wcReconciliationRequisitionTableName, wdTransportRequisitionWdWcDetailsTableName, wdTransportRequisitionWdWcTableName, fabricTableName, warehouseTableName, wbManufacturingOutputTableName, wbManufacturingRequisitionTableName, wbManufacturingInputOutputTableName, wcExecuteOrderRequisitionDetailsTableName, wcExecuteOrderRequisitionTableName, wcTransitionBetweenWHRequisitionDetailsTableName, wcTransitionBetweenWHRequisitionTableName, wcAddRequisitionDetailsFabricOrderTableName, wcFabricOrderRequisitionTableName, wcTransitionBetweenOrdersRequisitionDetailsTableName, wcTransitionBetweenOrdersRequisitionTableName } = require("../../../util/database-tables-name");
 
 exports.insert = async (wc, items, id) => {
   let queryResults = false;
@@ -125,6 +126,26 @@ exports.insertForTransitionBetweenWhRequisition = async (wc, items) => {
   return queryResults;
 };
 
+exports.insertForTransitionBetweenOrdersRequisition = async (wc, items) => {
+  let queryResults = false;
+  await sqlFun
+    .insert(wcTableName, {
+      id: wc.wcId,
+      wc_transition_between_orders_requisitions_details_id: items.wcTransitionBetweenOrdersRequisitionDetailsId,
+      type: constantsPayloads.transportBetweenOrdersType,
+      current_quantity: items.quantity,
+      creator_id: wc.personid,
+      ip_address: wc.ipaddress,
+    })
+    .then((data) => {
+      queryResults = true;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+  return queryResults;
+};
+
 exports.selectOne = async (whereCluse) => {
   let queryResults = false;
   await sqlFun
@@ -173,6 +194,9 @@ exports.selectByFabric = async (whereCluseArray, orderByCluse) => {
       .innerJoin(`${wcAddRequisitionDetailsTableName}`,
         `${wcAddRequisitionDetailsTableName}.id`,
         `${wcTableName}.wc_add_requisition_details_id`)
+        .innerJoin(`${wcAddRequisitionDetailsFabricOrderTableName}`,
+          `${wcAddRequisitionDetailsFabricOrderTableName}.wc_add_requisition_details_id`,
+          `${wcAddRequisitionDetailsTableName}.id`)
       .innerJoin(`${wcAddRequisitionTableName}`,
         `${wcAddRequisitionTableName}.id`,
         `${wcAddRequisitionDetailsTableName}.wc_add_requisition_id`)
@@ -236,22 +260,6 @@ exports.selectByFabric = async (whereCluseArray, orderByCluse) => {
         this.select([
           `${wcTableName}.id`,
           `${wcTableName}.current_quantity`,
-          `${wcExecuteOrderRequisitionDetailsTableName}.quantity`,
-          `${wcExecuteOrderRequisitionTableName}.date`
-        ])
-          .from(`${wcTableName}`)
-          .innerJoin(`${wcExecuteOrderRequisitionDetailsTableName}`,
-            `${wcExecuteOrderRequisitionDetailsTableName}.id`,
-            `${wcTableName}.wc_execute_order_requisition_details_id`)
-            .innerJoin(`${wcExecuteOrderRequisitionTableName}`,
-            `${wcExecuteOrderRequisitionTableName}.id`,
-            `${wcExecuteOrderRequisitionDetailsTableName}.wc_execute_order_requisition_id`)
-          .where(whereCluseArray[5])
-      })
-      .union(function () {
-        this.select([
-          `${wcTableName}.id`,
-          `${wcTableName}.current_quantity`,
           `${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
           `${wcTransitionBetweenWHRequisitionTableName}.date`
         ])
@@ -262,6 +270,22 @@ exports.selectByFabric = async (whereCluseArray, orderByCluse) => {
           .innerJoin(`${wcTransitionBetweenWHRequisitionTableName}`,
             `${wcTransitionBetweenWHRequisitionTableName}.id`,
             `${wcTransitionBetweenWHRequisitionDetailsTableName}.wc_transition_between_wh_requisitions_id`)
+          .where(whereCluseArray[5])
+      })
+      .union(function () {
+        this.select([
+          `${wcTableName}.id`,
+          `${wcTableName}.current_quantity`,
+          `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.quantity`,
+          `${wcTransitionBetweenOrdersRequisitionTableName}.date`
+        ])
+          .from(`${wcTableName}`)
+          .innerJoin(`${wcTransitionBetweenOrdersRequisitionDetailsTableName}`,
+            `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.id`,
+            `${wcTableName}.wc_transition_between_orders_requisitions_details_id`)
+          .innerJoin(`${wcTransitionBetweenOrdersRequisitionTableName}`,
+            `${wcTransitionBetweenOrdersRequisitionTableName}.id`,
+            `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_transition_between_orders_requisitions_id`)
           .where(whereCluseArray[6])
       })
   }).as('temp')
@@ -346,6 +370,9 @@ exports.selectConsigmentManufacturingQuantityByWarehouseByFabricWc = async (wher
       .innerJoin(`${wcAddRequisitionDetailsTableName}`,
         `${wcAddRequisitionDetailsTableName}.id`,
         `${wcTableName}.wc_add_requisition_details_id`)
+      .innerJoin(`${wcAddRequisitionDetailsFabricOrderTableName}`,
+        `${wcAddRequisitionDetailsFabricOrderTableName}.wc_add_requisition_details_id`,
+        `${wcAddRequisitionDetailsTableName}.id`)
       .innerJoin(`${wcAddRequisitionTableName}`,
         `${wcAddRequisitionTableName}.id`,
         `${wcAddRequisitionDetailsTableName}.wc_add_requisition_id`)
@@ -416,24 +443,6 @@ exports.selectConsigmentManufacturingQuantityByWarehouseByFabricWc = async (wher
           `${wcTableName}.current_quantity`,
         ])
           .from(`${wcTableName}`)
-          .innerJoin(`${wcExecuteOrderRequisitionDetailsTableName}`,
-            `${wcExecuteOrderRequisitionDetailsTableName}.id`,
-            `${wcTableName}.wc_execute_order_requisition_details_id`)
-          .innerJoin(`${wcExecuteOrderRequisitionTableName}`,
-            `${wcExecuteOrderRequisitionTableName}.id`,
-            `${wcExecuteOrderRequisitionDetailsTableName}.wc_execute_order_requisition_id`)
-          .innerJoin(`${consigmentManufacturingTableName}`,
-            `${consigmentManufacturingTableName}.id`,
-            `${wcExecuteOrderRequisitionDetailsTableName}.consigment_manufacturing_id`)
-          .where(whereCluseArray[5])
-      })
-      .union(function () {
-        this.select([
-          `${consigmentManufacturingTableName}.id`,
-          `${consigmentManufacturingTableName}.number`,
-          `${wcTableName}.current_quantity`,
-        ])
-          .from(`${wcTableName}`)
           .innerJoin(`${wcTransitionBetweenWHRequisitionDetailsTableName}`,
             `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`,
             `${wcTableName}.wc_transition_between_wh_requisitions_details_id`)
@@ -443,6 +452,24 @@ exports.selectConsigmentManufacturingQuantityByWarehouseByFabricWc = async (wher
           .innerJoin(`${consigmentManufacturingTableName}`,
             `${consigmentManufacturingTableName}.id`,
             `${wcTransitionBetweenWHRequisitionDetailsTableName}.consigment_manufacturing_id`)
+          .where(whereCluseArray[5])
+      })
+      .union(function () {
+        this.select([
+          `${consigmentManufacturingTableName}.id`,
+          `${consigmentManufacturingTableName}.number`,
+          `${wcTableName}.current_quantity`,
+        ])
+          .from(`${wcTableName}`)
+          .innerJoin(`${wcTransitionBetweenOrdersRequisitionDetailsTableName}`,
+            `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.id`,
+            `${wcTableName}.wc_transition_between_orders_requisitions_details_id`)
+          .innerJoin(`${wcTransitionBetweenOrdersRequisitionTableName}`,
+            `${wcTransitionBetweenOrdersRequisitionTableName}.id`,
+            `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_transition_between_orders_requisitions_id`)
+          .innerJoin(`${consigmentManufacturingTableName}`,
+            `${consigmentManufacturingTableName}.id`,
+            `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.from_consigment_manufacturing_id`)
           .where(whereCluseArray[6])
       })
   }).as('temp')
@@ -489,6 +516,8 @@ exports.selectStoredWarehouseAndFabricAndConsigmentManufacturing = async (whereC
     `consigment_manufacturing_number`,
     `warehouse_id`,
     `warehouse_name`,
+    `wc_fabric_order_requisition_id`,
+    `wc_fabric_order_requisition_name`,
     `quantity`
   ]
   await knex.select(columns).from(function () {
@@ -501,10 +530,18 @@ exports.selectStoredWarehouseAndFabricAndConsigmentManufacturing = async (whereC
       `${consigmentManufacturingTableName}.number as consigment_manufacturing_number`,
       `${warehouseTableName}.id as warehouse_id`,
       `${warehouseTableName}.name as warehouse_name`,
+      `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
+      `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
       `${wcAddRequisitionDetailsTableName}.quantity`,
       `${wcTableName}.current_quantity`
     ])
       .from(`${wcAddRequisitionDetailsTableName}`)
+      .innerJoin(`${wcAddRequisitionDetailsFabricOrderTableName}`,
+        `${wcAddRequisitionDetailsFabricOrderTableName}.wc_add_requisition_details_id`,
+        `${wcAddRequisitionDetailsTableName}.id`)
+        .innerJoin(`${wcFabricOrderRequisitionTableName}`,
+          `${wcFabricOrderRequisitionTableName}.id`,
+          `${wcAddRequisitionDetailsFabricOrderTableName}.wc_fabric_order_requisition_id`)
       .innerJoin(`${warehouseTableName}`,
         `${warehouseTableName}.id`,
         `${wcAddRequisitionDetailsTableName}.warehouse_id`)
@@ -537,10 +574,15 @@ exports.selectStoredWarehouseAndFabricAndConsigmentManufacturing = async (whereC
           `${consigmentManufacturingTableName}.number as consigment_manufacturing_number`,
           `${warehouseTableName}.id as warehouse_id`,
           `${warehouseTableName}.name as warehouse_name`,
+          `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
+          `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
           `${wcReconciliationRequisitionDetailsTableName}.quantity`,
           `${wcTableName}.current_quantity`
         ])
           .from(`${wcReconciliationRequisitionDetailsTableName}`)
+          .innerJoin(`${wcFabricOrderRequisitionTableName}`,
+            `${wcFabricOrderRequisitionTableName}.id`,
+            `${wcReconciliationRequisitionDetailsTableName}.wc_fabric_order_requisition_id`)
           .innerJoin(`${wcReconciliationRequisitionTableName}`,
             `${wcReconciliationRequisitionTableName}.id`,
             `${wcReconciliationRequisitionDetailsTableName}.wc_reconcilition_requisition_id`)
@@ -581,10 +623,15 @@ exports.selectStoredWarehouseAndFabricAndConsigmentManufacturing = async (whereC
           `${consigmentManufacturingTableName}.number as consigment_manufacturing_number`,
           `${warehouseTableName}.id as warehouse_id`,
           `${warehouseTableName}.name as warehouse_name`,
+          `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
+          `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
           `${wdTransportRequisitionWdWcDetailsTableName}.quantity`,
           `${wcTableName}.current_quantity`
         ])
           .from(`${wdTransportRequisitionWdWcDetailsTableName}`)
+          .innerJoin(`${wcFabricOrderRequisitionTableName}`,
+            `${wcFabricOrderRequisitionTableName}.id`,
+            `${wdTransportRequisitionWdWcDetailsTableName}.wc_fabric_order_requisition_id`)
           .innerJoin(`${wdTransportRequisitionWdWcTableName}`,
             `${wdTransportRequisitionWdWcTableName}.id`,
             `${wdTransportRequisitionWdWcDetailsTableName}.wd_transport_requisition_wd_wc_id`)
@@ -620,11 +667,16 @@ exports.selectStoredWarehouseAndFabricAndConsigmentManufacturing = async (whereC
           `${consigmentManufacturingTableName}.number as consigment_manufacturing_number`,
           `${warehouseTableName}.id as warehouse_id`,
           `${warehouseTableName}.name as warehouse_name`,
+          `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
+          `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
           `${wbManufacturingOutputTableName}.quantity`,
           `${wcTableName}.current_quantity`
         ])
           .from(`${wbManufacturingOutputTableName}`)
           .distinct()
+          .innerJoin(`${wcFabricOrderRequisitionTableName}`,
+            `${wcFabricOrderRequisitionTableName}.id`,
+            `${wbManufacturingOutputTableName}.wc_fabric_order_requisition_id`)
             .innerJoin(`${warehouseTableName}`,
             `${warehouseTableName}.id`,
             `${wbManufacturingOutputTableName}.warehouse_id`)
@@ -657,25 +709,30 @@ exports.selectStoredWarehouseAndFabricAndConsigmentManufacturing = async (whereC
           `${consigmentManufacturingTableName}.number as consigment_manufacturing_number`,
           `${warehouseTableName}.id as warehouse_id`,
           `${warehouseTableName}.name as warehouse_name`,
-          `${wcExecuteOrderRequisitionDetailsTableName}.quantity`,
+          `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
+          `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
+          `${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
           `${wcTableName}.current_quantity`
         ])
-          .from(`${wcExecuteOrderRequisitionDetailsTableName}`)
-          .innerJoin(`${wcExecuteOrderRequisitionTableName}`,
-            `${wcExecuteOrderRequisitionTableName}.id`,
-            `${wcExecuteOrderRequisitionDetailsTableName}.wc_execute_order_requisition_id`)
+          .from(`${wcTransitionBetweenWHRequisitionDetailsTableName}`)
+          .innerJoin(`${wcFabricOrderRequisitionTableName}`,
+            `${wcFabricOrderRequisitionTableName}.id`,
+            `${wcTransitionBetweenWHRequisitionDetailsTableName}.wc_fabric_order_requisition_id`)
+          .innerJoin(`${wcTransitionBetweenWHRequisitionTableName}`,
+            `${wcTransitionBetweenWHRequisitionTableName}.id`,
+            `${wcTransitionBetweenWHRequisitionDetailsTableName}.wc_transition_between_wh_requisitions_id`)
             .innerJoin(`${warehouseTableName}`,
             `${warehouseTableName}.id`,
-            `${wcExecuteOrderRequisitionTableName}.warehouse_id`)
+            `${wcTransitionBetweenWHRequisitionTableName}.to_warehouse_id`)
           .innerJoin(`${fabricTableName}`,
             `${fabricTableName}.id`,
-            `${wcExecuteOrderRequisitionDetailsTableName}.fabric_id`)
+            `${wcTransitionBetweenWHRequisitionDetailsTableName}.fabric_id`)
             .innerJoin(`${consigmentManufacturingTableName}`,
             `${consigmentManufacturingTableName}.id`,
-            `${wcExecuteOrderRequisitionDetailsTableName}.consigment_manufacturing_id`)
+            `${wcTransitionBetweenWHRequisitionDetailsTableName}.consigment_manufacturing_id`)
           .innerJoin(`${wcTableName}`,
-            `${wcTableName}.wc_execute_order_requisition_details_id`,
-            `${wcExecuteOrderRequisitionDetailsTableName}.id`)
+            `${wcTableName}.wc_transition_between_wh_requisitions_details_id`,
+            `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`)
           .where(whereCluseArray[4])
           .andWhere(
             (qb) => {
@@ -696,26 +753,31 @@ exports.selectStoredWarehouseAndFabricAndConsigmentManufacturing = async (whereC
           `${consigmentManufacturingTableName}.number as consigment_manufacturing_number`,
           `${warehouseTableName}.id as warehouse_id`,
           `${warehouseTableName}.name as warehouse_name`,
-          `${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
+          `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
+          `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
+          `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.quantity`,
           `${wcTableName}.current_quantity`
         ])
-          .from(`${wcTransitionBetweenWHRequisitionDetailsTableName}`)
-          .innerJoin(`${wcTransitionBetweenWHRequisitionTableName}`,
-            `${wcTransitionBetweenWHRequisitionTableName}.id`,
-            `${wcTransitionBetweenWHRequisitionDetailsTableName}.wc_transition_between_wh_requisitions_id`)
+          .from(`${wcTransitionBetweenOrdersRequisitionDetailsTableName}`)
+          .innerJoin(`${wcFabricOrderRequisitionTableName}`,
+            `${wcFabricOrderRequisitionTableName}.id`,
+            `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_fabric_order_requisition_id`)
+          .innerJoin(`${wcTransitionBetweenOrdersRequisitionTableName}`,
+            `${wcTransitionBetweenOrdersRequisitionTableName}.id`,
+            `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_transition_between_orders_requisitions_id`)
             .innerJoin(`${warehouseTableName}`,
             `${warehouseTableName}.id`,
-            `${wcTransitionBetweenWHRequisitionTableName}.to_warehouse_id`)
+            `${wcTransitionBetweenOrdersRequisitionTableName}.warehouse_id`)
           .innerJoin(`${fabricTableName}`,
             `${fabricTableName}.id`,
-            `${wcTransitionBetweenWHRequisitionDetailsTableName}.fabric_id`)
+            `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.fabric_id`)
             .innerJoin(`${consigmentManufacturingTableName}`,
             `${consigmentManufacturingTableName}.id`,
-            `${wcTransitionBetweenWHRequisitionDetailsTableName}.consigment_manufacturing_id`)
+            `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.consigment_manufacturing_id`)
           .innerJoin(`${wcTableName}`,
-            `${wcTableName}.wc_transition_between_wh_requisitions_details_id`,
-            `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`)
-          .where(whereCluseArray[5])
+            `${wcTableName}.wc_transition_between_orders_requisitions_details_id`,
+            `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.id`)
+          .where(whereCluseArray[4])
           .andWhere(
             (qb) => {
               if (isGreaterThanZero) {
@@ -727,7 +789,12 @@ exports.selectStoredWarehouseAndFabricAndConsigmentManufacturing = async (whereC
       })
   }).as('temp')
     .sum(`current_quantity as current_quantity`)
-    .groupBy(`fabric_id`, `consigment_manufacturing_id`, `warehouse_id`)
+    .groupBy(
+      `fabric_id`, 
+      `consigment_manufacturing_id`, 
+      `warehouse_id`,
+      `wc_fabric_order_requisition_id`
+    )
     .then(data => {
       queryResults = data
     })

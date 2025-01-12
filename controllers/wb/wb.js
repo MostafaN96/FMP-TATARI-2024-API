@@ -12,9 +12,15 @@ exports.selectConsigmentYarnQuantityByYarnByIndustryByLotWb = async (request, re
   const { yarnId } = request.params;
   const { industryId } = request.params;
   const { yarnLotId } = request.params;
+  const { yarnOrderId } = request.params;
 
   // call service
-  const results = await wbService.selectConsigmentYarnQuantityByYarnByIndustryByLotWb(yarnId, industryId, yarnLotId);
+  const results = await wbService.selectConsigmentYarnQuantityByYarnByIndustryByLotWb(
+    yarnId, 
+    industryId, 
+    yarnLotId,
+    yarnOrderId
+  );
   response.status(200).json(results);
 };
 
@@ -73,9 +79,10 @@ exports.selectQuantityByIndustryByFabricWb = async (request, response) => {
   // logging
   const { industryId } = request.params;
   const { fabricId } = request.params;
+  const { yarnOrderId } = request.params;
 
   // call service
-  const results = await wbService.selectQuantityByIndustryByFabricWb(industryId, fabricId);
+  const results = await wbService.selectQuantityByIndustryByFabricWb(industryId, fabricId, yarnOrderId);
   response.status(200).json(results);
 };
 

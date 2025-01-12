@@ -79,3 +79,21 @@ exports.inquireFabricsForOrderWc = async (request, response) => {
     const results = await wcFabricOrderRequisitionService.inquireFabricsForOrderWc(id);
     response.status(200).json(results);
   };
+  
+exports.selectByWarehouseWc = async (request, response) => {
+    // logging
+    const { id } = request.params;
+  
+    // call service
+    const results = await wcFabricOrderRequisitionService.selectByWarehouseWc(id);
+    response.status(200).json(results);
+  };
+  
+exports.selectByDyeingWd = async (request, response) => {
+    // logging
+    const { id } = request.params;
+  
+    // call service
+    const results = await wcFabricOrderRequisitionService.selectByDyeingWd(id);
+    response.status(200).json(results);
+  };

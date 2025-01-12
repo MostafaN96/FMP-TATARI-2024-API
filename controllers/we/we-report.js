@@ -75,6 +75,18 @@ exports.salesReport = async (request, response) => {
   response.status(200).json(results);
 };
 
+exports.dyedFabricOrdersReport = async (request, response) => {
+
+  const results = await weReportService.dyedFabricOrdersReport();
+  response.status(200).json(results);
+};
+
+exports.dyedFabricOrdersDetailsReport = async (request, response) => {
+
+  const results = await weReportService.dyedFabricOrdersDetailsReport();
+  response.status(200).json(results);
+};
+
 exports.inquireFabricAvilabilityReportWe = async (request, response) => {
   // logging
   const bodyPalod = request.body;

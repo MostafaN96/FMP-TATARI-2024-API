@@ -30,8 +30,9 @@ exports.selectInventoryTotal = async (request, response) => {
     const { id } = request.params;
     const { warehouseId } = request.params;
     const { consigmentManufacturingId } = request.params;
+    const { fabricOrderId } = request.params;
 
-    const results = await wcReportService.selectInventoryDetailsByWarehouseByFabricByConsigmentManufacturing(id, warehouseId, consigmentManufacturingId);
+    const results = await wcReportService.selectInventoryDetailsByWarehouseByFabricByConsigmentManufacturing(id, warehouseId, consigmentManufacturingId, fabricOrderId);
     response.status(200).json(results);
   };
 

@@ -4,6 +4,8 @@ const validations = require("../../helpers/validations");
 exports.isValid = (wbManufacturingInput) => {
     const wbManufacturingInputSchema = joi.object({
         id: validations.joiText(15, 30),
+        ordersRequisitionsId: validations.joiText(15, 30),
+        yarnOrderId: validations.joiText(15, 30),
         wbManufacturingOutputId: validations.joiText(15, 30),
         industryId: validations.joiText(15, 30),
         fabricId: validations.joiText(15, 30),
@@ -11,6 +13,7 @@ exports.isValid = (wbManufacturingInput) => {
         personid: validations.joiText(3, 50),
         ipaddress: validations.joiText(3, 50),
         items:joi.array().items({
+            waYarnOrderRequisitionDetailsId: validations.joiText(15, 30),
             yarnId: validations.joiText(15, 30),
             yarnLotId: validations.joiText(15, 30),
             consigmentYarnId: validations.joiText(15, 30),

@@ -2,7 +2,7 @@ const yarnLotQueries = require("../../db/queries/general/yarn-lot");
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
 const trans = require("../../helpers/transform");
-const { wbTransportWaWbDetailsTableName, wbTableName, wbReconciliationRequisitionDetailsTableName, wbTransitionBetweenIndustriesRequisitionDetailsTableName, waAddRequisitionDetailsTableName, waTableName, waReconciliationRequisitionTableName, wbTransportRequisitionWbWaTableName, yarnLotTableName, waReconciliationRequisitionDetailsTableName, wbTransportRequisitionWbWaDetailsTableName, waExecuteOrderRequisitionTableName, waExecuteOrderRequisitionDetailsTableName, waTransitionBetweenWHRequisitionTableName, waTransitionBetweenWHRequisitionDetailsTableName } = require("../../util/database-tables-name");
+const { wbTransportWaWbDetailsTableName, wbTableName, wbReconciliationRequisitionDetailsTableName, wbTransitionBetweenIndustriesRequisitionDetailsTableName, waAddRequisitionDetailsTableName, waTableName, waReconciliationRequisitionTableName, wbTransportRequisitionWbWaTableName, yarnLotTableName, waReconciliationRequisitionDetailsTableName, wbTransportRequisitionWbWaDetailsTableName, waExecuteOrderRequisitionTableName, waExecuteOrderRequisitionDetailsTableName, waTransitionBetweenWHRequisitionTableName, waTransitionBetweenWHRequisitionDetailsTableName, waAddRequisitionDetailsYarnOrderTableName } = require("../../util/database-tables-name");
 
 exports.create = async (yarnLot) => {
     yarnLot.id = trans.transform();
@@ -113,7 +113,7 @@ exports.restore = async (bodyPalod) => {
 };
 
 
-exports.selectByWarehouseByYarnWa = async (warehouseId, yarnId) => {
+exports.selectByWarehouseByYarnWa = async (warehouseId, yarnId, yarnOrderId) => {
 
   let whereCluse = {};
   whereCluse[`${yarnLotTableName}.is_deleted`] = 0;
@@ -122,6 +122,7 @@ exports.selectByWarehouseByYarnWa = async (warehouseId, yarnId) => {
     whereCluse[`${waTableName}.is_active`] = 1;
     whereCluse[`${waAddRequisitionDetailsTableName}.warehouse_id`] = warehouseId;
     whereCluse[`${waAddRequisitionDetailsTableName}.yarn_id`] = yarnId;
+    whereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
 
     let reconciliationWhereCluse = {};
     reconciliationWhereCluse[`${yarnLotTableName}.is_deleted`] = 0;
@@ -131,6 +132,7 @@ exports.selectByWarehouseByYarnWa = async (warehouseId, yarnId) => {
     reconciliationWhereCluse[`${waTableName}.type`] = constantsPayloads.reconcilitionType;
     reconciliationWhereCluse[`${waReconciliationRequisitionTableName}.warehouse_id`] = warehouseId;
     reconciliationWhereCluse[`${waReconciliationRequisitionDetailsTableName}.yarn_id`] = yarnId;
+    reconciliationWhereCluse[`${waReconciliationRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
 
     let transportWbWaWhereCluse = {};
     transportWbWaWhereCluse[`${yarnLotTableName}.is_deleted`] = 0;
@@ -140,15 +142,7 @@ exports.selectByWarehouseByYarnWa = async (warehouseId, yarnId) => {
     transportWbWaWhereCluse[`${waTableName}.type`] = constantsPayloads.transportFromBToAType;
     transportWbWaWhereCluse[`${wbTransportRequisitionWbWaTableName}.warehouse_id`] = warehouseId;
     transportWbWaWhereCluse[`${wbTransportRequisitionWbWaDetailsTableName}.yarn_id`] = yarnId;
-
-    let executeOrderWaWhereCluse = {};
-    executeOrderWaWhereCluse[`${yarnLotTableName}.is_deleted`] = 0;
-    executeOrderWaWhereCluse[`${yarnLotTableName}.is_active`] = 1;
-    executeOrderWaWhereCluse[`${waTableName}.is_deleted`] = 0;
-    executeOrderWaWhereCluse[`${waTableName}.is_active`] = 1;
-    executeOrderWaWhereCluse[`${waTableName}.type`] = constantsPayloads.executeOrderType;
-    executeOrderWaWhereCluse[`${waExecuteOrderRequisitionTableName}.warehouse_id`] = warehouseId;
-    executeOrderWaWhereCluse[`${waExecuteOrderRequisitionDetailsTableName}.yarn_id`] = yarnId;
+    transportWbWaWhereCluse[`${wbTransportRequisitionWbWaDetailsTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
 
     let transitionBetweenWhWhereCluse = {};
     transitionBetweenWhWhereCluse[`${yarnLotTableName}.is_deleted`] = 0;
@@ -158,11 +152,12 @@ exports.selectByWarehouseByYarnWa = async (warehouseId, yarnId) => {
     transitionBetweenWhWhereCluse[`${waTableName}.type`] = constantsPayloads.transportBetweenType;
     transitionBetweenWhWhereCluse[`${waTransitionBetweenWHRequisitionTableName}.to_warehouse_id`] = warehouseId;
     transitionBetweenWhWhereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_id`] = yarnId;
+    transitionBetweenWhWhereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
 
     let andWhereCluse = { whereTableName: `current_quantity`, operator: ">", value: "0" }
 
     let whereCluseArray = [whereCluse, reconciliationWhereCluse, andWhereCluse, 
-      transportWbWaWhereCluse, executeOrderWaWhereCluse, transitionBetweenWhWhereCluse]
+      transportWbWaWhereCluse, transitionBetweenWhWhereCluse]
 
 
   const results = await yarnLotQueries.selectByWarehouseByYarnWa(whereCluseArray);
@@ -174,12 +169,13 @@ exports.selectBySupplierByWarehouseByYarnWa = async (supplierId, warehouseId, ya
   return results;
 };
 
-exports.selectByIndustryByYarnWb = async (industryId, yarnId) => {
+exports.selectByIndustryByYarnWb = async (industryId, yarnId, yarnOrderId) => {
 
   let whereCluse = {};
     whereCluse[`${wbTransportWaWbDetailsTableName}.is_deleted`] = 0;
     whereCluse[`${wbTransportWaWbDetailsTableName}.is_active`] = 1;
     whereCluse[`${wbTransportWaWbDetailsTableName}.yarn_id`] = yarnId;
+    whereCluse[`${wbTransportWaWbDetailsTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
     whereCluse[`${wbTableName}.industry_id`] = industryId;
 
     let reconciliationWhereCluse = {};
@@ -188,6 +184,7 @@ exports.selectByIndustryByYarnWb = async (industryId, yarnId) => {
     reconciliationWhereCluse[`${wbTableName}.type`] = constantsPayloads.reconcilitionType;
     reconciliationWhereCluse[`${wbTableName}.industry_id`] = industryId;
     reconciliationWhereCluse[`${wbReconciliationRequisitionDetailsTableName}.yarn_id`] = yarnId;
+    reconciliationWhereCluse[`${wbReconciliationRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
     reconciliationWhereCluse[`${wbReconciliationRequisitionDetailsTableName}.input_output`] = 1;
 
     let transitionBetweenIndustriesWhereCluse = {};
@@ -195,6 +192,7 @@ exports.selectByIndustryByYarnWb = async (industryId, yarnId) => {
     transitionBetweenIndustriesWhereCluse[`${wbTableName}.is_active`] = 1;
     transitionBetweenIndustriesWhereCluse[`${wbTableName}.industry_id`] = industryId;
     transitionBetweenIndustriesWhereCluse[`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.yarn_id`] = yarnId;
+    transitionBetweenIndustriesWhereCluse[`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
 
     let andWhereCluse = { whereTableName: `current_quantity`, operator: ">", value: "0" }
 

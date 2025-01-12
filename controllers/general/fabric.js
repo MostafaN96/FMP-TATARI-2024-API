@@ -122,6 +122,15 @@ exports.selectFabricToBeManufacturedWb = async (request, response) => {
   response.status(200).json(results);
 };
 
+exports.selectFabricsByOrderWc = async (request, response) => {
+  // logging
+  const { orderRequisitionId } = request.params;
+
+  // call service
+  const results = await fabricService.selectFabricsByOrderWc(orderRequisitionId);
+  response.status(200).json(results);
+};
+
 
 exports.selectManufacturedFabricWb = async (request, response) => {
   // logging
@@ -135,9 +144,10 @@ exports.selectManufacturedFabricWb = async (request, response) => {
 exports.selectByWarehouseWc = async (request, response) => {
   // logging
   const { id } = request.params;
+  const { fabricOrderId } = request.params;
 
   // call service
-  const results = await fabricService.selectByWarehouseWc(id);
+  const results = await fabricService.selectByWarehouseWc(id, fabricOrderId);
   response.status(200).json(results);
 };
 

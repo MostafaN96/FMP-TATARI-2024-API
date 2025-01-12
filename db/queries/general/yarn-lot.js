@@ -4,7 +4,7 @@ const knex = require("../../config/connection").getConnection();
 
 // Util
 const constants = require("../../../util/constants");
-const { waAddRequisitionDetailsTableName, waTableName, wbTableName, wbTransportWaWbDetailsTableName, waAddRequisitionTableName, wbReconciliationRequisitionDetailsWbTableName, wbReconciliationRequisitionDetailsTableName, wbTransitionBetweenIndustriesRequisitionDetailsTableName, waReconciliationRequisitionDetailsWaTableName, waReconciliationRequisitionDetailsTableName, wbTransportRequisitionWbWaDetailsTableName, waReconciliationRequisitionTableName, wbTransportRequisitionWbWaTableName, waExecuteOrderRequisitionDetailsTableName, waExecuteOrderRequisitionTableName, waTransitionBetweenWHRequisitionDetailsTableName, waTransitionBetweenWHRequisitionTableName } = require("../../../util/database-tables-name");
+const { waAddRequisitionDetailsTableName, waTableName, wbTableName, wbTransportWaWbDetailsTableName, waAddRequisitionTableName, wbReconciliationRequisitionDetailsWbTableName, wbReconciliationRequisitionDetailsTableName, wbTransitionBetweenIndustriesRequisitionDetailsTableName, waReconciliationRequisitionDetailsWaTableName, waReconciliationRequisitionDetailsTableName, wbTransportRequisitionWbWaDetailsTableName, waReconciliationRequisitionTableName, wbTransportRequisitionWbWaTableName, waExecuteOrderRequisitionDetailsTableName, waExecuteOrderRequisitionTableName, waTransitionBetweenWHRequisitionDetailsTableName, waTransitionBetweenWHRequisitionTableName, waAddRequisitionDetailsYarnOrderTableName } = require("../../../util/database-tables-name");
 const yarnLotTableName = require("../../../util/database-tables-name").yarnLotTableName;
 const yarnTableName = require("../../../util/database-tables-name").yarnTableName;
 
@@ -201,6 +201,9 @@ exports.selectByWarehouseByYarnWa = async (whereCluseArray) => {
       .innerJoin(`${waAddRequisitionDetailsTableName}`,
         `${waAddRequisitionDetailsTableName}.id`,
         `${waTableName}.wa_add_requisition_details_id`)
+        .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`,
+          `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`,
+          `${waAddRequisitionDetailsTableName}.id`)
       .innerJoin(`${yarnLotTableName}`,
         `${yarnLotTableName}.id`,
         `${waAddRequisitionDetailsTableName}.yarn_lot_id`)
@@ -252,24 +255,6 @@ exports.selectByWarehouseByYarnWa = async (whereCluseArray) => {
             `${waTableName}.current_quantity`,
         ])
           .from(`${waTableName}`)
-          .innerJoin(`${waExecuteOrderRequisitionDetailsTableName}`,
-            `${waExecuteOrderRequisitionDetailsTableName}.id`,
-            `${waTableName}.wa_execute_order_requisition_details_id`)
-            .innerJoin(`${waExecuteOrderRequisitionTableName}`,
-              `${waExecuteOrderRequisitionTableName}.id`,
-              `${waExecuteOrderRequisitionDetailsTableName}.wa_execute_order_requisition_id`)
-          .innerJoin(`${yarnLotTableName}`,
-            `${yarnLotTableName}.id`,
-            `${waExecuteOrderRequisitionDetailsTableName}.yarn_lot_id`)
-          .where(whereCluseArray[4])
-     })
-      .union(function () {
-        this.select([
-          `${yarnLotTableName}.id`,
-          `${yarnLotTableName}.code`,
-            `${waTableName}.current_quantity`,
-        ])
-          .from(`${waTableName}`)
           .innerJoin(`${waTransitionBetweenWHRequisitionDetailsTableName}`,
             `${waTransitionBetweenWHRequisitionDetailsTableName}.id`,
             `${waTableName}.wa_transition_between_wh_requisitions_details_id`)
@@ -279,7 +264,7 @@ exports.selectByWarehouseByYarnWa = async (whereCluseArray) => {
           .innerJoin(`${yarnLotTableName}`,
             `${yarnLotTableName}.id`,
             `${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_lot_id`)
-          .where(whereCluseArray[5])
+          .where(whereCluseArray[4])
      })
   }).as('temp')
     .sum(`current_quantity as current_quantity`)

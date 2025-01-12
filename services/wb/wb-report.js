@@ -219,27 +219,27 @@ exports.selectInventoryDetails = async (yarnReport) => {
 
             callArray.push(wbTransportRequisitionWaWbDetailsQueries.selectDetailsByIndustryByYarnByLot(
                 industryYarnLot.manufacturer_id, industryYarnLot.yarn_id, industryYarnLot.yarn_lot_id, 
-                industryYarnLot.consigment_yarn_id
+                industryYarnLot.consigment_yarn_id, industryYarnLot.wa_yarn_order_requisition_id
             ))
             callArray.push(wbTransportRequisitionWbWaDetailsQueries.selectDetailsByIndustryByYarnByLot(
                 industryYarnLot.manufacturer_id, industryYarnLot.yarn_id, industryYarnLot.yarn_lot_id, 
-                industryYarnLot.consigment_yarn_id
+                industryYarnLot.consigment_yarn_id, industryYarnLot.wa_yarn_order_requisition_id
             ))
             callArray.push(wbReconciliationRequisitionDetailsQueries.selectDetailsByIndustryByYarnByLot(
                 industryYarnLot.manufacturer_id, industryYarnLot.yarn_id, industryYarnLot.yarn_lot_id, 
-                industryYarnLot.consigment_yarn_id
+                industryYarnLot.consigment_yarn_id, industryYarnLot.wa_yarn_order_requisition_id
             ))
             callArray.push(wbTransitionBetweenIndustriesRequisitionDetailsQueries.selectFromIndustryDetailsByIndustryByYarnByLot(
                 industryYarnLot.manufacturer_id, industryYarnLot.yarn_id, industryYarnLot.yarn_lot_id, 
-                industryYarnLot.consigment_yarn_id
+                industryYarnLot.consigment_yarn_id, industryYarnLot.wa_yarn_order_requisition_id
             ))
             callArray.push(wbTransitionBetweenIndustriesRequisitionDetailsQueries.selectToIndustryDetailsByIndustryByYarnByLot(
                 industryYarnLot.manufacturer_id, industryYarnLot.yarn_id, industryYarnLot.yarn_lot_id, 
-                industryYarnLot.consigment_yarn_id
+                industryYarnLot.consigment_yarn_id, industryYarnLot.wa_yarn_order_requisition_id
             ))
             callArray.push(wbManufacturingInputQueries.selectDetailsByIndustryByYarnByLot(
                 industryYarnLot.manufacturer_id, industryYarnLot.yarn_id, industryYarnLot.yarn_lot_id, 
-                industryYarnLot.consigment_yarn_id
+                industryYarnLot.consigment_yarn_id, industryYarnLot.wa_yarn_order_requisition_id
             ))
             const requisitions = await Promise.all(callArray)
             const sortedAsc = [...requisitions[0], ...requisitions[1],
@@ -255,15 +255,15 @@ exports.selectInventoryDetails = async (yarnReport) => {
     return data;
 };
 
-exports.selectInventoryDetailsByIndustryByYarnByLot = async (industryId, yarnId, yarnLotId, consigmentYarnId) => {
+exports.selectInventoryDetailsByIndustryByYarnByLot = async (industryId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId) => {
     let callArray = []
 
-    callArray.push(wbTransportRequisitionWaWbDetailsQueries.selectDetailsDetailsByIndustryByYarnByLot(industryId, yarnId, yarnLotId, consigmentYarnId))
-    callArray.push(wbTransportRequisitionWbWaDetailsQueries.selectDetailsDetailsByIndustryByYarnByLot(industryId, yarnId, yarnLotId, consigmentYarnId))
-    callArray.push(wbReconciliationRequisitionDetailsQueries.selectDetailsDetailsByIndustryByYarnByLot(industryId, yarnId, yarnLotId, consigmentYarnId))
-    callArray.push(wbTransitionBetweenIndustriesRequisitionDetailsQueries.selectFromIndustryDetailsDetailsByIndustryByYarnByLot(industryId, yarnId, yarnLotId, consigmentYarnId))
-    callArray.push(wbTransitionBetweenIndustriesRequisitionDetailsQueries.selectToIndustryDetailsDetailsByIndustryByYarnByLot(industryId, yarnId, yarnLotId, consigmentYarnId))
-    callArray.push(wbManufacturingInputQueries.selectDetailsDetailsByIndustryByYarnByLot(industryId, yarnId, yarnLotId, consigmentYarnId))
+    callArray.push(wbTransportRequisitionWaWbDetailsQueries.selectDetailsDetailsByIndustryByYarnByLot(industryId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId))
+    callArray.push(wbTransportRequisitionWbWaDetailsQueries.selectDetailsDetailsByIndustryByYarnByLot(industryId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId))
+    callArray.push(wbReconciliationRequisitionDetailsQueries.selectDetailsDetailsByIndustryByYarnByLot(industryId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId))
+    callArray.push(wbTransitionBetweenIndustriesRequisitionDetailsQueries.selectFromIndustryDetailsDetailsByIndustryByYarnByLot(industryId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId))
+    callArray.push(wbTransitionBetweenIndustriesRequisitionDetailsQueries.selectToIndustryDetailsDetailsByIndustryByYarnByLot(industryId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId))
+    callArray.push(wbManufacturingInputQueries.selectDetailsDetailsByIndustryByYarnByLot(industryId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId))
     const requisitions = await Promise.all(callArray)
     const sortedAsc = [...requisitions[0], ...requisitions[1],
     ...requisitions[2], ...requisitions[3], ...requisitions[4],

@@ -5,6 +5,12 @@ const weSellRequisitionDetailsWeQueries = require("../../db/queries/we/we-sell-r
 const weSellRequisitionDirectDetailsQueries = require("../../db/queries/we/we-sell-requisition-direct-details");
 const weSellRequisitionDirectQueries = require("../../db/queries/we/we-sell-requisition-direct");
 const weQueries = require("../../db/queries/we/we");
+const weDyedFabricOrderRequisitionDetailsQueries = require("../../db/queries/we/we-dyed-fabric-order-requisition-details");
+
+// Services
+const weService = require("./we");
+const weSellRequisitionDetailsWeService = require("./we-sell-requisition-details-we");
+const weDyedFabricOrderRequisitionDetailsService = require("./we-dyed-fabric-order-requisition-details");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -12,55 +18,83 @@ const trans = require("../../helpers/transform");
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-
-// Services
-const weService = require("./we");
-const weSellRequisitionDetailsWeService = require("./we-sell-requisition-details-we");
-const { weSellRequisitionDetailsTableName, weSellRequisitionDetailsWeTableName, weTableName, weAddRequisitionDetailsTableName, weReconciliationRequisitionDetailsTableName, wdDyeingRequisitionDetailsTableName, anointedColorsPricesTableName, weTransitionBetweenWHRequisitionDetailsTableName, weExecuteOrderRequisitionDetailsTableName, weReturnSellRequisitionDetailsTableName, wdDyeingRequisitionTableName, weTransitionBetweenWHRequisitionTableName, weExecuteOrderRequisitionTableName } = require("../../util/database-tables-name");
+const { weSellRequisitionDetailsTableName,
+    weSellRequisitionDetailsWeTableName,
+    weTableName,
+    weAddRequisitionDetailsTableName,
+    weReconciliationRequisitionDetailsTableName,
+    wdDyeingRequisitionDetailsTableName,
+    anointedColorsPricesTableName,
+    weTransitionBetweenWHRequisitionDetailsTableName,
+    weExecuteOrderRequisitionDetailsTableName,
+    weReturnSellRequisitionDetailsTableName,
+    wdDyeingRequisitionTableName,
+    weTransitionBetweenWHRequisitionTableName,
+    weExecuteOrderRequisitionTableName,
+    weDyedFabricOrderRequisitionDetailsTableName
+} = require("../../util/database-tables-name");
 
 exports.create = async (weSellRequisitionDetails) => {
     for (let i = 0; i < weSellRequisitionDetails.items.length; i++) {
         weSellRequisitionDetails.items[i].weSellRequisitionDetailsId = trans.transform();
 
-        const results = await weSellRequisitionDetailsQueries.insert(weSellRequisitionDetails, weSellRequisitionDetails.items[i]);
-        if (!results) {
-            return constants.insertError;
-        } else {
-            let newQuantity = parseFloat(weSellRequisitionDetails.items[i].quantity)
+        // Get we fabric order by order requisition id
+        let weDyedFabricOrderRequisitionDetailsWhereCluse = {};
+        weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+        weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+        // weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_order`] = 1;
+        weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`] = weSellRequisitionDetails.items[i].ordersRequisitionsId;
+        weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.dyed_fabric_id`] = weSellRequisitionDetails.items[i].dyedFabricId;
 
-            // select we for decrement current quantity
-            let weWhereCluse = {}
-            weWhereCluse[`${weTableName}.id`] = weSellRequisitionDetails.items[i].weId
-            const fabricsStoredInWeResult = await weQueries.selectOne(weWhereCluse)
-            if (fabricsStoredInWeResult[0] != null) {
+        const selectWeDyedFabricOrderRequisitionDetailsResult = await weDyedFabricOrderRequisitionDetailsQueries.selectByRequisitionId(weDyedFabricOrderRequisitionDetailsWhereCluse)
+        if (Array.isArray(selectWeDyedFabricOrderRequisitionDetailsResult) && selectWeDyedFabricOrderRequisitionDetailsResult.length > 0) {
+            weSellRequisitionDetails.items[i].weDyedFabricOrderRequisitionDetailsId = selectWeDyedFabricOrderRequisitionDetailsResult[0].id
 
-                for (let j = 0; j < fabricsStoredInWeResult.length; j++) {
-                    const fabricStoredInWe = fabricsStoredInWeResult[j];
-                    let currentQuantity = fabricStoredInWe.current_quantity
-                    let updatedQuantity = 0
+            const results = await weSellRequisitionDetailsQueries.insert(weSellRequisitionDetails, weSellRequisitionDetails.items[i]);
+            if (!results) {
+                return constants.insertError;
+            } else {
+                let newQuantity = parseFloat(weSellRequisitionDetails.items[i].quantity)
 
-                    // decrement we fabric CurrentQuantity
-                    let returnedQuantityObj = await weService.decrementWeCurrentQuantity(newQuantity, currentQuantity, fabricStoredInWe, updatedQuantity);
-                    newQuantity = returnedQuantityObj.newQuantity
-                    updatedQuantity = returnedQuantityObj.updatedQuantity
-                    weSellRequisitionDetails.items[i].weId = fabricStoredInWe.id
-                    weSellRequisitionDetails.items[i].updatedQuantity = updatedQuantity
+                // select we for decrement current quantity
+                let weWhereCluse = {}
+                weWhereCluse[`${weTableName}.id`] = weSellRequisitionDetails.items[i].weId
+                const fabricsStoredInWeResult = await weQueries.selectOne(weWhereCluse)
+                if (fabricsStoredInWeResult[0] != null) {
 
-                    // Add we Sell Requisition Details we
-                    await weSellRequisitionDetailsWeService.create(weSellRequisitionDetails, weSellRequisitionDetails.items[i])
+                    for (let j = 0; j < fabricsStoredInWeResult.length; j++) {
+                        const fabricStoredInWe = fabricsStoredInWeResult[j];
+                        let currentQuantity = fabricStoredInWe.current_quantity
+                        let updatedQuantity = 0
 
-                    // Enter to if condition when stock runs out
-                    if (newQuantity == 0) {
-                        break;
+                        // decrement we fabric CurrentQuantity
+                        let returnedQuantityObj = await weService.decrementWeCurrentQuantity(newQuantity, currentQuantity, fabricStoredInWe, updatedQuantity);
+                        newQuantity = returnedQuantityObj.newQuantity
+                        updatedQuantity = returnedQuantityObj.updatedQuantity
+                        weSellRequisitionDetails.items[i].weId = fabricStoredInWe.id
+                        weSellRequisitionDetails.items[i].updatedQuantity = updatedQuantity
+
+                        // Add we Sell Requisition Details we
+                        await weSellRequisitionDetailsWeService.create(weSellRequisitionDetails, weSellRequisitionDetails.items[i])
+
+                        // update order quantity
+                        await weDyedFabricOrderRequisitionDetailsService.updateForDecrementQuantity(selectWeDyedFabricOrderRequisitionDetailsResult[0].id, updatedQuantity)
+
+                        // Enter to if condition when stock runs out
+                        if (newQuantity == 0) {
+                            break;
+                        }
+                    }
+                } else {
+                    return {
+                        ...constants.wrongQuantity,
+                        spentQuantity: 0,
+                        newQuantity: newQuantity
                     }
                 }
-            } else {
-                return {
-                    ...constants.wrongQuantity,
-                    spentQuantity: 0,
-                    newQuantity: newQuantity
-                }
+
             }
+        } else {
 
         }
     }
@@ -86,7 +120,7 @@ exports.createForConfirmDirect = async (weSellRequisitionDetails) => {
             whereCluse[`${weAddRequisitionDetailsTableName}.color_id`] = weSellRequisitionDetails.items[i].colorId;
             whereCluse[`${weTableName}.is_deleted`] = 0;
             whereCluse[`${weTableName}.is_active`] = 1;
-        
+
             let reconciliationWhereCluse = {};
             reconciliationWhereCluse[`${weTableName}.is_deleted`] = 0;
             reconciliationWhereCluse[`${weTableName}.is_active`] = 1;
@@ -96,7 +130,7 @@ exports.createForConfirmDirect = async (weSellRequisitionDetails) => {
             reconciliationWhereCluse[`${weReconciliationRequisitionDetailsTableName}.work_order_number`] = weSellRequisitionDetails.items[i].workOrderNumber;
             reconciliationWhereCluse[`${weReconciliationRequisitionDetailsTableName}.color_id`] = weSellRequisitionDetails.items[i].colorId;
             reconciliationWhereCluse[`${weReconciliationRequisitionDetailsTableName}.input_output`] = 1;
-        
+
             let dyeingWhereCluse = {};
             dyeingWhereCluse[`${wdDyeingRequisitionTableName}.warehouse_id`] = weSellRequisitionDetails.items[i].warehouseId;
             dyeingWhereCluse[`${wdDyeingRequisitionDetailsTableName}.dyed_fabric_id`] = weSellRequisitionDetails.items[i].dyedFabricId;
@@ -105,7 +139,7 @@ exports.createForConfirmDirect = async (weSellRequisitionDetails) => {
             dyeingWhereCluse[`${weTableName}.is_deleted`] = 0;
             dyeingWhereCluse[`${weTableName}.is_active`] = 1;
             dyeingWhereCluse[`${weTableName}.type`] = constantsPayloads.dyeingType;
-        
+
             let transitionBetweenWhWhereCluse = {};
             transitionBetweenWhWhereCluse[`${weTransitionBetweenWHRequisitionTableName}.to_warehouse_id`] = weSellRequisitionDetails.items[i].warehouseId;
             transitionBetweenWhWhereCluse[`${weTransitionBetweenWHRequisitionDetailsTableName}.dyed_fabric_id`] = weSellRequisitionDetails.items[i].dyedFabricId;
@@ -121,7 +155,7 @@ exports.createForConfirmDirect = async (weSellRequisitionDetails) => {
             executeOrderWhereCluse[`${weExecuteOrderRequisitionDetailsTableName}.color_id`] = weSellRequisitionDetails.items[i].colorId;
             executeOrderWhereCluse[`${weTableName}.is_deleted`] = 0;
             executeOrderWhereCluse[`${weTableName}.is_active`] = 1;
-        
+
             let returnSellWhereCluse = {};
             returnSellWhereCluse[`${weReturnSellRequisitionDetailsTableName}.warehouse_id`] = weSellRequisitionDetails.items[i].warehouseId;
             returnSellWhereCluse[`${weReturnSellRequisitionDetailsTableName}.dyed_fabric_id`] = weSellRequisitionDetails.items[i].dyedFabricId;
@@ -130,13 +164,13 @@ exports.createForConfirmDirect = async (weSellRequisitionDetails) => {
             returnSellWhereCluse[`${weTableName}.is_deleted`] = 0;
             returnSellWhereCluse[`${weTableName}.is_active`] = 1;
 
-            let andWhereCluse = {whereTableName: `current_quantity`, operator: ">", value: "0"}
+            let andWhereCluse = { whereTableName: `current_quantity`, operator: ">", value: "0" }
             let whereCluseArray = [
-                whereCluse, reconciliationWhereCluse, andWhereCluse, 
+                whereCluse, reconciliationWhereCluse, andWhereCluse,
                 dyeingWhereCluse, transitionBetweenWhWhereCluse, executeOrderWhereCluse,
                 returnSellWhereCluse
             ]
-            let orderByCluse = {attributeName: `date`, value: "desc"}
+            let orderByCluse = { attributeName: `date`, value: "desc" }
 
             // let weWhereCluse = {}
             // weWhereCluse[`${weTableName}.id`] = weSellRequisitionDetails.items[i].weId
@@ -269,6 +303,9 @@ exports.update = async (weSellRequisitionDetails) => {
                     const currentQuantityWe = selectCurrentQuantityWe[0].current_quantity
                     if (currentQuantityWe >= defferenceQuantity) {
 
+                        // update order quantity
+                        await weDyedFabricOrderRequisitionDetailsService.updateForDecrementQuantity(isFound[0].we_dyed_fabric_order_requisition_details_id, defferenceQuantity)
+
                         // Step 2 => Increment quantity in  we_sell_requisition_details
                         await weSellRequisitionDetailsQueries.update({
                             quantity: oldQuantity + defferenceQuantity,
@@ -345,6 +382,10 @@ exports.update = async (weSellRequisitionDetails) => {
                 defferenceQuantity = parseFloat((oldQuantity - newQuantity).toFixed(3))
 
                 if (sellCurrentQuantity >= defferenceQuantity) {
+
+                    // update order quantity
+                    await weDyedFabricOrderRequisitionDetailsService.updateForIncrementQuantity(isFound[0].we_dyed_fabric_order_requisition_details_id, defferenceQuantity)
+
                     // Step 1 => Decrement quantity in  we_sell_requisition_details
                     await weSellRequisitionDetailsQueries.update({
                         quantity: oldQuantity - defferenceQuantity,

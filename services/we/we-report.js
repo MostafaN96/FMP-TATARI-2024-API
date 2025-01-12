@@ -276,13 +276,6 @@ exports.selectInventoryDetails = async (fabricReport) => {
     transitionBetweenToWHWhereCluse[`${weTableName}.is_active`] = 1;
     transitionBetweenToWHWhereCluse[`${weTableName}.type`] = constantsPayloads.transportBetweenType;
 
-    let executeOrderWhereCluse = {};
-    executeOrderWhereCluse[`${fabricTableName}.is_deleted`] = 0;
-    executeOrderWhereCluse[`${fabricTableName}.is_active`] = 1;
-    executeOrderWhereCluse[`${weTableName}.is_deleted`] = 0;
-    executeOrderWhereCluse[`${weTableName}.is_active`] = 1;
-    executeOrderWhereCluse[`${weTableName}.type`] = constantsPayloads.executeOrderType;
-
     let whereCluseArray = [fabricWhereCluse, reconciliationWhereCluse, dyeingWhereCluse, 
         returnSellWhereCluse, transitionBetweenToWHWhereCluse, executeOrderWhereCluse
     ]
@@ -660,6 +653,26 @@ exports.dyedFabricReportByOrderBySeller = async (orderId, sellerId) => {
 exports.salesReport = async () => {
 
     const salesReportResult = await weReportQueries.salesReport()
+    return salesReportResult
+};
+
+exports.dyedFabricOrdersReport = async () => {
+    
+    let whereCluse = {};
+    whereCluse[`we_dyed_fabric_order_requisition_is_order`] = 1;
+    whereCluse[`we_dyed_fabric_order_requisition_details_is_order`] = 1;
+
+    const salesReportResult = await weReportQueries.dyedFabricOrdersReport(whereCluse)
+    return salesReportResult
+};
+
+exports.dyedFabricOrdersDetailsReport = async () => {
+    
+    let whereCluse = {};
+    whereCluse[`we_dyed_fabric_order_requisition_is_order`] = 1;
+    whereCluse[`we_dyed_fabric_order_requisition_details_is_order`] = 1;
+
+    const salesReportResult = await weReportQueries.dyedFabricOrdersDetailsReport(whereCluse)
     return salesReportResult
 };
 

@@ -24,16 +24,8 @@ exports.create = async (waYarnOrderRequisitionDetails) => {
             return constants.insertError;
         }
     }
-    if (waYarnOrderRequisitionDetails.orderId != "") {
-        // let ordersRequisitionsWhereCluse = {}
-        // ordersRequisitionsWhereCluse[`${ordersRequisitionsTableName}.we_dyed_fabric_order_requisition_id`] = waYarnOrderRequisitionDetails.orderId;
-        // await ordersRequisitionsQueries.update({
-        //     wa_yarn_order_requisition_id: waYarnOrderRequisitionDetails.id
-        // }, ordersRequisitionsWhereCluse)
-        await ordersRequisitionsQueries.insertForYarnOrder(waYarnOrderRequisitionDetails)
 
-    }
-    // create raw fabric order
+    // create raw fabric order (wc)
     await wcFabricOrderRequisitionDetailsService.createOrderWithYarnOrder(waYarnOrderRequisitionDetails)
 
     return { ...constants.insertSuccess, ...{ id: waYarnOrderRequisitionDetails.id } };
@@ -105,6 +97,11 @@ exports.selectByRequisitionIdClosedOrder = async (requisitionId) => {
     } else {
         return constants.itemNotFound;
     }
+};
+
+exports.selectOne = async (whereCluse) => {
+    const results = await waYarnOrderRequisitionDetailsQueries.selectOne(whereCluse);
+    return results;
 };
 
 exports.closeOrder = async (waYarnOrderRequisitionDetailsId) => {
@@ -186,6 +183,37 @@ exports.updateIncrementForExecuteOrder = async (objectOrderData) => {
             current_quantity: selectWaYarnOrderRequisitionDetailsQueriesOneResult[0].current_quantity + parseFloat(objectOrderData.quantity)
         }, {
             id: objectOrderData.waYarnOrderRequisitionDetailsId
+        })
+        return true
+    }
+}
+
+exports.updateForIncrementQuantity = async (waYarnOrderRequisitionDetailsId, newQuantity) => {
+    let waYarnOrderRequisitionDetailsWhereCluse = {}
+    waYarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.id`] = waYarnOrderRequisitionDetailsId;
+    waYarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+    waYarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_active`] = 1;
+    const selectWaYarnOrderRequisitionDetailsQueriesOneResult = await waYarnOrderRequisitionDetailsQueries.selectOne(waYarnOrderRequisitionDetailsWhereCluse)
+    if (Array.isArray(selectWaYarnOrderRequisitionDetailsQueriesOneResult) && selectWaYarnOrderRequisitionDetailsQueriesOneResult.length > 0) {
+        await waYarnOrderRequisitionDetailsQueries.update({
+            current_quantity: selectWaYarnOrderRequisitionDetailsQueriesOneResult[0].current_quantity + parseFloat(newQuantity)
+        }, {
+            id: waYarnOrderRequisitionDetailsId
+        })
+        return true
+    }
+}
+exports.updateForDecrementQuantity = async (waYarnOrderRequisitionDetailsId, newQuantity) => {
+    let waYarnOrderRequisitionDetailsWhereCluse = {}
+    waYarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.id`] = waYarnOrderRequisitionDetailsId;
+    waYarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+    waYarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_active`] = 1;
+    const selectWaYarnOrderRequisitionDetailsQueriesOneResult = await waYarnOrderRequisitionDetailsQueries.selectOne(waYarnOrderRequisitionDetailsWhereCluse)
+    if (Array.isArray(selectWaYarnOrderRequisitionDetailsQueriesOneResult) && selectWaYarnOrderRequisitionDetailsQueriesOneResult.length > 0) {
+        await waYarnOrderRequisitionDetailsQueries.update({
+            current_quantity: selectWaYarnOrderRequisitionDetailsQueriesOneResult[0].current_quantity - parseFloat(newQuantity)
+        }, {
+            id: waYarnOrderRequisitionDetailsId
         })
         return true
     }

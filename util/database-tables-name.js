@@ -115,6 +115,12 @@ const wcTransitionBetweenWHRequisitionTableName = 'wc_transition_between_wh_requ
 const wcTransitionBetweenWHRequisitionDetailsTableName = 'wc_transition_between_wh_requisitions_details'
 const wcTransitionBetweenWHRequisitionDetailsWcTableName = 'wc_transition_between_wh_req_details_wc'
 
+const wcTransitionBetweenOrdersRequisitionTableName = 'wc_transition_between_orders_requisitions'
+const wcTransitionBetweenOrdersRequisitionDetailsTableName = 'wc_transition_between_orders_requisitions_details'
+const wcTransitionBetweenOrdersRequisitionDetailsWcTableName = 'wc_transition_between_orders_req_details_wc'
+
+const wcAddRequisitionDetailsFabricOrderTableName = 'wc_add_requisition_details_fabric_order'
+
 const wdTableName = 'wd'
 const wdTransportWcWdTableName = 'wd_transport_wc_wd'
 const wdTransportWcWdDetailsTableName = 'wd_transport_wc_wd_details'
@@ -149,6 +155,7 @@ const wdFormOrderDetailsWdFormDetailsTableName = 'wd_form_order_details_wd_form_
 const weTableName = 'we'
 const weAddRequisitionTableName = 'we_add_requisition'
 const weAddRequisitionDetailsTableName = 'we_add_requisition_details'
+const weAddRequisitionDetailsDyedFabricOrderTableName = 'we_add_requisition_details_dyed_fabric_order'
 
 const weSellRequisitionTableName = 'we_sell_requisition'
 const weSellRequisitionDetailsTableName = 'we_sell_requisition_details'
@@ -294,6 +301,12 @@ module.exports = {
     wcTransitionBetweenWHRequisitionDetailsTableName,
     wcTransitionBetweenWHRequisitionDetailsWcTableName,
 
+    wcTransitionBetweenOrdersRequisitionTableName,
+    wcTransitionBetweenOrdersRequisitionDetailsTableName,
+    wcTransitionBetweenOrdersRequisitionDetailsWcTableName,
+    
+    wcAddRequisitionDetailsFabricOrderTableName,
+
     wdTableName,
     wdTransportWcWdTableName,
     wdTransportWcWdDetailsTableName,
@@ -320,6 +333,7 @@ module.exports = {
     weTableName,
     weAddRequisitionTableName,
     weAddRequisitionDetailsTableName,
+    weAddRequisitionDetailsDyedFabricOrderTableName,
     
     weSellRequisitionTableName,
     weSellRequisitionDetailsTableName,

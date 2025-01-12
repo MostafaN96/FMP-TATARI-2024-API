@@ -6,6 +6,8 @@ exports.isValid = (wcTransitionBetweenWHRequisitionDetails) => {
         personid: validations.joiText(1, 50),
         ipaddress: validations.joiText(3, 50),
         items: joi.array().items({
+            ordersRequisitionsId: validations.joiText(15, 30),
+            fabricOrderId: validations.joiText(15, 30),
             fromWarehouseId: validations.joiText(15, 30),
             fabricId: validations.joiText(15, 30),
             consigmentManufacturingId: validations.joiNotRequiredText(0, 10000),

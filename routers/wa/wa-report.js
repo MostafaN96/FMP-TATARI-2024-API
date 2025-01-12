@@ -18,7 +18,7 @@ router.get(
 
 // Get Queries
 router.get(
-  "/select-inventory-details-by-warehouse-by-yarn-by-lot/:id/:yarnId/:yarnLotId/:consigmentYarnId",
+  "/select-inventory-details-by-warehouse-by-yarn-by-lot/:id/:yarnId/:yarnLotId/:consigmentYarnId/:yarnOrderId",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   middleWeres.checkInt(),

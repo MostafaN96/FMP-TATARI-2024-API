@@ -4,23 +4,38 @@ const wdTransitionBetweenDyersRequisitionDetailsQueries = require("../../db/quer
 const wdTransitionBetweenDyersRequisitionQueries = require("../../db/queries/wd/wd-transition-between-dyers-requisition");
 const wdQueries = require("../../db/queries/wd/wd");
 
+// Services
+const wdTransitionBetweenDyersRequisitionDetailsWdService = require("./wd-transition-between-dyers-requisition-details-wd");
+const wdService = require("./wd");
+const wcFabricOrderRequisitionDetailsService = require("../wc/wc-fabric-order-requisition-details");
+
 // Helper
 const trans = require("../../helpers/transform");
 
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-
-// Services
-const wdTransitionBetweenDyersRequisitionDetailsWdService = require("./wd-transition-between-dyers-requisition-details-wd");
-const wdService = require("./wd");
-const { wdTransitionBetweenDyersRequisitionDetailsTableName, wdTransitionBetweenDyersRequisitionDetailsWdTableName } = require("../../util/database-tables-name");
+const { 
+    wdTransitionBetweenDyersRequisitionDetailsTableName, 
+    wdTransitionBetweenDyersRequisitionDetailsWdTableName, 
+    wcFabricOrderRequisitionDetailsTableName 
+} = require("../../util/database-tables-name");
 
 exports.create = async (wdTransitionBetweenDyersRequisitionDetails) => {
 
     for (let i = 0; i < wdTransitionBetweenDyersRequisitionDetails.items.length; i++) {
         wdTransitionBetweenDyersRequisitionDetails.wdId = trans.transform();
         wdTransitionBetweenDyersRequisitionDetails.items[i].wdTransitionBetweenDyersRequisitionDetailsId = trans.transform();
+
+        // Get fabric order requisitions details id
+        let fabricOrderRequisitionDetailsWhereCluse = {};
+        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = wdTransitionBetweenDyersRequisitionDetails.items[i].fabricOrderId;
+        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.fabric_id`] = wdTransitionBetweenDyersRequisitionDetails.items[i].fabricId;
+        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+        const selectFabricOrderRequisitionDetailsResult = await wcFabricOrderRequisitionDetailsService.selectOne(fabricOrderRequisitionDetailsWhereCluse)
+        if (Array.isArray(selectFabricOrderRequisitionDetailsResult) && selectFabricOrderRequisitionDetailsResult.length > 0) {
+            wdTransitionBetweenDyersRequisitionDetails.items[i].wcFabricOrderRequisitionDetailsId = selectFabricOrderRequisitionDetailsResult[0].id
 
         const results = await wdTransitionBetweenDyersRequisitionDetailsQueries.insert(wdTransitionBetweenDyersRequisitionDetails, wdTransitionBetweenDyersRequisitionDetails.items[i]);
         if (!results) {
@@ -32,7 +47,9 @@ exports.create = async (wdTransitionBetweenDyersRequisitionDetails) => {
             const fabricsStoredInWdResult = await wdService.selectRecordsByDyeingByFabricByConsigmentDyeing(
                 wdTransitionBetweenDyersRequisitionDetails.fromDyeingId,
                 wdTransitionBetweenDyersRequisitionDetails.items[i].fabricId,
-                wdTransitionBetweenDyersRequisitionDetails.items[i].consigmentDyeingId)
+                wdTransitionBetweenDyersRequisitionDetails.items[i].consigmentDyeingId,
+                wdTransitionBetweenDyersRequisitionDetails.items[i].fabricOrderId
+            )
             if (fabricsStoredInWdResult[0] != null) {
 
                 for (let j = 0; j < fabricsStoredInWdResult.length; j++) {
@@ -66,6 +83,9 @@ exports.create = async (wdTransitionBetweenDyersRequisitionDetails) => {
             }
 
         }
+    } else {
+
+    }
     }
     return { ...constants.insertSuccess, ...{ id: wdTransitionBetweenDyersRequisitionDetails.id } };
 };
@@ -141,7 +161,8 @@ exports.update = async (wdTransitionBetweenDyersRequisitionDetails) => {
                 const sumCurrentQuantityWd = await wdService.selectSumCurrentQuantityByDyeingByFabricByConsigmentDyeingInWd(
                     isFound[0].dyeing_id,
                     isFound[0].fabric_id,
-                    isFound[0].consigment_dyeing_id
+                    isFound[0].consigment_dyeing_id,
+                    isFound[0].wc_fabric_order_requisition_id
                 )
                 if (sumCurrentQuantityWd[0] != null) {
                     const sumCurrentQuantity = sumCurrentQuantityWd[0].current_quantity
@@ -158,7 +179,8 @@ exports.update = async (wdTransitionBetweenDyersRequisitionDetails) => {
                         const wdRecords = await wdService.selectRecordsByDyeingByFabricByConsigmentDyeing(
                             isFound[0].dyeing_id,
                             isFound[0].fabric_id,
-                            isFound[0].consigment_dyeing_id
+                            isFound[0].consigment_dyeing_id,
+                            isFound[0].wc_fabric_order_requisition_id
                         )
                         if (wdRecords[0] != null) {
 

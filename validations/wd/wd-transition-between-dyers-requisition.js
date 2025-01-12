@@ -9,6 +9,8 @@ exports.isValid = (wdTransportBetweenDyers) => {
         personid: validations.joiText(3, 50),
         ipaddress: validations.joiText(3, 50),
         items:joi.array().items( {
+            ordersRequisitionsId: validations.joiText(15, 30),
+            fabricOrderId: validations.joiText(15, 30),
             fabricId: validations.joiText(15, 30),
             consigmentDyeingId:validations.joiText(1, 60),
             price: validations.joiNumber(1, 60),

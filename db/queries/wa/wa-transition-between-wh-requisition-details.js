@@ -20,9 +20,13 @@ exports.insert = async (waTransitionBetweenWHRequisitionDetails, items) => {
     .insert(waTransitionBetweenWHRequisitionDetailsTableName, {
       id: items.waTransitionBetweenWHRequisitionDetailsId,
       wa_transition_between_wh_requisitions_id: waTransitionBetweenWHRequisitionDetails.id,
+      wa_yarn_order_requisition_details_id: items.waYarnOrderRequisitionDetailsId,
+      wa_yarn_order_requisition_id: items.yarnOrderId,
+      orders_requisitions_id: items.ordersRequisitionsId,
       from_warehouse_id: items.fromWarehouseId,
       from_consigment_yarn_id: items.fromConsigmentYarnId,
       yarn_id: items.yarnId,
+      from_yarn_lot_id: items.fromYarnLotId,
       yarn_lot_id: items.yarnLotId,
       consigment_yarn_id: items.consigmentYarnId,
       price: items.price,
@@ -47,6 +51,8 @@ exports.selectByRequisitionId = async (whereCluse) => {
 
   let columns = [
     `id`,
+    `wa_yarn_order_requisition_id`,
+    `orders_requisitions_id`,
     `price`,
     `price_dollar`,
     `quantity`,
@@ -72,6 +78,8 @@ exports.selectByRequisitionId = async (whereCluse) => {
   await knex.select(columns).from(function () {
     this.select([
       `${waTransitionBetweenWHRequisitionDetailsTableName}.id`,
+      `${waTransitionBetweenWHRequisitionDetailsTableName}.wa_yarn_order_requisition_id`,
+      `${waTransitionBetweenWHRequisitionDetailsTableName}.orders_requisitions_id`,
       `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
       `${waTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
       `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
@@ -133,6 +141,8 @@ exports.selectOne = async (whereCluse) => {
   await knex
     .select([
       `${waTransitionBetweenWHRequisitionDetailsTableName}.wa_transition_between_wh_requisitions_id`,
+      `${waTransitionBetweenWHRequisitionDetailsTableName}.wa_yarn_order_requisition_id`,
+      `${waTransitionBetweenWHRequisitionDetailsTableName}.orders_requisitions_id`,
       `${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_id`,
       `${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_lot_id`,
       `${waTransitionBetweenWHRequisitionDetailsTableName}.consigment_yarn_id`,
@@ -420,13 +430,18 @@ exports.selectToWarehouseTotalDetailsByYarnIdByWarehouseId = async (yarnId, ware
   return queryResults;
 };
 
-exports.selectFromWarehouseDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLotId, consigmentYarnId) => {
+exports.selectFromWarehouseDetailsByWarehouseByYarnByLot = async (
+  warehouseId, yarnId, 
+  yarnLotId, consigmentYarnId,
+  yarnOrderId
+) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.from_warehouse_id`] = warehouseId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_id`] = yarnId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_lot_id`] = yarnLotId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.from_consigment_yarn_id`] = consigmentYarnId;
+  whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.is_active`] = 1;
 
@@ -459,13 +474,18 @@ exports.selectFromWarehouseDetailsByWarehouseByYarnByLot = async (warehouseId, y
   return queryResults;
 };
 
-exports.selectToWarehouseDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLotId, consigmentYarnId) => {
+exports.selectToWarehouseDetailsByWarehouseByYarnByLot = async (
+  warehouseId, yarnId, 
+  yarnLotId, consigmentYarnId,
+  yarnOrderId
+) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${waTransitionBetweenWHRequisitionTableName}.to_warehouse_id`] = warehouseId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_id`] = yarnId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_lot_id`] = yarnLotId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
+  whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.is_active`] = 1;
 
@@ -495,13 +515,14 @@ exports.selectToWarehouseDetailsByWarehouseByYarnByLot = async (warehouseId, yar
   return queryResults;
 };
 
-exports.selectFromWarehouseDetailsDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLotId, consigmentYarnId) => {
+exports.selectFromWarehouseDetailsDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.from_warehouse_id`] = warehouseId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_id`] = yarnId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_lot_id`] = yarnLotId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.from_consigment_yarn_id`] = consigmentYarnId;
+  whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.is_active`] = 1;
 
@@ -559,13 +580,14 @@ exports.selectFromWarehouseDetailsDetailsByWarehouseByYarnByLot = async (warehou
   return queryResults;
 };
 
-exports.selectToWarehouseDetailsDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLotId, consigmentYarnId) => {
+exports.selectToWarehouseDetailsDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${waTransitionBetweenWHRequisitionTableName}.to_warehouse_id`] = warehouseId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_id`] = yarnId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_lot_id`] = yarnLotId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
+  whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.is_active`] = 1;
 
@@ -614,6 +636,39 @@ exports.selectToWarehouseDetailsDetailsByWarehouseByYarnByLot = async (warehouse
     .innerJoin(`${yarnLotTableName}`, 
     `${yarnLotTableName}.id`, 
     `${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_lot_id`)
+    .where(whereCluse)
+    .andWhere(`${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`, ">", 0)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.selectToPriceByYarnId = async (yarnId) => {
+  let queryResults = [];
+  let whereCluse = {};
+  whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_id`] = yarnId;
+  whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.is_deleted`] = 0;
+  whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.is_active`] = 1;
+
+  await knex.from(waTransitionBetweenWHRequisitionDetailsTableName)
+    .select(
+      [
+        `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
+        `${waTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
+        `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
+        `${waTransitionBetweenWHRequisitionTableName}.date`,
+        knex.raw('? as type_of_requisition', 'اذن نقل من (B) الى (A)'),
+        knex.raw('? as input_output', '1')
+      ],
+    )
+    .innerJoin(`${waTransitionBetweenWHRequisitionTableName}`, 
+      `${waTransitionBetweenWHRequisitionTableName}.id`, 
+      `${waTransitionBetweenWHRequisitionDetailsTableName}.wa_transition_between_wh_requisitions_id`)
+      .innerJoin(`${waTableName}`,
+        `${waTableName}.wa_transition_between_wh_requisitions_details_id`,
+        `${waTransitionBetweenWHRequisitionDetailsTableName}.id`)
     .where(whereCluse)
     .andWhere(`${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {

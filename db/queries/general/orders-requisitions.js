@@ -5,6 +5,24 @@ const knex = require("../../config/connection").getConnection();
 // Util
 const { ordersRequisitionsTableName, waYarnOrderRequisitionTableName, waYarnOrderRequisitionDetailsTableName, wcFabricOrderRequisitionDetailsTableName, wcFabricOrderRequisitionTableName, waExecuteOrderRequisitionDetailsTableName, waExecuteOrderRequisitionTableName, weDyedFabricOrderRequisitionTableName } = require("../../../util/database-tables-name");
 
+exports.insert = async (orderRequisitions) => {
+  let queryResults = false;
+  await sqlFun
+    .insert(ordersRequisitionsTableName, {
+      id: orderRequisitions.ordersRequisitionsId,
+      name: orderRequisitions.name,
+      creator_id: orderRequisitions.personid,
+      ip_address: orderRequisitions.ipaddress
+    })
+    .then((data) => {
+      queryResults = true;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+  return queryResults;
+};
+
 exports.insertForDyeingOrder = async (orderRequisitions) => {
     let queryResults = false;
     await sqlFun
@@ -28,6 +46,7 @@ exports.insertForYarnOrder = async (orderRequisitions) => {
         .insert(ordersRequisitionsTableName, {
             wa_yarn_order_requisition_id: orderRequisitions.id,
             we_dyed_fabric_order_requisition_id: orderRequisitions.orderId,
+            name: orderRequisitions.name,
             creator_id: orderRequisitions.personid,
             ip_address: orderRequisitions.ipaddress
         })
@@ -97,21 +116,21 @@ exports.selectByDyeingIdForYarnOrder = async (whereCluse) => {
     await knex.from(ordersRequisitionsTableName)
       .select(
         [
-          `${ordersRequisitionsTableName}.wa_yarn_order_requisition_id`,
-          `${waYarnOrderRequisitionTableName}.name as order_name`,
+          `${ordersRequisitionsTableName}.name as order_name`,
+          `${waYarnOrderRequisitionTableName}.id as wa_yarn_order_requisition_id`,
           `${waYarnOrderRequisitionTableName}.number as order_number`,
         ],
       )
       .max(`${waYarnOrderRequisitionDetailsTableName}.is_order as is_order`)
       .innerJoin(`${waYarnOrderRequisitionTableName}`, 
-      `${waYarnOrderRequisitionTableName}.id`, 
-      `${ordersRequisitionsTableName}.wa_yarn_order_requisition_id`)
+      `${waYarnOrderRequisitionTableName}.orders_requisitions_id`, 
+      `${ordersRequisitionsTableName}.id`)
       .innerJoin(`${waYarnOrderRequisitionDetailsTableName}`, 
       `${waYarnOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_id`, 
       `${waYarnOrderRequisitionTableName}.id`)
       .groupBy(`${waYarnOrderRequisitionTableName}.id`)
       .where(whereCluse)
-      .then((data) => {
+      .then((data) => {        
         queryResults = data;
       })
       .catch((error) => console.error(error));
@@ -126,15 +145,15 @@ exports.selectByDyeingIdForFabricOrderWc = async (whereCluse) => {
     await knex.from(ordersRequisitionsTableName)
       .select(
         [
-          `${ordersRequisitionsTableName}.wc_fabric_order_requisition_id`,
-          `${wcFabricOrderRequisitionTableName}.name as order_name`,
+          `${ordersRequisitionsTableName}.name as order_name`,
+          `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
           `${wcFabricOrderRequisitionTableName}.number as order_number`,
         ],
       )
       .max(`${wcFabricOrderRequisitionDetailsTableName}.is_order as is_order`)
       .innerJoin(`${wcFabricOrderRequisitionTableName}`, 
-      `${wcFabricOrderRequisitionTableName}.id`, 
-      `${ordersRequisitionsTableName}.wc_fabric_order_requisition_id`)
+      `${wcFabricOrderRequisitionTableName}.orders_requisitions_id`, 
+      `${ordersRequisitionsTableName}.id`)
       .innerJoin(`${wcFabricOrderRequisitionDetailsTableName}`, 
       `${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, 
       `${wcFabricOrderRequisitionTableName}.id`)
