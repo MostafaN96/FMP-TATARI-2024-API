@@ -48,6 +48,12 @@ exports.create = async (weSellRequisition) => {
 
 exports.select = async () => {
     const results = await weSellRequisitionQueries.select();
+
+for (let i = 0; i < results.length; i++) {
+        const element = results[i];
+        element.details = await weSellRequisitionDetailsService.selectByRequisitionId(element.id)
+    }
+
     return results;
   };
   

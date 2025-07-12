@@ -109,6 +109,40 @@ exports.update = async (waYarnOrderRequisition, whereCluse) => {
     return queryResults;
 };
 
+exports.selectByYarnWa = async (whereCluse) => {
+
+    let queryResults = [];
+    let columns = [
+        `id`,
+        `wa_yarn_order_requisition_id`,
+        `orders_requisitions_id`,
+        `name`,
+        `number`,
+    ]
+    await knex.select(columns).from(function () {
+        this.select([
+            `${waYarnOrderRequisitionDetailsTableName}.id`,
+            `${waYarnOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_id`,
+            `${waYarnOrderRequisitionTableName}.orders_requisitions_id`,
+            `${waYarnOrderRequisitionTableName}.name`,
+            `${waYarnOrderRequisitionTableName}.number`,
+        ])
+            .from(`${waYarnOrderRequisitionDetailsTableName}`)
+            .innerJoin(`${waYarnOrderRequisitionTableName}`,
+                `${waYarnOrderRequisitionTableName}.id`,
+                `${waYarnOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_id`)
+            .where(whereCluse)
+            .as('t1')
+    }).as('temp')
+        .groupBy(`id`)
+        .then((data) => {
+            queryResults = data;
+        })
+        .catch((error) => console.error(error));
+    return queryResults;
+
+}
+
 exports.selectByWarehouseWa = async (whereCluseArray) => {
 
     let queryResults = [];

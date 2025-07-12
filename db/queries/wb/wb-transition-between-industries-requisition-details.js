@@ -3,7 +3,7 @@ const sqlFun = require("../../config/sql-fun");
 const knex = require("../../config/connection").getConnection();
 
 // Util
-const { wbTransitionBetweenIndustriesRequisitionDetailsTableName, wbTransitionBetweenIndustriesRequisitionTableName, bussinessmanTableName, yarnTableName, yarnLotTableName, wbTableName, wbTransportRequisitionWbWaDetailsWbTableName, wbTransitionBetweenIndustriesRequisitionDetailsWbTableName, consigmentYarnTableName, waYarnOrderRequisitionTableName } = require("../../../util/database-tables-name");
+const { wbTransitionBetweenIndustriesRequisitionDetailsTableName, wbTransitionBetweenIndustriesRequisitionTableName, bussinessmanTableName, yarnTableName, yarnLotTableName, wbTableName, wbTransportRequisitionWbWaDetailsWbTableName, wbTransitionBetweenIndustriesRequisitionDetailsWbTableName, consigmentYarnTableName, waYarnOrderRequisitionTableName, wbManufacturingInputWbTableName } = require("../../../util/database-tables-name");
 
 exports.insert = async (wbTransitionBetweenIndustriesRequisitionDetails, items) => {
   let queryResults = false;
@@ -765,6 +765,72 @@ exports.selectToByConsigmentYarnForDyedFabricOrder = async (whereCluse, consigme
     .where(whereCluse)
     .andWhere(`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.quantity`, ">", 0)
     .whereIn(`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.consigment_yarn_id`, consigmentsYarn)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.selectToRequisitionsForWbYarnOrderRequisition = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.from(wbManufacturingInputWbTableName)
+    .select(
+      [
+        `${wbTransitionBetweenIndustriesRequisitionTableName}.number`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.wb_transition_between_industries_requisition_id as requisition_id`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.wa_yarn_order_requisition_id`,
+        knex.raw('? as type_of_requisition', 'اذن نقل بين المصانع'),
+      ],
+    )
+    .innerJoin(`${wbTableName}`,
+      `${wbTableName}.id`,
+      `${wbManufacturingInputWbTableName}.wb_id`)
+      .innerJoin(`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}`, 
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.id`, 
+        `${wbTableName}.wb_transition_between_industries_requisition_details_id`)
+    .innerJoin(`${wbTransitionBetweenIndustriesRequisitionTableName}`, 
+      `${wbTransitionBetweenIndustriesRequisitionTableName}.id`, 
+      `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.wb_transition_between_industries_requisition_id`)
+    .where(whereCluse)
+    .andWhere(`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.quantity`, ">", 0)
+    .andWhere(`${wbManufacturingInputWbTableName}.quantity`, ">", 0)
+    .groupBy(`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.wa_yarn_order_requisition_id`,
+      `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.wb_transition_between_industries_requisition_id`)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.selectToTransitionBetweenIndustriesRequisitionsForWaYarnOrderRequisition = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.from(wbTransitionBetweenIndustriesRequisitionDetailsWbTableName)
+    .select(
+      [
+        `${wbTransitionBetweenIndustriesRequisitionTableName}.number`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.wb_transition_between_industries_requisition_id as requisition_id`,
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.wa_yarn_order_requisition_id`,
+        knex.raw('? as type_of_requisition', 'اذن نقل بين المصانع'),
+      ],
+    )
+    .innerJoin(`${wbTableName}`,
+      `${wbTableName}.id`,
+      `${wbTransitionBetweenIndustriesRequisitionDetailsWbTableName}.wb_id`)
+      .innerJoin(`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}`, 
+        `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.id`, 
+        `${wbTableName}.wb_transition_between_industries_requisition_details_id`)
+    .innerJoin(`${wbTransitionBetweenIndustriesRequisitionTableName}`, 
+      `${wbTransitionBetweenIndustriesRequisitionTableName}.id`, 
+      `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.wb_transition_between_industries_requisition_id`)
+    .where(whereCluse)
+    .andWhere(`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.quantity`, ">", 0)
+    .andWhere(`${wbTransitionBetweenIndustriesRequisitionDetailsWbTableName}.quantity`, ">", 0)
+    .groupBy(`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.wa_yarn_order_requisition_id`,
+      `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.wb_transition_between_industries_requisition_id`)
     .then((data) => {
       queryResults = data;
     })

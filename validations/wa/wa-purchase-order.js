@@ -22,7 +22,7 @@ exports.isValid = (waPurchaseOrder) => {
             priceDollar: validations.joiNotRequiredNumber(0, 50),
             yarnLotCode: validations.joiText(1, 60),
             consigmentYarnNumber: validations.joiNotRequiredText(0, 60),
-            note: validations.joiNotRequiredNumber(0, 50),
+            note: validations.joiNotRequiredText(0, 100000),
         })
     });
     const joiErrors = waPurchaseOrderSchema.validate(waPurchaseOrder);

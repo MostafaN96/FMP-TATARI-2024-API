@@ -88,3 +88,12 @@ exports.inquireYarnsOfFabricForOrderWaByOrders = async (request, response) => {
     const results = await waPurchaseOrderService.inquireYarnsOfFabricForOrderWaByOrders(bodyPalod);
     response.status(200).json(results);
   };
+
+exports.getCurrentNeededYarnQuantityOfFabricForOrder = async (request, response) => {
+    // logging
+    const bodyPalod = request.body;
+  
+    // call service
+    const results = await waPurchaseOrderService.getCurrentNeededYarnQuantityOfFabricForOrder(bodyPalod);
+    response.status(200).json(results);
+  };

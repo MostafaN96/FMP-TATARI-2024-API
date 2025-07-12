@@ -36,6 +36,15 @@ exports.selectByRequisitionId = async (request, response) => {
     response.status(200).json(results);
   };
 
+exports.selectByRequisitionIdForOrder = async (request, response) => {
+    // logging
+    const { id } = request.params;
+  
+    // call service
+    const results = await wcAddRequisitionDetailsService.selectByRequisitionIdForOrder(id);
+    response.status(200).json(results);
+  };
+
   exports.update = async (request, response) => {
     // logging
     const { id } = request.params;

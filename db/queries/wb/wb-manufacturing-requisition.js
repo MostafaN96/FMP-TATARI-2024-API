@@ -8,7 +8,8 @@ const {
   wbManufacturingRequisitionTableName, bussinessmanTableName, 
   fabricTableName, wbManufacturingInputOutputTableName, 
   wbManufacturingOutputTableName, wbManufacturingOutputOrderTableName, 
-  wbManufacturingOrderRequisitionTableName 
+  wbManufacturingOrderRequisitionTableName, 
+  wcFabricOrderRequisitionTableName
 } = require("../../../util/database-tables-name");
 
 exports.insert = async (wbManufacturingRequisition) => {
@@ -69,6 +70,7 @@ exports.select = async () => {
       `${wbManufacturingRequisitionTableName}.note`,
       `${wbManufacturingRequisitionTableName}.is_order`,
       `${wbManufacturingOutputTableName}.id as wb_manufacturing_output_id`,
+      `${wbManufacturingOutputTableName}.document`,
       `${wbManufacturingOutputTableName}.is_approved`,
       knex.raw(
         `CASE 
@@ -92,6 +94,7 @@ exports.select = async () => {
         WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_white}' THEN '${constants.wb_manufacturing_requisition_status_white_trans}'  
         ELSE ''  
         END as status_name`),
+        `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
     ])
     .from(`${wbManufacturingRequisitionTableName}`)
     .innerJoin(`${wbManufacturingInputOutputTableName}`,
@@ -106,6 +109,9 @@ exports.select = async () => {
     .innerJoin(`${bussinessmanTableName}`,
     `${bussinessmanTableName}.id`,
     `${wbManufacturingRequisitionTableName}.industry_id`)
+    .innerJoin(`${wcFabricOrderRequisitionTableName}`,
+      `${wcFabricOrderRequisitionTableName}.id`,
+      `${wbManufacturingOutputTableName}.wc_fabric_order_requisition_id`)
     .leftOuterJoin(`${wbManufacturingOutputOrderTableName}`,
     `${wbManufacturingOutputOrderTableName}.wb_manufacturing_output_id`,
     `${wbManufacturingOutputTableName}.id`)

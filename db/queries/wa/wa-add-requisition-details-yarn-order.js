@@ -1,8 +1,9 @@
 // Config
 const sqlFun = require("../../config/sql-fun");
+const knex = require("../../config/connection").getConnection();
 
 // Util
-const { waAddRequisitionDetailsYarnOrderTableName } = require("../../../util/database-tables-name");
+const { waAddRequisitionDetailsYarnOrderTableName, waYarnOrderRequisitionDetailsTableName } = require("../../../util/database-tables-name");
 
 exports.insert = async (waAddRequisitionDetailsYarnOrder, itemsOrder) => {
     let queryResults = false;
@@ -24,10 +25,55 @@ exports.insert = async (waAddRequisitionDetailsYarnOrder, itemsOrder) => {
     return queryResults;
 };
 
+exports.select = async (whereCluse, groupBy) => {
+  let queryResults = [];
+  await knex.from(waAddRequisitionDetailsYarnOrderTableName)
+    .select(
+      [
+        `${waAddRequisitionDetailsYarnOrderTableName}.orders_requisitions_id as ordersRequisitionsId`,
+        `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id as waYarnOrderRequisitionId`,
+      ],
+    )
+    .where(whereCluse)
+    .groupBy(groupBy)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
 exports.selectOne = async (whereCluse) => {
   let queryResults = false;
   await sqlFun
-      .limitedSelect(waAddRequisitionDetailsYarnOrderTableName, ["id", "quantity"], whereCluse, 1)
+      .limitedSelect(waAddRequisitionDetailsYarnOrderTableName, [
+        "id", 
+        "quantity"
+      ], whereCluse, 1)
+      .then((data) => {
+          queryResults = data;
+      })
+      .catch((error) => {
+          console.log(error);
+      });
+
+  return queryResults;
+};
+
+exports.selectDetails = async (whereCluse) => {
+  let queryResults = false;
+  await knex.from(waAddRequisitionDetailsYarnOrderTableName)
+    .select(
+      [
+        `${waYarnOrderRequisitionDetailsTableName}.id as wa_yarn_order_requisition_details_id`,
+        `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`,
+        `${waAddRequisitionDetailsYarnOrderTableName}.orders_requisitions_id`,
+      ],
+    )
+    .innerJoin(`${waYarnOrderRequisitionDetailsTableName}`,
+      `${waYarnOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_id`,
+      `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`)
+    .where(whereCluse)
       .then((data) => {
           queryResults = data;
       })

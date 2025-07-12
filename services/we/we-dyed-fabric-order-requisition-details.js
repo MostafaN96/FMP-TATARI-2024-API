@@ -2,9 +2,13 @@
 const weDyedFabricOrderRequisitionDetailsQueries = require("../../db/queries/we/we-dyed-fabric-order-requisition-details");
 const weDyedFabricOrderRequisitionQueries = require("../../db/queries/we/we-dyed-fabric-order-requisition");
 const ordersRequisitionsQueries = require("../../db/queries/general/orders-requisitions");
+const wcFabricOrderRequisitionQueries = require("../../db/queries/wc/wc-fabric-order-requisition");
+const waYarnOrderRequisitionQueries = require("../../db/queries/wa/wa-yarn-order-requisition");
 
 // Service
 const ordersRequisitionsService = require("../general/orders-requisitions");
+const wcFabricOrderRequisitionDetailsService = require("../wc/wc-fabric-order-requisition-details");
+const weService = require("../we/we");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -70,8 +74,18 @@ exports.selectByRequisitionIdOpenedOrder = async (requisitionId) => {
             //     warehouseDetailsWhereCluse[`we_dyed_fabric_order_requisition_details_id`] = element.id;
             //     element.warehouseDetails = await weDyedFabricOrderRequisitionDetailsQueries.selectWarehouseByRequisitionDetailsId(warehouseDetailsWhereCluse);
             // }
-            results.yarnOrders = await ordersRequisitionsService.selectByDyeingIdForYarnOrder(results[0].orders_requisitions_id);            
-            results.fabricOrders = await ordersRequisitionsService.selectByDyeingIdForFabricOrderWc(results[0].orders_requisitions_id);    
+            results.yarnOrders = await ordersRequisitionsService.selectByDyeingIdForYarnOrder(results[0].orders_requisitions_id);
+            results.fabricOrders = await ordersRequisitionsService.selectByDyeingIdForFabricOrderWc(results[0].orders_requisitions_id);
+            
+            for (let i = 0; i < results.length; i++) {
+                const element = results[i];
+
+                element.dyedFabricOrderRequisitions = await weService.selectRequisitionsForWeDyedFabricOrderRequisitionFordyedFabricOrder(
+                    element.orders_requisitions_id,
+                    element.id
+                )
+            }
+
         }
 
         return results;
@@ -143,6 +157,10 @@ exports.selectOrdersBySeller = async (sellerId) => {
     return results;
 };
 
+exports.selectOne = async (whereCluse) => {
+    const results = await weDyedFabricOrderRequisitionDetailsQueries.selectOne(whereCluse);
+    return results;
+};
 
 exports.updateForExecuteOrder = async (objectOrderData) => {
     let weDyedFabricOrderRequisitionDetailsWhereCluse = {}
@@ -239,8 +257,17 @@ exports.update = async (weDyedFabricOrderRequisitionDetails) => {
 
         weDyedFabricOrderRequisitionDetails.weDyedFabricOrderRequisitionId = isFound[0].we_dyed_fabric_order_requisition_id
 
+        // Update orders_requisitions Without Quantity
+        callArray.push(ordersRequisitionsQueries.update({
+            name: weDyedFabricOrderRequisitionDetails.name,
+        },
+            {
+                id: isFound[0].orders_requisitions_id
+            }))
+
         // Update wbManufacturingOrderRequisition Without Quantity
         callArray.push(weDyedFabricOrderRequisitionQueries.update({
+            seller_id: weDyedFabricOrderRequisitionDetails.sellerId,
             date: weDyedFabricOrderRequisitionDetails.date,
             name: weDyedFabricOrderRequisitionDetails.name,
             note: weDyedFabricOrderRequisitionDetails.note,
@@ -254,6 +281,9 @@ exports.update = async (weDyedFabricOrderRequisitionDetails) => {
         callArray.push(
             weDyedFabricOrderRequisitionDetailsQueries.update({
                 // dyed_fabric_id: weDyedFabricOrderRequisitionDetails.dyedFabricId,
+                color_category_id: weDyedFabricOrderRequisitionDetails.colorCategoryId,
+                color_id: weDyedFabricOrderRequisitionDetails.colorId,
+                color_code: weDyedFabricOrderRequisitionDetails.colorCode,
                 fabric_width: weDyedFabricOrderRequisitionDetails.fabricWidth,
                 fabric_quantity_m2: weDyedFabricOrderRequisitionDetails.fabricQuantityM2,
                 waste_ratio: weDyedFabricOrderRequisitionDetails.wasteRatio,
@@ -266,6 +296,26 @@ exports.update = async (weDyedFabricOrderRequisitionDetails) => {
                     id: weDyedFabricOrderRequisitionDetails.id
                 })
         )
+
+        
+        // Update wcFabricOrderRequisitionQueries Without Quantity
+        callArray.push(wcFabricOrderRequisitionQueries.update({
+            seller_id: weDyedFabricOrderRequisitionDetails.sellerId,
+            name: weDyedFabricOrderRequisitionDetails.name,
+        },
+            {
+                orders_requisitions_id: isFound[0].orders_requisitions_id
+            }))
+        
+        // Update waYarnOrderRequisitionQueries Without Quantity
+        callArray.push(waYarnOrderRequisitionQueries.update({
+            seller_id: weDyedFabricOrderRequisitionDetails.sellerId,
+            name: weDyedFabricOrderRequisitionDetails.name,
+        },
+            {
+                orders_requisitions_id: isFound[0].orders_requisitions_id
+            }))
+            
         await Promise.all(callArray)
 
 
@@ -274,6 +324,9 @@ exports.update = async (weDyedFabricOrderRequisitionDetails) => {
         let newQuantity = weDyedFabricOrderRequisitionDetails.quantity
         let defferenceQuantity = 0
 
+        console.log("currentQuantity :::: ", currentQuantity);
+        console.log("oldQuantity :::: ", oldQuantity);
+        
         if (currentQuantity == oldQuantity) {
             await weDyedFabricOrderRequisitionDetailsQueries.update({
                 dyed_fabric_id: weDyedFabricOrderRequisitionDetails.dyedFabricId,
@@ -286,6 +339,9 @@ exports.update = async (weDyedFabricOrderRequisitionDetails) => {
         // Check Quantity
         if (newQuantity > oldQuantity) {
             defferenceQuantity = parseFloat((newQuantity - oldQuantity).toFixed(3))
+
+            // update wc fabric order quantity
+            weDyedFabricOrderRequisitionDetails.defferenceQuantity = defferenceQuantity
 
             // active order
             await weDyedFabricOrderRequisitionQueries.update({
@@ -305,12 +361,19 @@ exports.update = async (weDyedFabricOrderRequisitionDetails) => {
                     id: weDyedFabricOrderRequisitionDetails.id
                 })
 
+            // update wc fabric order quantity
+            await wcFabricOrderRequisitionDetailsService.updateQuantityForWeDyedFabricOrder(Object.assign(weDyedFabricOrderRequisitionDetails, isFound[0]))
+
+
         } else if (newQuantity < oldQuantity) {
             defferenceQuantity = parseFloat((oldQuantity - newQuantity).toFixed(3))
 
             // Check current quantity in wb manufacturing order requisition details
             if (currentQuantity >= defferenceQuantity) {
 
+            // update wc fabric order quantity
+            weDyedFabricOrderRequisitionDetails.defferenceQuantity = defferenceQuantity
+            
                 // active order
                 await weDyedFabricOrderRequisitionQueries.update({
                     is_order: '1'
@@ -328,6 +391,9 @@ exports.update = async (weDyedFabricOrderRequisitionDetails) => {
                     {
                         id: weDyedFabricOrderRequisitionDetails.id
                     })
+
+            // update wc fabric order quantity
+            await wcFabricOrderRequisitionDetailsService.updateQuantityForWeDyedFabricOrder(Object.assign(weDyedFabricOrderRequisitionDetails, isFound[0]))
 
             } else {
                 return {

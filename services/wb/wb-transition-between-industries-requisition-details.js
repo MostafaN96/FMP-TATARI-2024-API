@@ -101,6 +101,14 @@ exports.selectByRequisitionId = async (requisitionId) => {
     });
     if (isFound[0] != null) {
         const results = await wbTransitionBetweenIndustriesRequisitionDetailsQueries.selectByRequisitionId(requisitionId);
+        if (Array.isArray(results) && results.length > 0) {
+                    for (let i = 0; i < results.length; i++) {
+                        const element = results[i];
+                        element.yarnOrderRequisitions = await wbService.selectTransitionBetweenIndustriesRequisitionsForWaYarnOrderRequisition(
+                            element.id
+                        )
+                    }
+                }
         return results;
     } else {
         return constants.itemNotFound;

@@ -40,8 +40,8 @@ exports.insert = async (wdFormDyeingRequisitionDetails, items) => {
       dyeing_fee: items.dyeingFee,
       fabric_width: items.fabricWidth,
       fabric_quantity_m2: items.fabricQuantityM2,
-      // work_order_number: items.workOrderNumber,
-      work_order_number: wdFormDyeingRequisitionDetails.number,
+      work_order_number: items.workOrderNumber,
+      // work_order_number: wdFormDyeingRequisitionDetails.number,
       statement: items.statement,
       creator_id: wdFormDyeingRequisitionDetails.personid,
       ip_address: wdFormDyeingRequisitionDetails.ipaddress,
@@ -143,11 +143,12 @@ exports.selectByRequisitionId = async (requisitionId) => {
         `${anointedColorsPricesTableName}.code as color_code`,
         `${anointedColorsPricesTableName}.color_category_id`,
         `${anointedColorsPricesTableName}.color_id`,
+        `${anointedColorsPricesTableName}.price as dyeing_cost_price`,
         `${wdDyeingOrderDetailsWdFormDyeingDetailsTableName}.wd_form_dyeing_order_requisition_details_id`,
         `${wdDyeingRequisitionDetailsTableName}.grade_item_id`,
         `${gradeItemTableName}.name as grade_item_name`,
         `${weDyedFabricOrderRequisitionTableName}.orders_requisitions_id`,
-        `${weDyedFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
+        `${weDyedFabricOrderRequisitionTableName}.name as we_fabric_order_requisition_name`,
       ],
     )
     .innerJoin(`${wdDyeingRequisitionTableName}`, `${wdDyeingRequisitionTableName}.id`, `${wdDyeingRequisitionDetailsTableName}.wd_dyeing_requisition_id`)
@@ -254,6 +255,7 @@ exports.selectOneWithDyeingServices = async (whereCluse) => {
       `${wdDyeingRequisitionTableName}.warehouse_id`,
       `${wdFormDyeingRequisitionDetailsTableName}.fabric_id`,
       `${wdFormDyeingRequisitionDetailsTableName}.consigment_dyeing_id`,
+      `${wdFormDyeingRequisitionDetailsTableName}.wc_fabric_order_requisition_id`,
       `${wdDyeingRequisitionDetailsTableName}.grade_item_id`,
       `${gradeItemTableName}.name as grade_item_name`,
     ])
@@ -273,7 +275,7 @@ exports.selectOneWithDyeingServices = async (whereCluse) => {
       console.log("data ::::::::::::: ", data);
       // Get current quantity
         const element = data[0];
-        const wdResult = await wdService.selectSumCurrentQuantityByDyeingByFabricByConsigmentDyeingInWd(element.dyeing_id, element.fabric_id, element.consigment_dyeing_id)
+        const wdResult = await wdService.selectSumCurrentQuantityByDyeingByFabricByConsigmentDyeingInWd(element.dyeing_id, element.fabric_id, element.consigment_dyeing_id, element.wc_fabric_order_requisition_id)
         element.wd_current_quantity = wdResult[0].current_quantity
 
         let wdFormDyeingRequisitionDetailsDyeingServicesWhereCluse = {};
@@ -1143,6 +1145,34 @@ exports.selectByConsigmentDyeingForDyedFabricOrder = async (whereCluse, consigme
     .where(whereCluse)
     .andWhere(`${wdDyeingRequisitionDetailsTableName}.quantity`, ">", 0)
     .whereIn(`${wdFormDyeingRequisitionDetailsTableName}.consigment_dyeing_id`, consigmentsDyeing)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.selectRequisitionsForWeFabricOrderRequisitionFordyedFabricOrder = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.from(wdDyeingRequisitionDetailsTableName)
+    .select(
+      [
+        `${wdDyeingRequisitionTableName}.number`,
+        `${wdDyeingRequisitionDetailsTableName}.wd_dyeing_requisition_id as requisition_id`,
+        `${wdDyeingRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`,
+        knex.raw('? as type_of_requisition', 'اذن صباغة'),
+      ],
+    )
+    .innerJoin(`${wdDyeingRequisitionTableName}`, 
+      `${wdDyeingRequisitionTableName}.id`, 
+      `${wdDyeingRequisitionDetailsTableName}.wd_dyeing_requisition_id`)
+    .where(whereCluse)
+    .andWhere(`${wdDyeingRequisitionDetailsTableName}.quantity`, ">", 0)
+    .groupBy(
+      `${wdDyeingRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`,
+      `${wdDyeingRequisitionDetailsTableName}.wd_dyeing_requisition_id`
+    )
     .then((data) => {
       queryResults = data;
     })

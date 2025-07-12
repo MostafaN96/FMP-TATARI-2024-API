@@ -1,24 +1,24 @@
 class DatabaseConnection {
-  // static knex = undefined;
+  // خليه خارج class كـ property
+}
 
-  static getConnection() {
-    // if (this.knex || undefined) {
-    // } else {
-      console.log("get conn");
-    const knex = require("knex")({
-      // bashagal knex
+DatabaseConnection.knex = null;
+
+DatabaseConnection.getConnection = function () {
+  if (!DatabaseConnection.knex) {
+    console.log("Creating new DB connection...");
+    DatabaseConnection.knex = require("knex")({
       client: "mysql",
       connection: {
-        connectionLimit: 1000,
         host: process.env.HOST,
         user: process.env.DB_USER,
         password: process.env.DB_PASSWORD,
         database: process.env.DB_NAME,
-      }, //open connection
+      }
     });
-    // }
-    return knex;
   }
-}
+
+  return DatabaseConnection.knex;
+};
 
 module.exports = DatabaseConnection;

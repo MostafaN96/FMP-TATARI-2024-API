@@ -12,7 +12,7 @@ exports.isValid = (weAddRequisition) => {
             colorCategoryId: validations.joiText(15, 30),
             colorId: validations.joiText(15, 30),
             gradeItemId: validations.joiText(15, 30),
-            colorCode: validations.joiNumber(1, 60),
+            colorCode: validations.joiText(1, 60),
             consigmentDyeingNumber: validations.joiNumber(1, 60),
             dyeingCode: validations.joiNotRequiredText(0, 60),
             numberFabricPieces: validations.joiNumber(1, 60),

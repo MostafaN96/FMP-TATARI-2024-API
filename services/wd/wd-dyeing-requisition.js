@@ -57,5 +57,9 @@ exports.create = async (wdDyeingRequisition) => {
 
 exports.select = async () => {
     const results = await wdDyeingRequisitionQueries.select();
+    for (let i = 0; i < results.length; i++) {
+        const element = results[i];
+        element.details = await wdDyeingRequisitionDetailsService.selectByRequisitionId(element.id)
+    }
     return results;
   };

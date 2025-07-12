@@ -3,13 +3,19 @@ const sqlFun = require("../../config/sql-fun");
 const knex = require("../../config/connection").getConnection();
 
 // Util
-const wcAddRequisitionDetailsTableName = require("../../../util/database-tables-name").wcAddRequisitionDetailsTableName;
-const fabricTableName = require("../../../util/database-tables-name").fabricTableName;
-const warehouseTableName = require("../../../util/database-tables-name").warehouseTableName;
-const wcAddRequisitionTableName = require("../../../util/database-tables-name").wcAddRequisitionTableName;
-const bussinessmanTableName = require("../../../util/database-tables-name").bussinessmanTableName;
-const { consigmentManufacturingTableName, wcTableName, wcAddRequisitionDetailsFabricOrderTableName, wcFabricOrderRequisitionTableName } = require("../../../util/database-tables-name");
 const constants = require("../../../util/constants");
+const { 
+  wcAddRequisitionDetailsTableName,
+  fabricTableName,
+  warehouseTableName,
+  wcAddRequisitionTableName,
+  bussinessmanTableName,
+  consigmentManufacturingTableName, 
+  wcTableName, 
+  wcAddRequisitionDetailsFabricOrderTableName, 
+  wcFabricOrderRequisitionTableName, 
+  wdTransportWcWdDetailsWcTableName 
+} = require("../../../util/database-tables-name");
 
 exports.insert = async (wcAddRequisitionDetails, items) => {
   let queryResults = false;
@@ -471,6 +477,42 @@ exports.selectByConsigmentManufacturingForDyedFabricOrder = async (whereCluse, c
     .where(whereCluse)
     .andWhere(`${wcAddRequisitionDetailsTableName}.quantity`, ">", 0)
     .whereIn(`${wcAddRequisitionDetailsTableName}.consigment_manufacturing_id`, consigmentsManufacturing)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.selectRequisitionsForWcFabricOrderRequisition = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.from(wdTransportWcWdDetailsWcTableName)
+    .select(
+      [
+        `${wcAddRequisitionTableName}.number`,
+        `${wcAddRequisitionDetailsTableName}.wc_add_requisition_id as requisition_id`,
+        `${wcAddRequisitionDetailsFabricOrderTableName}.wc_fabric_order_requisition_id`,
+        knex.raw('? as type_of_requisition', 'اذن اضافة'),
+      ],
+    )
+    .innerJoin(`${wcTableName}`, 
+      `${wcTableName}.id`, 
+      `${wdTransportWcWdDetailsWcTableName}.wc_id`)
+      .innerJoin(`${wcAddRequisitionDetailsTableName}`, 
+        `${wcAddRequisitionDetailsTableName}.id`, 
+        `${wcTableName}.wc_add_requisition_details_id`)
+    .innerJoin(`${wcAddRequisitionTableName}`, 
+      `${wcAddRequisitionTableName}.id`, 
+      `${wcAddRequisitionDetailsTableName}.wc_add_requisition_id`)
+      .innerJoin(`${wcAddRequisitionDetailsFabricOrderTableName}`, 
+        `${wcAddRequisitionDetailsFabricOrderTableName}.wc_add_requisition_details_id`, 
+        `${wcAddRequisitionDetailsTableName}.id`)
+    .where(whereCluse)
+    .andWhere(`${wcAddRequisitionDetailsTableName}.quantity`, ">", 0)
+    .andWhere(`${wdTransportWcWdDetailsWcTableName}.quantity`, ">", 0)
+    .groupBy(`${wcAddRequisitionDetailsFabricOrderTableName}.wc_fabric_order_requisition_id`,
+      `${wcAddRequisitionDetailsTableName}.wc_add_requisition_id`)
     .then((data) => {
       queryResults = data;
     })

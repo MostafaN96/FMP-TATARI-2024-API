@@ -91,7 +91,6 @@ exports.inquireFabricAvilabilityReportWe = async (request, response) => {
   // logging
   const bodyPalod = request.body;
 
-
   const results = await weReportService.inquireFabricAvilabilityReportWe(bodyPalod);
     response.status(200).json(results);
 };
@@ -100,7 +99,6 @@ exports.inquireFabricAvilabilityTotalReportWe = async (request, response) => {
   // logging
   const bodyPalod = request.body;
 
-
   const results = await weReportService.inquireFabricAvilabilityTotalReportWe(bodyPalod);
     response.status(200).json(results);
 };
@@ -108,7 +106,6 @@ exports.inquireFabricAvilabilityTotalReportWe = async (request, response) => {
 exports.inquireFabricAvilabilityByDyeingOrderRequisitionReportWe = async (request, response) => {
   // logging
   const bodyPalod = request.body;
-
 
   const results = await weReportService.inquireFabricAvilabilityByDyeingOrderRequisitionReportWe(bodyPalod);
     response.status(200).json(results);

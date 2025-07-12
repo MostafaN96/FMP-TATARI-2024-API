@@ -31,6 +31,11 @@ router.get("/closed-orders",
     waYarnOrderRequisitionController.inquireYarnsOfFabricForOrderWa);
 
     
+  router.get("/by-yarn-wa/:id",
+    middleWeres.checkAuth(),
+    middleWeres.checkIdentity(usersType.ADMIN_STR),
+    waYarnOrderRequisitionController.selectByYarnWa);
+    
   router.get("/by-warehouse-wa/:id",
     middleWeres.checkAuth(),
     middleWeres.checkIdentity(usersType.ADMIN_STR),

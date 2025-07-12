@@ -1,16 +1,26 @@
 // Config
-const { consigmentYarnTableName, waAddRequisitionDetailsYarnOrderTableName, waYarnOrderRequisitionDetailsTableName, waYarnOrderRequisitionTableName, waPurchaseOrderDetailsTableName, waAddRequisitionDetailsPurchaseOrderTableName, waPurchaseOrderTableName } = require("../../../util/database-tables-name");
 const sqlFun = require("../../config/sql-fun");
 const knex = require("../../config/connection").getConnection();
 
 // Util
-const waAddRequisitionDetailsTableName = require("../../../util/database-tables-name").waAddRequisitionDetailsTableName;
-const yarnTableName = require("../../../util/database-tables-name").yarnTableName;
-const yarnLotTableName = require("../../../util/database-tables-name").yarnLotTableName;
-const warehouseTableName = require("../../../util/database-tables-name").warehouseTableName;
-const waAddRequisitionTableName = require("../../../util/database-tables-name").waAddRequisitionTableName;
-const bussinessmanTableName = require("../../../util/database-tables-name").bussinessmanTableName;
-const waTableName = require("../../../util/database-tables-name").waTableName;
+const constants = require("../../../util/constants");
+const { 
+  consigmentYarnTableName, 
+  waAddRequisitionDetailsYarnOrderTableName, 
+  waYarnOrderRequisitionTableName, 
+  waPurchaseOrderDetailsTableName, 
+  waAddRequisitionDetailsPurchaseOrderTableName, 
+  waPurchaseOrderTableName, 
+  wbTransportWaWbDetailsWaTableName, 
+  waAddRequisitionDetailsTableName,
+  yarnTableName,
+  yarnLotTableName,
+  warehouseTableName,
+  waAddRequisitionTableName,
+  bussinessmanTableName,
+  waTableName,
+  waTransitionBetweenWHRequisitionDetailsWaTableName
+} = require("../../../util/database-tables-name");
 
 exports.insert = async (waAddRequisitionDetails, items) => {
   let queryResults = false;
@@ -112,6 +122,16 @@ exports.selectByRequisitionIdForOrder = async (requisitionId) => {
         `${waPurchaseOrderTableName}.number as order_number`,
         `${waAddRequisitionDetailsPurchaseOrderTableName}.wa_add_purchase_order_details_id`,
         `${waAddRequisitionDetailsPurchaseOrderTableName}.wa_add_purchase_order_id`,
+            knex.raw(
+              `CASE WHEN ${waPurchaseOrderDetailsTableName}.current_quantity < ${0}
+              THEN ${0}
+              ELSE ${waPurchaseOrderDetailsTableName}.current_quantity
+              END as current_quantity`),
+            knex.raw(
+              `CASE WHEN ${waPurchaseOrderDetailsTableName}.current_quantity < ${0}
+              THEN coalesce( ${waPurchaseOrderDetailsTableName}.current_quantity * -1 )
+              ELSE ${0}
+              END as over_current_quantity`),
       ],
     )
     // .distinct()
@@ -127,6 +147,9 @@ exports.selectByRequisitionIdForOrder = async (requisitionId) => {
     .leftOuterJoin(`${waPurchaseOrderTableName}`,
       `${waPurchaseOrderTableName}.id`,
       `${waAddRequisitionDetailsPurchaseOrderTableName}.wa_add_purchase_order_id`)
+    .leftOuterJoin(`${waPurchaseOrderDetailsTableName}`,
+      `${waPurchaseOrderDetailsTableName}.id`,
+      `${waAddRequisitionDetailsPurchaseOrderTableName}.wa_add_purchase_order_details_id`)
     .where(whereCluse)
     .andWhere(`${waAddRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -406,10 +429,11 @@ exports.selectDetailsDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId,
   return queryResults;
 };
 
-exports.selectPriceByYarnId = async (yarnId) => {
+exports.selectPriceByYarnId = async (yarnId, consigmentYarnId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${waAddRequisitionDetailsTableName}.yarn_id`] = yarnId;
+  whereCluse[`${waAddRequisitionDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
   whereCluse[`${waAddRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${waAddRequisitionDetailsTableName}.is_active`] = 1;
 
@@ -492,7 +516,12 @@ exports.selectSumCurrentQuantityByWarehouseByYarnWa = async (whereCluse) => {
 exports.selectOne = async (whereCluse) => {
   let queryResults = false;
   await sqlFun
-    .limitedSelect(waAddRequisitionDetailsTableName, ["wa_add_requisition_id", "quantity", "is_deleted"], whereCluse, 1)
+    .limitedSelect(waAddRequisitionDetailsTableName, [
+      "wa_add_requisition_id", 
+      "yarn_id", 
+      "quantity", 
+      "is_deleted"
+    ], whereCluse, 1)
     .then((data) => {
       queryResults = data;
     })
@@ -555,6 +584,82 @@ exports.selectTotalDetailsByDate = async (bodyPalod) => {
     .where(`${waAddRequisitionTableName}.date`, `>=`, bodyPalod.startDate)
     .andWhere(`${waAddRequisitionTableName}.date`, `<=`, bodyPalod.endDate)
     .andWhere(`${waAddRequisitionDetailsTableName}.quantity`, ">", 0)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.selectRequisitionsForWaYarnOrderRequisition = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.from(wbTransportWaWbDetailsWaTableName)
+    .select(
+      [
+        `${waAddRequisitionTableName}.number`,
+        `${waAddRequisitionTableName}.is_order`,
+        `${waAddRequisitionDetailsTableName}.wa_add_requisition_id as requisition_id`,
+        `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`,
+        knex.raw('? as type_of_requisition', 'اذن اضافة'),
+      ],
+    )
+    .innerJoin(`${waTableName}`,
+      `${waTableName}.id`,
+      `${wbTransportWaWbDetailsWaTableName}.wa_id`)
+    .innerJoin(`${waAddRequisitionDetailsTableName}`,
+      `${waAddRequisitionDetailsTableName}.id`,
+      `${waTableName}.wa_add_requisition_details_id`)
+    .innerJoin(`${waAddRequisitionTableName}`,
+      `${waAddRequisitionTableName}.id`,
+      `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
+    .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`,
+      `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`,
+      `${waAddRequisitionDetailsTableName}.id`)
+    .where(whereCluse)
+    .andWhere(`${waAddRequisitionDetailsTableName}.quantity`, ">", 0)
+    .andWhere(`${wbTransportWaWbDetailsWaTableName}.quantity`, ">", 0)
+    .groupBy(
+      `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`,
+      `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.selectTransitionBetweenWhRequisitionsForWaYarnOrderRequisition = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.from(waTransitionBetweenWHRequisitionDetailsWaTableName)
+    .select(
+      [
+        `${waAddRequisitionTableName}.number`,
+        `${waAddRequisitionTableName}.is_order`,
+        `${waAddRequisitionDetailsTableName}.wa_add_requisition_id as requisition_id`,
+        `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`,
+        knex.raw('? as type_of_requisition', 'اذن اضافة'),
+      ],
+    )
+    .innerJoin(`${waTableName}`,
+      `${waTableName}.id`,
+      `${waTransitionBetweenWHRequisitionDetailsWaTableName}.wa_id`)
+    .innerJoin(`${waAddRequisitionDetailsTableName}`,
+      `${waAddRequisitionDetailsTableName}.id`,
+      `${waTableName}.wa_add_requisition_details_id`)
+    .innerJoin(`${waAddRequisitionTableName}`,
+      `${waAddRequisitionTableName}.id`,
+      `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
+    .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`,
+      `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`,
+      `${waAddRequisitionDetailsTableName}.id`)
+    .where(whereCluse)
+    .andWhere(`${waAddRequisitionDetailsTableName}.quantity`, ">", 0)
+    .andWhere(`${waTransitionBetweenWHRequisitionDetailsWaTableName}.quantity`, ">", 0)
+    .groupBy(
+      `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`,
+      `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
     .then((data) => {
       queryResults = data;
     })

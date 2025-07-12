@@ -38,10 +38,13 @@ exports.isValid = (weDyedFabricOrderRequisitionDetails) => {
 exports.isValidUpdate = (weDyedFabricOrderRequisitionDetails) => {
     const weDyedFabricOrderRequisitionDetailsSchema = joi.object({
         sellerId: validations.joiText(15, 30),
+        sellerName: validations.joiText(1, 90),
         colorCategoryId: validations.joiText(15, 30),
         colorId: validations.joiText(15, 30),
         colorCode: validations.joiText(1, 90),
+        colorName: validations.joiNotRequiredText(0, 10000),
         dyedFabricId: validations.joiText(15, 30),
+        dyedFabricName: validations.joiText(1, 90),
         date: validations.joiText(5, 50),
         name: validations.joiText(1, 90),
         note: validations.joiNotRequiredText(0, 100000),

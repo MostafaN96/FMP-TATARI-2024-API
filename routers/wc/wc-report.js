@@ -75,6 +75,13 @@ router.get(
   wcReportController.manufacturingReportByFabric
 );
 
+router.get(
+  "/fabric-orders-report",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  wcReportController.fabricOrdersReport
+);
+
 // Post Queries
 router.post(
   "/select-inventory-total",

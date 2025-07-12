@@ -24,7 +24,6 @@ exports.isValid = (wdFormDyeingRequisitionDetails) => {
             workOrderNumberDetails: validations.joiText(1, 50),
             document: validations.joiNotRequiredNumber(0, 50),
             statement: validations.joiNotRequiredText(0, 10000),
-            isPrepareDyeing: validations.joiNumberAny,
         })
     });
     const joiErrors = wdFormDyeingRequisitionDetailsSchema.validate(wdFormDyeingRequisitionDetails);

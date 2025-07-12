@@ -22,7 +22,8 @@ const { consigmentManufacturingTableName, weSellRequisitionDetailsTableName,
   weTransitionBetweenWHRequisitionDetailsTableName,
   weExecuteOrderRequisitionDetailsTableName,
   weReturnSellRequisitionDetailsTableName,
-  gradeItemTableName
+  gradeItemTableName,
+  weTransitionBetweenOrdersRequisitionDetailsTableName
 } = require("../../../util/database-tables-name");
 
 exports.insert = async (weSellRequisitionDetails, items) => {
@@ -388,18 +389,22 @@ exports.selectByRequisitionId = async (requisitionId) => {
         ', ${deliveryCarTableName}.national_id) as delivery_car_name`),
           `${colorCategoryTableName}.name as color_category_name`,
           `${colorTableName}.name as color_name`,
-          `${weExecuteOrderRequisitionDetailsTableName}.color_code`,
-          `${weExecuteOrderRequisitionDetailsTableName}.work_order_number`,
+          `${weTransitionBetweenOrdersRequisitionDetailsTableName}.color_code`,
+          `${weTransitionBetweenOrdersRequisitionDetailsTableName}.work_order_number`,
           `${consigmentDyeingTableName}.id as consigment_dyeing_id`,
           `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
-          `${weExecuteOrderRequisitionDetailsTableName}.grade_item_id`,
+          `${weTransitionBetweenOrdersRequisitionDetailsTableName}.grade_item_id`,
           `${gradeItemTableName}.name as grade_item_name`,
         ])
         .from(`${weSellRequisitionDetailsTableName}`)
-        .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
+        .innerJoin(`${weSellRequisitionTableName}`, 
+          `${weSellRequisitionTableName}.id`, 
+          `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
         .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${weSellRequisitionTableName}.seller_id`)
         .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weSellRequisitionDetailsTableName}.dyed_fabric_id`)
-        .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weSellRequisitionDetailsTableName}.warehouse_id`)
+        .innerJoin(`${warehouseTableName}`, 
+          `${warehouseTableName}.id`, 
+          `${weSellRequisitionDetailsTableName}.warehouse_id`)
         .leftOuterJoin(`${deliveryCarTableName}`,
           `${deliveryCarTableName}.id`,
           `${weSellRequisitionTableName}.delivery_car_id`)
@@ -409,21 +414,21 @@ exports.selectByRequisitionId = async (requisitionId) => {
         .innerJoin(`${weTableName}`,
           `${weTableName}.id`,
           `${weSellRequisitionDetailsWeTableName}.we_id`)
-        .innerJoin(`${weExecuteOrderRequisitionDetailsTableName}`,
-          `${weExecuteOrderRequisitionDetailsTableName}.id`,
-          `${weTableName}.we_execute_order_requisition_details_id`)
+        .innerJoin(`${weTransitionBetweenOrdersRequisitionDetailsTableName}`,
+          `${weTransitionBetweenOrdersRequisitionDetailsTableName}.id`,
+          `${weTableName}.we_transition_between_orders_requisitions_details_id`)
         .innerJoin(`${colorCategoryTableName}`,
           `${colorCategoryTableName}.id`,
-          `${weExecuteOrderRequisitionDetailsTableName}.color_category_id`)
+          `${weTransitionBetweenOrdersRequisitionDetailsTableName}.color_category_id`)
         .innerJoin(`${colorTableName}`,
           `${colorTableName}.id`,
-          `${weExecuteOrderRequisitionDetailsTableName}.color_id`)
+          `${weTransitionBetweenOrdersRequisitionDetailsTableName}.color_id`)
           .innerJoin(`${consigmentDyeingTableName}`, 
           `${consigmentDyeingTableName}.id`, 
-          `${weExecuteOrderRequisitionDetailsTableName}.consigment_dyeing_id`)
+          `${weTransitionBetweenOrdersRequisitionDetailsTableName}.consigment_dyeing_id`)
           .innerJoin(`${gradeItemTableName}`, 
         `${gradeItemTableName}.id`, 
-        `${weExecuteOrderRequisitionDetailsTableName}.grade_item_id`)
+        `${weTransitionBetweenOrdersRequisitionDetailsTableName}.grade_item_id`)
           .where(whereCluse)
             .andWhere(`${weSellRequisitionDetailsTableName}.quantity`, ">", 0)
       })

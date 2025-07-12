@@ -13,25 +13,25 @@ const constants = require("../../util/constants");
 const { wcTransitionBetweenOrdersRequisitionTableName } = require("../../util/database-tables-name");
 
 
-exports.create = async (wcTransitionBetweenWHRequisition) => {
-    wcTransitionBetweenWHRequisition.id = trans.transform();
+exports.create = async (wcTransitionBetweenOrdersRequisition) => {
+    wcTransitionBetweenOrdersRequisition.id = trans.transform();
 
     // Select Max Number Of Requisition
     const selectMaxRequisitionNumber = await generalQueries.selectMaxValue(wcTransitionBetweenOrdersRequisitionTableName, { number: 'number' })
     if (selectMaxRequisitionNumber[0].number == null) {
         selectMaxRequisitionNumber[0].number = 0
     }
-    wcTransitionBetweenWHRequisition.number = selectMaxRequisitionNumber[0].number + 1
+    wcTransitionBetweenOrdersRequisition.number = selectMaxRequisitionNumber[0].number + 1
 
     // Check Duplication Data
-    const selectOneResult = await wcTransitionBetweenOrdersRequisitionQueries.selectOne({ number: wcTransitionBetweenWHRequisition.number });
+    const selectOneResult = await wcTransitionBetweenOrdersRequisitionQueries.selectOne({ number: wcTransitionBetweenOrdersRequisition.number });
     if (selectOneResult[0] != null) {
         return constants.duplicatedData;
     }
 
-    const results = await wcTransitionBetweenOrdersRequisitionQueries.insert(wcTransitionBetweenWHRequisition);
+    const results = await wcTransitionBetweenOrdersRequisitionQueries.insert(wcTransitionBetweenOrdersRequisition);
     if (results) {
-        return await wcTransitionBetweenOrdersRequisitionDetailsService.create(wcTransitionBetweenWHRequisition);
+        return await wcTransitionBetweenOrdersRequisitionDetailsService.create(wcTransitionBetweenOrdersRequisition);
     } else {
         return constants.insertError;
     }

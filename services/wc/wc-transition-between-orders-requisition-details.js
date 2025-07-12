@@ -43,6 +43,11 @@ exports.create = async (wcTransitionBetweenOrdersRequisitionDetails) => {
         fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
         fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
         const selectFabricOrderRequisitionDetailsResult = await wcFabricOrderRequisitionDetailsService.selectOne(fabricOrderRequisitionDetailsWhereCluse)
+                       console.log("wcTransitionBetweenOrdersRequisitionDetails.fabricOrderId :::: ", wcTransitionBetweenOrdersRequisitionDetails.fabricOrderId);
+               console.log("wcTransitionBetweenOrdersRequisitionDetails.items[i].fabricId :::: ", wcTransitionBetweenOrdersRequisitionDetails.items[i].fabricId);
+
+        console.log("selectFabricOrderRequisitionDetailsResult :::: ", selectFabricOrderRequisitionDetailsResult);
+        
         if (Array.isArray(selectFabricOrderRequisitionDetailsResult) && selectFabricOrderRequisitionDetailsResult.length > 0) {
             wcTransitionBetweenOrdersRequisitionDetails.items[i].toWcFabricOrderRequisitionDetailsId = selectFabricOrderRequisitionDetailsResult[0].id
 
@@ -53,6 +58,10 @@ exports.create = async (wcTransitionBetweenOrdersRequisitionDetails) => {
         fromFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
         fromFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
         const selectFromFabricOrderRequisitionDetailsResult = await wcFabricOrderRequisitionDetailsService.selectOne(fromFabricOrderRequisitionDetailsWhereCluse)
+               console.log("wcTransitionBetweenOrdersRequisitionDetails.items[i].fromFabricOrderId :::: ", wcTransitionBetweenOrdersRequisitionDetails.items[i].fromFabricOrderId);
+               console.log("wcTransitionBetweenOrdersRequisitionDetails.items[i].fabricId :::: ", wcTransitionBetweenOrdersRequisitionDetails.items[i].fabricId);
+               console.log("selectFromFabricOrderRequisitionDetailsResult :::: ", selectFromFabricOrderRequisitionDetailsResult);
+
         if (Array.isArray(selectFromFabricOrderRequisitionDetailsResult) && selectFromFabricOrderRequisitionDetailsResult.length > 0) {
             wcTransitionBetweenOrdersRequisitionDetails.items[i].fromWcFabricOrderRequisitionDetailsId = selectFromFabricOrderRequisitionDetailsResult[0].id
 
@@ -70,6 +79,8 @@ exports.create = async (wcTransitionBetweenOrdersRequisitionDetails) => {
                 wcTransitionBetweenOrdersRequisitionDetails.items[i].fromFabricOrderId
             )
             if (fabricsStoredInWcResult[0] != null) {
+                console.log("fabricsStoredInWcResult ::::::::::::::::::::::: ", fabricsStoredInWcResult);
+                
 
                 for (let j = 0; j < fabricsStoredInWcResult.length; j++) {
                     const fabricStoredInWc = fabricsStoredInWcResult[j];
@@ -207,10 +218,10 @@ exports.update = async (wcTransitionBetweenOrdersRequisitionDetails) => {
                 // we will decrement current quantity from store (wa yarn) by following Steps :
                 // Step 1 => Check If has current quantity in store (wa yarn)
                 const sumCurrentQuantityWc = await wcService.selectSumCurrentQuantityByWarehouseByFabricByConsigmentManufacturingLotWc(
-                    isFound[0].from_warehouse_id, 
+                    isFound[0].warehouse_id, 
                     isFound[0].fabric_id, 
                     isFound[0].from_consigment_manufacturing_id,
-                    isFound[0].wc_fabric_order_requisition_id
+                    isFound[0].from_wc_fabric_order_requisition_id
                     )
                 if(sumCurrentQuantityWc[0] != null) {
                     const sumCurrentQuantity = sumCurrentQuantityWc[0].current_quantity
@@ -232,10 +243,10 @@ exports.update = async (wcTransitionBetweenOrdersRequisitionDetails) => {
     
                         // Step 3 => select from (WA yarn) Records for decrement current quantity
                         const wcRecords = await wcService.selectByFabricForSell(
-                            isFound[0].from_warehouse_id, 
+                            isFound[0].warehouse_id, 
                             isFound[0].fabric_id, 
                             isFound[0].from_consigment_manufacturing_id,
-                            isFound[0].wc_fabric_order_requisition_id
+                            isFound[0].from_wc_fabric_order_requisition_id
                             )
                         if(wcRecords[0] != null) {
                             for (let i = 0; i < wcRecords.length; i++) {

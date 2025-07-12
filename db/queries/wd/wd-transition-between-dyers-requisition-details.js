@@ -921,3 +921,36 @@ exports.selectToByConsigmentDyeingForDyedFabricOrder = async (whereCluse, consig
     .catch((error) => console.error(error));
   return queryResults;
 };
+
+exports.selectToRequisitionsForWcFabricOrderRequisition = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.from(wdFormDyeingRequisitionDetailsWdTableName)
+    .select(
+      [
+        `${wdTransitionBetweenDyersRequisitionTableName}.number`,
+        `${wdTransitionBetweenDyersRequisitionDetailsTableName}.wd_transition_between_dyers_requisition_id as requisition_id`,
+        `${wdTransitionBetweenDyersRequisitionDetailsTableName}.wc_fabric_order_requisition_id`,
+        knex.raw('? as type_of_requisition', 'اذن نقل بين المصابغ'),
+      ],
+    )
+    .innerJoin(`${wdTableName}`, 
+      `${wdTableName}.id`, 
+      `${wdFormDyeingRequisitionDetailsWdTableName}.wd_id`)
+      .innerJoin(`${wdTransitionBetweenDyersRequisitionDetailsTableName}`, 
+        `${wdTransitionBetweenDyersRequisitionDetailsTableName}.id`, 
+        `${wdTableName}.wd_transition_between_dyers_requisition_details_id`)
+    .innerJoin(`${wdTransitionBetweenDyersRequisitionTableName}`, 
+      `${wdTransitionBetweenDyersRequisitionTableName}.id`, 
+      `${wdTransitionBetweenDyersRequisitionDetailsTableName}.wd_transition_between_dyers_requisition_id`)
+    .where(whereCluse)
+    .andWhere(`${wdTransitionBetweenDyersRequisitionDetailsTableName}.quantity`, ">", 0)
+    .andWhere(`${wdFormDyeingRequisitionDetailsWdTableName}.quantity`, ">", 0)
+    .groupBy(`${wdTransitionBetweenDyersRequisitionDetailsTableName}.wc_fabric_order_requisition_id`,
+      `${wdTransitionBetweenDyersRequisitionDetailsTableName}.wd_transition_between_dyers_requisition_id`)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};

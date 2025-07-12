@@ -133,7 +133,8 @@ exports.createInputDetails = async (wbManufacturingInput, isOrder) => {
                 wbManufacturingInput.industryId,
                 wbManufacturingInput.items[i].yarnId,
                 wbManufacturingInput.items[i].yarnLotId,
-                wbManufacturingInput.items[i].consigmentYarnId)
+                wbManufacturingInput.items[i].consigmentYarnId,
+                wbManufacturingInput.yarnOrderId)
             if (yarnsStoredInWaResult[0] != null) {
 
                 for (let j = 0; j < yarnsStoredInWaResult.length; j++) {
@@ -189,7 +190,7 @@ exports.createInputDetails = async (wbManufacturingInput, isOrder) => {
                 price: fabricPrice,
                 price_dollar: fabricPriceDollar
             }, {
-                // id: selectOutputManufacturingOneResult[0].id
+                id: selectOutputManufacturingOneResult[0].id,
                 fabric_id: selectOutputManufacturingOneResult[0].fabric_id,
                 consigment_manufacturing_id: selectOutputManufacturingOneResult[0].consigment_manufacturing_id
             })
@@ -208,8 +209,16 @@ exports.selectByRequisitionId = async (requisitionId) => {
     if (isFound[0] != null) {
 
         let results = await wbManufacturingInputQueries.selectByRequisitionId(requisitionId);
-        if (results[0] == null) {
+        if (Array.isArray(results) && results.length > 0) {
+            for (let i = 0; i < results.length; i++) {
+                const element = results[i];
+                element.yarnOrderRequisitions = await wbService.selectRequisitionsForWbYarnOrderRequisition(
+                    element.id
+                )
+            }
+        } else {
             results = await wbManufacturingInputQueries.selectOneByRequisitionId(requisitionId);
+
         }
         return results;
     } else {
@@ -487,16 +496,21 @@ exports.update = async (wbManufacturingInput) => {
             let fabricPriceDollar = 0
             const selectInputManufacturingResult = await this.selectByRequisitionId(isFound[0].wb_manufacturing_requisition_id)
             if (selectInputManufacturingResult[0] != null) {
-
+                console.log("selectInputManufacturingResult ::: ", selectInputManufacturingResult);
+                
                 const selectOutputManufacturingOneResult = await wbManufacturingOutputQueries.selectByRequisitionId(isFound[0].wb_manufacturing_requisition_id)
                 if (selectOutputManufacturingOneResult[0] != null) {
-                    fabricPrice = await wbManufacturingOutputService.calcAvgFabricPrice(selectInputManufacturingResult, selectOutputManufacturingOneResult)
-                    fabricPriceDollar = await wbManufacturingOutputService.calcAvgFabricPriceDollar(selectInputManufacturingResult, selectOutputManufacturingOneResult)
+                    fabricPrice = parseFloat((await wbManufacturingOutputService.calcAvgFabricPrice(selectInputManufacturingResult, selectOutputManufacturingOneResult)).toFixed(3))
+                    fabricPriceDollar = parseFloat((await wbManufacturingOutputService.calcAvgFabricPriceDollar(selectInputManufacturingResult, selectOutputManufacturingOneResult)).toFixed(3))
+                                    console.log("fabricPrice ::: ", fabricPrice);
+                console.log("fabricPriceDollar ::: ", fabricPriceDollar);
+                console.log("selectOutputManufacturingOneResult ::: ", selectOutputManufacturingOneResult);
+
                     await wbManufacturingOutputQueries.update({
                         price: fabricPrice,
                         price_dollar: fabricPriceDollar
                     }, {
-                        // id: selectOutputManufacturingOneResult[0].id
+                        id: selectOutputManufacturingOneResult[0].id,
                         fabric_id: selectOutputManufacturingOneResult[0].fabric_id,
                         consigment_manufacturing_id: selectOutputManufacturingOneResult[0].consigment_manufacturing_id
                     })

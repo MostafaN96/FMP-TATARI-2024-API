@@ -516,6 +516,7 @@ exports.selectPriceByFabricByConsigmentManufacturingInWc = async (fabricId, cons
         // Select Latest Price
         let wcAddRequisitionDetailsWhereCluse = {};
         wcAddRequisitionDetailsWhereCluse[`${wcAddRequisitionDetailsTableName}.fabric_id`] = fabricId;
+        wcAddRequisitionDetailsWhereCluse[`${wcAddRequisitionDetailsTableName}.consigment_manufacturing_id`] = consigmentManufacturingId;
         wcAddRequisitionDetailsWhereCluse[`${wcAddRequisitionTableName}.date`] = selectMaxDate[0]?.date;
         const latestPrice = await wcAddRequisitionDetailsQueries.selectLatestPrice(wcAddRequisitionDetailsWhereCluse)
         if(latestPrice[0] != null ) {
@@ -528,6 +529,7 @@ exports.selectPriceByFabricByConsigmentManufacturingInWc = async (fabricId, cons
         // Select Max Added Date
     let maxDateManufacturingOutputWhereCluse = {};
     maxDateManufacturingOutputWhereCluse[`${wbManufacturingOutputTableName}.fabric_id`] = fabricId;
+    maxDateManufacturingOutputWhereCluse[`${wbManufacturingOutputTableName}.consigment_manufacturing_id`] = consigmentManufacturingId;
     const selectManufacturingOutputMaxDate = await generalQueries.selectMaxValueWith2JoinCondition(wbManufacturingOutputTableName,
         { date: 'date' }, maxDateManufacturingOutputWhereCluse,
         wbManufacturingInputOutputTableName,
@@ -541,6 +543,7 @@ exports.selectPriceByFabricByConsigmentManufacturingInWc = async (fabricId, cons
         // Select Latest Manufacturing Output Price
         let wbManufacturingOutputWhereCluse = {};
         wbManufacturingOutputWhereCluse[`${wbManufacturingOutputTableName}.fabric_id`] = fabricId;
+        wbManufacturingOutputWhereCluse[`${wbManufacturingOutputTableName}.consigment_manufacturing_id`] = consigmentManufacturingId;
         wbManufacturingOutputWhereCluse[`${wbManufacturingRequisitionTableName}.date`] = selectManufacturingOutputMaxDate[0]?.date;
         const latestManufacturingOutputPrice = await wbManufacturingOutputQueries.selectLatestPrice(wbManufacturingOutputWhereCluse)
         if (latestManufacturingOutputPrice[0] != null) {
@@ -620,6 +623,16 @@ exports.selectInventoryTotalByDate = async (bodyPaylod) => {
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );
     return sortedAsc;
+};
+
+exports.fabricOrdersReport = async () => {
+    
+    let whereCluse = {};
+    whereCluse[`wc_fabric_order_requisition_is_order`] = 1;
+    whereCluse[`wc_fabric_order_requisition_details_is_order`] = 1;
+
+    const salesReportResult = await wcReportQueries.fabricOrdersReport(whereCluse)
+    return salesReportResult
 };
 
 exports.selectInventoryByConsigmentsManufacturing = async (consigmentsManufacturing) => {

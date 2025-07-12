@@ -6,6 +6,7 @@ const ordersRequisitionsQueries = require("../../db/queries/general/orders-requi
 // Services
 // const ordersRequisitionsService = require("../general/orders-requisitions");
 const wcFabricOrderRequisitionDetailsService = require("../wc/wc-fabric-order-requisition-details");
+const fabricYarnsService = require("../general/fabric-yarns");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -62,7 +63,7 @@ exports.selectByRequisitionIdOpenedOrder = async (requisitionId) => {
                 const element = results[i];
                 let warehouseDetailsWhereCluse = {};
                 warehouseDetailsWhereCluse[`${waExecuteOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_details_id`] = element.id;
-                element.warehouseDetails = await waYarnOrderRequisitionDetailsQueries.selectOutputWarehouseByRequisitionDetailsId(warehouseDetailsWhereCluse);
+                // element.warehouseDetails = await waYarnOrderRequisitionDetailsQueries.selectOutputWarehouseByRequisitionDetailsId(warehouseDetailsWhereCluse);
             }
         }
         return results;
@@ -90,13 +91,19 @@ exports.selectByRequisitionIdClosedOrder = async (requisitionId) => {
                 const element = results[i];
                 let warehouseDetailsWhereCluse = {};
                 warehouseDetailsWhereCluse[`${waExecuteOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_details_id`] = element.id;
-                element.warehouseDetails = await waYarnOrderRequisitionDetailsQueries.selectOutputWarehouseByRequisitionDetailsId(warehouseDetailsWhereCluse);
+                // element.warehouseDetails = await waYarnOrderRequisitionDetailsQueries.selectOutputWarehouseByRequisitionDetailsId(warehouseDetailsWhereCluse);
             }
         }
         return results;
     } else {
         return constants.itemNotFound;
     }
+};
+
+exports.selectForCheckOpenedOrderNotExecutedWa = async (whereCluse) => {
+
+        let results = await waYarnOrderRequisitionDetailsQueries.selectForCheckOpenedOrderNotExecutedWa(whereCluse);
+        return results;
 };
 
 exports.selectOne = async (whereCluse) => {
@@ -138,6 +145,12 @@ exports.selectByYarnySeller = async (yarnId, sellerId) => {
     whereCluse[`${waYarnOrderRequisitionTableName}.seller_id`] = sellerId;
 
     const results = await waYarnOrderRequisitionDetailsQueries.selectByYarnySeller(whereCluse);
+    return results;
+};
+
+exports.selectGroupByWhereIn = async (whereCluse, ordersRequisitionsIds, groupBy) => {
+
+    const results = await waYarnOrderRequisitionDetailsQueries.selectGroupByWhereIn(whereCluse, ordersRequisitionsIds, groupBy);
     return results;
 };
 
@@ -331,3 +344,113 @@ exports.update = async (waYarnOrderRequisitionDetails) => {
         return constants.itemNotFound;
     }
 };
+
+exports.updateQuantityForWeDyedFabricOrder = async (waYarnOrderRequisitionDetails, calcStatus) => {
+    let updateResults = false
+
+    console.log("waYarnOrderRequisitionDetails ::: ", waYarnOrderRequisitionDetails);
+
+    let calcQuantity = waYarnOrderRequisitionDetails.defferenceQuantity
+    console.log("calcQuantity ::::::: ", calcQuantity);
+    
+    // select yarns of fabric
+    const yarnsOfFabricResult = await fabricYarnsService.selectByFabricIdForReport(waYarnOrderRequisitionDetails.row_fabric_id)
+    if (yarnsOfFabricResult[0] != null) {
+
+        for (let i = 0; i < yarnsOfFabricResult.length; i++) {
+            const yarnOfFabric = yarnsOfFabricResult[i];
+
+            let waYarnOrderRequisitionDetaisWhereCluse = {}
+            waYarnOrderRequisitionDetaisWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.orders_requisitions_id`] = waYarnOrderRequisitionDetails.orders_requisitions_id
+            waYarnOrderRequisitionDetaisWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.yarn_id`] = yarnOfFabric.yarn_id
+
+            let groupBy = ['orders_requisitions_id'];
+
+            const waYarnOrderRequisitionDetaisResults = await waYarnOrderRequisitionDetailsQueries.selectGroupByWhereIn(waYarnOrderRequisitionDetaisWhereCluse, [waYarnOrderRequisitionDetails.orders_requisitions_id], groupBy)
+            console.log("waYarnOrderRequisitionDetaisResults ::: ", waYarnOrderRequisitionDetaisResults);
+            if (Array.isArray(waYarnOrderRequisitionDetaisResults) && waYarnOrderRequisitionDetaisResults.length > 0) {
+                console.log("waYarnOrderRequisitionDetails.wasteRatio ::: ", waYarnOrderRequisitionDetails.wasteRatio);
+                console.log("yarnOfFabric.total_ratio ::: ", yarnOfFabric.total_ratio);
+
+            neededYarnQuantity = parseFloat(((( (calcQuantity * parseFloat(yarnOfFabric.total_ratio) / 100) / (1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100))) )).toFixed(3))
+            console.log("neededYarnQuantity 11111111 ::: ", neededYarnQuantity);
+
+            // neededYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((neededYarnQuantity / (1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100))).toFixed(3))
+            //     : neededYarnQuantity
+            //     console.log("neededYarnQuantity 22222222 ::: ", neededYarnQuantity);
+
+                let currentQuantity = waYarnOrderRequisitionDetaisResults[0].current_quantity
+                let oldQuantity = waYarnOrderRequisitionDetaisResults[0].quantity
+                let newQuantity = 0
+                if(calcStatus == "inc") {
+                    newQuantity =  waYarnOrderRequisitionDetaisResults[0].quantity + neededYarnQuantity
+                } else if (calcStatus == "dec") {
+                    newQuantity =  waYarnOrderRequisitionDetaisResults[0].quantity - neededYarnQuantity
+                }
+                let defferenceQuantity = 0
+        
+                console.log("oldQuantity ::::: ", oldQuantity);
+                console.log("newQuantity ::::: ", newQuantity);
+                
+                // Check Quantity
+                if (newQuantity > oldQuantity) {
+                    defferenceQuantity = parseFloat((newQuantity - oldQuantity).toFixed(3))
+        
+                    // active order
+                    await waYarnOrderRequisitionQueries.update({
+                        is_order: '1'
+                    },
+                        {
+                            id: waYarnOrderRequisitionDetaisResults[0].requisition_id
+                        })
+        
+                    // Update wb manufacturing order requisition details current quantity
+                    updateResults = await waYarnOrderRequisitionDetailsQueries.update({
+                        initial_quantity: oldQuantity + defferenceQuantity,
+                        current_quantity: currentQuantity + defferenceQuantity,
+                        is_order: '1'
+                    },
+                        {
+                            id: waYarnOrderRequisitionDetaisResults[0].id
+                        })
+        
+                } else if (newQuantity < oldQuantity) {
+                    defferenceQuantity = parseFloat((oldQuantity - newQuantity).toFixed(3))
+        
+                    // Check current quantity in wb manufacturing order requisition details
+                    if (currentQuantity >= defferenceQuantity) {
+        
+                        // active order
+                        await waYarnOrderRequisitionQueries.update({
+                            is_order: '1'
+                        },
+                            {
+                                id: waYarnOrderRequisitionDetaisResults[0].requisition_id
+                            })
+        
+                        // Update wb manufacturing order requisition details Quantity
+                        updateResults = await waYarnOrderRequisitionDetailsQueries.update({
+                            initial_quantity: oldQuantity - defferenceQuantity,
+                            current_quantity: currentQuantity - defferenceQuantity,
+                            is_order: '1'
+                        },
+                            {
+                                id: waYarnOrderRequisitionDetaisResults[0].id
+                            })
+        
+                    } else {
+                        return {
+                            ...constants.wrongQuantity,
+                            spentQuantity: currentQuantity,
+                            newQuantity: newQuantity
+                        }
+                    }
+        
+                } else {
+                    updateResults = true
+                }
+            }
+
+        }
+    }
+}

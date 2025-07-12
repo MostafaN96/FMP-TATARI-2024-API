@@ -7,8 +7,11 @@ exports.isValid = (weTransitionBetweenWHRequisitionDetails) => {
         ipaddress: validations.joiText(3, 50),
         items: joi.array().items({
             fromWarehouseId: validations.joiText(15, 30),
+            waYarnOrderRequisitionDetailsId: validations.joiText(15, 30),
             ordersRequisitionsId: validations.joiText(15, 30),
             yarnOrderId: validations.joiText(15, 30),
+            fromOrdersRequisitionsId: validations.joiText(15, 30),
+            fromYarnOrderId: validations.joiText(15, 30),
             yarnId: validations.joiText(15, 30),
             consigmentYarnId: validations.joiNotRequiredText(0, 10000),
             newConsigmentYarnNumber: validations.joiNotRequiredText(0, 10000),
@@ -26,7 +29,6 @@ exports.isValid = (weTransitionBetweenWHRequisitionDetails) => {
         })
     });
     const joiErrors = weTransitionBetweenWHRequisitionDetailsSchema.validate(weTransitionBetweenWHRequisitionDetails);
-
     try {
         if (joiErrors.error) {
             console.log(joiErrors.error.details);

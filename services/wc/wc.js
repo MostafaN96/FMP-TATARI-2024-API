@@ -11,7 +11,7 @@ const wcTransitionBetweenOrdersRequisitionDetailsQueries = require("../../db/que
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-const { wcTableName, wcAddRequisitionDetailsTableName, wdTransportRequisitionWdWcTableName, wdTransportRequisitionWdWcDetailsTableName, wcReconciliationRequisitionTableName, wcReconciliationRequisitionDetailsTableName, wcAddRequisitionTableName, wbManufacturingOutputTableName, wcExecuteOrderRequisitionTableName, wcExecuteOrderRequisitionDetailsTableName, wcTransitionBetweenWHRequisitionTableName, wcTransitionBetweenWHRequisitionDetailsTableName, wcAddRequisitionDetailsFabricOrderTableName, wcTransitionBetweenOrdersRequisitionDetailsTableName } = require("../../util/database-tables-name");
+const { wcTableName, wcAddRequisitionDetailsTableName, wdTransportRequisitionWdWcTableName, wdTransportRequisitionWdWcDetailsTableName, wcReconciliationRequisitionTableName, wcReconciliationRequisitionDetailsTableName, wcAddRequisitionTableName, wbManufacturingOutputTableName, wcExecuteOrderRequisitionTableName, wcExecuteOrderRequisitionDetailsTableName, wcTransitionBetweenWHRequisitionTableName, wcTransitionBetweenWHRequisitionDetailsTableName, wcAddRequisitionDetailsFabricOrderTableName, wcTransitionBetweenOrdersRequisitionDetailsTableName, wdTransportWcWdDetailsWcTableName } = require("../../util/database-tables-name");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -100,9 +100,9 @@ exports.selectByFabricForSell = async (warehouseId, fabricId, consigmentManufact
     transitionBetweenOrdersWhereCluse[`${wcTableName}.is_active`] = 1;
     transitionBetweenOrdersWhereCluse[`${wcTableName}.type`] = constantsPayloads.transportBetweenOrdersType;
     transitionBetweenOrdersWhereCluse[`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.warehouse_id`] = warehouseId;
-    transitionBetweenOrdersWhereCluse[`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.from_wc_fabric_order_requisition_id`] = fabricOrderId;
+    transitionBetweenOrdersWhereCluse[`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
     transitionBetweenOrdersWhereCluse[`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.fabric_id`] = fabricId;
-    transitionBetweenOrdersWhereCluse[`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.from_consigment_manufacturing_id`] = consigmentManufacturingId;
+    transitionBetweenOrdersWhereCluse[`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.consigment_manufacturing_id`] = consigmentManufacturingId;
 
     let andWhereCluse = {whereTableName: `current_quantity`, operator: ">", value: "0"}
     let whereCluseArray = [
@@ -181,7 +181,7 @@ exports.selectConsigmentManufacturingQuantityByWarehouseByFabricWc = async (ware
     transitionBetweenOrdersWhereCluse[`${wcTableName}.type`] = constantsPayloads.transportBetweenOrdersType;
     transitionBetweenOrdersWhereCluse[`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.warehouse_id`] = warehouseId;
     transitionBetweenOrdersWhereCluse[`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.fabric_id`] = fabricId;
-    transitionBetweenOrdersWhereCluse[`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.from_wc_fabric_order_requisition_id`] = fabricOrderId;
+    transitionBetweenOrdersWhereCluse[`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
 
     let andWhereCluse = {whereTableName: `current_quantity`, operator: ">", value: "0"}
 
@@ -312,6 +312,41 @@ exports.selectConsigmentManufacturingQuantityByWarehouseByFabricForReturn = asyn
 
     const results = await wcQueries.selectConsigmentManufacturingQuantityByWarehouseByFabricForReturn(whereCluseArray);
     return results;
+};
+
+
+exports.selectRequisitionsForWcFabricOrderRequisition = async (requisitionDetailsId) => {
+    let callArray = []
+
+    let whereCluse = {};
+    whereCluse[`${wdTransportWcWdDetailsWcTableName}.is_deleted`] = 0;
+    whereCluse[`${wdTransportWcWdDetailsWcTableName}.is_active`] = 1;
+    whereCluse[`${wdTransportWcWdDetailsWcTableName}.wd_transport_wc_wd_details_id`] = requisitionDetailsId;
+    callArray.push(wcAddRequisitionDetailsQueries.selectRequisitionsForWcFabricOrderRequisition(whereCluse))
+
+    let wbManufacturingWhereCluse = {};
+    wbManufacturingWhereCluse[`${wdTransportWcWdDetailsWcTableName}.is_deleted`] = 0;
+    wbManufacturingWhereCluse[`${wdTransportWcWdDetailsWcTableName}.is_active`] = 1;
+    wbManufacturingWhereCluse[`${wdTransportWcWdDetailsWcTableName}.wd_transport_wc_wd_details_id`] = requisitionDetailsId;
+    callArray.push(wbManufacturingOutputQueries.selectRequisitionsForWcFabricOrderRequisition(wbManufacturingWhereCluse))
+
+    let reconciliationWhereCluse = {};
+    reconciliationWhereCluse[`${wdTransportWcWdDetailsWcTableName}.is_deleted`] = 0;
+    reconciliationWhereCluse[`${wdTransportWcWdDetailsWcTableName}.is_active`] = 1;
+    reconciliationWhereCluse[`${wdTransportWcWdDetailsWcTableName}.wd_transport_wc_wd_details_id`] = requisitionDetailsId;
+    reconciliationWhereCluse[`${wcTableName}.type`] = constantsPayloads.reconcilitionType;
+    reconciliationWhereCluse[`${wcReconciliationRequisitionDetailsTableName}.input_output`] = 1;
+    callArray.push(wcReconciliationRequisitionDetailsQueries.selectInputRequisitionsForWcFabricOrderRequisition(reconciliationWhereCluse))
+
+    let transitionBetweenWhWhereCluse = {};
+    transitionBetweenWhWhereCluse[`${wdTransportWcWdDetailsWcTableName}.is_deleted`] = 0;
+    transitionBetweenWhWhereCluse[`${wdTransportWcWdDetailsWcTableName}.is_active`] = 1;
+    transitionBetweenWhWhereCluse[`${wdTransportWcWdDetailsWcTableName}.wd_transport_wc_wd_details_id`] = requisitionDetailsId;
+    callArray.push(wcTransitionBetweenWhRequisitionDetailsQueries.selectToRequisitionsForWcFabricOrderRequisition(transitionBetweenWhWhereCluse))
+
+    let requisitions = await Promise.all(callArray)    
+    requisitions = [...new Set([].concat(...requisitions.map((o) => o)))]   
+    return requisitions
 };
 
 exports.decrementWcCurrentQuantity = async (newQuantity, currentQuantity, fabricStoredInWc, updatedQuantity) => {

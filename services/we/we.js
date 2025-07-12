@@ -3,6 +3,7 @@ const weQueries = require("../../db/queries/we/we");
 const weAddRequisitionDetailsQueries = require("../../db/queries/we/we-add-requisition-details");
 const weReconciliationRequisitionDetailsQueries = require("../../db/queries/we/we-reconciliation-requisition-details");
 const wdFormDyeingRequisitionDetailsQueries = require("../../db/queries/wd/wd-form-dyeing-requisition-details");
+const wdDyeingRequisitionDetailsQueries = require("../../db/queries/wd/wd-dyeing-requisition-details");
 
 // Util
 const constants = require("../../util/constants");
@@ -84,16 +85,69 @@ exports.selectStoreWe = async () => {
     returnSellWhereCluse[`${weTableName}.is_active`] = 1;
     returnSellWhereCluse[`${weTableName}.type`] = constantsPayloads.returnSellType;
 
+    let transitionBetweenOrdersWhereCluse = {};
+    transitionBetweenOrdersWhereCluse[`${weTableName}.is_deleted`] = 0;
+    transitionBetweenOrdersWhereCluse[`${weTableName}.is_active`] = 1;
+    transitionBetweenOrdersWhereCluse[`${weTableName}.type`] = constantsPayloads.transportBetweenOrdersType;
+
+
     let andWhereCluse = {whereTableName: `current_quantity`, operator: ">", value: "0"}
     let whereCluseArray = [
         whereCluse, reconciliationWhereCluse, 
         andWhereCluse, dyeingWhereCluse, 
         transitionBetweenWhWhereCluse,
-        returnSellWhereCluse
+        returnSellWhereCluse,
+        transitionBetweenOrdersWhereCluse
     ]
     let orderByCluse = {attributeName: `date`, value: "desc"}
 
     const results = await weQueries.selectStoreWe(whereCluseArray, orderByCluse);
+    const selectSellDirectQuantity = await weQueries.selectSellDirectQuantity(results)
+    return selectSellDirectQuantity;
+};
+
+exports.selectStoreWeByWeDyedFabricOrderRequisitionIdOfOrderDyedFabrics = async (weDyedFabricOrderRequisitionId) => {
+    let whereCluse = {};
+    whereCluse[`${weTableName}.is_deleted`] = 0;
+    whereCluse[`${weTableName}.is_active`] = 1;
+
+    let reconciliationWhereCluse = {};
+    reconciliationWhereCluse[`${weTableName}.is_deleted`] = 0;
+    reconciliationWhereCluse[`${weTableName}.is_active`] = 1;
+    reconciliationWhereCluse[`${weTableName}.type`] = constantsPayloads.reconcilitionType;
+    reconciliationWhereCluse[`${weReconciliationRequisitionDetailsTableName}.input_output`] = 1;
+
+    let dyeingWhereCluse = {};
+    dyeingWhereCluse[`${weTableName}.is_deleted`] = 0;
+    dyeingWhereCluse[`${weTableName}.is_active`] = 1;
+    dyeingWhereCluse[`${weTableName}.type`] = constantsPayloads.dyeingType;
+
+    let transitionBetweenWhWhereCluse = {};
+    transitionBetweenWhWhereCluse[`${weTableName}.is_deleted`] = 0;
+    transitionBetweenWhWhereCluse[`${weTableName}.is_active`] = 1;
+    transitionBetweenWhWhereCluse[`${weTableName}.type`] = constantsPayloads.transportBetweenType;
+
+    let returnSellWhereCluse = {};
+    returnSellWhereCluse[`${weTableName}.is_deleted`] = 0;
+    returnSellWhereCluse[`${weTableName}.is_active`] = 1;
+    returnSellWhereCluse[`${weTableName}.type`] = constantsPayloads.returnSellType;
+
+    let transitionBetweenOrdersWhereCluse = {};
+    transitionBetweenOrdersWhereCluse[`${weTableName}.is_deleted`] = 0;
+    transitionBetweenOrdersWhereCluse[`${weTableName}.is_active`] = 1;
+    transitionBetweenOrdersWhereCluse[`${weTableName}.type`] = constantsPayloads.transportBetweenOrdersType;
+
+    let andWhereCluse = {whereTableName: `current_quantity`, operator: ">", value: "0"}
+    let whereCluseArray = [
+        whereCluse, reconciliationWhereCluse, 
+        andWhereCluse, dyeingWhereCluse, 
+        transitionBetweenWhWhereCluse,
+        returnSellWhereCluse,
+        transitionBetweenOrdersWhereCluse
+    ]
+    let orderByCluse = {attributeName: `date`, value: "desc"}
+
+    const results = await weQueries.selectStoreWeByWeDyedFabricOrderRequisitionIdOfOrderDyedFabrics(whereCluseArray, orderByCluse, weDyedFabricOrderRequisitionId);
     const selectSellDirectQuantity = await weQueries.selectSellDirectQuantity(results)
     return selectSellDirectQuantity;
 };
@@ -297,6 +351,20 @@ exports.selectStoreWithDyeingServicesWe = async () => {
     return storeWithDyeingServicesWeResult;
 };
 
+exports.selectRequisitionsForWeDyedFabricOrderRequisitionFordyedFabricOrder = async (ordersRequisitionsId, weDyedFabricOrderRequisitionDetailsId) => {
+    let callArray = []
+
+    let whereCluse = {};
+    whereCluse[`${wdDyeingRequisitionDetailsTableName}.is_deleted`] = 0;
+    whereCluse[`${wdDyeingRequisitionDetailsTableName}.is_active`] = 1;
+    whereCluse[`${wdDyeingRequisitionDetailsTableName}.orders_requisitions_id`] = ordersRequisitionsId;
+    whereCluse[`${wdDyeingRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_details_id`] = weDyedFabricOrderRequisitionDetailsId;
+    callArray.push(wdDyeingRequisitionDetailsQueries.selectRequisitionsForWeFabricOrderRequisitionFordyedFabricOrder(whereCluse))
+
+    let requisitions = await Promise.all(callArray)    
+    requisitions = [...new Set([].concat(...requisitions.map((o) => o)))]   
+    return requisitions
+};
 
 exports.decrementWeCurrentQuantity = async (newQuantity, currentQuantity, fabricStoredInWe, updatedQuantity) => {
     if (newQuantity > currentQuantity) {

@@ -40,6 +40,9 @@ exports.create = async (wdDyeingRequisitionDetails) => {
         weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.dyed_fabric_id`] = wdDyeingRequisitionDetails.items[i].dyedFabricId;
 
         const selectWeDyedFabricOrderRequisitionDetailsResult = await weDyedFabricOrderRequisitionDetailsQueries.selectByRequisitionId(weDyedFabricOrderRequisitionDetailsWhereCluse)
+        // console.log("selectWeDyedFabricOrderRequisitionDetailsResult :::: ", selectWeDyedFabricOrderRequisitionDetailsResult);
+        // console.log("wdDyeingRequisitionDetails.items[i].ordersRequisitionsId :::: ", wdDyeingRequisitionDetails.items[i].ordersRequisitionsId);
+        
         if (Array.isArray(selectWeDyedFabricOrderRequisitionDetailsResult) && selectWeDyedFabricOrderRequisitionDetailsResult.length > 0) {
             wdDyeingRequisitionDetails.items[i].weDyedFabricOrderRequisitionDetailsId = selectWeDyedFabricOrderRequisitionDetailsResult[0].id
             wdDyeingRequisitionDetails.items[i].dyedFabricOrderId = selectWeDyedFabricOrderRequisitionDetailsResult[0].requisition_id
@@ -50,6 +53,8 @@ exports.create = async (wdDyeingRequisitionDetails) => {
             let whereCluse = {}
             whereCluse[`${wdFormDyeingRequisitionDetailsTableName}.id`] = wdDyeingRequisitionDetails.items[i].wdFormRequisitionDetailsId
             const selectWdFormDyeingRequisitionDetailsOneResult = await wdFormDyeingRequisitionDetailsQueries.selectOne(whereCluse)
+            // console.log("selectWdFormDyeingRequisitionDetailsOneResult ::: ", selectWdFormDyeingRequisitionDetailsOneResult);
+            
             if (selectWdFormDyeingRequisitionDetailsOneResult[0] != null) {
                 // Decrement currrent_quantity from wd_form_dyeing_requisition_details
                 await wdFormDyeingRequisitionDetailsQueries.update({
@@ -411,23 +416,32 @@ exports.getSumTotalCostOfDyeing = async (dataSourceSearchTabel) => {
     let sum = 0
     const element = dataSourceSearchTabel;
     sum = await this.getTotalCost(parseFloat(element.price), element.quantity, element.dyeingServices,
-        (parseFloat(element.dyeing_fee) + parseFloat(element.added_cost)), parseFloat(element.fabric_piece)) / element.dyeing_quantity
+        parseFloat(element.dyeing_fee), parseFloat(element.fabric_piece), element.added_cost) / element.dyeing_quantity
+            
+        // sum  = sum + (parseFloat(element.added_cost))
     return parseFloat((sum).toFixed(3))
 }
 
-exports.getTotalCost = async (price, quantity, services, dyeingFee, fabricPiece) => {
+exports.getTotalCost = async (price, quantity, services, dyeingFee, fabricPiece, addedCost) => {
 
     let sum = 0
+    let sumCostWithoutFabricPiece = 0
 
     for (let index = 0; index < services.length; index++) {
         const element = services[index];
         if (element.is_fabric_piece) {
-            sum = sum + (element.price * fabricPiece)
+            sum = sum + (parseFloat(String(element.price)) * fabricPiece)
         }
         else {
-            sum = sum + (quantity * element.price)
+            sumCostWithoutFabricPiece = sumCostWithoutFabricPiece + parseFloat(String(element.price))
         }
     }
-    sum = sum + (dyeingFee * quantity)
-    return sum + (price * quantity)
+    sumCostWithoutFabricPiece = sumCostWithoutFabricPiece + parseFloat(String(dyeingFee))
+    sumCostWithoutFabricPiece = sumCostWithoutFabricPiece + parseFloat(String(addedCost))
+    sumCostWithoutFabricPiece = sumCostWithoutFabricPiece + parseFloat(String(price))
+    sumCostWithoutFabricPiece = sumCostWithoutFabricPiece * constants.notZero(quantity)
+    sum = sum + sumCostWithoutFabricPiece    
+    console.log(sum);
+    
+    return sum
 }

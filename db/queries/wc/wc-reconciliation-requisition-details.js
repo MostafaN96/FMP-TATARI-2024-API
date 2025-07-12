@@ -7,7 +7,8 @@ const constants = require("../../../util/constants");
 const { consigmentManufacturingTableName, 
   wcReconciliationRequisitionTableName, wcReconciliationRequisitionDetailsTableName, wcReconciliationRequisitionDetailsWcTableName,
   fabricTableName, wcTableName, warehouseTableName, 
-  wcFabricOrderRequisitionTableName} = require("../../../util/database-tables-name");
+  wcFabricOrderRequisitionTableName,
+  wdTransportWcWdDetailsWcTableName} = require("../../../util/database-tables-name");
 
 exports.insert = async (wcReconciliationRequisitionDetails, items) => {
   let queryResults = false;
@@ -457,6 +458,42 @@ exports.selectByConsigmentManufacturingForDyedFabricOrder = async (whereCluse, c
     .whereIn(`${wcReconciliationRequisitionDetailsTableName}.consigment_manufacturing_id`, consigmentsManufacturing)
     .then((data) => {
       queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.selectInputRequisitionsForWcFabricOrderRequisition = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.from(wdTransportWcWdDetailsWcTableName)
+    .select(
+      [
+        `${wcReconciliationRequisitionTableName}.number`,
+        `${wcReconciliationRequisitionDetailsTableName}.wc_reconcilition_requisition_id  as requisition_id`,
+        `${wcReconciliationRequisitionDetailsTableName}.wc_fabric_order_requisition_id`,
+        knex.raw('? as type_of_requisition', 'اذن تسوية'),
+      ],
+    )
+    .innerJoin(`${wcTableName}`, 
+      `${wcTableName}.id`, 
+      `${wdTransportWcWdDetailsWcTableName}.wc_id`)
+      .innerJoin(`${wcReconciliationRequisitionDetailsWcTableName}`, 
+        `${wcReconciliationRequisitionDetailsWcTableName}.wc_id`, 
+        `${wcTableName}.id`)
+    .innerJoin(`${wcReconciliationRequisitionDetailsTableName}`, 
+      `${wcReconciliationRequisitionDetailsTableName}.id`, 
+      `${wcReconciliationRequisitionDetailsWcTableName}.wc_reconcilition_requisition_details_id`)
+    .innerJoin(`${wcReconciliationRequisitionTableName}`, 
+      `${wcReconciliationRequisitionTableName}.id`, 
+      `${wcReconciliationRequisitionDetailsTableName}.wc_reconcilition_requisition_id`)
+    .where(whereCluse)
+    .andWhere(`${wcReconciliationRequisitionDetailsTableName}.quantity`, ">", 0)
+    .andWhere(`${wdTransportWcWdDetailsWcTableName}.quantity`, ">", 0)
+    .groupBy(`${wcReconciliationRequisitionDetailsTableName}.wc_fabric_order_requisition_id`,
+      `${wcReconciliationRequisitionDetailsTableName}.wc_reconcilition_requisition_id`)
+    .then(async (data) => {
+        queryResults = data
     })
     .catch((error) => console.error(error));
   return queryResults;

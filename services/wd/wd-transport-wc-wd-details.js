@@ -112,6 +112,14 @@ exports.selectByRequisitionId = async (requisitionId) => {
     if (isFound[0] != null) {
 
         const results = await wdTransportWcWdDetailsQueries.selectByRequisitionId(requisitionId);
+        if (Array.isArray(results) && results.length > 0) {
+                    for (let i = 0; i < results.length; i++) {
+                        const element = results[i];
+                        element.fabricOrderRequisitions = await wcService.selectRequisitionsForWcFabricOrderRequisition(
+                            element.id
+                        )
+                    }
+                }
         return results;
     } else {
         return constants.itemNotFound;

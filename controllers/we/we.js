@@ -16,6 +16,15 @@ exports.selectStoreBySupplierForReturnWe = async (request, response) => {
   response.status(200).json(results);
 };
 
+exports.selectStoreWeByWeDyedFabricOrderRequisitionIdOfOrderDyedFabrics = async (request, response) => {
+  // logging
+  const { id } = request.params;
+
+  // call service
+  const results = await weService.selectStoreWeByWeDyedFabricOrderRequisitionIdOfOrderDyedFabrics(id);
+  response.status(200).json(results);
+};
+
 exports.selectSoldedBySellerForReturnSellWe = async (request, response) => {
   // logging
   const { id } = request.params;

@@ -78,8 +78,8 @@ exports.selectByRequisitionId = async (whereCluse) => {
     `orders_requisitions_id`,
     `from_wc_fabric_order_requisition_id`,
     `wc_fabric_order_requisition_id`,
-    `order_name`,
-    `from_order_name`,
+    `to_wc_fabric_order_name`,
+    `from_wc_fabric_order_name`,
   ]
   await knex.select(columns).from(function () {
     this.select([
@@ -104,8 +104,8 @@ exports.selectByRequisitionId = async (whereCluse) => {
       `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.orders_requisitions_id`,
       `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.from_wc_fabric_order_requisition_id`,
       `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_fabric_order_requisition_id`,
-      `${wcFabricOrderRequisitionTableName}.name as order_name`,
-      `from_fabric_order_requisition.name as from_order_name`,
+      `${wcFabricOrderRequisitionTableName}.name as to_wc_fabric_order_name`,
+      `from_fabric_order_requisition.name as from_wc_fabric_order_name`,
     ])
       .from(`${wcTransitionBetweenOrdersRequisitionDetailsTableName}`)
       .innerJoin(`${wcTransitionBetweenOrdersRequisitionTableName}`,
@@ -119,7 +119,7 @@ exports.selectByRequisitionId = async (whereCluse) => {
           `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.from_wc_fabric_order_requisition_id`)
       .innerJoin(`${warehouseTableName}`,
         `${warehouseTableName}.id`,
-        `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.from_warehouse_id`)
+        `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.warehouse_id`)
       .innerJoin(`${fabricTableName}`,
         `${fabricTableName}.id`,
         `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.fabric_id`)
@@ -154,6 +154,7 @@ exports.selectOne = async (whereCluse) => {
       `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.from_consigment_manufacturing_id`,
       `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_fabric_order_requisition_details_id`,
       `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_fabric_order_requisition_id`,
+      `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.from_wc_fabric_order_requisition_id`,
       `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.quantity`,
       `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.fabric_piece`,
       `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.warehouse_id`,

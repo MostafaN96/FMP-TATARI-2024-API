@@ -11,7 +11,8 @@ const {
   wcTableName, 
   consigmentManufacturingTableName,
   wcTransitionBetweenWHRequisitionDetailsWcTableName,
-  wcFabricOrderRequisitionTableName
+  wcFabricOrderRequisitionTableName,
+  wdTransportWcWdDetailsWcTableName
 } = require("../../../util/database-tables-name");
 
 exports.insert = async (wcTransitionBetweenWHRequisitionDetails, items) => {
@@ -834,6 +835,39 @@ exports.selectToByConsigmentManufacturingForDyedFabricOrder = async (whereCluse,
     .where(whereCluse)
     .andWhere(`${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`, ">", 0)
     .whereIn(`${wcTransitionBetweenWHRequisitionDetailsTableName}.consigment_manufacturing_id`, consigmentsManufacturing)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.selectToRequisitionsForWcFabricOrderRequisition = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.from(wdTransportWcWdDetailsWcTableName)
+    .select(
+      [
+        `${wcTransitionBetweenWHRequisitionTableName}.number`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.wc_transition_between_wh_requisitions_id as requisition_id`,
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.wc_fabric_order_requisition_id`,
+        knex.raw('? as type_of_requisition', 'اذن نقل بين المخازن'),
+      ],
+    )
+    .innerJoin(`${wcTableName}`, 
+      `${wcTableName}.id`, 
+      `${wdTransportWcWdDetailsWcTableName}.wc_id`)
+      .innerJoin(`${wcTransitionBetweenWHRequisitionDetailsTableName}`, 
+        `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`, 
+        `${wcTableName}.wc_transition_between_wh_requisitions_details_id`)
+    .innerJoin(`${wcTransitionBetweenWHRequisitionTableName}`, 
+      `${wcTransitionBetweenWHRequisitionTableName}.id`, 
+      `${wcTransitionBetweenWHRequisitionDetailsTableName}.wc_transition_between_wh_requisitions_id`)
+    .where(whereCluse)
+    .andWhere(`${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`, ">", 0)
+    .andWhere(`${wdTransportWcWdDetailsWcTableName}.quantity`, ">", 0)
+    .groupBy(`${wcTransitionBetweenWHRequisitionDetailsTableName}.wc_fabric_order_requisition_id`,
+      `${wcTransitionBetweenWHRequisitionDetailsTableName}.wc_transition_between_wh_requisitions_id`)
     .then((data) => {
       queryResults = data;
     })

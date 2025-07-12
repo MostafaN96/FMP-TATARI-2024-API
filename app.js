@@ -175,6 +175,9 @@ const weExcuteOrderRequisitionDetailsRouter = require("./routers/we/we-execute-o
 const weTransitionBetweenWHRequisitionRouter = require("./routers/we/we-transition-between-wh-requisition");
 const weTransitionBetweenWHRequisitionDetailsRouter = require("./routers/we/we-transition-between-wh-requisition-details");
 
+const weTransitionBetweenOrdersRequisitionRouter = require("./routers/we/we-transition-between-orders-requisition");
+const weTransitionBetweenOrdersRequisitionDetailsRouter = require("./routers/we/we-transition-between-orders-requisition-details");
+
 const weReportRouter = require("./routers/we/we-report");
 
 app.use((req, res, next) => {
@@ -355,6 +358,9 @@ app.use('/api/we-execute-order-requisition-details', weExcuteOrderRequisitionDet
 
 app.use("/api/we-transition-between-wh-requisition", weTransitionBetweenWHRequisitionRouter);
 app.use("/api/we-transition-between-wh-requisition-details", weTransitionBetweenWHRequisitionDetailsRouter);
+
+app.use("/api/we-transition-between-orders-requisition", weTransitionBetweenOrdersRequisitionRouter);
+app.use("/api/we-transition-between-orders-requisition-details", weTransitionBetweenOrdersRequisitionDetailsRouter);
 
 app.use("/api/we-report", weReportRouter);
 

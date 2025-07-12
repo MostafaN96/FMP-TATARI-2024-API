@@ -35,6 +35,11 @@ router.get("/closed-orders",
     middleWeres.checkIdentity(usersType.ADMIN_STR),
     waPurchaseOrderController.inquireYarnsOfFabricForOrderWaByOrders);
 
+  router.post("/get-current-needed-quantity-of-fabric-for-order",
+    middleWeres.checkAuth(),
+    middleWeres.checkIdentity(usersType.ADMIN_STR),
+    waPurchaseOrderController.getCurrentNeededYarnQuantityOfFabricForOrder);
+
 // Post Queries
 router.post(
   "",

@@ -3,6 +3,7 @@ const validations = require("../../helpers/validations");
 exports.isValid = (waYarnOrderRequisitionDetails) => {
     const waYarnOrderRequisitionDetailsSchema = joi.object({
         id: validations.joiText(15, 30),
+        ordersRequisitionsId: validations.joiText(15, 30),
         personid: validations.joiText(3, 50),
         ipaddress: validations.joiText(3, 50),
         items:joi.array().items( {

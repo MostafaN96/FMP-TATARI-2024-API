@@ -170,12 +170,11 @@ exports.selectInventoryTotalByYarnByWarehouse = async (yarnId, warehouseId) => {
         waAddRequisitionDetailsWhereCluse[`${waAddRequisitionDetailsTableName}.yarn_id`] = yarnId;
         waAddRequisitionDetailsWhereCluse[`${waAddRequisitionTableName}.date`] = selectMaxDate[0]?.date;
         const latestPrice = await waAddRequisitionDetailsQueries.selectLatestPrice(waAddRequisitionDetailsWhereCluse)
-        if (latestPrice[0] != null) {
-            sortedAsc[0].latest_price = latestPrice[0]?.price
-            sortedAsc[0].latest_price_dollar = latestPrice[0]?.price_dollar
+        if(sortedAsc[0] == undefined) {
+            sortedAsc = [{"latest_price": 0}, {"latest_price_dollar": 0}]
         } else {
-            sortedAsc[0].latest_price = 0
-            sortedAsc[0].latest_price_dollar = 0
+            sortedAsc[0].latest_price = (latestPrice[0] == undefined) ? 0 : latestPrice[0]?.price
+            sortedAsc[0].latest_price_dollar = (latestPrice[0] == undefined) ? 0 : latestPrice[0]?.price_dollar
         }
     } else {
         sortedAsc[0].latest_price = 0
@@ -348,13 +347,13 @@ exports.selectInventoryDetailsByWarehouseByYarnByLot = async (warehouseId, yarnI
 exports.selectPriceWa = async (yarnId, consigmentYarnId) => {
     let callArray = []
 
-    callArray.push(waAddRequisitionDetailsQueries.selectPriceByYarnId(yarnId))
-    callArray.push(waSellRequisitionDetailsQueries.selectPriceByYarnId(yarnId))
-    callArray.push(waReturnRequisitionDetailsQueries.selectPriceByYarnId(yarnId))
-    callArray.push(waReconciliationRequisitionDetailsQueries.selectPriceByYarnId(yarnId))
-    callArray.push(wbTransportWaWbDetailsQueries.selectPriceByYarnId(yarnId))
-    callArray.push(wbTransportRequisitionWbWaDetailsQueries.selectPriceByYarnId(yarnId))
-    callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectToPriceByYarnId(yarnId))
+    callArray.push(waAddRequisitionDetailsQueries.selectPriceByYarnId(yarnId, consigmentYarnId))
+    callArray.push(waSellRequisitionDetailsQueries.selectPriceByYarnId(yarnId, consigmentYarnId))
+    callArray.push(waReturnRequisitionDetailsQueries.selectPriceByYarnId(yarnId, consigmentYarnId))
+    callArray.push(waReconciliationRequisitionDetailsQueries.selectPriceByYarnId(yarnId, consigmentYarnId))
+    callArray.push(wbTransportWaWbDetailsQueries.selectPriceByYarnId(yarnId, consigmentYarnId))
+    callArray.push(wbTransportRequisitionWbWaDetailsQueries.selectPriceByYarnId(yarnId, consigmentYarnId))
+    callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectToPriceByYarnId(yarnId, consigmentYarnId))
     const requisitions = await Promise.all(callArray)
     const sortedAsc = [...requisitions[0], ...requisitions[1],
     ...requisitions[2], ...requisitions[3], ...requisitions[4],
@@ -365,6 +364,7 @@ exports.selectPriceWa = async (yarnId, consigmentYarnId) => {
     // Select Max Added Date
     let maxDateWhereCluse = {};
     maxDateWhereCluse[`${waAddRequisitionDetailsTableName}.yarn_id`] = yarnId;
+    maxDateWhereCluse[`${waAddRequisitionDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
     const selectMaxDate = await generalQueries.selectMaxValueWithJoinCondition(waAddRequisitionTableName,
         { date: 'date' }, maxDateWhereCluse,
         waAddRequisitionDetailsTableName,
@@ -374,6 +374,7 @@ exports.selectPriceWa = async (yarnId, consigmentYarnId) => {
         // Select Latest Price
         let waAddRequisitionDetailsWhereCluse = {};
         waAddRequisitionDetailsWhereCluse[`${waAddRequisitionDetailsTableName}.yarn_id`] = yarnId;
+        waAddRequisitionDetailsWhereCluse[`${waAddRequisitionDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
         waAddRequisitionDetailsWhereCluse[`${waAddRequisitionTableName}.date`] = selectMaxDate[0]?.date;
         const latestPrice = await waAddRequisitionDetailsQueries.selectLatestPrice(waAddRequisitionDetailsWhereCluse)
         if (latestPrice[0] != null) {
@@ -436,6 +437,16 @@ exports.purchasesBySuppliers = async () => {
     }
     suppliers.sort(function (a, b) { return b.quantity - a.quantity });
     return suppliers
+};
+
+exports.yarnOrdersReport = async () => {
+    
+    let whereCluse = {};
+    whereCluse[`wa_yarn_order_requisition_is_order`] = 1;
+    whereCluse[`wa_yarn_order_requisition_details_is_order`] = 1;
+
+    const salesReportResult = await waReportQueries.yarnOrdersReport(whereCluse)
+    return salesReportResult
 };
 
 exports.selectInventoryTotalByDate = async (bodyPalod) => {
@@ -607,9 +618,11 @@ exports.inquireYarnsOfFabricForOrderWa = async (fabric, addedData) => {
             for (let i = 0; i < yarnsOfFabricResult.length; i++) {
                 const yarnOfFabric = yarnsOfFabricResult[i];
 
-                const waYarns = await this.inquireYarnAvilabilityReportWa(yarnOfFabric.yarn_id)
+                const waYarns = await this.inquireYarnAvilabilityReportWa(yarnOfFabric.yarn_id)                
                 if (waYarns[0] != null) {
                     let calcQuantityYarn = calcQuantity
+                    // let calcQuantityYarn = parseFloat((calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100))).toFixed(3))
+                    
                     for (let j = 0; j < waYarns.length; j++) {
                         const waYarn = waYarns[j];
 
@@ -618,6 +631,12 @@ exports.inquireYarnsOfFabricForOrderWa = async (fabric, addedData) => {
                         neededYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((neededYarnQuantity / ( 1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100) )).toFixed(3)) 
                         : neededYarnQuantity
                         calcQuantityYarn = 0
+
+                        // let neededYarnQuantity = 0
+                        // neededYarnQuantity = parseFloat(((calcQuantityYarn * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
+                        // neededYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((neededYarnQuantity / (1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100))).toFixed(3))
+                        //     : neededYarnQuantity
+                        // calcQuantityYarn = 0
 
                         // check if yarn added before for not calc same current quantity in all records
                         isWaYarnsAdded = await weReportService.checkFoundObjectInArray1Attr(
@@ -674,10 +693,18 @@ exports.inquireYarnsOfFabricForOrderWa = async (fabric, addedData) => {
                         }
                     }
                 } else {
+
                     let neededYarnQuantity = 0
                         neededYarnQuantity = parseFloat((((calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100))) * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
                         neededYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((neededYarnQuantity / ( 1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100) )).toFixed(3)) 
                         : neededYarnQuantity
+
+                    // let calcQuantityYarn = parseFloat((calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100))).toFixed(3))
+                    // let neededYarnQuantity = 0
+                    // neededYarnQuantity = parseFloat(((calcQuantityYarn * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
+                    // neededYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((neededYarnQuantity / (1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100))).toFixed(3))
+                    //     : neededYarnQuantity
+
                     data.push(
                         {
                             id: yarnOfFabric.yarn_id,
@@ -724,6 +751,31 @@ exports.yarnsOfFabricForOrderWa = async (fabric) => {
                     needed_quantity: neededYarnQuantity,
                 })
             }
+        }
+
+        resolve(data); // Yay! Everything went well!
+
+    })
+    return await myFirstPromise
+
+}
+
+exports.getCurrentNeededYarnQuantityOfFabricForOrder = async (fabric) => {
+    let data = []
+    let calcQuantity = fabric.current_quantity
+
+    const myFirstPromise = new Promise(async (resolve, reject) => {
+        // select yarns of fabric
+        const yarnsOfFabricResult = await fabricYarnsService.selectByFabricIdByYarnId(fabric.fabric_id, fabric.yarn_id)
+        if (yarnsOfFabricResult[0] != null) {
+
+            neededYarnQuantity = parseFloat(((calcQuantity * parseFloat(yarnsOfFabricResult[0].ratio) / 100)).toFixed(3))
+            neededYarnQuantity = (yarnsOfFabricResult[0].wast_ratio != 0) ? parseFloat((neededYarnQuantity / (1 - (constants.notZero(yarnsOfFabricResult[0].wast_ratio) / 100))).toFixed(3))
+                : neededYarnQuantity
+
+            data.push({
+                needed_quantity: neededYarnQuantity,
+            })
         }
 
         resolve(data); // Yay! Everything went well!

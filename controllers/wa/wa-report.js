@@ -83,3 +83,9 @@ exports.selectInventoryTotal = async (request, response) => {
     const results = await waReportService.purchasesBySuppliers();
     response.status(200).json(results);
   };
+  
+  exports.yarnOrdersReport = async (request, response) => {
+  
+    const results = await waReportService.yarnOrdersReport();
+    response.status(200).json(results);
+  };

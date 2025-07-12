@@ -1,10 +1,21 @@
 // Queries
 const wdQueries = require("../../db/queries/wd/wd");
+const wdReconciliationRequisitionDetailsQueries = require("../../db/queries/wd/wd-reconciliation-requisition-details");
+const wdTransportWcWdRequisitionDetailsQueries = require("../../db/queries/wd/wd-transport-wc-wd-details");
+const wdTransitionBetweenDyersRequisitionDetailsQueries = require("../../db/queries/wd/wd-transition-between-dyers-requisition-details");
 
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-const { wdTableName, wdTransportWcWdDetailsTableName, wdReconciliationRequisitionDetailsTableName, wdTransitionBetweenDyersRequisitionDetailsTableName } = require("../../util/database-tables-name");
+const { 
+    wdTableName, 
+    wdTransportWcWdDetailsTableName, 
+    wdReconciliationRequisitionDetailsTableName, 
+    wdTransitionBetweenDyersRequisitionDetailsTableName, 
+    wdFormDyeingOrderDetailsTableName,
+    wdFormDyeingRequisitionDetailsTableName,
+    wdFormDyeingRequisitionDetailsWdTableName
+} = require("../../util/database-tables-name");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -156,6 +167,34 @@ exports.selectRecordsByDyeingByFabricByConsigmentDyeing = async (dyeingId, fabri
 
     const results = await wdQueries.selectRecordsByDyeingByFabricByConsigmentDyeing(whereCluseArray, orderByCluse);
     return results;
+};
+
+exports.selectRequisitionsForWcFabricOrderRequisition = async (requisitionDetailsId) => {
+    let callArray = []
+
+    let whereCluse = {};
+    whereCluse[`${wdFormDyeingRequisitionDetailsWdTableName}.is_deleted`] = 0;
+    whereCluse[`${wdFormDyeingRequisitionDetailsWdTableName}.is_active`] = 1;
+    whereCluse[`${wdFormDyeingRequisitionDetailsWdTableName}.wd_form_dyeing_requisition_details_id`] = requisitionDetailsId;
+    callArray.push(wdTransportWcWdRequisitionDetailsQueries.selectRequisitionsForWcFabricOrderRequisition(whereCluse))
+
+    let reconciliationWhereCluse = {};
+    reconciliationWhereCluse[`${wdFormDyeingRequisitionDetailsWdTableName}.is_deleted`] = 0;
+    reconciliationWhereCluse[`${wdFormDyeingRequisitionDetailsWdTableName}.is_active`] = 1;
+    reconciliationWhereCluse[`${wdFormDyeingRequisitionDetailsWdTableName}.wd_form_dyeing_requisition_details_id`] = requisitionDetailsId;
+    reconciliationWhereCluse[`${wdTableName}.type`] = constantsPayloads.reconcilitionType;
+    reconciliationWhereCluse[`${wdReconciliationRequisitionDetailsTableName}.input_output`] = 1;
+    callArray.push(wdReconciliationRequisitionDetailsQueries.selectInputRequisitionsForWcFabricOrderRequisition(reconciliationWhereCluse))
+
+    let transitionBetweenWhereCluse = {};
+    transitionBetweenWhereCluse[`${wdFormDyeingRequisitionDetailsWdTableName}.is_deleted`] = 0;
+    transitionBetweenWhereCluse[`${wdFormDyeingRequisitionDetailsWdTableName}.is_active`] = 1;
+    transitionBetweenWhereCluse[`${wdFormDyeingRequisitionDetailsWdTableName}.wd_form_dyeing_requisition_details_id`] = requisitionDetailsId;
+    callArray.push(wdTransitionBetweenDyersRequisitionDetailsQueries.selectToRequisitionsForWcFabricOrderRequisition(transitionBetweenWhereCluse))
+    
+    let requisitions = await Promise.all(callArray)    
+    requisitions = [...new Set([].concat(...requisitions.map((o) => o)))]   
+    return requisitions
 };
 
 exports.decrementWdCurrentQuantity = async (newQuantity, currentQuantity, materialStoredInWd, updatedQuantity) => {

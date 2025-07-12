@@ -323,10 +323,11 @@ exports.selectDetailsDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId,
   return queryResults;
 };
 
-exports.selectPriceByYarnId = async (yarnId) => {
+exports.selectPriceByYarnId = async (yarnId, consigmentYarnId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${waSellRequisitionDetailsTableName}.yarn_id`] = yarnId;
+  whereCluse[`${waSellRequisitionDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
   whereCluse[`${waSellRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${waSellRequisitionDetailsTableName}.is_active`] = 1;
 

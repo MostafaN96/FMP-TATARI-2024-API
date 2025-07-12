@@ -4,7 +4,8 @@ const knex = require("../../config/connection").getConnection();
 
 // Util
 const { weDyedFabricOrderRequisitionTableName, bussinessmanTableName, 
-    weDyedFabricOrderRequisitionDetailsTableName } = require("../../../util/database-tables-name");
+    weDyedFabricOrderRequisitionDetailsTableName, 
+    waYarnOrderRequisitionTableName} = require("../../../util/database-tables-name");
 
 exports.insert = async (weDyedFabricOrderRequisition) => {
     let queryResults = false;
@@ -76,6 +77,47 @@ exports.select = async (whereCluse, isOrder) => {
         .whereIn(`${weDyedFabricOrderRequisitionTableName}.id`, function() {
             this.select(`${weDyedFabricOrderRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`)
             .from(`${weDyedFabricOrderRequisitionDetailsTableName}`)
+            .where({"is_order": isOrder})
+          })
+        .then((data) => {
+            // console.log("weDyedFabricOrderRequisitionTableName => :::: data", data);
+            queryResults = data;
+        })
+        .catch((error) => console.error(error));
+    return queryResults;
+};
+
+exports.selectForAddPurchaseWa = async (whereCluse, isOrder) => {
+    let queryResults = [];
+
+    await knex(weDyedFabricOrderRequisitionTableName)
+        .select([
+            `${weDyedFabricOrderRequisitionTableName}.id`,
+            `${weDyedFabricOrderRequisitionTableName}.orders_requisitions_id`,
+            `${weDyedFabricOrderRequisitionTableName}.number`,
+            `${weDyedFabricOrderRequisitionTableName}.name`,
+            `${weDyedFabricOrderRequisitionTableName}.date`,
+            `${weDyedFabricOrderRequisitionTableName}.note`,
+            `${bussinessmanTableName}.name as seller_name`,
+            `${bussinessmanTableName}.id as seller_id`,
+            // `${ordersRequisitionsTableName}.wa_yarn_order_requisition_id`,
+            // `${ordersRequisitionsTableName}.wb_manufacturing_order_requisition_id`,
+        ])
+        .innerJoin(`${bussinessmanTableName}`,
+            `${bussinessmanTableName}.id`,
+            `${weDyedFabricOrderRequisitionTableName}.seller_id`
+        )
+        .where(whereCluse)
+        .orderBy(`${weDyedFabricOrderRequisitionTableName}.number`, 'desc')
+        .groupBy(`${weDyedFabricOrderRequisitionTableName}.id`)
+        .whereIn(`${weDyedFabricOrderRequisitionTableName}.id`, function() {
+            this.select(`${weDyedFabricOrderRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`)
+            .from(`${weDyedFabricOrderRequisitionDetailsTableName}`)
+            .where({"is_order": isOrder})
+          })
+          .whereIn(`${weDyedFabricOrderRequisitionTableName}.orders_requisitions_id`, function() {
+            this.select(`${waYarnOrderRequisitionTableName}.orders_requisitions_id`)
+            .from(`${waYarnOrderRequisitionTableName}`)
             .where({"is_order": isOrder})
           })
         .then((data) => {

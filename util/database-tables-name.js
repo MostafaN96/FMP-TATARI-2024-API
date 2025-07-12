@@ -187,6 +187,10 @@ const weTransitionBetweenWHRequisitionTableName = 'we_transition_between_wh_requ
 const weTransitionBetweenWHRequisitionDetailsTableName = 'we_transition_between_wh_requisitions_details'
 const weTransitionBetweenWHRequisitionDetailsWeTableName = 'we_transition_between_wh_req_details_we'
 
+const weTransitionBetweenOrdersRequisitionTableName = 'we_transition_between_orders_requisitions'
+const weTransitionBetweenOrdersRequisitionDetailsTableName = 'we_transition_between_orders_requisitions_details'
+const weTransitionBetweenOrdersRequisitionDetailsWeTableName = 'we_transition_between_orders_req_details_we'
+
 
 module.exports = {
     userTableName,
@@ -364,4 +368,8 @@ module.exports = {
     weTransitionBetweenWHRequisitionTableName,
     weTransitionBetweenWHRequisitionDetailsTableName,
     weTransitionBetweenWHRequisitionDetailsWeTableName,
+
+    weTransitionBetweenOrdersRequisitionTableName,
+    weTransitionBetweenOrdersRequisitionDetailsTableName,
+    weTransitionBetweenOrdersRequisitionDetailsWeTableName,
 }

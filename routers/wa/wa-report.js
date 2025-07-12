@@ -61,6 +61,13 @@ router.get(
   waReportController.purchasesBySuppliers
 );
 
+router.get(
+  "/yarn-orders-report",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  waReportController.yarnOrdersReport
+);
+
 // Post Queries
 router.post(
   "/select-inventory-total",

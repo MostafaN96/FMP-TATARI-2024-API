@@ -68,6 +68,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
     `${wdTransportWcWdDetailsTableName}.price`,
     `${wdTransportWcWdDetailsTableName}.price_dollar`,
     `${bussinessmanTableName}.name as dyer_name`,
+    `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
     `${wdTableName}.current_quantity`,
   ])
     .sum(`${wdTransportWcWdDetailsTableName}.quantity as quantity`)
@@ -91,6 +92,9 @@ exports.selectByRequisitionId = async (requisitionId) => {
     .innerJoin(`${bussinessmanTableName}`,
       `${bussinessmanTableName}.id`,
       `${wdTableName}.dyeing_id`)
+      .innerJoin(`${wcFabricOrderRequisitionTableName}`,
+        `${wcFabricOrderRequisitionTableName}.id`,
+        `${wdTransportWcWdDetailsTableName}.wc_fabric_order_requisition_id`)
     .groupBy(
       `${wdTransportWcWdDetailsTableName}.id`,
       `${wdTransportWcWdDetailsTableName}.fabric_id`,
@@ -993,5 +997,40 @@ exports.selectByConsigmentDyeingForDyedFabricOrder = async (whereCluse, consigme
       console.log(error);
       console.error(error)
     });
+  return queryResults;
+};
+
+exports.selectRequisitionsForWcFabricOrderRequisition = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.from(wdFormDyeingRequisitionDetailsWdTableName)
+    .select(
+      [
+        `${wdTransportWcWdTableName}.number`,
+        `${wdTransportWcWdDetailsTableName}.wd_transport_wc_wd_id as requisition_id`,
+        `${wdTransportWcWdDetailsTableName}.wc_fabric_order_requisition_id`,
+        knex.raw('? as type_of_requisition', 'اذن نقل من الخام الى المصبغة'),
+      ],
+    )
+    .innerJoin(`${wdTableName}`, 
+      `${wdTableName}.id`, 
+      `${wdFormDyeingRequisitionDetailsWdTableName}.wd_id`)
+      .innerJoin(`${wdTransportWcWdDetailsTableName}`, 
+        `${wdTransportWcWdDetailsTableName}.id`, 
+        `${wdTableName}.wd_transport_wc_wd_details_id`)
+    .innerJoin(`${wdTransportWcWdTableName}`, 
+      `${wdTransportWcWdTableName}.id`, 
+      `${wdTransportWcWdDetailsTableName}.wd_transport_wc_wd_id`)
+    .where(whereCluse)
+    .andWhere(`${wdTransportWcWdDetailsTableName}.quantity`, ">", 0)
+    .andWhere(`${wdFormDyeingRequisitionDetailsWdTableName}.quantity`, ">", 0)
+    .groupBy(
+      `${wdTransportWcWdDetailsTableName}.wc_fabric_order_requisition_id`,
+      `${wdTransportWcWdDetailsTableName}.wd_transport_wc_wd_id`
+    )
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
   return queryResults;
 };

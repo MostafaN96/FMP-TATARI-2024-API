@@ -64,6 +64,7 @@ exports.selectByRequisitionId = async (whereCluse) => {
     `${yarnTableName}.id as yarn_id`,
     `${yarnTableName}.name as yarn_name`,
     `${yarnTableName}.code as yarn_code`,
+    `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`,
   ])
     .from(`${waPurchaseOrderDetailsTableName}`)
     .innerJoin(`${waPurchaseOrderTableName}`,
@@ -72,6 +73,12 @@ exports.selectByRequisitionId = async (whereCluse) => {
     .innerJoin(`${yarnTableName}`,
       `${yarnTableName}.id`,
       `${waPurchaseOrderDetailsTableName}.yarn_id`)
+      .leftOuterJoin(`${waAddRequisitionDetailsPurchaseOrderTableName}`,
+        `${waAddRequisitionDetailsPurchaseOrderTableName}.wa_add_purchase_order_details_id`,
+        `${waPurchaseOrderDetailsTableName}.id`)
+        .leftOuterJoin(`${waAddRequisitionDetailsTableName}`,
+          `${waAddRequisitionDetailsTableName}.id`,
+          `${waAddRequisitionDetailsPurchaseOrderTableName}.wa_add_requisition_details_id`)
     .where(whereCluse)
     .andWhere(`${waPurchaseOrderDetailsTableName}.initial_quantity`, ">", 0)
     .then((data) => {
@@ -186,6 +193,8 @@ exports.selectOutputWarehouseByRequisitionDetailsId = async (whereCluse) => {
   await knex.select([
     `${warehouseTableName}.name as warehouse_name`,
     `${warehouseTableName}.is_grade`,
+    `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`,
+    `${waAddRequisitionTableName}.number`,
   ])
   .sum(`${waAddRequisitionDetailsTableName}.quantity as quantity`)
     .from(`${waAddRequisitionDetailsTableName}`)
@@ -195,10 +204,15 @@ exports.selectOutputWarehouseByRequisitionDetailsId = async (whereCluse) => {
     .innerJoin(`${warehouseTableName}`,
       `${warehouseTableName}.id`,
       `${waAddRequisitionDetailsTableName}.warehouse_id`)
+      .innerJoin(`${waAddRequisitionTableName}`,
+        `${waAddRequisitionTableName}.id`,
+        `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
     .where(whereCluse)
     .andWhere(`${waAddRequisitionDetailsTableName}.quantity`, ">", 0)
     .groupBy(`${waAddRequisitionDetailsTableName}.yarn_id`, 
-    `${waAddRequisitionDetailsTableName}.warehouse_id`)
+    `${waAddRequisitionDetailsTableName}.warehouse_id`,
+    `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`
+  )
     .then((data) => {
       queryResults = data;
     })

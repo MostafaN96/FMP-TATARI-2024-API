@@ -98,6 +98,7 @@ exports.selectOneByRequisitionId = async (requisitionId) => {
     `${wbManufacturingInputOutputTableName}.wa_yarn_order_requisition_id`,
     `${bussinessmanTableName}.id as manufacturer_id`,
     `${bussinessmanTableName}.name as manufacturer_name`,
+    `${waYarnOrderRequisitionTableName}.name as wa_yarn_order_requisition_name`,
   ])
     .from(`${wbManufacturingInputTableName}`)
     .innerJoin(`${wbManufacturingInputOutputTableName}`,
@@ -106,6 +107,9 @@ exports.selectOneByRequisitionId = async (requisitionId) => {
     .innerJoin(`${wbManufacturingRequisitionTableName}`,
       `${wbManufacturingRequisitionTableName}.id`,
       `${wbManufacturingInputOutputTableName}.wb_manufacturing_requisition_id`)
+    .innerJoin(`${waYarnOrderRequisitionTableName}`,
+      `${waYarnOrderRequisitionTableName}.id`,
+      `${wbManufacturingInputOutputTableName}.wa_yarn_order_requisition_id`)
     .innerJoin(`${yarnTableName}`,
       `${yarnTableName}.id`,
       `${wbManufacturingInputTableName}.yarn_id`)
@@ -115,7 +119,9 @@ exports.selectOneByRequisitionId = async (requisitionId) => {
     .innerJoin(`${bussinessmanTableName}`,
       `${bussinessmanTableName}.id`,
       `${wbManufacturingRequisitionTableName}.industry_id`)
-    .innerJoin(`${consigmentYarnTableName}`, `${consigmentYarnTableName}.id`, `${wbManufacturingInputTableName}.consigment_yarn_id`)
+    .innerJoin(`${consigmentYarnTableName}`, 
+      `${consigmentYarnTableName}.id`, 
+      `${wbManufacturingInputTableName}.consigment_yarn_id`)
     .where(whereCluse)
     .then((data) => {
       queryResults = data;
@@ -157,11 +163,15 @@ exports.selectByRequisitionId = async (requisitionId) => {
     `${wbManufacturingInputOutputTableName}.wa_yarn_order_requisition_id`,
     `${bussinessmanTableName}.id as manufacturer_id`,
     `${bussinessmanTableName}.name as manufacturer_name`,
+    `${waYarnOrderRequisitionTableName}.name as wa_yarn_order_requisition_name`,
   ])
     .from(`${wbManufacturingInputTableName}`)
     .innerJoin(`${wbManufacturingInputOutputTableName}`,
       `${wbManufacturingInputOutputTableName}.wb_manufacturing_input_id`,
       `${wbManufacturingInputTableName}.id`)
+    .innerJoin(`${waYarnOrderRequisitionTableName}`,
+      `${waYarnOrderRequisitionTableName}.id`,
+      `${wbManufacturingInputOutputTableName}.wa_yarn_order_requisition_id`)
     .innerJoin(`${wbManufacturingRequisitionTableName}`,
       `${wbManufacturingRequisitionTableName}.id`,
       `${wbManufacturingInputOutputTableName}.wb_manufacturing_requisition_id`)

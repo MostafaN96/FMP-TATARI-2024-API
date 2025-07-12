@@ -106,6 +106,10 @@ exports.createForOrder = async (wdFormDyeingRequisition) => {
 
 exports.select = async () => {
     const results = await wdFormDyeingRequisitionQueries.select();
+    for (let i = 0; i < results.length; i++) {
+        const element = results[i];
+        element.details = await wdFormDyeingRequisitionDetailsService.selectByRequisitionId(element.id)
+    }
     return results;
   };
 

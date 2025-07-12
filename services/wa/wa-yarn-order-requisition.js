@@ -27,7 +27,10 @@ const {
     wbTransportWaWbDetailsTableName, 
     wbTableName, 
     wbReconciliationRequisitionDetailsTableName, 
-    wbTransitionBetweenIndustriesRequisitionDetailsTableName 
+    wbTransitionBetweenIndustriesRequisitionDetailsTableName, 
+    waTransitionBetweenWHRequisitionDetailsTableName,
+    wbTransportRequisitionWbWaDetailsTableName,
+    waReconciliationRequisitionDetailsTableName
 } = require("../../util/database-tables-name");
 
 exports.create = async (waYarnOrderRequisition) => {
@@ -136,6 +139,47 @@ exports.selectClosedOrders = async () => {
     return result
 }
   
+  exports.closedOrderByOrdersRequisitionsId = async (ordersRequisitionsId) => {
+
+    let result = false
+    let whereCluse = {};
+    whereCluse[`${waYarnOrderRequisitionDetailsTableName}.orders_requisitions_id`] = ordersRequisitionsId;
+    whereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+    whereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_active`] = 1;
+    whereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_order`] = 1;
+
+    const selectOpenedOrderResults = await waYarnOrderRequisitionDetailsQueries.selectByRequisitionId(whereCluse);
+    if(selectOpenedOrderResults[0] != null) {
+        for (let i = 0; i < selectOpenedOrderResults.length; i++) {
+            const selectOpenedOrderResult = selectOpenedOrderResults[i];
+
+            // close requisition details order
+            let waYarnOrderRequisitionDetailsWhereCluse = {};
+            waYarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.id`] = selectOpenedOrderResult.id;
+            await waYarnOrderRequisitionDetailsQueries.update({
+                is_order : 0
+            }, 
+            waYarnOrderRequisitionDetailsWhereCluse)
+        }
+
+        // close requisition order ??????????????????????????????
+        // let waYarnOrderRequisitionWhereCluse = {};
+        // waYarnOrderRequisitionWhereCluse[`${waYarnOrderRequisitionTableName}.id`] = requisitionId;
+        // const waYarnOrderRequisitionResult = await waYarnOrderRequisitionQueries.update({
+        //     is_order : 0
+        // },
+        // waYarnOrderRequisitionWhereCluse)
+        // if(waYarnOrderRequisitionResult) {
+            result = constants.updateSuccess
+        // } else {
+        //     result = constants.updateError
+        // }
+    } else {
+        result = constants.invalidDataResponse
+    }
+    return result
+}
+  
   exports.selectYarnsOfYarnOrderRequisition = async (requisitionId) => {
 
     let whereCluse = {};
@@ -153,6 +197,16 @@ exports.selectClosedOrders = async () => {
    
 }
 
+
+exports.selectByYarnWa = async (yarnId) => {
+    let whereCluse = {};
+    whereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+    whereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_active`] = 1;
+    whereCluse[`${waYarnOrderRequisitionDetailsTableName}.yarn_id`] = yarnId;
+  
+    const results = await waYarnOrderRequisitionQueries.selectByYarnWa(whereCluse);
+    return results;
+  };
 
 exports.selectByWarehouseWa = async (warehouseId) => {
     let whereCluse = {};

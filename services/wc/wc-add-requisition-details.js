@@ -8,6 +8,7 @@ const wcFabricOrderRequisitionDetailsQueries = require("../../db/queries/wc/wc-f
 // Services
 const wcService = require("./wc");
 const wcAddRequisitionDetailsFabricOrderService = require("./wc-add-requisition-details-fabric-order");
+const wcFabricOrderRequisitionDetailsService = require("./wc-fabric-order-requisition-details");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -19,7 +20,7 @@ const {
     wcFabricOrderRequisitionDetailsTableName 
 } = require("../../util/database-tables-name");
 
-exports.create = async (wcAddRequisitionDetails) => {
+exports.create = async (wcAddRequisitionDetails, isOrder) => {
     for (let i = 0; i < wcAddRequisitionDetails.items.length; i++) {
         wcAddRequisitionDetails.wcRequisitionDetailsId = trans.transform();
 
@@ -42,10 +43,10 @@ exports.create = async (wcAddRequisitionDetails) => {
             return constants.insertError;
         } else {
             await wcService.create(wcAddRequisitionDetails, wcAddRequisitionDetails.items[i])
-
+            if (isOrder) {
             
-        for (let j = 0; j < wcAddRequisitionDetails.orderId.length; j++) {
-            const orderElement = wcAddRequisitionDetails.orderId[j];
+        for (let j = 0; j < wcAddRequisitionDetails.ordersRequisitionsItems.length; j++) {
+            const orderElement = wcAddRequisitionDetails.ordersRequisitionsItems[j];
   
             let fabricOrderRequisitionDetailsWhereCluse = {};
             fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
@@ -62,8 +63,42 @@ exports.create = async (wcAddRequisitionDetails) => {
                 await wcAddRequisitionDetailsFabricOrderService.create({ ...fabricOrderRequisitionDetailsElement, ...wcAddRequisitionDetails }, orderElement)
   
               }
-            }
+            }  else {
+                orderElement.wcFabricOrderRequisitionDetailsId = trans.transform();
+                let wcFabricOrderRequisitionDetailsOneWhereCluse = {};
+                wcFabricOrderRequisitionDetailsOneWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+                wcFabricOrderRequisitionDetailsOneWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+                wcFabricOrderRequisitionDetailsOneWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_order`] = 1;
+                wcFabricOrderRequisitionDetailsOneWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`] = orderElement.ordersRequisitionsId;
+              
+                const selectOneFabricOrderRequisitionDetailsResult = await wcFabricOrderRequisitionDetailsQueries.selectOneForUpdate(wcFabricOrderRequisitionDetailsOneWhereCluse)
+                if (Array.isArray(selectOneFabricOrderRequisitionDetailsResult) && selectOneFabricOrderRequisitionDetailsResult.length > 0) {
+                  orderElement.wcFabricOrderRequisitionId = selectOneFabricOrderRequisitionDetailsResult[0].wc_fabric_order_requisition_id
+    
+                  const addWcFabricOrderRequisitionDetailsResult = await wcFabricOrderRequisitionDetailsQueries.insertForPurchaseOrder(wcAddRequisitionDetails, orderElement, wcAddRequisitionDetails.items[i])
+                  if(addWcFabricOrderRequisitionDetailsResult) {
+                    let wcFabricOrderRequisitionDetailsWhereCluse = {};
+                    wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+                    wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+                    wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_order`] = 1;
+                    wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`] = orderElement.ordersRequisitionsId;
+                    wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.fabric_id`] = wcAddRequisitionDetails.items[i].fabricId;
+      
+                    const selecFabricOrderRequisitionDetailsResult = await wcFabricOrderRequisitionDetailsQueries.selectByRequisitionId(wcFabricOrderRequisitionDetailsWhereCluse)
+                    if (Array.isArray(selecFabricOrderRequisitionDetailsResult) && selecFabricOrderRequisitionDetailsResult.length > 0) {
+                      for (let f = 0; f < selecFabricOrderRequisitionDetailsResult.length; f++) {
+                        const fabricOrderRequisitionDetailsElement = selecFabricOrderRequisitionDetailsResult[f];
+      
+                        await wcAddRequisitionDetailsFabricOrderService.create({ ...fabricOrderRequisitionDetailsElement, ...wcAddRequisitionDetails }, orderElement)
+      
+                      }
+                    }
+                  }
+                }
+    
+              }
           }
+        }
         }
     }
     return { ...constants.insertSuccess, ...{ id: wcAddRequisitionDetails.id } };
@@ -78,6 +113,31 @@ exports.selectByRequisitionId = async (requisitionId) => {
     if (isFound[0] != null) {
 
         const results = await wcAddRequisitionDetailsQueries.selectByRequisitionId(requisitionId);
+        return results;
+    } else {
+        return constants.itemNotFound;
+    }
+};
+
+exports.selectByRequisitionIdForOrder = async (requisitionId) => {
+    // check is found
+    const isFound = await wcAddRequisitionQueries.selectOne({
+        ...constantsPayloads.deletePayload,
+        id: requisitionId,
+    });
+    if (isFound[0] != null) {
+
+        const results = await wcAddRequisitionDetailsQueries.selectByRequisitionId(requisitionId);
+        if (Array.isArray(results) && results.length > 0) {
+            let orders = []
+            for (let i = 0; i < results.length; i++) {
+                const element = results[i];
+                orders.push(await wcFabricOrderRequisitionDetailsService.selectByRequisitionIdOpenedOrderForWcAddRequisition(element.id))
+            }
+            console.log(orders);
+            
+            results.orders = orders
+        }
         return results;
     } else {
         return constants.itemNotFound;

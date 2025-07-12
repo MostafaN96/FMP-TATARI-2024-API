@@ -767,7 +767,7 @@ exports.selectStoredWarehouseAndFabricAndConsigmentManufacturing = async (whereC
             `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_transition_between_orders_requisitions_id`)
             .innerJoin(`${warehouseTableName}`,
             `${warehouseTableName}.id`,
-            `${wcTransitionBetweenOrdersRequisitionTableName}.warehouse_id`)
+            `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.warehouse_id`)
           .innerJoin(`${fabricTableName}`,
             `${fabricTableName}.id`,
             `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.fabric_id`)

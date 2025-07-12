@@ -434,6 +434,7 @@ exports.selectSumCurrentQuantityByIndustryByYarnByYarnLotInWb = async (whereClus
       this.select([
         `${wbTableName}.current_quantity`,
       ])
+      .distinct(`${wbTransportWaWbDetailsTableName}.id`)
         .from(`${wbTableName}`)
         .innerJoin(`${wbTransportWaWbDetailsTableName}`,
           `${wbTransportWaWbDetailsTableName}.id`,
@@ -447,6 +448,7 @@ exports.selectSumCurrentQuantityByIndustryByYarnByYarnLotInWb = async (whereClus
           this.select([
             `${wbTableName}.current_quantity`,
           ])
+          .distinct(`${wbReconciliationRequisitionDetailsTableName}.id`)
             .from(`${wbTableName}`)
             .innerJoin(`${wbReconciliationRequisitionDetailsWbTableName}`,
               `${wbReconciliationRequisitionDetailsWbTableName}.wb_id`,
@@ -463,6 +465,7 @@ exports.selectSumCurrentQuantityByIndustryByYarnByYarnLotInWb = async (whereClus
           this.select([
             `${wbTableName}.current_quantity`,
           ])
+          .distinct(`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.id`)
             .from(`${wbTableName}`)
             .innerJoin(`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}`,
               `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.id`,
@@ -1302,6 +1305,7 @@ exports.selectRecordsByIndustryByYarnByYarnLotByFabricToBeManufactured = async (
     `yarn_id`,
     `yarn_lot_id`,
     `consigment_yarn_id`,
+    `from_wa_yarn_order_requisition_id`,
     `price`,
     `price_dollar`,
     `quantity`,
@@ -1319,6 +1323,7 @@ exports.selectRecordsByIndustryByYarnByYarnLotByFabricToBeManufactured = async (
       `${wbTransportWaWbDetailsTableName}.id as requisition_details_id`,
       `${wbTransportWaWbDetailsTableName}.yarn_id`,
       `${wbTransportWaWbDetailsTableName}.yarn_lot_id`,
+      `${wbTransportWaWbDetailsTableName}.from_wa_yarn_order_requisition_id`,
       `${wbTransportWaWbDetailsTableName}.from_consigment_yarn_id as consigment_yarn_id`,
       `${wbTransportWaWbDetailsTableName}.price`,
       `${wbTransportWaWbDetailsTableName}.price_dollar`,
@@ -1348,6 +1353,7 @@ exports.selectRecordsByIndustryByYarnByYarnLotByFabricToBeManufactured = async (
           `${wbReconciliationRequisitionDetailsTableName}.id as requisition_details_id`,
           `${wbReconciliationRequisitionDetailsTableName}.yarn_id`,
           `${wbReconciliationRequisitionDetailsTableName}.yarn_lot_id`,
+          knex.raw('? as from_wa_yarn_order_requisition_id', ''),
           `${wbReconciliationRequisitionDetailsTableName}.consigment_yarn_id`,
           `${wbReconciliationRequisitionDetailsTableName}.price`,
           `${wbReconciliationRequisitionDetailsTableName}.price_dollar`,
@@ -1381,6 +1387,7 @@ exports.selectRecordsByIndustryByYarnByYarnLotByFabricToBeManufactured = async (
           `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.id as requisition_details_id`,
           `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.yarn_id`,
           `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.yarn_lot_id`,
+          knex.raw('? as from_wa_yarn_order_requisition_id', ''),
           `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.consigment_yarn_id`,
           `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price`,
           `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price_dollar`,
@@ -1421,6 +1428,8 @@ exports.selectQuantityByWb = async (whereCluse) => {
     `yarn_code`,
     `quantity`,
     `requisition_details_id`,
+    `wa_yarn_order_requisition_name`,
+    `consigment_yarn_number`,
   ]
   await knex.select(columns).from(function () {
     this.select([
@@ -1428,6 +1437,8 @@ exports.selectQuantityByWb = async (whereCluse) => {
       `${yarnTableName}.name as yarn_name`,
       `${yarnTableName}.code as yarn_code`,
       `${wbTableName}.current_quantity as quantity`,
+      `${consigmentYarnTableName}.number as consigment_yarn_number`,
+      `${waYarnOrderRequisitionTableName}.name as wa_yarn_order_requisition_name`,
     ])
     .distinct(`${wbTransportWaWbDetailsTableName}.id as requisition_details_id`)
     // .distinct()
@@ -1438,6 +1449,12 @@ exports.selectQuantityByWb = async (whereCluse) => {
       .innerJoin(`${yarnTableName}`,
         `${yarnTableName}.id`,
         `${wbTransportWaWbDetailsTableName}.yarn_id`)
+        .innerJoin(`${consigmentYarnTableName}`,
+          `${consigmentYarnTableName}.id`,
+          `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`)
+        .innerJoin(`${waYarnOrderRequisitionTableName}`,
+          `${waYarnOrderRequisitionTableName}.id`,
+          `${wbTransportWaWbDetailsTableName}.wa_yarn_order_requisition_id`)
       .where(whereCluse)
       // .groupBy(`${waAddRequisitionDetailsTableName}.yarn_lot_id`)
       .as('t1')
@@ -1447,6 +1464,8 @@ exports.selectQuantityByWb = async (whereCluse) => {
           `${yarnTableName}.name as yarn_name`,
           `${yarnTableName}.code as yarn_code`,
           `${wbTableName}.current_quantity as quantity`,
+          `${consigmentYarnTableName}.number as consigment_yarn_number`,
+          `${waYarnOrderRequisitionTableName}.name as wa_yarn_order_requisition_name`,
         ])
         .distinct(`${wbReconciliationRequisitionDetailsTableName}.id as requisition_details_id`)
         // .distinct()
@@ -1463,6 +1482,12 @@ exports.selectQuantityByWb = async (whereCluse) => {
           .innerJoin(`${yarnTableName}`,
             `${yarnTableName}.id`,
             `${wbReconciliationRequisitionDetailsTableName}.yarn_id`)
+            .innerJoin(`${consigmentYarnTableName}`,
+              `${consigmentYarnTableName}.id`,
+              `${wbReconciliationRequisitionDetailsTableName}.consigment_yarn_id`)
+            .innerJoin(`${waYarnOrderRequisitionTableName}`,
+              `${waYarnOrderRequisitionTableName}.id`,
+              `${wbReconciliationRequisitionDetailsTableName}.wa_yarn_order_requisition_id`)
           .where(whereCluse)
           .andWhere(`${wbReconciliationRequisitionDetailsTableName}.input_output`, '1')
         // .groupBy(`${waReconciliationRequisitionDetailsTableName}.yarn_lot_id`)
@@ -1474,6 +1499,8 @@ exports.selectQuantityByWb = async (whereCluse) => {
           `${yarnTableName}.name as yarn_name`,
           `${yarnTableName}.code as yarn_code`,
           `${wbTableName}.current_quantity as quantity`,
+          `${consigmentYarnTableName}.number as consigment_yarn_number`,
+          `${waYarnOrderRequisitionTableName}.name as wa_yarn_order_requisition_name`,
         ])
         .distinct(`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.id as requisition_details_id`)
         // .distinct()
@@ -1485,14 +1512,20 @@ exports.selectQuantityByWb = async (whereCluse) => {
           .innerJoin(`${yarnTableName}`,
             `${yarnTableName}.id`,
             `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.yarn_id`)
+            .innerJoin(`${consigmentYarnTableName}`,
+              `${consigmentYarnTableName}.id`,
+              `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.consigment_yarn_id`)
+            .innerJoin(`${waYarnOrderRequisitionTableName}`,
+              `${waYarnOrderRequisitionTableName}.id`,
+              `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.wa_yarn_order_requisition_id`)
           .where(whereCluse)
       })
   }).as('temp')
     .sum(`quantity as quantity`)
     .where(`quantity`, `>`, `0`)
-    .groupBy(`yarn_id`)
+    .groupBy(`yarn_id`, `wa_yarn_order_requisition_name`)
     .then((data) => {
-      console.log(data);
+      // console.log(data);
       queryResults = data;
     })
     .catch((error) => console.error(error));

@@ -14,6 +14,12 @@ router.get("/:id",
     middleWeres.checkInt(),
     wcAddRequisitionDetailsController.selectByRequisitionId);
 
+router.get("/for-order/:id",
+    middleWeres.checkAuth(),
+    middleWeres.checkIdentity(usersType.ADMIN_STR),
+    middleWeres.checkInt(),
+    wcAddRequisitionDetailsController.selectByRequisitionIdForOrder);
+
 // Post Queries
 router.post(
     "",

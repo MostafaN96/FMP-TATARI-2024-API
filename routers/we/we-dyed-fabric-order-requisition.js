@@ -13,10 +13,17 @@ router.get("/opened-orders",
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   weDyedFabricOrderRequisitionController.selectOpenedOrders);
 
+
 router.get("/closed-orders",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   weDyedFabricOrderRequisitionController.selectClosedOrders);
+
+// get Queries
+router.get("/opened-orders-for-purchase-wa",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  weDyedFabricOrderRequisitionController.selectOpenedOrdersForAddPurchaseWa);
 
   router.get("/dyed-fabrics-order-requisition/:id",
     middleWeres.checkAuth(),

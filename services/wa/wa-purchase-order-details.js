@@ -7,6 +7,7 @@ const bussinessmanQueries = require("../../db/queries/general/bussinessman");
 const waAddRequisitionDetailsService = require("./wa-add-requisition-details");
 const waAddRequisitionService = require("./wa-add-requisition");
 const waAddRequisitionDetailsPurchaseOrderService = require("./wa-add-requisition-details-purchase-order");
+const waWaYarnOrderRequisitionDetailsYarnOrderService = require("./wa-add-requisition-details-yarn-order");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -15,11 +16,13 @@ const trans = require("../../helpers/transform");
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
 const { waPurchaseOrderTableName, waPurchaseOrderDetailsTableName,
-    waAddRequisitionDetailsPurchaseOrderTableName
+    waAddRequisitionDetailsPurchaseOrderTableName,
+    waAddRequisitionDetailsYarnOrderTableName
 } = require("../../util/database-tables-name");
 
 exports.create = async (waPurchaseOrderDetails) => {
     const orderId = waPurchaseOrderDetails.id
+    waPurchaseOrderDetails.purchaseOrderId = waPurchaseOrderDetails.id
 
     for (let i = 0; i < waPurchaseOrderDetails.items.length; i++) {
         waPurchaseOrderDetails.items[i].waPurchaseOrderDetailsId = trans.transform();
@@ -49,6 +52,18 @@ exports.create = async (waPurchaseOrderDetails) => {
         const selectAddRequisitionDetailsPurchaseOrderResult = await waAddRequisitionDetailsPurchaseOrderService.selectByPurchaseOrderId(orderId)
         if (Array.isArray(selectAddRequisitionDetailsPurchaseOrderResult) && selectAddRequisitionDetailsPurchaseOrderResult.length > 0) {
             waPurchaseOrderDetails.id = selectAddRequisitionDetailsPurchaseOrderResult[0].wa_add_requisition_id
+            
+            // for add details get wa yarn order Ids
+            let whereCluse = {};
+            whereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`] = selectAddRequisitionDetailsPurchaseOrderResult[0].wa_add_requisition_details_id;
+            whereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.is_deleted`] = 0;
+            whereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.is_active`] = 1;
+            let groupBy = ['orders_requisitions_id']
+            let selectWaYarnOrderRequisitionDetailsYarnOrderResults = await waWaYarnOrderRequisitionDetailsYarnOrderService.select(whereCluse, groupBy)
+            if (Array.isArray(selectWaYarnOrderRequisitionDetailsYarnOrderResults) && selectWaYarnOrderRequisitionDetailsYarnOrderResults.length > 0) {
+                waPurchaseOrderDetails.orderId = selectWaYarnOrderRequisitionDetailsYarnOrderResults
+                console.log("selectWaYarnOrderRequisitionDetailsYarnOrderResults ::::::  ", selectWaYarnOrderRequisitionDetailsYarnOrderResults);
+            }
 
             await waAddRequisitionDetailsService.create(waPurchaseOrderDetails, 1)
         }
@@ -77,7 +92,8 @@ exports.selectByRequisitionIdOpenedOrder = async (requisitionId) => {
                 const element = results[i];
                 let warehouseDetailsWhereCluse = {};
                 warehouseDetailsWhereCluse[`${waAddRequisitionDetailsPurchaseOrderTableName}.wa_add_purchase_order_details_id`] = element.id;
-                element.warehouseDetails = await waPurchaseOrderDetailsQueries.selectOutputWarehouseByRequisitionDetailsId(warehouseDetailsWhereCluse);
+                element.warehouseDetails = []
+                // element.warehouseDetails = await waPurchaseOrderDetailsQueries.selectOutputWarehouseByRequisitionDetailsId(warehouseDetailsWhereCluse);
             }
         }
         return results;
@@ -105,7 +121,8 @@ exports.selectByRequisitionIdClosedOrder = async (requisitionId) => {
                 const element = results[i];
                 let warehouseDetailsWhereCluse = {};
                 warehouseDetailsWhereCluse[`${waAddRequisitionDetailsPurchaseOrderTableName}.wa_add_purchase_order_details_id`] = element.id;
-                element.warehouseDetails = await waPurchaseOrderDetailsQueries.selectOutputWarehouseByRequisitionDetailsId(warehouseDetailsWhereCluse);
+                element.warehouseDetails = []
+                // element.warehouseDetails = await waPurchaseOrderDetailsQueries.selectOutputWarehouseByRequisitionDetailsId(warehouseDetailsWhereCluse);
             }
         }
         return results;

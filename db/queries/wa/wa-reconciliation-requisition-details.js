@@ -3,16 +3,19 @@ const sqlFun = require("../../config/sql-fun");
 const knex = require("../../config/connection").getConnection();
 
 // Util
-const waReconciliationRequisitionDetailsTableName = require("../../../util/database-tables-name").waReconciliationRequisitionDetailsTableName;
-const waReconciliationRequisitionTableName = require("../../../util/database-tables-name").waReconciliationRequisitionTableName;
-const waReconciliationRequisitionDetailsWaTableName = require("../../../util/database-tables-name").waReconciliationRequisitionDetailsWaTableName;
-const yarnTableName = require("../../../util/database-tables-name").yarnTableName;
-const bussinessmanTableName = require("../../../util/database-tables-name").bussinessmanTableName;
-const yarnLotTableName = require("../../../util/database-tables-name").yarnLotTableName;
-const waTableName = require("../../../util/database-tables-name").waTableName;
-const warehouseTableName = require("../../../util/database-tables-name").warehouseTableName;
 const constants = require("../../../util/constants");
-const { consigmentYarnTableName } = require("../../../util/database-tables-name");
+const { 
+  waReconciliationRequisitionDetailsTableName,
+  waReconciliationRequisitionTableName,
+  waReconciliationRequisitionDetailsWaTableName,
+  yarnLotTableName,
+  yarnTableName,
+  waTableName,
+  warehouseTableName,
+  consigmentYarnTableName, 
+  wbTransportWaWbDetailsWaTableName, 
+  waTransitionBetweenWHRequisitionDetailsWaTableName 
+} = require("../../../util/database-tables-name");
 
 exports.insert = async (waReconciliationRequisitionDetails, items) => {
   let queryResults = false;
@@ -322,10 +325,11 @@ exports.selectDetailsDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId,
   return queryResults;
 };
 
-exports.selectPriceByYarnId = async (yarnId) => {
+exports.selectPriceByYarnId = async (yarnId, consigmentYarnId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${waReconciliationRequisitionDetailsTableName}.yarn_id`] = yarnId;
+  whereCluse[`${waReconciliationRequisitionDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
   whereCluse[`${waReconciliationRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${waReconciliationRequisitionDetailsTableName}.is_active`] = 1;
 
@@ -469,6 +473,78 @@ exports.selectTotalDetailsByDate = async (bodyPalod) => {
     .andWhere(`${waReconciliationRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
       queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.selectInputRequisitionsForWaYarnOrderRequisition = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.from(wbTransportWaWbDetailsWaTableName)
+    .select(
+      [
+        `${waReconciliationRequisitionTableName}.number`,
+        `${waReconciliationRequisitionDetailsTableName}.wa_reconcilition_requisition_id  as requisition_id`,
+        `${waReconciliationRequisitionDetailsTableName}.wa_yarn_order_requisition_id`,
+        knex.raw('? as type_of_requisition', 'اذن تسوية'),
+      ],
+    )
+    .innerJoin(`${waTableName}`, 
+      `${waTableName}.id`, 
+      `${wbTransportWaWbDetailsWaTableName}.wa_id`)
+      .innerJoin(`${waReconciliationRequisitionDetailsWaTableName}`, 
+        `${waReconciliationRequisitionDetailsWaTableName}.wa_id`, 
+        `${waTableName}.id`)
+    .innerJoin(`${waReconciliationRequisitionDetailsTableName}`, 
+      `${waReconciliationRequisitionDetailsTableName}.id`, 
+      `${waReconciliationRequisitionDetailsWaTableName}.wa_reconcilition_requisition_details_id`)
+    .innerJoin(`${waReconciliationRequisitionTableName}`, 
+      `${waReconciliationRequisitionTableName}.id`, 
+      `${waReconciliationRequisitionDetailsTableName}.wa_reconcilition_requisition_id`)
+    .where(whereCluse)
+    .andWhere(`${waReconciliationRequisitionDetailsTableName}.quantity`, ">", 0)
+    .andWhere(`${wbTransportWaWbDetailsWaTableName}.quantity`, ">", 0)
+    .groupBy(`${waReconciliationRequisitionDetailsTableName}.wa_yarn_order_requisition_id`,
+      `${waReconciliationRequisitionDetailsTableName}.wa_reconcilition_requisition_id`)
+    .then(async (data) => {
+        queryResults = data
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.selectInputTransitionBetweenWhRequisitionsForWaYarnOrderRequisition = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.from(waTransitionBetweenWHRequisitionDetailsWaTableName)
+    .select(
+      [
+        `${waReconciliationRequisitionTableName}.number`,
+        `${waReconciliationRequisitionDetailsTableName}.wa_reconcilition_requisition_id  as requisition_id`,
+        `${waReconciliationRequisitionDetailsTableName}.wa_yarn_order_requisition_id`,
+        knex.raw('? as type_of_requisition', 'اذن تسوية'),
+      ],
+    )
+    .innerJoin(`${waTableName}`, 
+      `${waTableName}.id`, 
+      `${waTransitionBetweenWHRequisitionDetailsWaTableName}.wa_id`)
+      .innerJoin(`${waReconciliationRequisitionDetailsWaTableName}`, 
+        `${waReconciliationRequisitionDetailsWaTableName}.wa_id`, 
+        `${waTableName}.id`)
+    .innerJoin(`${waReconciliationRequisitionDetailsTableName}`, 
+      `${waReconciliationRequisitionDetailsTableName}.id`, 
+      `${waReconciliationRequisitionDetailsWaTableName}.wa_reconcilition_requisition_details_id`)
+    .innerJoin(`${waReconciliationRequisitionTableName}`, 
+      `${waReconciliationRequisitionTableName}.id`, 
+      `${waReconciliationRequisitionDetailsTableName}.wa_reconcilition_requisition_id`)
+    .where(whereCluse)
+    .andWhere(`${waReconciliationRequisitionDetailsTableName}.quantity`, ">", 0)
+    .andWhere(`${waTransitionBetweenWHRequisitionDetailsWaTableName}.quantity`, ">", 0)
+    .groupBy(`${waReconciliationRequisitionDetailsTableName}.wa_yarn_order_requisition_id`,
+      `${waReconciliationRequisitionDetailsTableName}.wa_reconcilition_requisition_id`)
+    .then(async (data) => {
+        queryResults = data
     })
     .catch((error) => console.error(error));
   return queryResults;

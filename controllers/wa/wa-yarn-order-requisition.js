@@ -80,6 +80,15 @@ exports.inquireYarnsOfFabricForOrderWa = async (request, response) => {
     response.status(200).json(results);
   };
   
+exports.selectByYarnWa = async (request, response) => {
+    // logging
+    const { id } = request.params;
+  
+    // call service
+    const results = await waYarnOrderRequisitionService.selectByYarnWa(id);
+    response.status(200).json(results);
+  };
+  
 exports.selectByWarehouseWa = async (request, response) => {
     // logging
     const { id } = request.params;

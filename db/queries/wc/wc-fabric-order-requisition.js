@@ -3,6 +3,7 @@ const sqlFun = require("../../config/sql-fun");
 const knex = require("../../config/connection").getConnection();
 
 // Util
+const constants = require("../../../util/constants");
 const { bussinessmanTableName, wcFabricOrderRequisitionDetailsTableName,
     wcFabricOrderRequisitionTableName,
     fabricTableName,
@@ -17,7 +18,10 @@ const { bussinessmanTableName, wcFabricOrderRequisitionDetailsTableName,
     wcAddRequisitionDetailsFabricOrderTableName,
     wcAddRequisitionTableName,
     wcTransitionBetweenWHRequisitionDetailsTableName,
-    wcTransitionBetweenWHRequisitionTableName
+    wcTransitionBetweenWHRequisitionTableName,
+    wcTransitionBetweenOrdersRequisitionDetailsWcTableName,
+    wcTransitionBetweenOrdersRequisitionDetailsTableName,
+    wcTransitionBetweenOrdersRequisitionTableName
 } = require("../../../util/database-tables-name");
 
 exports.insert = async (wcFabricOrderRequisition) => {
@@ -245,6 +249,36 @@ exports.selectStoredFabricsWc = async (whereCluseArray, isGreaterThanZero = 1) =
                         `${wcFabricOrderRequisitionTableName}.id`,
                         `${wcTransitionBetweenWHRequisitionDetailsTableName}.wc_fabric_order_requisition_id`)
                     .where(whereCluseArray[4])
+                    .andWhere(
+                        (qb) => {
+                            if (isGreaterThanZero) {
+                                qb.where(`${wcTableName}.current_quantity`, ">", "0")
+                            } else {
+                                qb.where(`${wcTableName}.current_quantity`, ">=", "0")
+                            }
+                        })
+            })
+            .union(function () {
+                this.select([
+                    `${wcFabricOrderRequisitionTableName}.orders_requisitions_id`,
+                    `${wcFabricOrderRequisitionTableName}.id`,
+                    `${wcFabricOrderRequisitionTableName}.name`,
+                    `${wcFabricOrderRequisitionTableName}.number`,
+                    `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.id as requisition_details_id`,
+                    `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.quantity`,
+                    `${wcTableName}.current_quantity`
+                ])
+                    .from(`${wcTableName}`)
+                    .innerJoin(`${wcTransitionBetweenOrdersRequisitionDetailsTableName}`,
+                        `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.id`,
+                        `${wcTableName}.wc_transition_between_orders_requisitions_details_id`)
+                    .innerJoin(`${wcTransitionBetweenOrdersRequisitionTableName}`,
+                        `${wcTransitionBetweenOrdersRequisitionTableName}.id`,
+                        `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_transition_between_orders_requisitions_id`)
+                    .innerJoin(`${wcFabricOrderRequisitionTableName}`,
+                        `${wcFabricOrderRequisitionTableName}.id`,
+                        `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_fabric_order_requisition_id`)
+                    .where(whereCluseArray[5])
                     .andWhere(
                         (qb) => {
                             if (isGreaterThanZero) {

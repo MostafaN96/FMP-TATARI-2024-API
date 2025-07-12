@@ -14,6 +14,7 @@ exports.isValid = (weSellRequisition) => {
             dyedFabricOrderName: validations.joiNotRequiredText(0, 10000),
             weId: validations.joiText(15, 30),
             dyedFabricId: validations.joiText(15, 30),
+            colorId: validations.joiText(15, 30),
             warehouseId: validations.joiText(15, 30),
             gradeItemName:validations.joiNotRequiredText(0, 60),
             price: validations.joiNumber(1, 60),

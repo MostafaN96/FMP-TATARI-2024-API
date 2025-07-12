@@ -17,6 +17,11 @@ const usersType = require("../../util/user-types");
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   weController.selectStoreWithDyeingServicesWe);
 
+  router.get("/select-by-order-store-we-of-order-dyed-fabrics/:id",
+    middleWeres.checkAuth(),
+    middleWeres.checkIdentity(usersType.ADMIN_STR),
+    weController.selectStoreWeByWeDyedFabricOrderRequisitionIdOfOrderDyedFabrics);
+
   router.get("/select-store-by-supplier-for-return-we/:id",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),

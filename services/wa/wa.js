@@ -19,7 +19,7 @@ const waReconciliationRequisitionDetailsWaTableName = require("../../util/databa
 
 // Helper
 const trans = require("../../helpers/transform");
-const { wbTransportRequisitionWbWaTableName, wbTransportRequisitionWbWaDetailsTableName, waExecuteOrderRequisitionTableName, waExecuteOrderRequisitionDetailsTableName, waTransitionBetweenWHRequisitionTableName, waTransitionBetweenWHRequisitionDetailsTableName, waAddRequisitionDetailsYarnOrderTableName } = require("../../util/database-tables-name");
+const { wbTransportRequisitionWbWaTableName, wbTransportRequisitionWbWaDetailsTableName, waExecuteOrderRequisitionTableName, waExecuteOrderRequisitionDetailsTableName, waTransitionBetweenWHRequisitionTableName, waTransitionBetweenWHRequisitionDetailsTableName, waAddRequisitionDetailsYarnOrderTableName, wbTransportWaWbDetailsWaTableName, wbTransitionBetweenIndustriesRequisitionDetailsTableName, wbTransitionBetweenIndustriesRequisitionDetailsWbTableName, waTransitionBetweenWHRequisitionDetailsWaTableName } = require("../../util/database-tables-name");
 
 exports.create = async (wa, items) => {
     wa.waId = trans.transform();
@@ -265,7 +265,9 @@ exports.selectSumCurrentQuantityByWarehouseByYarnByYarnLotByConsigmentYarnWa = a
         const element = data[i];
         sumCurrentQuantity = sumCurrentQuantity + element.current_quantity
     }
-    data[0].current_quantity = sumCurrentQuantity
+    if(data.length > 0) {
+        data[0].current_quantity = sumCurrentQuantity
+    }
     const results = [data[0]]
     return results;
 };
@@ -299,6 +301,63 @@ exports.selectYarnLotQuantityByWarehouseByYarnByLotForReturn = async (supplierId
 
     const results = await waQueries.selectYarnLotQuantityByWarehouseByYarnByLotForReturn(whereCluseArray);
     return results;
+};
+
+
+exports.selectRequisitionsForWaYarnOrderRequisition = async (requisitionDetailsId) => {
+    let callArray = []
+
+    let whereCluse = {};
+    whereCluse[`${wbTransportWaWbDetailsWaTableName}.is_deleted`] = 0;
+    whereCluse[`${wbTransportWaWbDetailsWaTableName}.is_active`] = 1;
+    whereCluse[`${wbTransportWaWbDetailsWaTableName}.wb_transport_wa_wb_details_id`] = requisitionDetailsId;
+    callArray.push(waAddRequisitionDetailsQueries.selectRequisitionsForWaYarnOrderRequisition(whereCluse))
+
+    let reconciliationWhereCluse = {};
+    reconciliationWhereCluse[`${wbTransportWaWbDetailsWaTableName}.is_deleted`] = 0;
+    reconciliationWhereCluse[`${wbTransportWaWbDetailsWaTableName}.is_active`] = 1;
+    reconciliationWhereCluse[`${wbTransportWaWbDetailsWaTableName}.wb_transport_wa_wb_details_id`] = requisitionDetailsId;
+    reconciliationWhereCluse[`${waTableName}.type`] = constantsPayloads.reconcilitionType;
+    reconciliationWhereCluse[`${waReconciliationRequisitionDetailsTableName}.input_output`] = 1;
+    callArray.push(waReconciliationRequisitionDetailsQueries.selectInputRequisitionsForWaYarnOrderRequisition(reconciliationWhereCluse))
+
+    let transitionBetweenWhWhereCluse = {};
+    transitionBetweenWhWhereCluse[`${wbTransportWaWbDetailsWaTableName}.is_deleted`] = 0;
+    transitionBetweenWhWhereCluse[`${wbTransportWaWbDetailsWaTableName}.is_active`] = 1;
+    transitionBetweenWhWhereCluse[`${wbTransportWaWbDetailsWaTableName}.wb_transport_wa_wb_details_id`] = requisitionDetailsId;
+    callArray.push(waTransitionBetweenWhRequisitionDetailsQueries.selectToRequisitionsForWaYarnOrderRequisition(transitionBetweenWhWhereCluse))
+
+    let requisitions = await Promise.all(callArray)        
+    requisitions = [...new Set([].concat(...requisitions.map((o) => o)))]   
+    return requisitions
+};
+
+exports.selectTransitionBetweenWhRequisitionsForWaYarnOrderRequisition = async (requisitionDetailsId) => {
+    let callArray = []
+
+    let whereCluse = {};
+    whereCluse[`${waTransitionBetweenWHRequisitionDetailsWaTableName}.is_deleted`] = 0;
+    whereCluse[`${waTransitionBetweenWHRequisitionDetailsWaTableName}.is_active`] = 1;
+    whereCluse[`${waTransitionBetweenWHRequisitionDetailsWaTableName}.wa_transition_between_wh_requisitions_details_id`] = requisitionDetailsId;
+    callArray.push(waAddRequisitionDetailsQueries.selectTransitionBetweenWhRequisitionsForWaYarnOrderRequisition(whereCluse))
+
+    let reconciliationWhereCluse = {};
+    reconciliationWhereCluse[`${waTransitionBetweenWHRequisitionDetailsWaTableName}.is_deleted`] = 0;
+    reconciliationWhereCluse[`${waTransitionBetweenWHRequisitionDetailsWaTableName}.is_active`] = 1;
+    reconciliationWhereCluse[`${waTransitionBetweenWHRequisitionDetailsWaTableName}.wa_transition_between_wh_requisitions_details_id`] = requisitionDetailsId;
+    reconciliationWhereCluse[`${waTableName}.type`] = constantsPayloads.reconcilitionType;
+    reconciliationWhereCluse[`${waReconciliationRequisitionDetailsTableName}.input_output`] = 1;
+    callArray.push(waReconciliationRequisitionDetailsQueries.selectInputTransitionBetweenWhRequisitionsForWaYarnOrderRequisition(reconciliationWhereCluse))
+
+    let transitionBetweenWhWhereCluse = {};
+    transitionBetweenWhWhereCluse[`${waTransitionBetweenWHRequisitionDetailsWaTableName}.is_deleted`] = 0;
+    transitionBetweenWhWhereCluse[`${waTransitionBetweenWHRequisitionDetailsWaTableName}.is_active`] = 1;
+    transitionBetweenWhWhereCluse[`${waTransitionBetweenWHRequisitionDetailsWaTableName}.wa_transition_between_wh_requisitions_details_id`] = requisitionDetailsId;
+    callArray.push(waTransitionBetweenWhRequisitionDetailsQueries.selectToTransitionBetweenWhRequisitionsForWaYarnOrderRequisition(transitionBetweenWhWhereCluse))
+
+    let requisitions = await Promise.all(callArray)        
+    requisitions = [...new Set([].concat(...requisitions.map((o) => o)))]   
+    return requisitions
 };
 
 exports.decrementWaCurrentQuantity = async (newQuantity, currentQuantity, yarnStoredInWa, updatedQuantity) => {

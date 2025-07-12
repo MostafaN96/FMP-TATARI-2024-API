@@ -646,3 +646,39 @@ exports.selectByConsigmentDyeingForDyedFabricOrder = async (whereCluse, consigme
     .catch((error) => console.error(error));
   return queryResults;
 };
+
+exports.selectInputRequisitionsForWcFabricOrderRequisition = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.from(wdFormDyeingRequisitionDetailsWdTableName)
+    .select(
+      [
+        `${wdReconciliationRequisitionTableName}.number`,
+        `${wdReconciliationRequisitionDetailsTableName}.wd_reconcilition_requisition_id  as requisition_id`,
+        `${wdReconciliationRequisitionDetailsTableName}.wc_fabric_order_requisition_id`,
+        knex.raw('? as type_of_requisition', 'اذن تسوية'),
+      ],
+    )
+    .innerJoin(`${wdTableName}`, 
+      `${wdTableName}.id`, 
+      `${wdFormDyeingRequisitionDetailsWdTableName}.wd_id`)
+      .innerJoin(`${wdReconciliationRequisitionDetailsWdTableName}`, 
+        `${wdReconciliationRequisitionDetailsWdTableName}.wd_id`, 
+        `${wdTableName}.id`)
+    .innerJoin(`${wdReconciliationRequisitionDetailsTableName}`, 
+      `${wdReconciliationRequisitionDetailsTableName}.id`, 
+      `${wdReconciliationRequisitionDetailsWdTableName}.wd_reconcilition_requisition_details_id`)
+    .innerJoin(`${wdReconciliationRequisitionTableName}`, 
+      `${wdReconciliationRequisitionTableName}.id`, 
+      `${wdReconciliationRequisitionDetailsTableName}.wd_reconcilition_requisition_id`)
+    .where(whereCluse)
+    .andWhere(`${wdReconciliationRequisitionDetailsTableName}.quantity`, ">", 0)
+    .andWhere(`${wdFormDyeingRequisitionDetailsWdTableName}.quantity`, ">", 0)
+    .groupBy(`${wdReconciliationRequisitionDetailsTableName}.wc_fabric_order_requisition_id`,
+      `${wdReconciliationRequisitionDetailsTableName}.wd_reconcilition_requisition_id`)
+    .then(async (data) => {
+        queryResults = data
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};

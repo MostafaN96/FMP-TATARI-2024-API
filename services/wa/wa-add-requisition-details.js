@@ -7,6 +7,13 @@ const waQueries = require("../../db/queries/wa/wa");
 const waPurchaseOrderDetailsQueries = require("../../db/queries/wa/wa-purchase-order-details");
 const waAddRequisitionDetailsPurchaseOrderQueries = require("../../db/queries/wa/wa-add-requisition-details-purchase-order");
 const waYarnOrderRequisitionDetailsQueries = require("../../db/queries/wa/wa-yarn-order-requisition-details");
+const waReconciliationRequisitionDetailsQueries = require("../../db/queries/wa/wa-reconciliation-requisition-details");
+const waTransitionBetweenWHRequisitionDetailsQueries = require("../../db/queries/wa/wa-transition-between-wh-requisition-details");
+const wbTransportWaWbDetailsQueries = require("../../db/queries/wb/wb-transport-wa-wb-details");
+const waAddRequisitionDetailsYarnOrderQueries = require("../../db/queries/wa/wa-add-requisition-details-yarn-order");
+const wbManufacturingInputOutputQueries = require("../../db/queries/wb/wb-manufacturing-input-output");
+const wbManufacturingInputQueries = require("../../db/queries/wb/wb-manufacturing-input");
+const waAddPurchaseOrderQueries = require("../../db/queries/wa/wa-purchase-order-details");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -20,11 +27,15 @@ const waService = require("./wa");
 const waPurchaseOrderDetailsService = require("./wa-purchase-order-details");
 const waAddRequisitionDetailsPurchaseOrderService = require("./wa-add-requisition-details-purchase-order");
 const waAddRequisitionDetailsYarnOrderService = require("./wa-add-requisition-details-yarn-order");
+const wbManufacturingOutputService = require("../wb/wb-manufacturing-output");
 
 const { waPurchaseOrderDetailsTableName, waTableName, waAddRequisitionDetailsTableName,
   waAddRequisitionDetailsPurchaseOrderTableName,
   waYarnOrderRequisitionTableName,
-  waYarnOrderRequisitionDetailsTableName } = require("../../util/database-tables-name");
+  waYarnOrderRequisitionDetailsTableName, 
+  waAddRequisitionDetailsYarnOrderTableName,
+  wbManufacturingInputOutputTableName,
+  wbTransportWaWbDetailsTableName} = require("../../util/database-tables-name");
 
 exports.create = async (waAddRequisitionDetails, isOrder) => {
   for (let i = 0; i < waAddRequisitionDetails.items.length; i++) {
@@ -81,7 +92,41 @@ exports.create = async (waAddRequisitionDetails, isOrder) => {
               await waAddRequisitionDetailsYarnOrderService.create({ ...yarnOrderRequisitionDetailsElement, ...waAddRequisitionDetails }, orderElement)
 
             }
+          } else {
+            orderElement.waYarnOrderRequisitionDetailsId = trans.transform();
+            let waYarnOrderRequisitionDetailsOneWhereCluse = {};
+            waYarnOrderRequisitionDetailsOneWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+            waYarnOrderRequisitionDetailsOneWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_active`] = 1;
+            waYarnOrderRequisitionDetailsOneWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_order`] = 1;
+            waYarnOrderRequisitionDetailsOneWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.orders_requisitions_id`] = orderElement.ordersRequisitionsId;
+          
+            const selectOneYarnOrderRequisitionDetailsResult = await waYarnOrderRequisitionDetailsQueries.selectOneForUpdate(waYarnOrderRequisitionDetailsOneWhereCluse)
+            if (Array.isArray(selectOneYarnOrderRequisitionDetailsResult) && selectOneYarnOrderRequisitionDetailsResult.length > 0) {
+              orderElement.waYarnOrderRequisitionId = selectOneYarnOrderRequisitionDetailsResult[0].wa_yarn_order_requisition_id
+
+              const addWaYarnOrderRequisitionDetailsResult = await waYarnOrderRequisitionDetailsQueries.insertForPurchaseOrder(waAddRequisitionDetails, orderElement, waAddRequisitionDetails.items[i])
+              if(addWaYarnOrderRequisitionDetailsResult) {
+                let waYarnOrderRequisitionDetailsWhereCluse = {};
+                waYarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+                waYarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_active`] = 1;
+                waYarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_order`] = 1;
+                waYarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.orders_requisitions_id`] = orderElement.ordersRequisitionsId;
+                waYarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.yarn_id`] = waAddRequisitionDetails.items[i].yarnId;
+  
+                const selectYarnOrderRequisitionDetailsResult = await waYarnOrderRequisitionDetailsQueries.selectByRequisitionId(waYarnOrderRequisitionDetailsWhereCluse)
+                if (Array.isArray(selectYarnOrderRequisitionDetailsResult) && selectYarnOrderRequisitionDetailsResult.length > 0) {
+                  for (let f = 0; f < selectYarnOrderRequisitionDetailsResult.length; f++) {
+                    const yarnOrderRequisitionDetailsElement = selectYarnOrderRequisitionDetailsResult[f];
+  
+                    await waAddRequisitionDetailsYarnOrderService.create({ ...yarnOrderRequisitionDetailsElement, ...waAddRequisitionDetails }, orderElement)
+  
+                  }
+                }
+              }
+            }
+
           }
+          
         }
 
       }
@@ -278,6 +323,17 @@ exports.updateForOrder = async (waAddRequisitionDetails) => {
   if (isFound[0] != null) {
     let updateResults = false
 
+    waAddRequisitionDetails.waAddRequisitionId = isFound[0].wa_add_requisition_id
+
+    // Update wa Yarn add requisition Without Quantity
+    await waAddRequisitionQueries.update({
+      date: waAddRequisitionDetails.date,
+      note: waAddRequisitionDetails.note
+    },
+      {
+        id: waAddRequisitionDetails.waAddRequisitionId
+      })
+
     // Update wa Add Requisition Details Without Quantity
     await waAddRequisitionDetailsQueries.update({
       price: waAddRequisitionDetails.price,
@@ -287,7 +343,7 @@ exports.updateForOrder = async (waAddRequisitionDetails) => {
     },
       {
         id: waAddRequisitionDetails.id
-      })
+      })      
 
     // we will select current quantity from store (wa) by following Steps :
     let wcWhereCluse = {};
@@ -302,6 +358,9 @@ exports.updateForOrder = async (waAddRequisitionDetails) => {
       waAddRequisitionDetailsPurchaseOrderWhereCluse[`${waAddRequisitionDetailsPurchaseOrderTableName}.is_active`] = 1;
       const selectWaAddRequisitionDetailsPurchaseOrderOneResult = await waAddRequisitionDetailsPurchaseOrderQueries.selectOne(waAddRequisitionDetailsPurchaseOrderWhereCluse)
       if (selectWaAddRequisitionDetailsPurchaseOrderOneResult[0] != null) {
+
+        // update prices waAddRequisitionDetailsPurchaseOrderQueries
+        await updatePrices(waAddRequisitionDetails, selectWaAddRequisitionDetailsPurchaseOrderOneResult, isFound);
 
         let waPurchaseOrderDetailsWhereCluse = {};
         waPurchaseOrderDetailsWhereCluse[`${waPurchaseOrderDetailsTableName}.id`] = selectWaAddRequisitionDetailsPurchaseOrderOneResult[0].wa_add_purchase_order_details_id;
@@ -429,3 +488,83 @@ exports.updateForOrder = async (waAddRequisitionDetails) => {
     return constants.itemNotFound;
   }
 };
+
+async function updatePrices(waAddRequisitionDetails, selectWaAddRequisitionDetailsPurchaseOrderOneResult, isFound) {
+  await waAddPurchaseOrderQueries.update({
+    price: waAddRequisitionDetails.price,
+    price_dollar: waAddRequisitionDetails.priceDollar,
+  },
+    {
+      id: selectWaAddRequisitionDetailsPurchaseOrderOneResult[0].wa_add_purchase_order_details_id
+    });
+
+  let waAddRequisitionDetailsYarnOrderWhereCluse = {};
+  waAddRequisitionDetailsYarnOrderWhereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`] = waAddRequisitionDetails.id;
+  waAddRequisitionDetailsYarnOrderWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.yarn_id`] = isFound[0].yarn_id;
+  const selectWaAddRequisitionDetailsYarnOrderOneResult = await waAddRequisitionDetailsYarnOrderQueries.selectDetails(waAddRequisitionDetailsYarnOrderWhereCluse);
+  if (selectWaAddRequisitionDetailsYarnOrderOneResult[0] != null) {
+
+    //
+    await waReconciliationRequisitionDetailsQueries.update({
+      price: waAddRequisitionDetails.price,
+      price_dollar: waAddRequisitionDetails.priceDollar,
+    }, {
+      wa_yarn_order_requisition_details_id: selectWaAddRequisitionDetailsYarnOrderOneResult[0].wa_yarn_order_requisition_details_id,
+      yarn_id: isFound[0].yarn_id
+    });
+
+    //
+    await waTransitionBetweenWHRequisitionDetailsQueries.update({
+      price: waAddRequisitionDetails.price,
+      price_dollar: waAddRequisitionDetails.priceDollar,
+    }, {
+      wa_yarn_order_requisition_details_id: selectWaAddRequisitionDetailsYarnOrderOneResult[0].wa_yarn_order_requisition_details_id,
+      yarn_id: isFound[0].yarn_id
+    });
+
+    //
+    await wbTransportWaWbDetailsQueries.update({
+      price: waAddRequisitionDetails.price,
+      price_dollar: waAddRequisitionDetails.priceDollar,
+    }, {
+      from_wa_yarn_order_requisition_details_id: selectWaAddRequisitionDetailsYarnOrderOneResult[0].wa_yarn_order_requisition_details_id,
+      yarn_id: isFound[0].yarn_id
+    });
+
+    let wbTransportWaWbDetailsWhereCluse = {};
+    wbTransportWaWbDetailsWhereCluse[`${wbTransportWaWbDetailsTableName}.from_wa_yarn_order_requisition_details_id`] = selectWaAddRequisitionDetailsYarnOrderOneResult[0].wa_yarn_order_requisition_details_id;
+    wbTransportWaWbDetailsWhereCluse[`${wbTransportWaWbDetailsTableName}.yarn_id`] = isFound[0].yarn_id;
+    const selectWbTransportWaWbDetailsOneResult = await wbTransportWaWbDetailsQueries.selectByRequisitionId(wbTransportWaWbDetailsWhereCluse);
+    if (selectWbTransportWaWbDetailsOneResult[0] != null) {
+      for (let k = 0; k < selectWbTransportWaWbDetailsOneResult.length; k++) {
+        const selectWbTransportWaWbDetailsRecord = selectWbTransportWaWbDetailsOneResult[k];
+
+        //
+        let wbManufacturingInputOutputWhereCluse = {};
+        wbManufacturingInputOutputWhereCluse[`${wbManufacturingInputOutputTableName}.wa_yarn_order_requisition_details_id`] = selectWbTransportWaWbDetailsRecord.wa_yarn_order_requisition_details_id;
+        const selectWbManufacturingInputOutputResult = await wbManufacturingInputOutputQueries.select(wbManufacturingInputOutputWhereCluse);
+
+        if (selectWbManufacturingInputOutputResult[0] != null) {
+
+          for (let i = 0; i < selectWbManufacturingInputOutputResult.length; i++) {
+            const element = selectWbManufacturingInputOutputResult[i];
+
+            await wbManufacturingInputQueries.update({
+              price: waAddRequisitionDetails.price,
+              price_dollar: waAddRequisitionDetails.priceDollar,
+            }, {
+              id: element.wb_manufacturing_input_id,
+            });
+
+            //
+            await wbManufacturingOutputService.calcFabricPrice(element.wb_manufacturing_output_id);
+
+          }
+
+        }
+      }
+
+    }
+
+  }
+}

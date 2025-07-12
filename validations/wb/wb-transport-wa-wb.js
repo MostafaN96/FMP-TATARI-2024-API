@@ -7,9 +7,12 @@ exports.isValid = (wbTransportWaWbRequisition) => {
         note: validations.joiNotRequiredText(0, 100000),
         personid: validations.joiText(3, 50),
         ipaddress: validations.joiText(3, 50),
-        items:joi.array().items( {
+        items: joi.array().items({
+            waYarnOrderRequisitionDetailsId: validations.joiText(15, 30),
             ordersRequisitionsId: validations.joiText(15, 30),
             yarnOrderId: validations.joiText(15, 30),
+            fromOrdersRequisitionsId: validations.joiText(15, 30),
+            fromYarnOrderId: validations.joiText(15, 30),
             yarnId: validations.joiText(15, 30),
             industryId: validations.joiText(15, 30),
             fabricToBeManufacturedId: validations.joiText(15, 30),
@@ -19,6 +22,7 @@ exports.isValid = (wbTransportWaWbRequisition) => {
             fromConsigmentYarnId: validations.joiText(15, 30),
             price: validations.joiNotRequiredNumber(0, 50),
             priceDollar: validations.joiNotRequiredText(0, 50),
+            exceededRatio: validations.joiNumber(1, 90),
             quantity: validations.joiNumber(1, 60),
             document: validations.joiNotRequiredNumber(0, 50),
             statement: validations.joiNotRequiredText(0, 10000),

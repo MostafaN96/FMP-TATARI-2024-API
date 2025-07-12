@@ -26,6 +26,28 @@ exports.insert = async (wcAddRequisition) => {
   return queryResults;
 };
 
+exports.insertForOrder = async (wcAddRequisition) => {
+  let queryResults = false;
+  await sqlFun
+    .insert(wcAddRequisitionTableName, {
+      id: wcAddRequisition.id,
+      supplier_id: wcAddRequisition.supplierId,
+      number: wcAddRequisition.number,
+      date: wcAddRequisition.date,
+      note: wcAddRequisition.note,
+      is_order: '1',
+      creator_id: wcAddRequisition.personid,
+      ip_address: wcAddRequisition.ipaddress,
+    })
+    .then((data) => {
+      queryResults = true;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+  return queryResults;
+};
+
 exports.selectOne = async (whereCluse) => {
   let queryResults = false;
   await sqlFun
@@ -54,6 +76,7 @@ exports.select = async () => {
         `${wcAddRequisitionTableName}.number`,
         `${wcAddRequisitionTableName}.date`,
         `${wcAddRequisitionTableName}.note`,
+        `${wcAddRequisitionTableName}.is_order`,
         `${bussinessmanTableName}.name as supplier_name`,
       ],
       whereCluse,

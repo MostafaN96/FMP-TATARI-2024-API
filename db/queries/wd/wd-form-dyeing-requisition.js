@@ -4,7 +4,8 @@ const knex = require("../../config/connection").getConnection();
 
 // Util
 const { wdFormDyeingRequisitionTableName, bussinessmanTableName, fabricTableName, 
-    wdDyeingOrderRequisitionTableName, wdFormOrderDetailsWdFormDetailsTableName, wdFormDyeingRequisitionDetailsTableName, wdFormDyeingOrderDetailsTableName, wdDyeingOrderRequisitionDetailsTableName } = require("../../../util/database-tables-name");
+    wdDyeingOrderRequisitionTableName, wdFormOrderDetailsWdFormDetailsTableName, wdFormDyeingRequisitionDetailsTableName, wdFormDyeingOrderDetailsTableName, wdDyeingOrderRequisitionDetailsTableName, 
+    wcFabricOrderRequisitionTableName} = require("../../../util/database-tables-name");
 
 exports.insert = async (wdFormDyeingRequisition) => {
   let queryResults = false;
@@ -70,6 +71,7 @@ exports.select = async () => {
       `${wdDyeingOrderRequisitionTableName}.work_order_number as order_number`,
       `seller.id as seller_id`,
       `seller.name as seller_name`,
+      `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
     ])
     .sum(`${wdDyeingOrderRequisitionDetailsTableName}.quantity as quantity`)
     .sum(`${wdDyeingOrderRequisitionDetailsTableName}.form_current_quantity as form_current_quantity`)
@@ -80,6 +82,9 @@ exports.select = async () => {
     .innerJoin(`${wdFormDyeingRequisitionDetailsTableName}`,
     `${wdFormDyeingRequisitionDetailsTableName}.wd_form_dyeing_requisition_id`,
     `${wdFormDyeingRequisitionTableName}.id`)
+    .innerJoin(`${wcFabricOrderRequisitionTableName}`,
+      `${wcFabricOrderRequisitionTableName}.id`,
+      `${wdFormDyeingRequisitionDetailsTableName}.wc_fabric_order_requisition_id`)
     .leftOuterJoin(`${wdFormOrderDetailsWdFormDetailsTableName}`,
     `${wdFormOrderDetailsWdFormDetailsTableName}.wd_form_dyeing_requisition_details_id`,
     `${wdFormDyeingRequisitionDetailsTableName}.id`)

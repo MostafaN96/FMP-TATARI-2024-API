@@ -30,6 +30,7 @@ const wdDyeingOrderRequisitionDetailsQueries = require("../../db/queries/wd/wd-d
 const weDyedFabricOrderRequisitionDetailsQueries = require("../../db/queries/we/we-dyed-fabric-order-requisition-details");
 const weTransitionBetweenWHRequisitionDetailsQueries = require("../../db/queries/we/we-transition-between-wh-requisition-details");
 const weExecuteOrderRequisitionDetailsQueries = require("../../db/queries/we/we-execute-order-requisition-details");
+const weTransitionBetweenOrdersRequisitionDetailsQueries = require("../../db/queries/we/we-transition-between-orders-requisition-details");
 
 // Util
 const constantsPayloads = require("../../util/constants-payloads");
@@ -98,9 +99,16 @@ exports.selectInventoryTotal = async (fabricReport) => {
     returnSellWhereCluse[`${weTableName}.is_active`] = 1;
     returnSellWhereCluse[`${weTableName}.type`] = constantsPayloads.returnSellType;
 
+    let transitionBetweenToOrdersWhereCluse = {};
+    transitionBetweenToOrdersWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    transitionBetweenToOrdersWhereCluse[`${fabricTableName}.is_active`] = 1;
+    transitionBetweenToOrdersWhereCluse[`${weTableName}.is_deleted`] = 0;
+    transitionBetweenToOrdersWhereCluse[`${weTableName}.is_active`] = 1;
+    transitionBetweenToOrdersWhereCluse[`${weTableName}.type`] = constantsPayloads.transportBetweenOrdersType;
+
     let whereCluseArray = [fabricWhereCluse, reconciliationWhereCluse, 
         dyeingWhereCluse, transitionBetweenToWHWhereCluse, executeOrderWhereCluse,
-        returnSellWhereCluse
+        returnSellWhereCluse, transitionBetweenToOrdersWhereCluse
     ]
 
     // select fabrics 
@@ -177,11 +185,14 @@ exports.selectInventoryTotal = async (fabricReport) => {
             callArray.push(weTransitionBetweenWHRequisitionDetailsQueries.selectFromWarehouseTotalByFabricId(fabric.dyed_fabric_id))
             callArray.push(weExecuteOrderRequisitionDetailsQueries.selectFromTotalByFabricId(fabric.dyed_fabric_id))
             callArray.push(weExecuteOrderRequisitionDetailsQueries.selectToTotalByFabricId(fabric.dyed_fabric_id))
+            callArray.push(weTransitionBetweenOrdersRequisitionDetailsQueries.selectToOrderTotalByFabricId(fabric.dyed_fabric_id))
+            callArray.push(weTransitionBetweenOrdersRequisitionDetailsQueries.selectFromOrderTotalByFabricId(fabric.dyed_fabric_id))
             const requisitions = await Promise.all(callArray)
             const sortedAsc = [...requisitions[0], ...requisitions[1],
             ...requisitions[2], ...requisitions[3], ...requisitions[4],
             ...requisitions[5], ...requisitions[6], ...requisitions[7],
-            ...requisitions[8], ...requisitions[9]
+            ...requisitions[8], ...requisitions[9], ...requisitions[10], 
+            ...requisitions[11]
         ].sort(
                 (objA, objB) => moment(objA.date) - moment(objB.date)
             );
@@ -206,11 +217,14 @@ exports.selectInventoryTotalByFabric = async (fabricId) => {
     callArray.push(weTransitionBetweenWHRequisitionDetailsQueries.selectToWarehouseTotalDetailsByFabricId(fabricId))
     callArray.push(weExecuteOrderRequisitionDetailsQueries.selectFromTotalDetailsByFabricId(fabricId))
     callArray.push(weExecuteOrderRequisitionDetailsQueries.selectToTotalDetailsByFabricId(fabricId))
+    callArray.push(weTransitionBetweenOrdersRequisitionDetailsQueries.selectFromOrderTotalDetailsByFabricId(fabricId))
+    callArray.push(weTransitionBetweenOrdersRequisitionDetailsQueries.selectToOrderTotalDetailsByFabricId(fabricId))
     const requisitions = await Promise.all(callArray)
     const sortedAsc = [...requisitions[0], ...requisitions[1],
     ...requisitions[2], ...requisitions[3], ...requisitions[4],
     ...requisitions[5], ...requisitions[6], ...requisitions[7],
-    ...requisitions[8], ...requisitions[9]
+    ...requisitions[8], ...requisitions[9], ...requisitions[10], 
+    ...requisitions[11]
 ].sort(
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );
@@ -276,8 +290,18 @@ exports.selectInventoryDetails = async (fabricReport) => {
     transitionBetweenToWHWhereCluse[`${weTableName}.is_active`] = 1;
     transitionBetweenToWHWhereCluse[`${weTableName}.type`] = constantsPayloads.transportBetweenType;
 
-    let whereCluseArray = [fabricWhereCluse, reconciliationWhereCluse, dyeingWhereCluse, 
-        returnSellWhereCluse, transitionBetweenToWHWhereCluse, executeOrderWhereCluse
+    let transitionBetweenToOrdersWhereCluse = {};
+    transitionBetweenToOrdersWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+    transitionBetweenToOrdersWhereCluse[`${fabricTableName}.is_active`] = 1;
+    transitionBetweenToOrdersWhereCluse[`${weTableName}.is_deleted`] = 0;
+    transitionBetweenToOrdersWhereCluse[`${weTableName}.is_active`] = 1;
+    transitionBetweenToOrdersWhereCluse[`${weTableName}.type`] = constantsPayloads.transportBetweenOrdersType;
+
+    let whereCluseArray = [
+        fabricWhereCluse, 
+        reconciliationWhereCluse, dyeingWhereCluse, 
+        returnSellWhereCluse, transitionBetweenToWHWhereCluse, 
+        transitionBetweenToOrdersWhereCluse
     ]
 
     // select warehousesFabrics 
@@ -377,11 +401,18 @@ exports.selectInventoryDetails = async (fabricReport) => {
             callArray.push(weExecuteOrderRequisitionDetailsQueries.selectToWarehouseDetailsByWarehouseByFabric(
                 warehousesFabric.warehouse_id, warehousesFabric.dyed_fabric_id
                 ))
+                callArray.push(weTransitionBetweenOrdersRequisitionDetailsQueries.selectFromOrderDetailsByFabricIdByWarehouseId(
+                    warehousesFabric.warehouse_id, warehousesFabric.dyed_fabric_id
+                    ))
+                callArray.push(weTransitionBetweenOrdersRequisitionDetailsQueries.selectToOrderDetailsByFabricIdByWarehouseId(
+                    warehousesFabric.warehouse_id, warehousesFabric.dyed_fabric_id
+                    ))
             const requisitions = await Promise.all(callArray)
             const sortedAsc = [...requisitions[0], ...requisitions[1],
             ...requisitions[2], ...requisitions[3], ...requisitions[4],
             ...requisitions[5], ...requisitions[6], ...requisitions[7],
-            ...requisitions[8], ...requisitions[9]
+            ...requisitions[8], ...requisitions[9], ...requisitions[10], 
+            ...requisitions[11]
         ].sort(
                 (objA, objB) => moment(objA.date) - moment(objB.date)
             );
@@ -406,11 +437,14 @@ exports.selectInventoryDetailsByWarehouseByFabric = async (fabricId, warehouseId
     callArray.push(weTransitionBetweenWHRequisitionDetailsQueries.selectFromWarehouseDetailsDetailsByWarehouseByFabricId(warehouseId, fabricId))
     callArray.push(weExecuteOrderRequisitionDetailsQueries.selectFromWarehouseDetailsDetailsByWarehouseByFabric(warehouseId, fabricId))
     callArray.push(weExecuteOrderRequisitionDetailsQueries.selectToWarehouseDetailsDetailsByWarehouseByFabric(warehouseId, fabricId))
+    callArray.push(weTransitionBetweenOrdersRequisitionDetailsQueries.selectToOrderDetailsDetailsByWarehouseByFabricId(warehouseId, fabricId))
+    callArray.push(weTransitionBetweenOrdersRequisitionDetailsQueries.selectFromOrderDetailsDetailsByWarehouseByFabricId(warehouseId, fabricId))
     const requisitions = await Promise.all(callArray)
     let sortedAsc = [...requisitions[0], ...requisitions[1],
     ...requisitions[2], ...requisitions[3], ...requisitions[4],
     ...requisitions[5], ...requisitions[6], ...requisitions[7],
-    ...requisitions[8], ...requisitions[9]
+    ...requisitions[8], ...requisitions[9], ...requisitions[10], 
+    ...requisitions[11]
 ].sort(
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );
@@ -1969,6 +2003,14 @@ exports.inquireFabricAvilabilityByDyeingOrderRequisitionTotalReportWe = async (w
         dataResult = await this.filterObjectsWarehousesOfParentArrayTotal(dataResult)
         // }
         // console.log("dataResult ::::::::: ", dataResult);
+
+        // Get Yarns Fabric in wcFabric
+
+        for (let j = 0; j < dataResult.wcFabrics.length; j++) {
+                const element = dataResult.wcFabrics[j];
+                element.yarnsDetails = await fabricYarnsService.selectByFabricId(element.id)
+            }
+            
         resolve(dataResult); // Yay! Everything went well!
 
     });

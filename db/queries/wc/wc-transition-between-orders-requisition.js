@@ -41,14 +41,10 @@ exports.select = async (userId) => {
       `${wcTransitionBetweenOrdersRequisitionTableName}.number`,
       `${wcTransitionBetweenOrdersRequisitionTableName}.date`,
       `${wcTransitionBetweenOrdersRequisitionTableName}.note`,
-      `to_warehouse.name as to_warehouse_name`,
     ])
     .from(`${wcTransitionBetweenOrdersRequisitionTableName}`)
-    .innerJoin(`${warehouseTableName} as to_warehouse`,
-    `to_warehouse.id`,
-    `${wcTransitionBetweenOrdersRequisitionTableName}.to_warehouse_id`)
     .innerJoin(`${wcTransitionBetweenOrdersRequisitionDetailsTableName}`,
-  `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_transition_between_wh_requisitions_id`,
+  `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_transition_between_orders_requisitions_id`,
   `${wcTransitionBetweenOrdersRequisitionTableName}.id`)
     .where(whereCluse)
     .orderBy(`${wcTransitionBetweenOrdersRequisitionTableName}.number`, 'desc')

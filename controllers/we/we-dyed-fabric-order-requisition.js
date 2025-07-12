@@ -45,6 +45,14 @@ exports.selectClosedOrders = async (request, response) => {
     response.status(200).json(results);
 };
 
+exports.selectOpenedOrdersForAddPurchaseWa = async (request, response) => {
+    // logging
+
+    // call service
+    const results = await weDyedFabricOrderRequisitionService.selectOpenedOrdersForAddPurchaseWa();
+    response.status(200).json(results);
+};
+
 exports.closedOrderByRequisition = async (request, response) => {
     // logging
     const { id } = request.params;

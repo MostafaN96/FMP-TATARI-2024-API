@@ -51,9 +51,14 @@ exports.dyedFabricOrdersReport = async (whereCluse) => {
         "bussiness_man_name",
         "dyed_fabric_name",
         "dyed_fabric_code",
+        "color_name",
+        "color_code",
         "needed_quantity",
         // "executed_quantity",
-        "current_quantity"
+        "current_quantity",
+        "net_current_quantity",
+        "over_current_quantity",
+        "over_current_quantity_ratio",
     ]
 
     await knex.select(columns).from(function () {
@@ -66,6 +71,8 @@ exports.dyedFabricOrdersReport = async (whereCluse) => {
                 `${bussinessmanTableName}.name as bussiness_man_name`,
                 `${fabricTableName}.name as dyed_fabric_name`,
                 `${fabricTableName}.code as dyed_fabric_code`,
+                `${colorTableName}.name as color_name`,
+                `${weDyedFabricOrderRequisitionDetailsTableName}.color_code`,
                 `${weDyedFabricOrderRequisitionDetailsTableName}.initial_quantity  as needed_quantity`,
                 // knex.raw(
                 //   `CASE WHEN ${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity > ${0}
@@ -76,7 +83,22 @@ exports.dyedFabricOrdersReport = async (whereCluse) => {
                     `CASE WHEN ${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity > ${0}
                     THEN coalesce( ${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity )
                     ELSE ${0}
-                    END as current_quantity`)
+                    END as current_quantity`),
+                            knex.raw(
+                                `CASE WHEN ${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
+                                THEN coalesce( (${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity * -1) + ${weDyedFabricOrderRequisitionDetailsTableName}.initial_quantity )
+                                ELSE coalesce( ${weDyedFabricOrderRequisitionDetailsTableName}.initial_quantity - ${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity )
+                                END as net_current_quantity`),
+                    knex.raw(
+                          `CASE WHEN ${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
+                          THEN coalesce( ${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity * -1 )
+                          ELSE ${0}
+                          END as over_current_quantity`),
+      knex.raw(
+      `CASE WHEN ${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
+      THEN coalesce( ((${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity * -1) / ${weDyedFabricOrderRequisitionDetailsTableName}.initial_quantity) * 100 )
+      ELSE ${0}
+      END as over_current_quantity_ratio`),
             ])
             .from(`${weDyedFabricOrderRequisitionTableName}`)
             .innerJoin(`${weDyedFabricOrderRequisitionDetailsTableName}`,
@@ -88,6 +110,9 @@ exports.dyedFabricOrdersReport = async (whereCluse) => {
             .innerJoin(`${fabricTableName}`,
                 `${fabricTableName}.id`,
                 `${weDyedFabricOrderRequisitionDetailsTableName}.dyed_fabric_id`)
+            .innerJoin(`${colorTableName}`,
+                `${colorTableName}.id`,
+                `${weDyedFabricOrderRequisitionDetailsTableName}.color_id`)
             .where(`${weDyedFabricOrderRequisitionDetailsTableName}.initial_quantity`, ">", 0)
             .as('t1')              
     }).as('temp')
@@ -95,8 +120,10 @@ exports.dyedFabricOrdersReport = async (whereCluse) => {
         .sum("needed_quantity as needed_quantity")
         // .sum("executed_quantity as executed_quantity")
         .sum("current_quantity as current_quantity")
+        .sum("net_current_quantity as net_current_quantity")
+        .sum("over_current_quantity_ratio as over_current_quantity_ratio")
         .groupBy("bussiness_man_name", "we_dyed_fabric_order_requisition_id", 
-        "dyed_fabric_name")
+        "dyed_fabric_name", "color_name")
         .then(data => {
             queryResults = data
         })

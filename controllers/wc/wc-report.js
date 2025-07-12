@@ -89,3 +89,9 @@ exports.selectInventoryTotal = async (request, response) => {
     const results = await wcReportService.manufacturingReportByFabric(fabricId);
     response.status(200).json(results);
   };
+  
+  exports.fabricOrdersReport = async (request, response) => {
+  
+    const results = await wcReportService.fabricOrdersReport();
+    response.status(200).json(results);
+  };

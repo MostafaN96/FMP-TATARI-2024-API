@@ -12,7 +12,7 @@ const yarnLotTableName = require("../../../util/database-tables-name").yarnLotTa
 const waTableName = require("../../../util/database-tables-name").waTableName;
 const warehouseTableName = require("../../../util/database-tables-name").warehouseTableName;
 const constants = require("../../../util/constants");
-const { consigmentYarnTableName, waYarnOrderRequisitionTableName } = require("../../../util/database-tables-name");
+const { consigmentYarnTableName, waYarnOrderRequisitionTableName, wbTableName, wbManufacturingInputWbTableName, wbReconciliationRequisitionDetailsWbTableName, wbTransitionBetweenIndustriesRequisitionDetailsWbTableName } = require("../../../util/database-tables-name");
 
 exports.insert = async (wbReconciliationRequisitionDetails, items) => {
   let queryResults = false;
@@ -519,6 +519,79 @@ exports.selectByConsigmentYarnForDyedFabricOrder = async (whereCluse, consigment
     .whereIn(`${wbReconciliationRequisitionDetailsTableName}.consigment_yarn_id`, consigmentsYarn)
     .then((data) => {
       queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+
+exports.selectInputRequisitionsForWbYarnOrderRequisition = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.from(wbManufacturingInputWbTableName)
+    .select(
+      [
+        `${wbReconciliationRequisitionTableName}.number`,
+        `${wbReconciliationRequisitionDetailsTableName}.wb_reconcilition_requisition_id  as requisition_id`,
+        `${wbReconciliationRequisitionDetailsTableName}.wa_yarn_order_requisition_id`,
+        knex.raw('? as type_of_requisition', 'اذن تسوية'),
+      ],
+    )
+    .innerJoin(`${wbTableName}`,
+      `${wbTableName}.id`,
+      `${wbManufacturingInputWbTableName}.wb_id`)
+      .innerJoin(`${wbReconciliationRequisitionDetailsWbTableName}`, 
+        `${wbReconciliationRequisitionDetailsWbTableName}.wb_id`, 
+        `${wbTableName}.id`)
+    .innerJoin(`${wbReconciliationRequisitionDetailsTableName}`, 
+      `${wbReconciliationRequisitionDetailsTableName}.id`, 
+      `${wbReconciliationRequisitionDetailsWbTableName}.wb_reconcilition_requisition_details_id`)
+    .innerJoin(`${wbReconciliationRequisitionTableName}`, 
+      `${wbReconciliationRequisitionTableName}.id`, 
+      `${wbReconciliationRequisitionDetailsTableName}.wb_reconcilition_requisition_id`)
+    .where(whereCluse)
+    .andWhere(`${wbReconciliationRequisitionDetailsTableName}.quantity`, ">", 0)
+    .andWhere(`${wbManufacturingInputWbTableName}.quantity`, ">", 0)
+    .groupBy(`${wbReconciliationRequisitionDetailsTableName}.wa_yarn_order_requisition_id`,
+      `${wbReconciliationRequisitionDetailsTableName}.wb_reconcilition_requisition_id`)
+    .then(async (data) => {
+        queryResults = data
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.selectInputTransitionBetweenIndustriesRequisitionsForWaYarnOrderRequisition = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.from(wbTransitionBetweenIndustriesRequisitionDetailsWbTableName)
+    .select(
+      [
+        `${wbReconciliationRequisitionTableName}.number`,
+        `${wbReconciliationRequisitionDetailsTableName}.wb_reconcilition_requisition_id  as requisition_id`,
+        `${wbReconciliationRequisitionDetailsTableName}.wa_yarn_order_requisition_id`,
+        knex.raw('? as type_of_requisition', 'اذن تسوية'),
+      ],
+    )
+    .innerJoin(`${wbTableName}`,
+      `${wbTableName}.id`,
+      `${wbTransitionBetweenIndustriesRequisitionDetailsWbTableName}.wb_id`)
+      .innerJoin(`${wbReconciliationRequisitionDetailsWbTableName}`, 
+        `${wbReconciliationRequisitionDetailsWbTableName}.wb_id`, 
+        `${wbTableName}.id`)
+    .innerJoin(`${wbReconciliationRequisitionDetailsTableName}`, 
+      `${wbReconciliationRequisitionDetailsTableName}.id`, 
+      `${wbReconciliationRequisitionDetailsWbTableName}.wb_reconcilition_requisition_details_id`)
+    .innerJoin(`${wbReconciliationRequisitionTableName}`, 
+      `${wbReconciliationRequisitionTableName}.id`, 
+      `${wbReconciliationRequisitionDetailsTableName}.wb_reconcilition_requisition_id`)
+    .where(whereCluse)
+    .andWhere(`${wbReconciliationRequisitionDetailsTableName}.quantity`, ">", 0)
+    .andWhere(`${wbTransitionBetweenIndustriesRequisitionDetailsWbTableName}.quantity`, ">", 0)
+    .groupBy(`${wbReconciliationRequisitionDetailsTableName}.wa_yarn_order_requisition_id`,
+      `${wbReconciliationRequisitionDetailsTableName}.wb_reconcilition_requisition_id`)
+    .then(async (data) => {
+        queryResults = data
     })
     .catch((error) => console.error(error));
   return queryResults;

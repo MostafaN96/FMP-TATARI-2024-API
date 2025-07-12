@@ -149,6 +149,92 @@ exports.selectByRequisitionId = async (requisitionId) => {
   return queryResults;
 };
 
+exports.selectBy = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.from(wdFormDyeingRequisitionDetailsTableName)
+    .select(
+      [
+        `${wdFormDyeingRequisitionDetailsTableName}.id`,
+        `${wdFormDyeingRequisitionDetailsTableName}.id as wd_form_dyeing_requisition_details_id`,
+        `${wdFormDyeingRequisitionDetailsTableName}.wc_fabric_order_requisition_id`,
+        `${wdFormDyeingRequisitionDetailsTableName}.price`,
+        `${wdFormDyeingRequisitionDetailsTableName}.price_dollar`,
+        `${wdFormDyeingRequisitionDetailsTableName}.quantity`,
+        `${wdFormDyeingRequisitionDetailsTableName}.current_quantity`,
+        `${wdFormDyeingRequisitionDetailsTableName}.fabric_width`,
+        `${wdFormDyeingRequisitionDetailsTableName}.fabric_quantity_m2`,
+        `${wdFormDyeingRequisitionDetailsTableName}.work_order_number as work_order_number_details`,
+        `${wdFormDyeingRequisitionDetailsTableName}.document`,
+        `${wdFormDyeingRequisitionDetailsTableName}.statement`,
+        `${wdFormDyeingRequisitionDetailsTableName}.is_prepare_dyeing`,
+        `${wdFormDyeingRequisitionTableName}.id as requisition_id`,
+        `${wdFormDyeingRequisitionTableName}.number`,
+        `${wdFormDyeingRequisitionTableName}.work_order_number`,
+        `${wdFormDyeingRequisitionTableName}.date`,
+        `${wdFormDyeingRequisitionTableName}.is_order`,
+        `${bussinessmanTableName}.id as dyeing_id`,
+        `${bussinessmanTableName}.name as dyeing_name`,
+        `${fabricTableName}.id as fabric_id`,
+        `${fabricTableName}.name as fabric_name`,
+        `${fabricTableName}.code as fabric_code`,
+        `dyed_fabric.id as dyed_fabric_id`,
+        `dyed_fabric.name as dyed_fabric_name`,
+        `dyed_fabric.code as dyed_fabric_code`,
+        `${fabricTableName}.dyeing_code as fabric_dyeing_code`,
+        `${consigmentDyeingTableName}.id as consigment_dyeing_id`,
+        `${consigmentDyeingTableName}.number as consigment_dyeing_number`,
+        `${wdFormDyeingRequisitionDetailsTableName}.dyeing_colors_prices_id`,
+        `${colorCategoryTableName}.name as color_category_name`,
+        `${colorTableName}.name as color_name`,
+        knex.raw(`CONCAT(${colorTableName}.name, ' (السعر: ', ${anointedColorsPricesTableName}.price, ')' ) as "color_name_price"`),
+        `${anointedColorsPricesTableName}.code as color_code`,
+        `${anointedColorsPricesTableName}.color_category_id`,
+        `${anointedColorsPricesTableName}.color_id`,
+        `${wcFabricOrderRequisitionTableName}.orders_requisitions_id`,
+        `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
+      ],
+    )
+    .innerJoin(`${wdFormDyeingRequisitionTableName}`, `${wdFormDyeingRequisitionTableName}.id`, `${wdFormDyeingRequisitionDetailsTableName}.wd_form_dyeing_requisition_id`)
+    .innerJoin(`${wcFabricOrderRequisitionTableName}`, 
+      `${wcFabricOrderRequisitionTableName}.id`, 
+      `${wdFormDyeingRequisitionDetailsTableName}.wc_fabric_order_requisition_id`)
+    .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${wdFormDyeingRequisitionTableName}.dyeing_id`)
+    .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${wdFormDyeingRequisitionDetailsTableName}.fabric_id`)
+    .innerJoin(`${fabricTableName} as dyed_fabric`, `dyed_fabric.id`, `${wdFormDyeingRequisitionDetailsTableName}.dyed_fabric_id`)
+    .innerJoin(`${consigmentDyeingTableName}`, `${consigmentDyeingTableName}.id`, `${wdFormDyeingRequisitionDetailsTableName}.consigment_dyeing_id`)
+    .innerJoin(`${anointedColorsPricesTableName}`, `${anointedColorsPricesTableName}.id`, `${wdFormDyeingRequisitionDetailsTableName}.dyeing_colors_prices_id`)
+    .innerJoin(`${colorCategoryTableName}`, `${colorCategoryTableName}.id`, `${anointedColorsPricesTableName}.color_category_id`)
+    .innerJoin(`${colorTableName}`, `${colorTableName}.id`, `${anointedColorsPricesTableName}.color_id`)
+    .where(whereCluse)
+    // .andWhere(`${wdFormDyeingRequisitionDetailsTableName}.quantity`, ">", 0)
+    .then(async (data) => {
+
+      // Get current quantity
+      for (let i = 0; i < data.length; i++) {
+        const element = data[i];
+        const wdResult = await wdService.selectSumCurrentQuantityByDyeingByFabricByConsigmentDyeingInWd(
+          element.dyeing_id, 
+          element.fabric_id, 
+          element.consigment_dyeing_id,
+          element.wc_fabric_order_requisition_id
+        )
+        element.wd_current_quantity = wdResult[0].current_quantity
+
+        let wdFormDyeingRequisitionDetailsDyeingServicesWhereCluse = {};
+        wdFormDyeingRequisitionDetailsDyeingServicesWhereCluse[`${wdFormDyeingRequisitionDetailsDyeingServicesTableName}.wd_form_dyeing_requisition_details_id`] = element.id;
+        wdFormDyeingRequisitionDetailsDyeingServicesWhereCluse[`${wdFormDyeingRequisitionDetailsDyeingServicesTableName}.is_deleted`] = 0;
+        wdFormDyeingRequisitionDetailsDyeingServicesWhereCluse[`${wdFormDyeingRequisitionDetailsDyeingServicesTableName}.is_active`] = 1;
+        const dyeingServicesResult = await wdFormDyeingRequisitionDetailsDyeingServices.selectByFormDyeingRequisitionDetailsId(wdFormDyeingRequisitionDetailsDyeingServicesWhereCluse)
+        element.dyeingServices = dyeingServicesResult
+      }
+
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
 exports.selectByDyeing = async (dyeingId) => {
   let queryResults = [];
   let whereCluse = {};
@@ -168,6 +254,7 @@ exports.selectByDyeing = async (dyeingId) => {
         `${wdFormDyeingRequisitionDetailsTableName}.fabric_width`,
         `${wdFormDyeingRequisitionDetailsTableName}.fabric_quantity_m2`,
         `${wdFormDyeingRequisitionDetailsTableName}.document`,
+        `${wdFormDyeingRequisitionDetailsTableName}.is_prepare_dyeing`,
         `${wdFormDyeingRequisitionDetailsTableName}.work_order_number as work_order_number_details`,
         `${wdFormDyeingRequisitionDetailsTableName}.statement`,
         `${wdFormDyeingRequisitionDetailsTableName}.dyeing_colors_prices_id`,
@@ -862,5 +949,34 @@ exports.selectByConsigmentDyeingForDyedFabricOrder = async (whereCluse, consigme
       console.log(error);
       console.error(error)
     });
+  return queryResults;
+};
+
+exports.selectRequisitionsForWdFabricOrderRequisitionForWbOutputManufacturingRequisition = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.from(wdFormDyeingRequisitionDetailsTableName)
+    .select(
+      [
+        `${wdFormDyeingRequisitionTableName}.number`,
+        `${wdFormDyeingRequisitionTableName}.is_order`,
+        `${wdFormDyeingRequisitionDetailsTableName}.wd_form_dyeing_requisition_id as requisition_id`,
+        `${wdFormDyeingRequisitionDetailsTableName}.wc_fabric_order_requisition_id`,
+        knex.raw('? as type_of_requisition', 'اذن تشكيل'),
+      ],
+    )
+    .innerJoin(`${wdFormDyeingRequisitionTableName}`, 
+      `${wdFormDyeingRequisitionTableName}.id`, 
+      `${wdFormDyeingRequisitionDetailsTableName}.wd_form_dyeing_requisition_id`)
+    .where(whereCluse)
+    .andWhere(`${wdFormDyeingRequisitionDetailsTableName}.quantity`, ">", 0)
+    .groupBy(
+      `${wdFormDyeingRequisitionDetailsTableName}.wc_fabric_order_requisition_id`,
+      `${wdFormDyeingRequisitionDetailsTableName}.wd_form_dyeing_requisition_id`
+    )
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
   return queryResults;
 };

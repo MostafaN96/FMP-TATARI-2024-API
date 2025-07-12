@@ -13,3 +13,9 @@ exports.create = async (waAddRequisitionDetailsYarnOrder, itemsOrder) => {
     return constants.insertError;
   }
 };
+
+exports.select = async (whereCluse, groupBy) => {
+
+    const results = await waAddRequisitionDetailsYarnOrderQueries.select(whereCluse, groupBy);
+    return results;
+};

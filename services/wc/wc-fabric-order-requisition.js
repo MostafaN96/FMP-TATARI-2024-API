@@ -31,7 +31,8 @@ const { wcFabricOrderRequisitionTableName,
     wdTransportWcWdDetailsTableName,
     wdTableName,
     wdReconciliationRequisitionDetailsTableName,
-    wdTransitionBetweenDyersRequisitionDetailsTableName
+    wdTransitionBetweenDyersRequisitionDetailsTableName,
+    wcTransitionBetweenOrdersRequisitionDetailsTableName
 } = require("../../util/database-tables-name");
 
 exports.create = async (wcFabricOrderRequisition) => {
@@ -134,13 +135,20 @@ exports.selectByWarehouseWc = async (warehouseId) => {
     transitionBetweenWhWhereCluse[`${wcTableName}.is_active`] = 1;
     transitionBetweenWhWhereCluse[`${wcTableName}.type`] = constantsPayloads.transportBetweenType;
     transitionBetweenWhWhereCluse[`${wcTransitionBetweenWHRequisitionTableName}.to_warehouse_id`] = warehouseId;
+    
+    let transitionBetweenOrdersWcWhereCluse = {};
+    transitionBetweenOrdersWcWhereCluse[`${wcTableName}.is_deleted`] = 0;
+    transitionBetweenOrdersWcWhereCluse[`${wcTableName}.is_active`] = 1;
+    transitionBetweenOrdersWcWhereCluse[`${wcTableName}.type`] = constantsPayloads.transportBetweenOrdersType;
+    transitionBetweenOrdersWcWhereCluse[`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.warehouse_id`] = warehouseId;
 
   let whereCluseArray = [
     wcFabricWhereCluse, 
     wcReconciliationWhereCluse, 
     wcTransportWdWcWhereCluse, 
     WcManufacturingOutputWhereCluse,
-    transitionBetweenWhWhereCluse
+    transitionBetweenWhWhereCluse,
+    transitionBetweenOrdersWcWhereCluse
 ]
   
     const results = await wcFabricOrderRequisitionQueries.selectStoredFabricsWc(whereCluseArray);
@@ -187,6 +195,48 @@ exports.selectByDyeingWd = async (dyeingId) => {
     let result = false
     let whereCluse = {};
     whereCluse[`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = requisitionId;
+    whereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+    whereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+    whereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_order`] = 1;
+
+    const selectOpenedOrderResults = await wcFabricOrderRequisitionDetailsQueries.selectByRequisitionId(whereCluse);
+    if(selectOpenedOrderResults[0] != null) {
+        for (let i = 0; i < selectOpenedOrderResults.length; i++) {
+            const selectOpenedOrderResult = selectOpenedOrderResults[i];
+
+            // close requisition details order
+            let waYarnOrderRequisitionDetailsWhereCluse = {};
+            waYarnOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.id`] = selectOpenedOrderResult.id;
+            await wcFabricOrderRequisitionDetailsQueries.update({
+                is_order : 0
+            }, 
+            waYarnOrderRequisitionDetailsWhereCluse)
+        }
+
+        // close requisition order ??????????????????????????????
+        // let waYarnOrderRequisitionWhereCluse = {};
+        // waYarnOrderRequisitionWhereCluse[`${wcFabricOrderRequisitionTableName}.id`] = requisitionId;
+        // const waYarnOrderRequisitionResult = await wcFabricOrderRequisitionQueries.update({
+        //     is_order : 0
+        // },
+        // waYarnOrderRequisitionWhereCluse)
+        // if(waYarnOrderRequisitionResult) {
+        //     result = constants.updateSuccess
+        // } else {
+        //     result = constants.updateError
+        // }
+
+    } else {
+        result = constants.invalidDataResponse
+    }
+    return result
+}
+
+  exports.closedOrderByOrdersRequisitionsId = async (ordersRequisitionsId) => {
+
+    let result = false
+    let whereCluse = {};
+    whereCluse[`${wcFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`] = ordersRequisitionsId;
     whereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
     whereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
     whereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_order`] = 1;

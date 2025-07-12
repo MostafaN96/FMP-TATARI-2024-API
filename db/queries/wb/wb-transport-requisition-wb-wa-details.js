@@ -689,10 +689,11 @@ exports.selectDetailsDetailsByWarehouseByYarnByLot = async (warehouseId, yarnId,
   return queryResults;
 };
 
-exports.selectPriceByYarnId = async (yarnId) => {
+exports.selectPriceByYarnId = async (yarnId, consigmentYarnId) => {
   let queryResults = [];
   let whereCluse = {};
   whereCluse[`${wbTransportRequisitionWbWaDetailsTableName}.yarn_id`] = yarnId;
+  whereCluse[`${wbTransportRequisitionWbWaDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
   whereCluse[`${wbTransportRequisitionWbWaDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${wbTransportRequisitionWbWaDetailsTableName}.is_active`] = 1;
 

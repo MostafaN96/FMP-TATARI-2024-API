@@ -21,4 +21,11 @@ router.post(
   wcAddRequisitionController.create
 );
 
+router.post(
+  "/by-order",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  wcAddRequisitionController.createForOrder
+);
+
 module.exports = router;

@@ -12,6 +12,7 @@ const wbManufacturingInputQueries = require("../../db/queries/wb/wb-manufacturin
 
 // Services
 const wbManufacturingInputService = require("./wb-manufacturing-input");
+const wbService = require("./wb");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -88,6 +89,19 @@ exports.selectByRequisitionId = async (requisitionId) => {
   if (isFound[0] != null) {
 
     const results = await wbManufacturingOutputQueries.selectByRequisitionId(requisitionId);
+    if (Array.isArray(results) && results.length > 0) {
+
+      for (let i = 0; i < results.length; i++) {
+          const element = results[i];
+
+          element.fabricOrderRequisitions = await wbService.selectRequisitionsForWdFabricOrderRequisitionForWbOutputManufacturingRequisition(
+              element.orders_requisitions_id,
+              element.wc_fabric_order_requisition_details_id
+          )
+      }
+
+  }
+
     return results;
   } else {
     return constants.itemNotFound;
@@ -265,7 +279,7 @@ exports.update = async (wbManufacturingOutput) => {
               price: fabricPrice,
               price_dollar: fabricPriceDollar
             }, {
-              // id: selectOutputManufacturingOneResult[0].id,
+              id: selectOutputManufacturingOneResult[0].id,
               fabric_id: selectOutputManufacturingOneResult[0].fabric_id,
               consigment_manufacturing_id: selectOutputManufacturingOneResult[0].consigment_manufacturing_id
             })
@@ -457,10 +471,13 @@ exports.calcAvgFabricPrice = async (wbInputManufacturingResult, wboutputManufact
   let avgFabricPrice = 0
   let totalOutputQuantity = 0
   let totalInputOutput = await this.getTotalOutputQuantityOfConsigment(wboutputManufacturingResult, "price", "manufacturing_fee")
-  console.log("totalInputOutput ::::::::::: ", totalInputOutput);
-  inputCostWithWaste = totalInputOutput[0]
-  outputCostManufacturingFee = totalInputOutput[1]
-  totalOutputQuantity = totalInputOutput[2]
+  inputCostWithWaste = parseFloat((totalInputOutput[0]).toFixed(3))
+  outputCostManufacturingFee = parseFloat((totalInputOutput[1]).toFixed(3))
+  totalOutputQuantity = parseFloat((totalInputOutput[2]).toFixed(3))
+  // console.log("inputCostWithWaste ::::::::::: ", inputCostWithWaste);
+  // console.log("outputCostManufacturingFee ::::::::::: ", outputCostManufacturingFee);
+  // console.log("totalInputOutput ::::::::::: ", totalInputOutput);
+
   if(totalOutputQuantity == 0) {
     avgFabricPrice = 0
   } else {
@@ -468,6 +485,34 @@ exports.calcAvgFabricPrice = async (wbInputManufacturingResult, wboutputManufact
   }
 
   return avgFabricPrice
+}
+
+exports.calcFabricPrice = async (wbManufacturingOutputId) => {
+  // calc fabric price
+  let fabricPrice = 0
+  let inputOutputManufacturingWhereCluse = {}
+  inputOutputManufacturingWhereCluse[`${wbManufacturingInputOutputTableName}.wb_manufacturing_output_id`] = wbManufacturingOutputId;
+  inputOutputManufacturingWhereCluse[`${wbManufacturingInputOutputTableName}.is_deleted`] = 0;
+  inputOutputManufacturingWhereCluse[`${wbManufacturingInputOutputTableName}.is_active`] = 1;
+  const selectInputOutputManufacturingOneResult = await wbManufacturingInputOutputQueries.selectOne(inputOutputManufacturingWhereCluse)
+  if (selectInputOutputManufacturingOneResult[0] != null) {
+    const selectInputManufacturingResult = await wbManufacturingInputService.selectByRequisitionId(selectInputOutputManufacturingOneResult[0].wb_manufacturing_requisition_id)
+    if (selectInputManufacturingResult[0] != null) {
+      const selectOutputManufacturingOneResult = await this.selectByRequisitionId(selectInputOutputManufacturingOneResult[0].wb_manufacturing_requisition_id)
+      if (selectOutputManufacturingOneResult[0] != null) {
+        fabricPrice = await this.calcAvgFabricPrice(selectInputManufacturingResult, selectOutputManufacturingOneResult)
+        fabricPriceDollar = await this.calcAvgFabricPriceDollar(selectInputManufacturingResult, selectOutputManufacturingOneResult)
+        await wbManufacturingOutputQueries.update({
+          price: fabricPrice,
+          price_dollar: fabricPriceDollar
+        }, {
+          id: selectOutputManufacturingOneResult[0].id,
+          fabric_id: selectOutputManufacturingOneResult[0].fabric_id,
+          consigment_manufacturing_id: selectOutputManufacturingOneResult[0].consigment_manufacturing_id
+        })
+      }
+    }
+  }
 }
 
 exports.calcAvgFabricPriceDollar = async (wbInputManufacturingResult, wboutputManufacturingResult) => {
@@ -484,9 +529,9 @@ exports.calcAvgFabricPriceDollar = async (wbInputManufacturingResult, wboutputMa
   let totalOutputQuantity = 0
   let totalInputOutput = await this.getTotalOutputQuantityOfConsigment(wboutputManufacturingResult, "price_dollar", "manufacturing_fee_dollar")
   console.log("totalInputOutput ::::::::::: ", totalInputOutput);
-  inputCostWithWaste = totalInputOutput[0]
-  outputCostManufacturingFee = totalInputOutput[1]
-  totalOutputQuantity = totalInputOutput[2]
+  inputCostWithWaste = parseFloat((totalInputOutput[0]).toFixed(3))
+  outputCostManufacturingFee = parseFloat((totalInputOutput[1]).toFixed(3))
+  totalOutputQuantity = parseFloat((totalInputOutput[2]).toFixed(3))
   if(totalOutputQuantity == 0) {
     avgFabricPrice = 0
   } else {
@@ -503,7 +548,7 @@ exports.getTotalInputQuantityOfConsigment = async (wbOutputManufacturingResult, 
   whereCluse[`${wbManufacturingInputOutputTableName}.is_active`] = 1;
 
   const selectInputsManufaturingResults = await wbManufacturingInputOutputQueries.select(whereCluse)
-  console.log("selectInputsManufaturingResults ::: ", selectInputsManufaturingResults);
+  // console.log("selectInputsManufaturingResults ::: ", selectInputsManufaturingResults);
   if (Array.isArray(selectInputsManufaturingResults) && selectInputsManufaturingResults.length > 0) {
     for (let j = 0; j < selectInputsManufaturingResults.length; j++) {
       const selectInputsManufaturing = selectInputsManufaturingResults[j];
@@ -529,6 +574,7 @@ exports.getTotalOutputQuantityOfConsigment = async (wbOutputManufacturingResult,
   let totalOutputQuantity = 0
 
   let whereCluse = {};
+  whereCluse[`${wbManufacturingOutputTableName}.id`] = wbOutputManufacturingResult[0].id;
   whereCluse[`${wbManufacturingOutputTableName}.consigment_manufacturing_id`] = wbOutputManufacturingResult[0].consigment_manufacturing_id;
   whereCluse[`${wbManufacturingOutputTableName}.fabric_id`] = wbOutputManufacturingResult[0].fabric_id;
   whereCluse[`${wbManufacturingOutputTableName}.is_deleted`] = 0;

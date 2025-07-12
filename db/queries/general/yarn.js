@@ -5,7 +5,7 @@ const knex = require("../../config/connection").getConnection();
 // Util
 const constants = require("../../../util/constants");
 const constantsPayloads = require("../../../util/constants-payloads");
-const { waAddRequisitionTableName, wbTableName, wbTransportWaWbDetailsTableName, wbTransportWaWbTableName, bussinessmanTableName, wbReconciliationRequisitionDetailsTableName, wbReconciliationRequisitionDetailsWbTableName, wbTransportRequisitionWbWaDetailsTableName, wbTransitionBetweenIndustriesRequisitionDetailsTableName, wbTransitionBetweenIndustriesRequisitionDetailsWbTableName, warehouseTableName, waReconciliationRequisitionTableName, wbTransportRequisitionWbWaTableName, yarnLotTableName, consigmentYarnTableName, waExecuteOrderRequisitionDetailsTableName, waExecuteOrderRequisitionTableName, waTransitionBetweenWHRequisitionDetailsTableName, waTransitionBetweenWHRequisitionTableName, waAddRequisitionDetailsYarnOrderTableName } = require("../../../util/database-tables-name");
+const { waAddRequisitionTableName, wbTableName, wbTransportWaWbDetailsTableName, wbTransportWaWbTableName, bussinessmanTableName, wbReconciliationRequisitionDetailsTableName, wbReconciliationRequisitionDetailsWbTableName, wbTransportRequisitionWbWaDetailsTableName, wbTransitionBetweenIndustriesRequisitionDetailsTableName, wbTransitionBetweenIndustriesRequisitionDetailsWbTableName, warehouseTableName, waReconciliationRequisitionTableName, wbTransportRequisitionWbWaTableName, yarnLotTableName, consigmentYarnTableName, waExecuteOrderRequisitionDetailsTableName, waExecuteOrderRequisitionTableName, waTransitionBetweenWHRequisitionDetailsTableName, waTransitionBetweenWHRequisitionTableName, waAddRequisitionDetailsYarnOrderTableName, waAddRequisitionDetailsPurchaseOrderTableName } = require("../../../util/database-tables-name");
 const yarnTableName = require("../../../util/database-tables-name").yarnTableName;
 const waTableName = require("../../../util/database-tables-name").waTableName;
 const waAddRequisitionDetailsTableName = require("../../../util/database-tables-name").waAddRequisitionDetailsTableName;
@@ -738,7 +738,7 @@ exports.selectByWarehouseWa = async (whereCluseArray) => {
       .innerJoin(`${waAddRequisitionDetailsTableName}`,
         `${waAddRequisitionDetailsTableName}.id`,
         `${waTableName}.wa_add_requisition_details_id`)
-        .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`,
+      .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`,
           `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`,
           `${waAddRequisitionDetailsTableName}.id`)
       .innerJoin(`${yarnTableName}`,
