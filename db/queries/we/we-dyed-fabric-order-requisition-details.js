@@ -15,6 +15,8 @@ exports.insert = async (weDyedFabricOrderRequisitionDetails, items) => {
             id: items.weDyedFabricOrderRequisitionDetailsId,
             we_dyed_fabric_order_requisition_id: weDyedFabricOrderRequisitionDetails.id,
             orders_requisitions_id: weDyedFabricOrderRequisitionDetails.ordersRequisitionsId,
+            we_parent_dyed_fabric_order_requisition_id: weDyedFabricOrderRequisitionDetails.id,
+            we_parent_dyed_fabric_order_requisition_orders_requisitions_id: weDyedFabricOrderRequisitionDetails.ordersRequisitionsId,
             color_category_id: items.colorCategoryId,
             color_id: items.colorId,
             dyed_fabric_id: items.dyedFabricId,
@@ -112,6 +114,10 @@ exports.selectByRequisitionId = async (whereCluse) => {
             `${weDyedFabricOrderRequisitionDetailsTableName}.color_id`)
         .where(whereCluse)
         .andWhere(`${weDyedFabricOrderRequisitionDetailsTableName}.initial_quantity`, ">", 0)
+        .groupBy(
+            `${weDyedFabricOrderRequisitionDetailsTableName}.id`,
+            `${weDyedFabricOrderRequisitionDetailsTableName}.we_parent_dyed_fabric_order_requisition_id`
+        )
         .then((data) => {
             queryResults = data;
         })

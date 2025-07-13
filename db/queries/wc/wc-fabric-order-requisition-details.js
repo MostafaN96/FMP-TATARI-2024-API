@@ -19,6 +19,8 @@ exports.insert = async (wcFabricOrderRequisitionDetails, items) => {
       id: items.wcFabricOrderRequisitionDetailsId,
       wc_fabric_order_requisition_id: wcFabricOrderRequisitionDetails.id,
       orders_requisitions_id: wcFabricOrderRequisitionDetails.ordersRequisitionsId,
+      wc_parent_fabric_order_requisition_id: wcFabricOrderRequisitionDetails.id,
+      wc_parent_fabric_order_requisition_orders_requisitions_id: wcFabricOrderRequisitionDetails.ordersRequisitionsId,
       fabric_id: items.fabricId,
       initial_quantity: items.quantity,
       current_quantity: items.quantity,

@@ -60,7 +60,7 @@ exports.selectByRequisitionIdOpenedOrder = async (requisitionId) => {
     });
     if (isFound[0] != null) {
         let whereCluse = {};
-        whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`] = requisitionId;
+        whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.we_parent_dyed_fabric_order_requisition_id`] = requisitionId;
         whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
         whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
         whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_order`] = 1;

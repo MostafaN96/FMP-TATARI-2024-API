@@ -29,7 +29,9 @@ exports.insert = async (wcFabricOrderRequisition) => {
     await sqlFun
         .insert(wcFabricOrderRequisitionTableName, {
             id: wcFabricOrderRequisition.id,
-            orders_requisitions_id: wcFabricOrderRequisition.ordersRequisitionsId,
+            orders_requisitions_id: wcFabricOrderRequisition.ordersRequisitionsId,      
+            wc_parent_fabric_order_requisition_id: wcFabricOrderRequisition.id,
+            wc_parent_fabric_order_requisition_orders_requisitions_id: wcFabricOrderRequisition.ordersRequisitionsId,
             seller_id: wcFabricOrderRequisition.sellerId,
             number: wcFabricOrderRequisition.number,
             name: wcFabricOrderRequisition.name,
@@ -70,6 +72,8 @@ exports.select = async (whereCluse, isOrder) => {
         .select([
             `${wcFabricOrderRequisitionTableName}.id`,
             `${wcFabricOrderRequisitionTableName}.orders_requisitions_id`,
+            `${wcFabricOrderRequisitionTableName}.we_parent_dyed_fabric_order_requisition_id`,
+            `${wcFabricOrderRequisitionTableName}.we_parent_dyed_fabric_order_requisition_orders_requisitions_id`,
             `${wcFabricOrderRequisitionTableName}.number`,
             `${wcFabricOrderRequisitionTableName}.name`,
             `${wcFabricOrderRequisitionTableName}.date`,
@@ -84,8 +88,9 @@ exports.select = async (whereCluse, isOrder) => {
         )
         .where(whereCluse)
         .orderBy(`${wcFabricOrderRequisitionTableName}.number`, 'desc')
+        .groupBy(`${wcFabricOrderRequisitionTableName}.wc_parent_fabric_order_requisition_id`)
         .whereIn(`${wcFabricOrderRequisitionTableName}.id`, function () {
-            this.select(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`)
+            this.select(`${wcFabricOrderRequisitionDetailsTableName}.wc_parent_fabric_order_requisition_id`)
                 .from(`${wcFabricOrderRequisitionDetailsTableName}`)
                 .where({ "is_order": isOrder })
         })

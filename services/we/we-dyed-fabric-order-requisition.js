@@ -17,6 +17,7 @@ const wdFormDyeingRequisitionDetailsQueries = require("../../db/queries/wd/wd-fo
 
 // Util
 const constants = require("../../util/constants");
+const knex = require("../../db/config/connection").getConnection();
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -187,7 +188,7 @@ exports.closedOrderByRequisition = async (requisitionId) => {
     return result;
 };
 
-  exports.closedOrderByOrdersRequisitionsId = async (ordersRequisitionsId) => {
+exports.closedOrderByOrdersRequisitionsId = async (ordersRequisitionsId) => {
 
     let result = false
     let whereCluse = {};
@@ -197,7 +198,7 @@ exports.closedOrderByRequisition = async (requisitionId) => {
     whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_order`] = 1;
 
     const selectOpenedOrderResults = await weDyedFabricOrderRequisitionDetailsQueries.selectByRequisitionId(whereCluse);
-    if(selectOpenedOrderResults[0] != null) {
+    if (selectOpenedOrderResults[0] != null) {
         for (let i = 0; i < selectOpenedOrderResults.length; i++) {
             const selectOpenedOrderResult = selectOpenedOrderResults[i];
 
@@ -205,11 +206,11 @@ exports.closedOrderByRequisition = async (requisitionId) => {
             let weDyedFabricOrderRequisitionDetailsWhereCluse = {};
             weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.id`] = selectOpenedOrderResult.id;
             await weDyedFabricOrderRequisitionDetailsQueries.update({
-                is_order : 0
-            }, 
-            weDyedFabricOrderRequisitionDetailsWhereCluse)
+                is_order: 0
+            },
+                weDyedFabricOrderRequisitionDetailsWhereCluse)
         }
-            result = constants.updateSuccess
+        result = constants.updateSuccess
     } else {
         result = constants.invalidDataResponse
     }
@@ -231,4 +232,62 @@ exports.selectDyedFabricsOrderRequisition = async (requisitionId) => {
         return constants.invalidDataResponse
     }
 
+}
+
+exports.mirgeOrders = async (weDyedFabricOrderRequisition) => {
+    console.log("weDyedFabricOrderRequisition ::: ", weDyedFabricOrderRequisition);
+            let updateResults = false
+
+    for (let i = 0; i < weDyedFabricOrderRequisition.length; i++) {
+        const element = weDyedFabricOrderRequisition[i];
+
+        let weDyedFabricOrderRequisitionWhereCluse = {}
+        weDyedFabricOrderRequisitionWhereCluse[`${weDyedFabricOrderRequisitionTableName}.id`] = element.id;
+        weDyedFabricOrderRequisitionWhereCluse[`${weDyedFabricOrderRequisitionTableName}.is_deleted`] = 0;
+        weDyedFabricOrderRequisitionWhereCluse[`${weDyedFabricOrderRequisitionTableName}.is_active`] = 1;
+        const selectWeDyedFabricOrderRequisitionDetailsQueriesOneResult = await weDyedFabricOrderRequisitionQueries.selectOne(weDyedFabricOrderRequisitionWhereCluse)
+        if (Array.isArray(selectWeDyedFabricOrderRequisitionDetailsQueriesOneResult) && selectWeDyedFabricOrderRequisitionDetailsQueriesOneResult.length > 0) {
+            // await knex.transaction(async trx => {
+
+                    // await trx.raw('SET FOREIGN_KEY_CHECKS = 0');
+
+                    // 2. تحديث الـ id نفسه
+    // await trx(weDyedFabricOrderRequisitionDetailsTableName)
+    //   .where({
+    //                 we_dyed_fabric_order_requisition_id: element.id
+    //             })
+    //   .update({
+    //                 we_parent_dyed_fabric_order_requisition_id: weDyedFabricOrderRequisition[0].id,
+    //                 we_parent_dyed_fabric_order_requisition_orders_requisitions_id: weDyedFabricOrderRequisition[0].orders_requisitions_id
+    //             });
+
+    // 1. تحديث كل الـ foreign keys في الجداول المرتبطة
+//     await trx(weDyedFabricOrderRequisitionTableName)
+//       .where(weDyedFabricOrderRequisitionWhereCluse)
+//       .update({
+//                 we_parent_dyed_fabric_order_requisition_id: weDyedFabricOrderRequisition[0].id,
+//                 we_parent_dyed_fabric_order_requisition_orders_requisitions_id: weDyedFabricOrderRequisition[0].orders_requisitions_id
+//             });
+
+//                 //  await trx.raw('SET FOREIGN_KEY_CHECKS = 1');
+
+
+//   });
+            const weDyedFabricOrderRequisitionResult = await weDyedFabricOrderRequisitionQueries.update({
+                we_parent_dyed_fabric_order_requisition_id: weDyedFabricOrderRequisition[0].id,
+                we_parent_dyed_fabric_order_requisition_orders_requisitions_id: weDyedFabricOrderRequisition[0].orders_requisitions_id
+            }, weDyedFabricOrderRequisitionWhereCluse)
+            if (weDyedFabricOrderRequisitionResult) {
+                // await weDyedFabricOrderRequisitionDetailsQueries.update({
+                //     we_parent_dyed_fabric_order_requisition_id: weDyedFabricOrderRequisition[0].id,
+                //     we_parent_dyed_fabric_order_requisition_orders_requisitions_id: weDyedFabricOrderRequisition[0].orders_requisitions_id
+                // }, {
+                //     we_dyed_fabric_order_requisition_id: element.id
+                // })
+                updateResults = true
+            }
+
+        }
+    }
+    return updateResults
 }

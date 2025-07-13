@@ -28,6 +28,8 @@ exports.insert = async (wdFormDyeingRequisitionDetails, items) => {
       we_dyed_fabric_order_requisition_details_id: items.weDyedFabricOrderRequisitionDetailsId,
       we_dyed_fabric_order_requisition_id: items.dyedFabricOrderId,
       orders_requisitions_id: items.ordersRequisitionsId,
+      we_parent_dyed_fabric_order_requisition_id: items.dyedFabricOrderId,
+      we_parent_dyed_fabric_order_requisition_orders_requisitions_id: items.ordersRequisitionsId,
       dyed_fabric_id: items.dyedFabricId,
       wd_form_dyeing_requisition_details_id: items.wdFormRequisitionDetailsId,
       grade_item_id: items.gradeItemId,

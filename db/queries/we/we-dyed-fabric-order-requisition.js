@@ -13,6 +13,8 @@ exports.insert = async (weDyedFabricOrderRequisition) => {
         .insert(weDyedFabricOrderRequisitionTableName, {
             id: weDyedFabricOrderRequisition.id,
             orders_requisitions_id: weDyedFabricOrderRequisition.ordersRequisitionsId,
+            we_parent_dyed_fabric_order_requisition_id: weDyedFabricOrderRequisition.id,
+            we_parent_dyed_fabric_order_requisition_orders_requisitions_id: weDyedFabricOrderRequisition.ordersRequisitionsId,
             seller_id: weDyedFabricOrderRequisition.sellerId,
             name: weDyedFabricOrderRequisition.name,
             number: weDyedFabricOrderRequisition.number,
@@ -58,6 +60,8 @@ exports.select = async (whereCluse, isOrder) => {
         .select([
             `${weDyedFabricOrderRequisitionTableName}.id`,
             `${weDyedFabricOrderRequisitionTableName}.orders_requisitions_id`,
+            `${weDyedFabricOrderRequisitionTableName}.we_parent_dyed_fabric_order_requisition_id`,
+            `${weDyedFabricOrderRequisitionTableName}.we_parent_dyed_fabric_order_requisition_orders_requisitions_id`,
             `${weDyedFabricOrderRequisitionTableName}.number`,
             `${weDyedFabricOrderRequisitionTableName}.name`,
             `${weDyedFabricOrderRequisitionTableName}.date`,
@@ -73,9 +77,9 @@ exports.select = async (whereCluse, isOrder) => {
         )
         .where(whereCluse)
         .orderBy(`${weDyedFabricOrderRequisitionTableName}.number`, 'desc')
-        .groupBy(`${weDyedFabricOrderRequisitionTableName}.id`)
+        .groupBy(`${weDyedFabricOrderRequisitionTableName}.we_parent_dyed_fabric_order_requisition_id`)
         .whereIn(`${weDyedFabricOrderRequisitionTableName}.id`, function() {
-            this.select(`${weDyedFabricOrderRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`)
+            this.select(`${weDyedFabricOrderRequisitionDetailsTableName}.we_parent_dyed_fabric_order_requisition_id`)
             .from(`${weDyedFabricOrderRequisitionDetailsTableName}`)
             .where({"is_order": isOrder})
           })

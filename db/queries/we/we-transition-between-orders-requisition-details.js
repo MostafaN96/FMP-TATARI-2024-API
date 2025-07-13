@@ -36,6 +36,8 @@ exports.insert = async (weTransitionBetweenOrdersRequisitionDetails, items) => {
       we_dyed_fabric_order_requisition_details_id: items.toWeDyedFabricOrderRequisitionDetailsId,
       we_dyed_fabric_order_requisition_id: weTransitionBetweenOrdersRequisitionDetails.fabricOrderId,
       orders_requisitions_id: weTransitionBetweenOrdersRequisitionDetails.ordersRequisitionsId,
+      we_parent_dyed_fabric_order_requisition_id: weTransitionBetweenOrdersRequisitionDetails.fabricOrderId,
+      we_parent_dyed_fabric_order_requisition_orders_requisitions_id: weTransitionBetweenOrdersRequisitionDetails.ordersRequisitionsId,
       fabric_piece: items.numberFabricPieces,
       price: items.price,
       price_dollar: items.priceDollar,

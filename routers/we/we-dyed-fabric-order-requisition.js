@@ -46,4 +46,11 @@ router.put(
   weDyedFabricOrderRequisitionController.closedOrderByRequisition
 );
 
+router.post(
+  "/mirge-orders",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  weDyedFabricOrderRequisitionController.mirgeOrders
+);
+
 module.exports = router;

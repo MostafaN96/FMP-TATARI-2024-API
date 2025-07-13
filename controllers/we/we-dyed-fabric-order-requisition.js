@@ -29,6 +29,27 @@ exports.create = async (request, response) => {
     }
 };
 
+exports.mirgeOrders = async (request, response) => {
+    const bodyPalod = request.body;
+
+    console.log("bodyPalod ::: ", bodyPalod);
+    
+    const updateResults = await weDyedFabricOrderRequisitionService.mirgeOrders(bodyPalod);
+    // response
+    switch (updateResults) {
+        case constants.itemNotFound:
+            return response.status(200).json(constants.itemNotFound);
+        case constants.duplicatedData:
+            return response.status(200).json(constants.duplicatedData);
+        case constants.updateError:
+            return response.status(500).json(constants.updateError);
+        case constants.updateSuccess:
+            return response.status(200).json(constants.updateSuccess);
+        default:
+            return response.status(200).json(updateResults);
+    }
+};
+
 exports.selectOpenedOrders = async (request, response) => {
     // logging
 
