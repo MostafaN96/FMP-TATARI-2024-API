@@ -16,3 +16,8 @@ exports.selectMaxValueWithJoinCondition = async (fromTableName, atrributeMaxValu
         innerTable, innerTableAttribute, outerTableAttribute);
     return results;
 };
+
+exports.selectSum = async (fromTableName, atrributeValue, groupByColumn, whereCluse) => {
+    const results = await generalQueries.selectSum(fromTableName, atrributeValue, groupByColumn, whereCluse);
+    return results;
+};

@@ -3,6 +3,7 @@ const waReconciliationRequisitionDetailsQueries = require("../../db/queries/wa/w
 const waReconciliationRequisitionQueries = require("../../db/queries/wa/wa-reconciliation-requisition");
 const waReconciliationRequisitionDetailsWaQueries = require("../../db/queries/wa/wa-reconciliation-requisition-details-wa");
 const waQueries = require("../../db/queries/wa/wa");
+const waYarnOrderRequisitionDetailsYarnOrderQueries = require("../../db/queries/wa/wa-add-requisition-details-yarn-order");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -13,7 +14,8 @@ const constantsPayloads = require("../../util/constants-payloads");
 const {
     waReconciliationRequisitionDetailsTableName,
     waReconciliationRequisitionDetailsWaTableName,
-    waYarnOrderRequisitionDetailsTableName
+    waYarnOrderRequisitionDetailsTableName,
+    waAddRequisitionDetailsYarnOrderTableName
 } = require("../../util/database-tables-name");
 
 // Services
@@ -35,6 +37,20 @@ exports.create = async (waReconciliationRequisitionDetails) => {
         const selectYarnOrderRequisitionDetailsResult = await waYarnOrderRequisitionDetailsService.selectOne(yarnOrderRequisitionDetailsWhereCluse)
         if (Array.isArray(selectYarnOrderRequisitionDetailsResult) && selectYarnOrderRequisitionDetailsResult.length > 0) {
             waReconciliationRequisitionDetails.items[i].waYarnOrderRequisitionDetailsId = selectYarnOrderRequisitionDetailsResult[0].id
+
+            // Get wa_yarn_order_requisition_id supplier_id
+            let waAddRequisitionDetailsYarnOrderWhereCluse = {};
+            waAddRequisitionDetailsYarnOrderWhereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`] = waReconciliationRequisitionDetails.items[i].yarnOrderId;
+            waAddRequisitionDetailsYarnOrderWhereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.is_deleted`] = 0;
+            waAddRequisitionDetailsYarnOrderWhereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.is_active`] = 1;
+            const selectWaAddRequisitionDetailsYarnOrderResult = await waYarnOrderRequisitionDetailsYarnOrderQueries.selectOne(waAddRequisitionDetailsYarnOrderWhereCluse)
+            if (Array.isArray(selectWaAddRequisitionDetailsYarnOrderResult) && selectWaAddRequisitionDetailsYarnOrderResult.length > 0) {
+                waReconciliationRequisitionDetails.items[i].supplierId = selectWaAddRequisitionDetailsYarnOrderResult[0].supplier_id
+                waReconciliationRequisitionDetails.items[i].waAddRequisitionId = selectWaAddRequisitionDetailsYarnOrderResult[0].wa_add_requisition_id
+            } else {
+                waReconciliationRequisitionDetails.items[i].supplierId = null
+                waReconciliationRequisitionDetails.items[i].waAddRequisitionId = null
+            }
 
             const results = await waReconciliationRequisitionDetailsQueries.insert(waReconciliationRequisitionDetails, waReconciliationRequisitionDetails.items[i]);
             if (!results) {

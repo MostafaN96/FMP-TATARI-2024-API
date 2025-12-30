@@ -17,6 +17,9 @@ exports.insert = async (wcSellRequisitionDetails, items) => {
     .insert(wcSellRequisitionDetailsTableName, {
       id: items.wcSellRequisitionDetailsId,
       wc_sell_requisition_id: wcSellRequisitionDetails.id,
+      wc_fabric_order_requisition_details_id: items.wcFabricOrderRequisitionDetailsId,
+      wc_fabric_order_requisition_id: items.fabricOrderId,
+      orders_requisitions_id: items.ordersRequisitionsId,
       fabric_id: items.fabricId,
       consigment_manufacturing_id: items.consigmentManufacturingId,
       price: items.price,
@@ -100,9 +103,9 @@ exports.selectTotalByFabricId = async (fabricId) => {
         knex.raw('? as input_output', '0')
       ],
     )
-    .innerJoin(`${wcSellRequisitionTableName}`, 
-    `${wcSellRequisitionTableName}.id`, 
-    `${wcSellRequisitionDetailsTableName}.wc_sell_requisition_id`)
+    .innerJoin(`${wcSellRequisitionTableName}`,
+      `${wcSellRequisitionTableName}.id`,
+      `${wcSellRequisitionDetailsTableName}.wc_sell_requisition_id`)
     .where(whereCluse)
     .andWhere(`${wcSellRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -307,21 +310,22 @@ exports.selectPriceByFabricIdByConsigmentManufacturingId = async (fabricId, cons
 exports.selectOne = async (whereCluse) => {
   let queryResults = false;
   await knex
-  .select([
-    `${wcSellRequisitionDetailsTableName}.wc_sell_requisition_id`,
-    `${wcSellRequisitionDetailsTableName}.consigment_manufacturing_id`, 
-    `${wcSellRequisitionDetailsTableName}.fabric_id`, 
-    `${wcSellRequisitionTableName}.warehouse_id`, 
-    `${wcSellRequisitionDetailsTableName}.quantity`,
-    `${wcSellRequisitionDetailsTableName}.fabric_piece`,
-  ])
-  .from(`${wcSellRequisitionDetailsTableName}`)
-  .innerJoin(`${wcSellRequisitionTableName}`,
-  `${wcSellRequisitionTableName}.id`,
-  `${wcSellRequisitionDetailsTableName}.wc_sell_requisition_id`)
-  .where(whereCluse)
-  .limit(1)
-  .then((data) => {
+    .select([
+      `${wcSellRequisitionDetailsTableName}.wc_sell_requisition_id`,
+      `${wcSellRequisitionDetailsTableName}.wc_fabric_order_requisition_id`,
+      `${wcSellRequisitionDetailsTableName}.consigment_manufacturing_id`,
+      `${wcSellRequisitionDetailsTableName}.fabric_id`,
+      `${wcSellRequisitionTableName}.warehouse_id`,
+      `${wcSellRequisitionDetailsTableName}.quantity`,
+      `${wcSellRequisitionDetailsTableName}.fabric_piece`,
+    ])
+    .from(`${wcSellRequisitionDetailsTableName}`)
+    .innerJoin(`${wcSellRequisitionTableName}`,
+      `${wcSellRequisitionTableName}.id`,
+      `${wcSellRequisitionDetailsTableName}.wc_sell_requisition_id`)
+    .where(whereCluse)
+    .limit(1)
+    .then((data) => {
       queryResults = data;
     })
     .catch((error) => {
@@ -381,7 +385,7 @@ exports.selectTotalDetailsByDate = async (bodyPaylod) => {
     .innerJoin(`${consigmentManufacturingTableName}`, `${consigmentManufacturingTableName}.id`, `${wcSellRequisitionDetailsTableName}.consigment_manufacturing_id`)
     .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${wcSellRequisitionTableName}.warehouse_id`)
     .where(`${wcSellRequisitionTableName}.date`, `>=`, bodyPaylod.startDate)
-        .andWhere(`${wcSellRequisitionTableName}.date`, `<=`, bodyPaylod.endDate)
+    .andWhere(`${wcSellRequisitionTableName}.date`, `<=`, bodyPaylod.endDate)
     .andWhere(`${wcSellRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
       queryResults = data;

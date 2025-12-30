@@ -151,6 +151,17 @@ exports.selectByWarehouseWc = async (request, response) => {
   response.status(200).json(results);
 };
 
+exports.selectByWarehouseWcForTransitionBetweenOrder = async (request, response) => {
+  // logging
+  const { id } = request.params;
+  const { fabricOrderId } = request.params;
+  const { toFabricOrderId } = request.params;
+
+  // call service
+  const results = await fabricService.selectByWarehouseWcForTransitionBetweenOrder(id, fabricOrderId, toFabricOrderId);
+  response.status(200).json(results);
+};
+
 exports.selectStoredFabricsByFabricIdWc = async (request, response) => {
   // logging
   const { id } = request.params;

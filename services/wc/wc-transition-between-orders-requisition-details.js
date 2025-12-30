@@ -43,10 +43,9 @@ exports.create = async (wcTransitionBetweenOrdersRequisitionDetails) => {
         fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
         fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
         const selectFabricOrderRequisitionDetailsResult = await wcFabricOrderRequisitionDetailsService.selectOne(fabricOrderRequisitionDetailsWhereCluse)
-                       console.log("wcTransitionBetweenOrdersRequisitionDetails.fabricOrderId :::: ", wcTransitionBetweenOrdersRequisitionDetails.fabricOrderId);
-               console.log("wcTransitionBetweenOrdersRequisitionDetails.items[i].fabricId :::: ", wcTransitionBetweenOrdersRequisitionDetails.items[i].fabricId);
-
-        console.log("selectFabricOrderRequisitionDetailsResult :::: ", selectFabricOrderRequisitionDetailsResult);
+        // console.log("wcTransitionBetweenOrdersRequisitionDetails.fabricOrderId :::: ", wcTransitionBetweenOrdersRequisitionDetails.fabricOrderId);
+        // console.log("wcTransitionBetweenOrdersRequisitionDetails.items[i].fabricId :::: ", wcTransitionBetweenOrdersRequisitionDetails.items[i].fabricId);
+        // console.log("selectFabricOrderRequisitionDetailsResult :::: ", selectFabricOrderRequisitionDetailsResult);
         
         if (Array.isArray(selectFabricOrderRequisitionDetailsResult) && selectFabricOrderRequisitionDetailsResult.length > 0) {
             wcTransitionBetweenOrdersRequisitionDetails.items[i].toWcFabricOrderRequisitionDetailsId = selectFabricOrderRequisitionDetailsResult[0].id
@@ -58,9 +57,9 @@ exports.create = async (wcTransitionBetweenOrdersRequisitionDetails) => {
         fromFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
         fromFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
         const selectFromFabricOrderRequisitionDetailsResult = await wcFabricOrderRequisitionDetailsService.selectOne(fromFabricOrderRequisitionDetailsWhereCluse)
-               console.log("wcTransitionBetweenOrdersRequisitionDetails.items[i].fromFabricOrderId :::: ", wcTransitionBetweenOrdersRequisitionDetails.items[i].fromFabricOrderId);
-               console.log("wcTransitionBetweenOrdersRequisitionDetails.items[i].fabricId :::: ", wcTransitionBetweenOrdersRequisitionDetails.items[i].fabricId);
-               console.log("selectFromFabricOrderRequisitionDetailsResult :::: ", selectFromFabricOrderRequisitionDetailsResult);
+            //    console.log("wcTransitionBetweenOrdersRequisitionDetails.items[i].fromFabricOrderId :::: ", wcTransitionBetweenOrdersRequisitionDetails.items[i].fromFabricOrderId);
+            //    console.log("wcTransitionBetweenOrdersRequisitionDetails.items[i].fabricId :::: ", wcTransitionBetweenOrdersRequisitionDetails.items[i].fabricId);
+            //    console.log("selectFromFabricOrderRequisitionDetailsResult :::: ", selectFromFabricOrderRequisitionDetailsResult);
 
         if (Array.isArray(selectFromFabricOrderRequisitionDetailsResult) && selectFromFabricOrderRequisitionDetailsResult.length > 0) {
             wcTransitionBetweenOrdersRequisitionDetails.items[i].fromWcFabricOrderRequisitionDetailsId = selectFromFabricOrderRequisitionDetailsResult[0].id
@@ -79,7 +78,7 @@ exports.create = async (wcTransitionBetweenOrdersRequisitionDetails) => {
                 wcTransitionBetweenOrdersRequisitionDetails.items[i].fromFabricOrderId
             )
             if (fabricsStoredInWcResult[0] != null) {
-                console.log("fabricsStoredInWcResult ::::::::::::::::::::::: ", fabricsStoredInWcResult);
+                // console.log("fabricsStoredInWcResult ::::::::::::::::::::::: ", fabricsStoredInWcResult);
                 
 
                 for (let j = 0; j < fabricsStoredInWcResult.length; j++) {
@@ -240,6 +239,13 @@ exports.update = async (wcTransitionBetweenOrdersRequisitionDetails) => {
                         }, {
                             id: selectOneWaRecord[0].id
                         })
+
+                        // update order quantity
+                        await wcFabricOrderRequisitionDetailsService.updateForDecrementQuantity(isFound[0].wc_fabric_order_requisition_details_id, defferenceQuantity)
+
+                        // update order quantity
+                        await wcFabricOrderRequisitionDetailsService.updateForIncrementQuantity(isFound[0].from_wc_fabric_order_requisition_details_id, defferenceQuantity)
+
     
                         // Step 3 => select from (WA yarn) Records for decrement current quantity
                         const wcRecords = await wcService.selectByFabricForSell(
@@ -333,6 +339,13 @@ exports.update = async (wcTransitionBetweenOrdersRequisitionDetails) => {
                 }, {
                     id: selectOneWaRecord[0].id
                 })
+
+                // update order quantity
+                await wcFabricOrderRequisitionDetailsService.updateForDecrementQuantity(isFound[0].from_wc_fabric_order_requisition_details_id, defferenceQuantity)
+
+                // update order quantity
+                await wcFabricOrderRequisitionDetailsService.updateForIncrementQuantity(isFound[0].wc_fabric_order_requisition_details_id, defferenceQuantity)
+
                 
                 // Step 2 => Select From wa_sell_requisition_details_wa Records
                 let whereCluseDetailsWc = {};

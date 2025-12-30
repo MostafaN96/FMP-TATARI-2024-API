@@ -62,3 +62,20 @@ exports.selectMaxValueWith2JoinCondition = async (fromTableName, atrributeMaxVal
         })
     return queryResults
 }
+
+exports.selectSum = async (fromTableName, atrributeValue, groupByColumn, whereCluse) => {
+    let queryResults = []
+    await sqlFun.selectSum(
+        fromTableName, 
+        atrributeValue, 
+        groupByColumn, 
+        whereCluse)
+        .then(data => {
+            queryResults = data
+        })
+        .catch(error => {
+            queryResults = constants.errorPayload
+            console.log(error);
+        })
+    return queryResults
+}

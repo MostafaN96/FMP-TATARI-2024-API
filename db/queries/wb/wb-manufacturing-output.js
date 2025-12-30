@@ -121,6 +121,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
     `${warehouseTableName}.name as warehouse_name`,
     `${wbManufacturingRequisitionTableName}.industry_id as manufacture_id`,
         `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
+        `${wcTableName}.current_quantity`,
   ])
     .distinct()
     .from(`${wbManufacturingOutputTableName}`)
@@ -148,6 +149,9 @@ exports.selectByRequisitionId = async (requisitionId) => {
     .innerJoin(`${wcFabricOrderRequisitionTableName}`,
       `${wcFabricOrderRequisitionTableName}.id`,
       `${wbManufacturingOutputTableName}.wc_fabric_order_requisition_id`)
+    .innerJoin(`${wcTableName}`,
+      `${wcTableName}.wb_manufacturing_output_id`,
+      `${wbManufacturingOutputTableName}.id`)
     .where(whereCluse)
     // .andWhere(`${wbManufacturingOutputTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -290,6 +294,7 @@ exports.selectOne = async (whereCluse) => {
     .limitedSelect(wbManufacturingOutputTableName, [
       "fabric_id",
       "consigment_manufacturing_id",
+      "wc_fabric_order_requisition_details_id",
       "quantity",
       "is_deleted"
     ], whereCluse, 1)

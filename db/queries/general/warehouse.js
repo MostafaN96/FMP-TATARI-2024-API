@@ -210,7 +210,7 @@ exports.selectWhereInWa = async () => {
 exports.selectWhereInWaBySupplier = async (supplierId) => {
   let queryResults = []
   let whereCluse = {};
-  whereCluse[`${waAddRequisitionTableName}.supplier_id`] = supplierId;
+  whereCluse[`${waTableName}.supplier_id`] = supplierId;
 
   await knex.select([
     `${warehouseTableName}.id`,
@@ -232,6 +232,18 @@ exports.selectWhereInWaBySupplier = async (supplierId) => {
         .innerJoin(`${waAddRequisitionTableName}`,
           `${waAddRequisitionTableName}.id`,
           `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
+    })
+    .orWhereIn(`${warehouseTableName}.id`, function () {
+      this.select(`${waTransitionBetweenWHRequisitionTableName}.to_warehouse_id as id`)
+        .from(`${waTransitionBetweenWHRequisitionDetailsTableName}`)
+        .where(`${waTableName}.current_quantity`, ">", "0")
+        .andWhere(whereCluse)
+        .innerJoin(`${waTableName}`,
+          `${waTableName}.wa_transition_between_wh_requisitions_details_id`,
+          `${waTransitionBetweenWHRequisitionDetailsTableName}.id`)
+        .innerJoin(`${waTransitionBetweenWHRequisitionTableName}`,
+          `${waTransitionBetweenWHRequisitionTableName}.id`,
+          `${waTransitionBetweenWHRequisitionDetailsTableName}.wa_transition_between_wh_requisitions_id`)
     })
     .andWhere(constantsPayloads.deletePayload)
     .then(data => {

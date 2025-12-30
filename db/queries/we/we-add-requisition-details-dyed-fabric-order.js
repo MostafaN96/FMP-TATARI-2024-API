@@ -9,7 +9,7 @@ exports.insert = async (weAddRequisitionDetailsFabricOrder, itemsOrder) => {
   await sqlFun
     .insert(weAddRequisitionDetailsDyedFabricOrderTableName, {
       we_add_requisition_details_id: weAddRequisitionDetailsFabricOrder.weRequisitionDetailsId,
-      we_fabric_order_requisition_id: weAddRequisitionDetailsFabricOrder.requisition_id,
+      we_dyed_fabric_order_requisition_id: weAddRequisitionDetailsFabricOrder.requisition_id,
       orders_requisitions_id: itemsOrder.ordersRequisitionsId,
       // quantity: itemsOrder.quantity,
       creator_id: weAddRequisitionDetailsFabricOrder.personid,

@@ -12,7 +12,7 @@ const usersType = require("../../util/user-types");
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   waController.selectYarnLotQuantityByWarehouseByYarnByLotWa);
   
-  router.get("/remaining-by-warehouse-by-yarn-by-lot-by-supplier-for-return-wa/:id/:warehouseId/:yarnId/:yarnLotId",
+  router.get("/remaining-by-warehouse-by-yarn-by-lot-by-supplier-for-return-wa/:id/:warehouseId/:yarnId/:yarnLotId/:yarnOrderId",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   waController.selectYarnLotQuantityByWarehouseByYarnByLotForReturn);

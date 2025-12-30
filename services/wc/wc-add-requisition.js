@@ -71,5 +71,9 @@ exports.createForOrder = async (wcAddRequisition) => {
 
 exports.select = async () => {
     const results = await wcAddRequisitionQueries.select();
+        for (let i = 0; i < results.length; i++) {
+            const element = results[i];
+            element.details = await wcAddRequisitionDetailsService.selectByRequisitionId(element.id)
+        }
     return results;
   };

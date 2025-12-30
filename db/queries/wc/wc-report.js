@@ -3,7 +3,7 @@
 const knex = require("../../config/connection").getConnection();
 
 // Util
-const { consigmentManufacturingTableName, wcAddRequisitionTableName, wcAddRequisitionDetailsTableName, wbManufacturingOutputTableName, wbManufacturingInputOutputTableName, wbManufacturingRequisitionTableName, wcFabricOrderRequisitionTableName, wcFabricOrderRequisitionDetailsTableName, bussinessmanTableName, fabricTableName } = require("../../../util/database-tables-name");
+const { consigmentManufacturingTableName, wcAddRequisitionTableName, wcAddRequisitionDetailsTableName, wbManufacturingOutputTableName, wbManufacturingInputOutputTableName, wbManufacturingRequisitionTableName, wcFabricOrderRequisitionTableName, wcFabricOrderRequisitionDetailsTableName, bussinessmanTableName, fabricTableName, fabricYarnsTableName } = require("../../../util/database-tables-name");
 
 exports.purchasesFabrics = async (whereCluse, groupByAttr) => {
     let queryResults = [];
@@ -11,19 +11,19 @@ exports.purchasesFabrics = async (whereCluse, groupByAttr) => {
 
     await knex.select(columns).from(function () {
         this.select([
-            `${wcAddRequisitionDetailsTableName}.quantity`, 
+            `${wcAddRequisitionDetailsTableName}.quantity`,
             knex.raw(`DATE_FORMAT(${wcAddRequisitionTableName}.date, "%Y/%m") as date`),
-            `${wcAddRequisitionDetailsTableName}.fabric_id`, 
-            `${consigmentManufacturingTableName}.name`, 
-            `${consigmentManufacturingTableName}.code`, 
+            `${wcAddRequisitionDetailsTableName}.fabric_id`,
+            `${consigmentManufacturingTableName}.name`,
+            `${consigmentManufacturingTableName}.code`,
         ])
             .from(wcAddRequisitionDetailsTableName)
-            .innerJoin(`${wcAddRequisitionTableName}`, 
-            `${wcAddRequisitionTableName}.id`, 
-            `${wcAddRequisitionDetailsTableName}.wc_add_requisition_id`)
-            .innerJoin(`${consigmentManufacturingTableName}`, 
-            `${consigmentManufacturingTableName}.id`, 
-            `${wcAddRequisitionDetailsTableName}.fabric_id`)
+            .innerJoin(`${wcAddRequisitionTableName}`,
+                `${wcAddRequisitionTableName}.id`,
+                `${wcAddRequisitionDetailsTableName}.wc_add_requisition_id`)
+            .innerJoin(`${consigmentManufacturingTableName}`,
+                `${consigmentManufacturingTableName}.id`,
+                `${wcAddRequisitionDetailsTableName}.fabric_id`)
             .where(whereCluse)
             .as('t1')
     }).as('temp')
@@ -37,7 +37,7 @@ exports.purchasesFabrics = async (whereCluse, groupByAttr) => {
             console.log(error);
         })
     return queryResults;
-  };
+};
 
 exports.purchasesBySuppliers = async (whereCluse) => {
     let queryResults = [];
@@ -48,9 +48,9 @@ exports.purchasesBySuppliers = async (whereCluse) => {
             `${wcAddRequisitionDetailsTableName}.quantity`
         ])
             .from(wcAddRequisitionTableName)
-            .innerJoin(`${wcAddRequisitionDetailsTableName}`, 
-            `${wcAddRequisitionDetailsTableName}.wc_add_requisition_id`, 
-            `${wcAddRequisitionTableName}.id`)
+            .innerJoin(`${wcAddRequisitionDetailsTableName}`,
+                `${wcAddRequisitionDetailsTableName}.wc_add_requisition_id`,
+                `${wcAddRequisitionTableName}.id`)
             .where(whereCluse)
             .as('t1')
     }).as('temp')
@@ -63,7 +63,7 @@ exports.purchasesBySuppliers = async (whereCluse) => {
             console.log(error);
         })
     return queryResults;
-  };
+};
 
 exports.manufacturingReportByFabric = async (fabricId) => {
     let queryResults = [];
@@ -82,12 +82,12 @@ exports.manufacturingReportByFabric = async (fabricId) => {
             `${wbManufacturingRequisitionTableName}.id as requisition_id`
         ])
             .from(wbManufacturingOutputTableName)
-            .innerJoin(`${wbManufacturingInputOutputTableName}`, 
-            `${wbManufacturingInputOutputTableName}.wb_manufacturing_output_id`, 
-            `${wbManufacturingOutputTableName}.id`)
-            .innerJoin(`${wbManufacturingRequisitionTableName}`, 
-            `${wbManufacturingRequisitionTableName}.id`, 
-            `${wbManufacturingInputOutputTableName}.wb_manufacturing_requisition_id`)
+            .innerJoin(`${wbManufacturingInputOutputTableName}`,
+                `${wbManufacturingInputOutputTableName}.wb_manufacturing_output_id`,
+                `${wbManufacturingOutputTableName}.id`)
+            .innerJoin(`${wbManufacturingRequisitionTableName}`,
+                `${wbManufacturingRequisitionTableName}.id`,
+                `${wbManufacturingInputOutputTableName}.wb_manufacturing_requisition_id`)
             .where(whereCluse)
             .as('t1')
     }).as('temp')
@@ -101,17 +101,20 @@ exports.manufacturingReportByFabric = async (fabricId) => {
             console.log(error);
         })
     return queryResults;
-  };
-  
+};
+
 exports.fabricOrdersReport = async (whereCluse) => {
 
     var queryResults = []
     let columns = [
+        "orders_requisitions_id",
         "wc_fabric_order_requisition_id",
         "wc_fabric_order_requisition_name",
         "wc_fabric_order_requisition_is_order",
+        "wc_fabric_order_requisition_details_id",
         "wc_fabric_order_requisition_details_is_order",
         "bussiness_man_name",
+        "fabric_id",
         "fabric_name",
         "fabric_code",
         "needed_quantity",
@@ -125,11 +128,14 @@ exports.fabricOrdersReport = async (whereCluse) => {
     await knex.select(columns).from(function () {
         this.select(
             [
+                `${wcFabricOrderRequisitionTableName}.orders_requisitions_id`,
                 `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
                 `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
                 `${wcFabricOrderRequisitionTableName}.is_order as wc_fabric_order_requisition_is_order`,
+                `${wcFabricOrderRequisitionDetailsTableName}.id as wc_fabric_order_requisition_details_id`,
                 `${wcFabricOrderRequisitionDetailsTableName}.is_order as wc_fabric_order_requisition_details_is_order`,
                 `${bussinessmanTableName}.name as bussiness_man_name`,
+                `${fabricTableName}.id as fabric_id`,
                 `${fabricTableName}.name as fabric_name`,
                 `${fabricTableName}.code as fabric_code`,
                 `${wcFabricOrderRequisitionDetailsTableName}.initial_quantity  as needed_quantity`,
@@ -138,26 +144,37 @@ exports.fabricOrdersReport = async (whereCluse) => {
                 //   THEN coalesce( ${wcFabricOrderRequisitionDetailsTableName}.initial_quantity - ${wcFabricOrderRequisitionDetailsTableName}.current_quantity )
                 //   ELSE ${0}
                 //   END as executed_quantity`),
-                  knex.raw(
+                knex.raw(
                     `CASE WHEN ${wcFabricOrderRequisitionDetailsTableName}.current_quantity > ${0}
                     THEN coalesce( ${wcFabricOrderRequisitionDetailsTableName}.current_quantity )
                     ELSE ${0}
                     END as current_quantity`),
-                            knex.raw(
-                                `CASE WHEN ${wcFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
-                                THEN coalesce( (${wcFabricOrderRequisitionDetailsTableName}.current_quantity * -1) + ${wcFabricOrderRequisitionDetailsTableName}.initial_quantity )
-                                ELSE coalesce( ${wcFabricOrderRequisitionDetailsTableName}.initial_quantity - ${wcFabricOrderRequisitionDetailsTableName}.current_quantity )
-                                END as net_current_quantity`),
-                    knex.raw(
-                          `CASE WHEN ${wcFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
+                knex.raw(
+                                                        `CASE WHEN ${wcFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
+                                                        THEN coalesce( (${wcFabricOrderRequisitionDetailsTableName}.current_quantity * -1) + ${wcFabricOrderRequisitionDetailsTableName}.initial_quantity )
+                                                        ELSE coalesce( ${wcFabricOrderRequisitionDetailsTableName}.initial_quantity - ${wcFabricOrderRequisitionDetailsTableName}.current_quantity )
+                                                        END as net_current_quantity`),
+                knex.raw(
+                    `CASE WHEN ${wcFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
                           THEN coalesce( ${wcFabricOrderRequisitionDetailsTableName}.current_quantity * -1 )
                           ELSE ${0}
                           END as over_current_quantity`),
-      knex.raw(
-      `CASE WHEN ${wcFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
-      THEN coalesce( ((${wcFabricOrderRequisitionDetailsTableName}.current_quantity * -1) / ${wcFabricOrderRequisitionDetailsTableName}.initial_quantity) * 100 )
-      ELSE ${0}
-      END as over_current_quantity_ratio`),
+                knex.raw(
+                    `CASE WHEN ${wcFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
+                                                THEN coalesce( 
+                                                ( 
+                                                    ( 
+                                                        (${wcFabricOrderRequisitionDetailsTableName}.current_quantity * -1) / 
+                                                                ( 
+                                                                    (${wcFabricOrderRequisitionDetailsTableName}.current_quantity * -1) 
+                                                                    + ${wcFabricOrderRequisitionDetailsTableName}.initial_quantity
+                                                                ) 
+                                                    )
+                                                 ) 
+                                                 * 100 
+                                                 )
+                                                ELSE ${0}
+                                                END as over_current_quantity_ratio`),
             ])
             .from(`${wcFabricOrderRequisitionTableName}`)
             .innerJoin(`${wcFabricOrderRequisitionDetailsTableName}`,
@@ -170,16 +187,16 @@ exports.fabricOrdersReport = async (whereCluse) => {
                 `${fabricTableName}.id`,
                 `${wcFabricOrderRequisitionDetailsTableName}.fabric_id`)
             .where(`${wcFabricOrderRequisitionDetailsTableName}.initial_quantity`, ">", 0)
-            .as('t1')              
+            .as('t1')
     }).as('temp')
-    .where(whereCluse)
+        .where(whereCluse)
         .sum("needed_quantity as needed_quantity")
         // .sum("executed_quantity as executed_quantity")
         .sum("current_quantity as current_quantity")
         .sum("net_current_quantity as net_current_quantity")
         .sum("over_current_quantity_ratio as over_current_quantity_ratio")
-        .groupBy("bussiness_man_name", "wc_fabric_order_requisition_id", 
-        "fabric_name")
+        .groupBy("bussiness_man_name", "wc_fabric_order_requisition_id",
+            "fabric_name")
         .then(data => {
             queryResults = data
         })
@@ -188,3 +205,225 @@ exports.fabricOrdersReport = async (whereCluse) => {
         })
     return queryResults
 }
+
+exports.fabricOrdersForGeneralReport = async (whereCluse) => {
+
+    var queryResults = []
+    let columns = [
+        "orders_requisitions_id",
+        "wc_fabric_order_requisition_id",
+        "wc_fabric_order_requisition_name",
+        "wc_fabric_order_requisition_is_order",
+        "wc_fabric_order_requisition_details_is_order",
+        "bussiness_man_name",
+        "fabric_id",
+        "fabric_name",
+        "fabric_code",
+        "needed_quantity",
+        // "executed_quantity",
+        "current_quantity",
+        "net_current_quantity",
+        "over_current_quantity",
+        "over_current_quantity_ratio",
+        "wc_fabric_order_requisition_details_id",
+    ]
+
+    await knex.select(columns).from(function () {
+        this.select(
+            [
+                `${wcFabricOrderRequisitionTableName}.orders_requisitions_id`,
+                `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
+                `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
+                `${wcFabricOrderRequisitionTableName}.is_order as wc_fabric_order_requisition_is_order`,
+                `${wcFabricOrderRequisitionDetailsTableName}.is_order as wc_fabric_order_requisition_details_is_order`,
+                `${bussinessmanTableName}.name as bussiness_man_name`,
+                `${fabricTableName}.id as fabric_id`,
+                `${fabricTableName}.name as fabric_name`,
+                `${fabricTableName}.code as fabric_code`,
+                `${wcFabricOrderRequisitionDetailsTableName}.initial_quantity  as needed_quantity`,
+                // knex.raw(
+                //   `CASE WHEN ${wcFabricOrderRequisitionDetailsTableName}.current_quantity > ${0}
+                //   THEN coalesce( ${wcFabricOrderRequisitionDetailsTableName}.initial_quantity - ${wcFabricOrderRequisitionDetailsTableName}.current_quantity )
+                //   ELSE ${0}
+                //   END as executed_quantity`),
+                knex.raw(
+                    `CASE WHEN ${wcFabricOrderRequisitionDetailsTableName}.current_quantity > ${0}
+                    THEN coalesce( ${wcFabricOrderRequisitionDetailsTableName}.current_quantity )
+                    ELSE ${0}
+                    END as current_quantity`),
+                knex.raw(
+                    `CASE WHEN ${wcFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
+                                THEN coalesce( (${wcFabricOrderRequisitionDetailsTableName}.current_quantity * -1) + ${wcFabricOrderRequisitionDetailsTableName}.initial_quantity )
+                                ELSE coalesce( ${wcFabricOrderRequisitionDetailsTableName}.initial_quantity - ${wcFabricOrderRequisitionDetailsTableName}.current_quantity )
+                                END as net_current_quantity`),
+                knex.raw(
+                    `CASE WHEN ${wcFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
+                          THEN coalesce( ${wcFabricOrderRequisitionDetailsTableName}.current_quantity * -1 )
+                          ELSE ${0}
+                          END as over_current_quantity`),
+                knex.raw(
+                    `CASE WHEN ${wcFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
+                                                THEN coalesce( 
+                                                ( 
+                                                    ( 
+                                                        (${wcFabricOrderRequisitionDetailsTableName}.current_quantity * -1) / 
+                                                                ( 
+                                                                    (${wcFabricOrderRequisitionDetailsTableName}.current_quantity * -1) 
+                                                                    + ${wcFabricOrderRequisitionDetailsTableName}.initial_quantity
+                                                                ) 
+                                                    )
+                                                 ) 
+                                                 * 100 
+                                                 )
+                                                ELSE ${0}
+                                                END as over_current_quantity_ratio`),
+            ])
+            .distinct(`${wcFabricOrderRequisitionDetailsTableName}.id as wc_fabric_order_requisition_details_id`)
+            .from(`${wcFabricOrderRequisitionTableName}`)
+            .innerJoin(`${wcFabricOrderRequisitionDetailsTableName}`,
+                `${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`,
+                `${wcFabricOrderRequisitionTableName}.id`)
+            .innerJoin(`${bussinessmanTableName}`,
+                `${bussinessmanTableName}.id`,
+                `${wcFabricOrderRequisitionTableName}.seller_id`)
+            .innerJoin(`${fabricTableName}`,
+                `${fabricTableName}.id`,
+                `${wcFabricOrderRequisitionDetailsTableName}.fabric_id`)
+            .innerJoin(`${wbManufacturingOutputTableName}`,
+                `${wbManufacturingOutputTableName}.wc_fabric_order_requisition_details_id`,
+                `${wcFabricOrderRequisitionDetailsTableName}.id`)
+            .where(`${wcFabricOrderRequisitionDetailsTableName}.initial_quantity`, ">", 0)
+            .as('t1')
+    }).as('temp')
+        .where(whereCluse)
+        .sum("needed_quantity as needed_quantity")
+        // .sum("executed_quantity as executed_quantity")
+        .sum("current_quantity as current_quantity")
+        .sum("net_current_quantity as net_current_quantity")
+        .sum("over_current_quantity_ratio as over_current_quantity_ratio")
+        .groupBy("bussiness_man_name", "wc_fabric_order_requisition_id",
+            "fabric_name")
+        .then(data => {
+            queryResults = data
+        })
+        .catch(error => {
+            console.log(error);
+        })
+    return queryResults
+}
+
+exports.fabricOrdersTotalForGeneralReport = async (whereCluse) => {
+
+    var queryResults = []
+    let columns = [
+        "orders_requisitions_id",
+        "wc_fabric_order_requisition_id",
+        "wc_fabric_order_requisition_name",
+        "wc_fabric_order_requisition_is_order",
+        "wc_fabric_order_requisition_details_is_order",
+        "bussiness_man_name",
+        "fabric_id",
+        "fabric_name",
+        "fabric_code",
+        // "wast_ratio",
+        "needed_quantity",
+        // "executed_quantity",
+        "current_quantity",
+        "current_quantity_only",
+        "net_current_quantity",
+        "over_current_quantity",
+        "over_current_quantity_ratio",
+        "wc_fabric_order_requisition_details_id",
+    ]
+
+    await knex.select(columns).from(function () {
+        this.select(
+            [
+                `${wcFabricOrderRequisitionTableName}.orders_requisitions_id`,
+                `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
+                `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
+                `${wcFabricOrderRequisitionTableName}.is_order as wc_fabric_order_requisition_is_order`,
+                `${wcFabricOrderRequisitionDetailsTableName}.is_order as wc_fabric_order_requisition_details_is_order`,
+                `${bussinessmanTableName}.name as bussiness_man_name`,
+                `${fabricTableName}.id as fabric_id`,
+                `${fabricTableName}.name as fabric_name`,
+                `${fabricTableName}.code as fabric_code`,
+                // `${fabricYarnsTableName}.wast_ratio`,
+                `${wcFabricOrderRequisitionDetailsTableName}.initial_quantity  as needed_quantity`,
+                // knex.raw(
+                //   `CASE WHEN ${wcFabricOrderRequisitionDetailsTableName}.current_quantity > ${0}
+                //   THEN coalesce( ${wcFabricOrderRequisitionDetailsTableName}.initial_quantity - ${wcFabricOrderRequisitionDetailsTableName}.current_quantity )
+                //   ELSE ${0}
+                //   END as executed_quantity`),
+                knex.raw(
+                    `CASE WHEN ${wcFabricOrderRequisitionDetailsTableName}.current_quantity > ${0}
+                    THEN coalesce( ${wcFabricOrderRequisitionDetailsTableName}.current_quantity )
+                    ELSE ${0}
+                    END as current_quantity`),
+                    knex.raw(
+                    `CASE WHEN ${wcFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
+                    THEN coalesce( ${wcFabricOrderRequisitionDetailsTableName}.current_quantity * -1 )
+                    ELSE ${0}
+                    END as current_quantity_only`),
+                knex.raw(
+                                                        `CASE WHEN ${wcFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
+                                                        THEN coalesce( (${wcFabricOrderRequisitionDetailsTableName}.current_quantity * -1) + ${wcFabricOrderRequisitionDetailsTableName}.initial_quantity )
+                                                        ELSE coalesce( ${wcFabricOrderRequisitionDetailsTableName}.initial_quantity - ${wcFabricOrderRequisitionDetailsTableName}.current_quantity )
+                                                        END as net_current_quantity`),
+                knex.raw(
+                    `CASE WHEN ${wcFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
+                    THEN coalesce( ${wcFabricOrderRequisitionDetailsTableName}.current_quantity * -1 )
+                    ELSE ${0}
+                    END as over_current_quantity`),
+                knex.raw(
+                    `CASE WHEN ${wcFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
+                                                THEN coalesce( 
+                                                ( 
+                                                    ( 
+                                                        (${wcFabricOrderRequisitionDetailsTableName}.current_quantity * -1) / 
+                                                                ( 
+                                                                    (${wcFabricOrderRequisitionDetailsTableName}.current_quantity * -1) 
+                                                                    + ${wcFabricOrderRequisitionDetailsTableName}.initial_quantity
+                                                                ) 
+                                                    )
+                                                 ) 
+                                                 * 100 
+                                                 )
+                                                ELSE ${0}
+                                                END as over_current_quantity_ratio`),
+            ])
+            .distinct(`${wcFabricOrderRequisitionDetailsTableName}.id as wc_fabric_order_requisition_details_id`)
+            .from(`${wcFabricOrderRequisitionTableName}`)
+            .innerJoin(`${wcFabricOrderRequisitionDetailsTableName}`,
+                `${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`,
+                `${wcFabricOrderRequisitionTableName}.id`)
+            .innerJoin(`${bussinessmanTableName}`,
+                `${bussinessmanTableName}.id`,
+                `${wcFabricOrderRequisitionTableName}.seller_id`)
+            .innerJoin(`${fabricTableName}`,
+                `${fabricTableName}.id`,
+                `${wcFabricOrderRequisitionDetailsTableName}.fabric_id`)
+            // .innerJoin(`${fabricYarnsTableName}`,
+            //     `${fabricYarnsTableName}.fabric_id`,
+            //     `${fabricTableName}.id`)
+            .where(`${wcFabricOrderRequisitionDetailsTableName}.initial_quantity`, ">", 0)
+            .as('t1')
+    }).as('temp')
+        .where(whereCluse)
+        .sum("needed_quantity as needed_quantity")
+        // .sum("executed_quantity as executed_quantity")
+        .sum("current_quantity as current_quantity")
+        .sum("current_quantity_only as current_quantity_only")
+        .sum("net_current_quantity as net_current_quantity")
+        .sum("over_current_quantity as over_current_quantity")
+        // .sum("over_current_quantity_ratio as over_current_quantity_ratio")
+        .groupBy("bussiness_man_name", "wc_fabric_order_requisition_id")
+        .then(data => {
+            queryResults = data
+        })
+        .catch(error => {
+            console.log(error);
+        })
+    return queryResults
+}
+

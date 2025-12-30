@@ -38,5 +38,9 @@ exports.create = async (wdTransportWcWdRequisition) => {
 
 exports.select = async () => {
     const results = await wdTransportWcWdRequisitionQueries.select();
+    for (let i = 0; i < results.length; i++) {
+            const element = results[i];
+            element.details = await wdTransportWcWdRequisitionDetailsService.selectByRequisitionId(element.id)
+        }
     return results;
   };

@@ -71,8 +71,12 @@ exports.createForOrder = async (waAddRequisition) => {
 
 exports.select = async () => {
     const results = await waAddRequisitionQueries.select();
+    for (let i = 0; i < results.length; i++) {
+        const element = results[i];
+        element.details = await waAddRequisitionDetailsService.selectByRequisitionId(element.id)
+    }
     return results;
-  };
+};
 
   exports.selectOrders = async () => {
     const results = await waAddRequisitionQueries.selectOrders();

@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const deliveryCarController = require("../../controllers/general/color-category");
+const colorCategoryController = require("../../controllers/general/color-category");
 
 // MiddleWares
 const middleWeres = require("../../middlewares/middlewares");
@@ -10,29 +10,33 @@ const usersType = require("../../util/user-types");
 router.get("",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
-  deliveryCarController.select);
+  colorCategoryController.select);
 
 router.get("/deleted",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
-  deliveryCarController.selectDeleted);
+  colorCategoryController.selectDeleted);
 
 router.get("/:deyingId",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
-  deliveryCarController.selectByDeying);
+  colorCategoryController.selectByDeying);
 
 router.get("/:fabricId/:supplierId",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
-  deliveryCarController.selectDyersAndRequisitionsColorCategoryOfFabrics);
+  colorCategoryController.selectDyersAndRequisitionsColorCategoryOfFabrics);
 
+router.get("/by-order-by-dyed-fabric/:orderRequisitionId/:dyedFabricId",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  colorCategoryController.selectByOrderByDyedFabricWe);
 
 router.post(
   "",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
-  deliveryCarController.create
+  colorCategoryController.create
 );
 
 router.put(
@@ -40,7 +44,7 @@ router.put(
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   middleWeres.checkInt(),
-  deliveryCarController.update
+  colorCategoryController.update
 );
 
 
@@ -48,14 +52,14 @@ router.delete(
   "",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
-  deliveryCarController.delete
+  colorCategoryController.delete
 );
 
 router.patch(
   "",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
-  deliveryCarController.restore
+  colorCategoryController.restore
 );
 
 module.exports = router;

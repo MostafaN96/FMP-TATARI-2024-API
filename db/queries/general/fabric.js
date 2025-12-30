@@ -328,6 +328,7 @@ exports.selectStoredFabricsWc = async (whereCluse, wcWhereCluse, warehouseId) =>
           `${wcTransitionBetweenWHRequisitionDetailsTableName}.wc_transition_between_wh_requisitions_id`)
         .where(`${wcTableName}.current_quantity`, ">", "0")
         .andWhere(`${wcTransitionBetweenWHRequisitionTableName}.to_warehouse_id`, warehouseId)
+        .andWhere(wcWhereCluse)
     })
     .orWhereIn(`${fabricTableName}.id`, function () {
       this.select(`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.fabric_id as id`)
@@ -340,6 +341,132 @@ exports.selectStoredFabricsWc = async (whereCluse, wcWhereCluse, warehouseId) =>
           `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_transition_between_orders_requisitions_id`)
         .where(`${wcTableName}.current_quantity`, ">", "0")
         .andWhere(`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.warehouse_id`, warehouseId)
+        .andWhere(wcWhereCluse)
+    })
+    .andWhere(whereCluse)
+    .groupBy(`${fabricTableName}.id`)
+    .then(data => {
+      queryResults = data
+    })
+    .catch(error => {
+      console.log("error selectByWarehouseWc :::: ", error);
+      queryResults = constants.errorPayload
+    })
+  return queryResults
+}
+
+exports.selectByWarehouseWcForTransitionBetweenOrder = async (whereCluse, wcWhereCluse, warehouseId, toFabricOrderId) => {
+  let queryResults = []
+
+  await knex(fabricTableName)
+    .select([
+      `${fabricTableName}.id`,
+      `${fabricTableName}.name`,
+      `${fabricTableName}.code`,
+    ])
+    .whereIn(`${fabricTableName}.id`, function () {
+      this.select(`${wcAddRequisitionDetailsTableName}.fabric_id as id`)
+        .from(`${wcAddRequisitionDetailsTableName}`)
+        .innerJoin(`${wcTableName}`,
+          `${wcTableName}.wc_add_requisition_details_id`,
+          `${wcAddRequisitionDetailsTableName}.id`)
+          .innerJoin(`${wcAddRequisitionDetailsFabricOrderTableName}`,
+            `${wcAddRequisitionDetailsFabricOrderTableName}.wc_add_requisition_details_id`,
+            `${wcAddRequisitionDetailsTableName}.id`)
+        .where(`${wcTableName}.current_quantity`, ">", "0")
+        .andWhere(wcWhereCluse)
+        .whereIn(`${fabricTableName}.id`, function () {
+          this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
+          .from(`${wcFabricOrderRequisitionDetailsTableName}`)
+          .where(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, `${toFabricOrderId}`)
+        })
+    })
+    .orWhereIn(`${fabricTableName}.id`, function () {
+      this.select(`${wcReconciliationRequisitionDetailsTableName}.fabric_id as id`)
+        .from(`${wcReconciliationRequisitionDetailsTableName}`)
+        .innerJoin(`${wcReconciliationRequisitionTableName}`,
+          `${wcReconciliationRequisitionTableName}.id`,
+          `${wcReconciliationRequisitionDetailsTableName}.wc_reconcilition_requisition_id`)
+        .innerJoin(`${wcReconciliationRequisitionDetailsWcTableName}`,
+          `${wcReconciliationRequisitionDetailsWcTableName}.wc_reconcilition_requisition_details_id`,
+          `${wcReconciliationRequisitionDetailsTableName}.id`)
+        .innerJoin(`${wcTableName}`,
+          `${wcTableName}.id`,
+          `${wcReconciliationRequisitionDetailsWcTableName}.wc_id`)
+        .where(`${wcTableName}.current_quantity`, ">", "0")
+        .andWhere(wcWhereCluse)
+        .whereIn(`${fabricTableName}.id`, function () {
+          this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
+          .from(`${wcFabricOrderRequisitionDetailsTableName}`)
+          .where(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, `${toFabricOrderId}`)
+        })
+    })
+    .orWhereIn(`${fabricTableName}.id`, function () {
+      this.select(`${wdTransportRequisitionWdWcDetailsTableName}.fabric_id as id`)
+        .from(`${wdTransportRequisitionWdWcTableName}`)
+        .innerJoin(`${wdTransportRequisitionWdWcDetailsTableName}`,
+          `${wdTransportRequisitionWdWcDetailsTableName}.wd_transport_requisition_wd_wc_id`,
+          `${wdTransportRequisitionWdWcTableName}.id`)
+        .innerJoin(`${wcTableName}`,
+          `${wcTableName}.wd_transport_requisition_wd_wc_details_id`,
+          `${wdTransportRequisitionWdWcDetailsTableName}.id`)
+        .where(`${wcTableName}.current_quantity`, ">", "0")
+        .andWhere(wcWhereCluse)
+        .whereIn(`${fabricTableName}.id`, function () {
+          this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
+          .from(`${wcFabricOrderRequisitionDetailsTableName}`)
+          .where(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, `${toFabricOrderId}`)
+        })
+    })
+    .orWhereIn(`${fabricTableName}.id`, function () {
+      this.select(`${wbManufacturingOutputTableName}.fabric_id as id`)
+        .from(`${wbManufacturingOutputTableName}`)
+        .innerJoin(`${wcTableName}`,
+          `${wcTableName}.wb_manufacturing_output_id`,
+          `${wbManufacturingOutputTableName}.id`)
+        .where(`${wcTableName}.current_quantity`, ">", "0")
+        .andWhere(wcWhereCluse)
+        .whereIn(`${fabricTableName}.id`, function () {
+          this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
+          .from(`${wcFabricOrderRequisitionDetailsTableName}`)
+          .where(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, `${toFabricOrderId}`)
+        })
+    })
+    .orWhereIn(`${fabricTableName}.id`, function () {
+      this.select(`${wcTransitionBetweenWHRequisitionDetailsTableName}.fabric_id as id`)
+        .from(`${wcTransitionBetweenWHRequisitionDetailsTableName}`)
+        .innerJoin(`${wcTableName}`,
+          `${wcTableName}.wc_transition_between_wh_requisitions_details_id`,
+          `${wcTransitionBetweenWHRequisitionDetailsTableName}.id`)
+        .innerJoin(`${wcTransitionBetweenWHRequisitionTableName}`,
+          `${wcTransitionBetweenWHRequisitionTableName}.id`,
+          `${wcTransitionBetweenWHRequisitionDetailsTableName}.wc_transition_between_wh_requisitions_id`)
+        .where(`${wcTableName}.current_quantity`, ">", "0")
+        .andWhere(`${wcTransitionBetweenWHRequisitionTableName}.to_warehouse_id`, warehouseId)
+        .andWhere(wcWhereCluse)
+        .whereIn(`${fabricTableName}.id`, function () {
+          this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
+          .from(`${wcFabricOrderRequisitionDetailsTableName}`)
+          .where(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, `${toFabricOrderId}`)
+        })
+    })
+    .orWhereIn(`${fabricTableName}.id`, function () {
+      this.select(`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.fabric_id as id`)
+        .from(`${wcTransitionBetweenOrdersRequisitionDetailsTableName}`)
+        .innerJoin(`${wcTableName}`,
+          `${wcTableName}.wc_transition_between_orders_requisitions_details_id`,
+          `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.id`)
+        .innerJoin(`${wcTransitionBetweenOrdersRequisitionTableName}`,
+          `${wcTransitionBetweenOrdersRequisitionTableName}.id`,
+          `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_transition_between_orders_requisitions_id`)
+        .where(`${wcTableName}.current_quantity`, ">", "0")
+        .andWhere(`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.warehouse_id`, warehouseId)
+        .andWhere(wcWhereCluse)
+        .whereIn(`${fabricTableName}.id`, function () {
+          this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
+          .from(`${wcFabricOrderRequisitionDetailsTableName}`)
+          .where(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, `${toFabricOrderId}`)
+        })
     })
     .andWhere(whereCluse)
     .groupBy(`${fabricTableName}.id`)

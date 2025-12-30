@@ -146,9 +146,10 @@ exports.selectBySupplierByWarehouseByYarnWa = async (request, response) => {
   const { id } = request.params;
   const { warehouseId } = request.params;
   const { yarnId } = request.params;
+  const { yarnOrderId } = request.params;
 
   // call service
-  const results = await yarnLotService.selectBySupplierByWarehouseByYarnWa(id, warehouseId, yarnId);
+  const results = await yarnLotService.selectBySupplierByWarehouseByYarnWa(id, warehouseId, yarnId, yarnOrderId);
   response.status(200).json(results);
 };
 

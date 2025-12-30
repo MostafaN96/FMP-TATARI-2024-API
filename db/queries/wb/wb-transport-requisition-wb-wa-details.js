@@ -1,5 +1,5 @@
 // Config
-const { warehouseTableName, yarnTableName, yarnLotTableName, bussinessmanTableName, wbTableName, waTableName, fabricTableName, consigmentYarnTableName, waYarnOrderRequisitionTableName } = require("../../../util/database-tables-name");
+const { warehouseTableName, yarnTableName, yarnLotTableName, bussinessmanTableName, wbTableName, waTableName, fabricTableName, consigmentYarnTableName, waYarnOrderRequisitionTableName, waAddRequisitionTableName, waAddRequisitionDetailsYarnOrderTableName, waAddRequisitionDetailsTableName } = require("../../../util/database-tables-name");
 const sqlFun = require("../../config/sql-fun");
 const knex = require("../../config/connection").getConnection();
 
@@ -532,6 +532,7 @@ exports.selectTotalByYarnByWarehouseId = async (yarnId, warehouseId) => {
   await knex.from(wbTransportRequisitionWbWaDetailsTableName)
     .select(
       [
+        `${wbTransportRequisitionWbWaDetailsTableName}.id`,
         `${wbTransportRequisitionWbWaDetailsTableName}.price`,
         `${wbTransportRequisitionWbWaDetailsTableName}.price_dollar`,
         `${wbTransportRequisitionWbWaDetailsTableName}.quantity`,
@@ -604,10 +605,12 @@ exports.selectTotalDetailsByYarnIdByWarehouseId = async (yarnId, warehouseId) =>
 exports.selectDetailsByWarehouseByYarnByLot = async (
   warehouseId, yarnId, 
   yarnLotId, consigmentYarnId,
-  yarnOrderId
+  yarnOrderId,
+  supplierId
 ) => {
   let queryResults = [];
   let whereCluse = {};
+    whereCluse[`${waAddRequisitionTableName}.supplier_id`] = supplierId;
   whereCluse[`${wbTransportRequisitionWbWaTableName}.warehouse_id`] = warehouseId;
   whereCluse[`${wbTransportRequisitionWbWaDetailsTableName}.yarn_id`] = yarnId;
   whereCluse[`${wbTransportRequisitionWbWaDetailsTableName}.yarn_lot_id`] = yarnLotId;
@@ -617,6 +620,7 @@ exports.selectDetailsByWarehouseByYarnByLot = async (
   whereCluse[`${wbTransportRequisitionWbWaDetailsTableName}.is_active`] = 1;
 
   await knex.from(wbTransportRequisitionWbWaDetailsTableName)
+  .distinct(`${wbTransportRequisitionWbWaDetailsTableName}.id`)
     .select(
       [
         `${wbTransportRequisitionWbWaDetailsTableName}.price`,
@@ -627,7 +631,18 @@ exports.selectDetailsByWarehouseByYarnByLot = async (
         knex.raw('? as input_output', '1')
       ],
     )
-    .innerJoin(`${wbTransportRequisitionWbWaTableName}`, `${wbTransportRequisitionWbWaTableName}.id`, `${wbTransportRequisitionWbWaDetailsTableName}.wb_transport_requisition_wb_wa_id`)
+    .innerJoin(`${wbTransportRequisitionWbWaTableName}`, 
+      `${wbTransportRequisitionWbWaTableName}.id`, 
+      `${wbTransportRequisitionWbWaDetailsTableName}.wb_transport_requisition_wb_wa_id`)
+      .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`, 
+      `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`, 
+      `${wbTransportRequisitionWbWaDetailsTableName}.wa_yarn_order_requisition_id`)
+    .innerJoin(`${waAddRequisitionDetailsTableName}`, 
+      `${waAddRequisitionDetailsTableName}.id`, 
+      `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`)
+    .innerJoin(`${waAddRequisitionTableName}`, 
+      `${waAddRequisitionTableName}.id`, 
+      `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
     .where(whereCluse)
     .andWhere(`${wbTransportRequisitionWbWaDetailsTableName}.quantity`, ">", 0)
     .then((data) => {

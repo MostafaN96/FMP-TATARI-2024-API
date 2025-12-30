@@ -14,7 +14,8 @@ const {
   wcTableName, 
   wcAddRequisitionDetailsFabricOrderTableName, 
   wcFabricOrderRequisitionTableName, 
-  wdTransportWcWdDetailsWcTableName 
+  wdTransportWcWdDetailsWcTableName, 
+  ordersRequisitionsTableName
 } = require("../../../util/database-tables-name");
 
 exports.insert = async (wcAddRequisitionDetails, items) => {
@@ -68,6 +69,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
         `${fabricTableName}.code as fabric_code`,
         `${consigmentManufacturingTableName}.number as consigment_number`,
         `${warehouseTableName}.name as warehouse_name`,
+            // knex.raw('JSON_ARRAYAGG(JSON_OBJECT("id", or.id, "name", or.name)) as details')
       ],
     )
     .innerJoin(`${wcAddRequisitionTableName}`, `${wcAddRequisitionTableName}.id`, `${wcAddRequisitionDetailsTableName}.wc_add_requisition_id`)
@@ -75,10 +77,12 @@ exports.selectByRequisitionId = async (requisitionId) => {
     .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${wcAddRequisitionDetailsTableName}.fabric_id`)
     .innerJoin(`${consigmentManufacturingTableName}`, `${consigmentManufacturingTableName}.id`, `${wcAddRequisitionDetailsTableName}.consigment_manufacturing_id`)
     .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${wcAddRequisitionDetailsTableName}.warehouse_id`)
+    // .leftOuterJoin(`${wcAddRequisitionDetailsFabricOrderTableName}`,`${wcAddRequisitionDetailsFabricOrderTableName}.wc_add_requisition_details_id`, `${wcAddRequisitionDetailsTableName}.id`)
+    // .leftOuterJoin(`${ordersRequisitionsTableName} as or`, 'or.id', `${wcAddRequisitionDetailsFabricOrderTableName}.orders_requisitions_id`)
     .where(whereCluse)
     .andWhere(`${wcAddRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
-      queryResults = data;
+      queryResults = data;      
     })
     .catch((error) => console.error(error));
   return queryResults;

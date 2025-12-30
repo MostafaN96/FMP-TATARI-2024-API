@@ -177,10 +177,24 @@ exports.selectByWarehouseWc = async (warehouseId, fabricOrderId) => {
   let wcWhereCluse = {};
   wcWhereCluse[`${wcTableName}.is_deleted`] = 0;
   wcWhereCluse[`${wcTableName}.is_active`] = 1;
-  wcWhereCluse[`warehouse_id`] = warehouseId;
   wcWhereCluse[`wc_fabric_order_requisition_id`] = fabricOrderId;
 
   const results = await fabricQueries.selectStoredFabricsWc(whereCluse, wcWhereCluse, warehouseId);
+  return results;
+};
+
+exports.selectByWarehouseWcForTransitionBetweenOrder = async (warehouseId, fabricOrderId, toFabricOrderId) => {
+  
+  let whereCluse = {};
+  whereCluse[`${fabricTableName}.is_deleted`] = 0;
+  whereCluse[`${fabricTableName}.is_active`] = 1;
+
+  let wcWhereCluse = {};
+  wcWhereCluse[`${wcTableName}.is_deleted`] = 0;
+  wcWhereCluse[`${wcTableName}.is_active`] = 1;
+  wcWhereCluse[`wc_fabric_order_requisition_id`] = fabricOrderId;
+
+  const results = await fabricQueries.selectByWarehouseWcForTransitionBetweenOrder(whereCluse, wcWhereCluse, warehouseId, toFabricOrderId);
   return results;
 };
 

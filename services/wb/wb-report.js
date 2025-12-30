@@ -103,6 +103,20 @@ exports.selectInventoryTotal = async (yarnReport) => {
             ...requisitions[5]].sort(
                 (objA, objB) => moment(objA.date) - moment(objB.date)
             );
+            
+                        // ✅ حساب إجمالي الإدخال والإخراج لكل Yarn
+            const totalInput = sortedAsc
+            .filter(d => d.input_output == 1) // الإدخالات فقط
+            .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+
+            const totalOutput = sortedAsc
+            .filter(d => d.input_output == 0) // الإخراجات فقط
+            .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+
+            // ✅ حفظ القيم داخل الكائن الأساسي
+            data[i].input_quantity = parseFloat((totalInput).toFixed(2));
+            data[i].output_quantity = parseFloat((totalOutput).toFixed(2));
+
             data[i].details = sortedAsc
 
         }
@@ -247,6 +261,20 @@ exports.selectInventoryDetails = async (yarnReport) => {
             ...requisitions[5]].sort(
                 (objA, objB) => moment(objA.date) - moment(objB.date)
             );
+            
+                        // ✅ حساب إجمالي الإدخال والإخراج لكل Yarn
+            const totalInput = sortedAsc
+            .filter(d => d.input_output == 1) // الإدخالات فقط
+            .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+
+            const totalOutput = sortedAsc
+            .filter(d => d.input_output == 0) // الإخراجات فقط
+            .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+
+            // ✅ حفظ القيم داخل الكائن الأساسي
+            data[i].input_quantity = parseFloat((totalInput).toFixed(2));
+            data[i].output_quantity = parseFloat((totalOutput).toFixed(2));
+            
             data[i].details = sortedAsc
 
         }
@@ -323,6 +351,7 @@ exports.selectPriceWb = async (yarnId, manufacturerId) => {
                 `${wbTableName}.wb_transport_wa_wb_details_id`,
                 `${wbTransportWaWbDetailsTableName}.id`)
             .where(maxDateWhereCluse)
+            .andWhere(`${wbTransportWaWbDetailsTableName}.price`, "<>", "0")
     if (selectMaxDate[0] != null) {
         // Select Latest Price
         let wbTransportRequisitionWaWbDetailsWhereCluse = {};

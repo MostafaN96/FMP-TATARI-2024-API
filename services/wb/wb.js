@@ -4,6 +4,7 @@ const wbTransportWaWbDetailsQueries = require("../../db/queries/wb/wb-transport-
 const wbReconciliationRequisitionDetailsQueries = require("../../db/queries/wb/wb-reconciliation-requisition-details");
 const wbTransitionBetweenIndustriesRequisitionDetailsQueries = require("../../db/queries/wb/wb-transition-between-industries-requisition-details");
 const wdFormRequisitionDetailsQueries = require("../../db/queries/wd/wd-form-dyeing-requisition-details");
+const wbManufacturingInputWbQueries = require("../../db/queries/wb/wb-manufacturing-input-wb");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -488,7 +489,11 @@ exports.selectTransitionBetweenIndustriesRequisitionsForWaYarnOrderRequisition =
 };
 
 
-exports.selectRequisitionsForWdFabricOrderRequisitionForWbOutputManufacturingRequisition = async (ordersRequisitionsId, wcFabricOrderRequisitionDetailsId) => {
+exports.selectRequisitionsForWdFabricOrderRequisitionForWbOutputManufacturingRequisition = async (
+    ordersRequisitionsId, 
+    wcFabricOrderRequisitionDetailsId, 
+    fabricId
+) => {
     let callArray = []
 
     let whereCluse = {};
@@ -496,7 +501,20 @@ exports.selectRequisitionsForWdFabricOrderRequisitionForWbOutputManufacturingReq
     whereCluse[`${wdFormDyeingRequisitionDetailsTableName}.is_active`] = 1;
     whereCluse[`${wdFormDyeingRequisitionDetailsTableName}.orders_requisitions_id`] = ordersRequisitionsId;
     whereCluse[`${wdFormDyeingRequisitionDetailsTableName}.wc_fabric_order_requisition_details_id`] = wcFabricOrderRequisitionDetailsId;
+    whereCluse[`${wdFormDyeingRequisitionDetailsTableName}.fabric_id`] = fabricId;
     callArray.push(wdFormRequisitionDetailsQueries.selectRequisitionsForWdFabricOrderRequisitionForWbOutputManufacturingRequisition(whereCluse))
+
+    let requisitions = await Promise.all(callArray)    
+    requisitions = [...new Set([].concat(...requisitions.map((o) => o)))]   
+    return requisitions
+};
+
+exports.selectManufacturingRequisitionsForTransportWaWb = async (wbId) => {
+    let callArray = []
+
+    let whereCluse = {};
+    whereCluse[`${wbManufacturingInputWbTableName}.wb_id`] = wbId;
+    callArray.push(wbManufacturingInputWbQueries.selectManufacturingRequisitionsForTransportWaWb(whereCluse))
 
     let requisitions = await Promise.all(callArray)    
     requisitions = [...new Set([].concat(...requisitions.map((o) => o)))]   

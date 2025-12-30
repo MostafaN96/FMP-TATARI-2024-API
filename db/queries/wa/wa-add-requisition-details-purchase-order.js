@@ -15,6 +15,8 @@ exports.insert = async (waAddRequisitionDetailsPurchaseOrder, item) => {
           wa_add_requisition_details_id: waAddRequisitionDetailsPurchaseOrder.waRequisitionDetailsId,
           wa_add_purchase_order_id: waAddRequisitionDetailsPurchaseOrder.purchaseOrderId,
           wa_add_purchase_order_details_id: item.orderDetailsId,
+      supplier_id: waAddRequisitionDetailsPurchaseOrder.supplierId,
+            wa_add_requisition_id: waAddRequisitionDetailsPurchaseOrder.id,
             quantity: item.quantity,
             creator_id: waAddRequisitionDetailsPurchaseOrder.personid,
             ip_address: waAddRequisitionDetailsPurchaseOrder.ipaddress,

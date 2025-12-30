@@ -13,6 +13,7 @@ const wdFormDyeingRequisitionTableName = require("../../util/database-tables-nam
 
 // Helper
 const trans = require("../../helpers/transform");
+const { wcFabricOrderRequisitionDetailsTableName, wdFormDyeingRequisitionDetailsTableName } = require("../../util/database-tables-name");
 
 exports.create = async (wdFormDyeingRequisition) => {
     wdFormDyeingRequisition.id = trans.transform();
@@ -30,32 +31,37 @@ exports.create = async (wdFormDyeingRequisition) => {
         return constants.duplicatedData;
     }
 
-    // checkValidQuantityInWd
-    // let results = false
-    // for (let k = 0; k < wdFormDyeingRequisition.items.length; k++) {
-    //     const element = wdFormDyeingRequisition.items[k];
-    //     const checkValidWbQuantityResult = this.checkValidQuantityInWd(wdFormDyeingRequisition, element)
-    //     results = checkValidWbQuantityResult
-    //     if (checkValidWbQuantityResult  && typeof(checkValidWbQuantityResult) != "object") {
-    //         if(k == wdFormDyeingRequisition.items.length-1) {
-    //             results = await wdFormDyeingRequisitionQueries.insert(wdFormDyeingRequisition);
-    //             if (results) {
-    //                 return await wdFormDyeingRequisitionDetailsService.create(wdFormDyeingRequisition);
-    //             } else {
-    //                 return constants.insertError;
-    //             }
-    //         }
-    //     } else {
-    //         return results = checkValidWbQuantityResult
-    //     }
-    // }
+    // check work_order_number duplicate
+    let results = false
+    for (let k = 0; k < wdFormDyeingRequisition.items.length; k++) {
+        const element = wdFormDyeingRequisition.items[k];
 
-    const results = await wdFormDyeingRequisitionQueries.insert(wdFormDyeingRequisition);
-    if (results) {
-        return await wdFormDyeingRequisitionDetailsService.create(wdFormDyeingRequisition);
-    } else {
-        return constants.insertError;
+        const checkValidWorkOrderNumberResult = await wdFormDyeingRequisitionDetailsService.selectBy(function () {
+            this.where(`${wdFormDyeingRequisitionDetailsTableName}.work_order_number`, "=", element.workOrderNumberDetails)
+                .andWhere(`${wdFormDyeingRequisitionTableName}.id`, "<>", wdFormDyeingRequisition.id);
+        })
+        results = checkValidWorkOrderNumberResult
+
+        if (Array.isArray(checkValidWorkOrderNumberResult) && checkValidWorkOrderNumberResult.length < 1) {
+            if (k == wdFormDyeingRequisition.items.length - 1) {
+                results = await wdFormDyeingRequisitionQueries.insert(wdFormDyeingRequisition);
+                if (results) {
+                    return await wdFormDyeingRequisitionDetailsService.create(wdFormDyeingRequisition);
+                } else {
+                    return constants.insertError;
+                }
+            }
+        } else {
+            return results = constants.duplicatedData;
+        }
     }
+
+    // results = await wdFormDyeingRequisitionQueries.insert(wdFormDyeingRequisition);
+    // if (results) {
+    //     return await wdFormDyeingRequisitionDetailsService.create(wdFormDyeingRequisition);
+    // } else {
+    //     return constants.insertError;
+    // }
 
 };
 
@@ -74,7 +80,7 @@ exports.createForOrder = async (wdFormDyeingRequisition) => {
     if (selectOneResult[0] != null) {
         return constants.duplicatedData;
     }
-    
+
     // Check Ordered Quantity
     let insertFlag = true
     for (let i = 0; i < wdFormDyeingRequisition.items.length; i++) {
@@ -91,7 +97,7 @@ exports.createForOrder = async (wdFormDyeingRequisition) => {
                 }
             }
         }
-        if(i == wdFormDyeingRequisition.items.length-1 && insertFlag) {
+        if (i == wdFormDyeingRequisition.items.length - 1 && insertFlag) {
             const results = await wdFormDyeingRequisitionQueries.insertForOrder(wdFormDyeingRequisition);
             if (results) {
                 return await wdFormDyeingRequisitionDetailsService.createForOrder(wdFormDyeingRequisition);
@@ -101,7 +107,7 @@ exports.createForOrder = async (wdFormDyeingRequisition) => {
         }
     }
 
-    
+
 };
 
 exports.select = async () => {
@@ -111,7 +117,7 @@ exports.select = async () => {
         element.details = await wdFormDyeingRequisitionDetailsService.selectByRequisitionId(element.id)
     }
     return results;
-  };
+};
 
 // exports.checkValidQuantityInWd = async (data, item) => {
 //     const sumCurrentQuantityWd = await wdService.selectSumCurrentQuantityByDyeingByFabricByConsigmentDyeingInWd(data.dyeingId, item.fabricId, item.consigmentDyeingId)

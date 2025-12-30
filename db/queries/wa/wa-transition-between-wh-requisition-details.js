@@ -14,7 +14,10 @@ const {
   yarnLotTableName,
   waTransitionBetweenWHRequisitionDetailsWaTableName,
   waYarnOrderRequisitionTableName,
-  wbTransportWaWbDetailsWaTableName
+  wbTransportWaWbDetailsWaTableName,
+  waAddRequisitionTableName,
+  waAddRequisitionDetailsYarnOrderTableName,
+  waAddRequisitionDetailsTableName
 } = require("../../../util/database-tables-name");
 
 exports.insert = async (waTransitionBetweenWHRequisitionDetails, items) => {
@@ -80,6 +83,7 @@ exports.selectByRequisitionId = async (whereCluse) => {
     `consigment_yarn_number`,
     `from_consigment_yarn_number`,
     `yarn_lot_code`,
+    `from_yarn_lot_code`,
     `wa_yarn_order_requisition_name`,
     `from_wa_yarn_order_requisition_name`,
   ]
@@ -108,6 +112,7 @@ exports.selectByRequisitionId = async (whereCluse) => {
       `${consigmentYarnTableName}.number as consigment_yarn_number`,
       `from_consigment_yarn.number as from_consigment_yarn_number`,
       `${yarnLotTableName}.code as yarn_lot_code`,
+      `from_yarn_lot.code as from_yarn_lot_code`,
       `${waYarnOrderRequisitionTableName}.name as wa_yarn_order_requisition_name`,
       `from_wa_yarn_order_requisition.name as from_wa_yarn_order_requisition_name`,
     ])
@@ -133,6 +138,9 @@ exports.selectByRequisitionId = async (whereCluse) => {
         .innerJoin(`${yarnLotTableName}`,
         `${yarnLotTableName}.id`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_lot_id`)
+        .innerJoin(`${yarnLotTableName} as from_yarn_lot`,
+        `from_yarn_lot.id`,
+        `${waTransitionBetweenWHRequisitionDetailsTableName}.from_yarn_lot_id`)
         .innerJoin(`${consigmentYarnTableName} as from_consigment_yarn`,
       `from_consigment_yarn.id`,
       `${waTransitionBetweenWHRequisitionDetailsTableName}.from_consigment_yarn_id`)
@@ -266,6 +274,7 @@ exports.selectFromWarehouseTotalByYarnIdByWarehouseId = async (yarnId, warehouse
   await knex.from(waTransitionBetweenWHRequisitionDetailsTableName)
     .select(
       [
+        `${waTransitionBetweenWHRequisitionDetailsTableName}.id`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.from_warehouse_id as warehouse_id`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
@@ -302,6 +311,7 @@ exports.selectToWarehouseTotalByYarnIdByWarehouseId = async (yarnId, warehouseId
     .select(
       [
         `${waTransitionBetweenWHRequisitionTableName}.to_warehouse_id as warehouse_id`,
+        `${waTransitionBetweenWHRequisitionDetailsTableName}.id`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
@@ -334,9 +344,9 @@ exports.selectFromWarehouseTotalDetailsByYarnIdByWarehouseId = async (yarnId, wa
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.is_active`] = 1;
 
   await knex.from(waTransitionBetweenWHRequisitionDetailsTableName)
+  .distinct(`${waTransitionBetweenWHRequisitionDetailsTableName}.id`)
     .select(
       [
-        `${waTransitionBetweenWHRequisitionDetailsTableName}.id`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
@@ -360,9 +370,12 @@ exports.selectFromWarehouseTotalDetailsByYarnIdByWarehouseId = async (yarnId, wa
     .innerJoin(`${waTransitionBetweenWHRequisitionTableName}`,
       `${waTransitionBetweenWHRequisitionTableName}.id`,
       `${waTransitionBetweenWHRequisitionDetailsTableName}.wa_transition_between_wh_requisitions_id`)
-    .innerJoin(`${waTableName}`,
-      `${waTableName}.wa_transition_between_wh_requisitions_details_id`,
+    .innerJoin(`${waTransitionBetweenWHRequisitionDetailsWaTableName}`,
+      `${waTransitionBetweenWHRequisitionDetailsWaTableName}.wa_transition_between_wh_requisitions_details_id`,
       `${waTransitionBetweenWHRequisitionDetailsTableName}.id`)
+    .innerJoin(`${waTableName}`,
+      `${waTableName}.id`,
+      `${waTransitionBetweenWHRequisitionDetailsWaTableName}.wa_id`)
     .innerJoin(`${yarnTableName}`, 
     `${yarnTableName}.id`, 
     `${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_id`)
@@ -374,10 +387,10 @@ exports.selectFromWarehouseTotalDetailsByYarnIdByWarehouseId = async (yarnId, wa
     `${waTransitionBetweenWHRequisitionTableName}.to_warehouse_id`)
     .innerJoin(`${consigmentYarnTableName}`, 
     `${consigmentYarnTableName}.id`, 
-    `${waTransitionBetweenWHRequisitionDetailsTableName}.consigment_yarn_id`)
+    `${waTransitionBetweenWHRequisitionDetailsTableName}.from_consigment_yarn_id`)
     .innerJoin(`${yarnLotTableName}`, 
     `${yarnLotTableName}.id`, 
-    `${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_lot_id`)
+    `${waTransitionBetweenWHRequisitionDetailsTableName}.from_yarn_lot_id`)
     .where(whereCluse)
     .andWhere(`${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -396,9 +409,9 @@ exports.selectToWarehouseTotalDetailsByYarnIdByWarehouseId = async (yarnId, ware
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.is_active`] = 1;
 
   await knex.from(waTransitionBetweenWHRequisitionDetailsTableName)
+  .distinct(`${waTransitionBetweenWHRequisitionDetailsTableName}.id`)
     .select(
       [
-        `${waTransitionBetweenWHRequisitionDetailsTableName}.id`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
@@ -454,19 +467,22 @@ exports.selectToWarehouseTotalDetailsByYarnIdByWarehouseId = async (yarnId, ware
 exports.selectFromWarehouseDetailsByWarehouseByYarnByLot = async (
   warehouseId, yarnId, 
   yarnLotId, consigmentYarnId,
-  yarnOrderId
+  yarnOrderId,
+  supplierId
 ) => {
   let queryResults = [];
   let whereCluse = {};
+    whereCluse[`${waAddRequisitionTableName}.supplier_id`] = supplierId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.from_warehouse_id`] = warehouseId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_id`] = yarnId;
-  whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_lot_id`] = yarnLotId;
+  whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.from_yarn_lot_id`] = yarnLotId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.from_consigment_yarn_id`] = consigmentYarnId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.from_wa_yarn_order_requisition_id`] = yarnOrderId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.is_active`] = 1;
 
   await knex.from(waTransitionBetweenWHRequisitionDetailsTableName)
+  .distinct(`${waTransitionBetweenWHRequisitionDetailsTableName}.id`)
     .select(
       [
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
@@ -477,6 +493,7 @@ exports.selectFromWarehouseDetailsByWarehouseByYarnByLot = async (
         knex.raw('? as input_output', '0'),
       ],
     )
+    .distinct(`${waTransitionBetweenWHRequisitionDetailsTableName}.id`)
     .innerJoin(`${waTransitionBetweenWHRequisitionTableName}`,
       `${waTransitionBetweenWHRequisitionTableName}.id`,
       `${waTransitionBetweenWHRequisitionDetailsTableName}.wa_transition_between_wh_requisitions_id`)
@@ -486,6 +503,15 @@ exports.selectFromWarehouseDetailsByWarehouseByYarnByLot = async (
       .innerJoin(`${waTableName}`,
       `${waTableName}.id`,
       `${waTransitionBetweenWHRequisitionDetailsWaTableName}.wa_id`)
+      .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`, 
+      `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`, 
+      `${waTransitionBetweenWHRequisitionDetailsTableName}.from_wa_yarn_order_requisition_id`)
+    .innerJoin(`${waAddRequisitionDetailsTableName}`, 
+      `${waAddRequisitionDetailsTableName}.id`, 
+      `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`)
+    .innerJoin(`${waAddRequisitionTableName}`, 
+      `${waAddRequisitionTableName}.id`, 
+      `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
     .where(whereCluse)
     .andWhere(`${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -498,10 +524,12 @@ exports.selectFromWarehouseDetailsByWarehouseByYarnByLot = async (
 exports.selectToWarehouseDetailsByWarehouseByYarnByLot = async (
   warehouseId, yarnId, 
   yarnLotId, consigmentYarnId,
-  yarnOrderId
+  yarnOrderId,
+  supplierId
 ) => {
   let queryResults = [];
   let whereCluse = {};
+    whereCluse[`${waAddRequisitionTableName}.supplier_id`] = supplierId;
   whereCluse[`${waTransitionBetweenWHRequisitionTableName}.to_warehouse_id`] = warehouseId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_id`] = yarnId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_lot_id`] = yarnLotId;
@@ -511,6 +539,7 @@ exports.selectToWarehouseDetailsByWarehouseByYarnByLot = async (
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.is_active`] = 1;
 
   await knex.from(waTransitionBetweenWHRequisitionDetailsTableName)
+  .distinct(`${waTransitionBetweenWHRequisitionDetailsTableName}.id`)
     .select(
       [
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
@@ -521,12 +550,22 @@ exports.selectToWarehouseDetailsByWarehouseByYarnByLot = async (
         knex.raw('? as input_output', '1'),
       ],
     )
+    .distinct(`${waTransitionBetweenWHRequisitionDetailsTableName}.id`)
     .innerJoin(`${waTransitionBetweenWHRequisitionTableName}`,
       `${waTransitionBetweenWHRequisitionTableName}.id`,
       `${waTransitionBetweenWHRequisitionDetailsTableName}.wa_transition_between_wh_requisitions_id`)
       .innerJoin(`${waTableName}`,
       `${waTableName}.wa_transition_between_wh_requisitions_details_id`,
       `${waTransitionBetweenWHRequisitionDetailsTableName}.id`)
+      .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`, 
+      `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`, 
+      `${waTransitionBetweenWHRequisitionDetailsTableName}.wa_yarn_order_requisition_id`)
+    .innerJoin(`${waAddRequisitionDetailsTableName}`, 
+      `${waAddRequisitionDetailsTableName}.id`, 
+      `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`)
+    .innerJoin(`${waAddRequisitionTableName}`, 
+      `${waAddRequisitionTableName}.id`, 
+      `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
     .where(whereCluse)
     .andWhere(`${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -541,16 +580,16 @@ exports.selectFromWarehouseDetailsDetailsByWarehouseByYarnByLot = async (warehou
   let whereCluse = {};
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.from_warehouse_id`] = warehouseId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_id`] = yarnId;
-  whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_lot_id`] = yarnLotId;
+  whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.from_yarn_lot_id`] = yarnLotId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.from_consigment_yarn_id`] = consigmentYarnId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.from_wa_yarn_order_requisition_id`] = yarnOrderId;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.is_active`] = 1;
 
   await knex.from(waTransitionBetweenWHRequisitionDetailsTableName)
+  .distinct(`${waTransitionBetweenWHRequisitionDetailsTableName}.id`)
     .select(
       [
-        `${waTransitionBetweenWHRequisitionDetailsTableName}.id`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
@@ -574,9 +613,12 @@ exports.selectFromWarehouseDetailsDetailsByWarehouseByYarnByLot = async (warehou
     .innerJoin(`${waTransitionBetweenWHRequisitionTableName}`,
       `${waTransitionBetweenWHRequisitionTableName}.id`,
       `${waTransitionBetweenWHRequisitionDetailsTableName}.wa_transition_between_wh_requisitions_id`)
-    .innerJoin(`${waTableName}`,
-      `${waTableName}.wa_transition_between_wh_requisitions_details_id`,
+    .innerJoin(`${waTransitionBetweenWHRequisitionDetailsWaTableName}`,
+      `${waTransitionBetweenWHRequisitionDetailsWaTableName}.wa_transition_between_wh_requisitions_details_id`,
       `${waTransitionBetweenWHRequisitionDetailsTableName}.id`)
+    .innerJoin(`${waTableName}`,
+      `${waTableName}.id`,
+      `${waTransitionBetweenWHRequisitionDetailsWaTableName}.wa_id`)
     .innerJoin(`${yarnTableName}`, 
     `${yarnTableName}.id`, 
     `${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_id`)
@@ -588,10 +630,10 @@ exports.selectFromWarehouseDetailsDetailsByWarehouseByYarnByLot = async (warehou
     `${waTransitionBetweenWHRequisitionTableName}.to_warehouse_id`)
     .innerJoin(`${yarnLotTableName}`, 
     `${yarnLotTableName}.id`, 
-    `${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_lot_id`)
+    `${waTransitionBetweenWHRequisitionDetailsTableName}.from_yarn_lot_id`)
     .innerJoin(`${consigmentYarnTableName}`, 
     `${consigmentYarnTableName}.id`, 
-    `${waTransitionBetweenWHRequisitionDetailsTableName}.consigment_yarn_id`)
+    `${waTransitionBetweenWHRequisitionDetailsTableName}.from_consigment_yarn_id`)
     .where(whereCluse)
     .andWhere(`${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -613,9 +655,9 @@ exports.selectToWarehouseDetailsDetailsByWarehouseByYarnByLot = async (warehouse
   whereCluse[`${waTransitionBetweenWHRequisitionDetailsTableName}.is_active`] = 1;
 
   await knex.from(waTransitionBetweenWHRequisitionDetailsTableName)
+  .distinct(`${waTransitionBetweenWHRequisitionDetailsTableName}.id`)
     .select(
       [
-        `${waTransitionBetweenWHRequisitionDetailsTableName}.id`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,

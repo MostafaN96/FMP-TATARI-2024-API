@@ -59,6 +59,7 @@ exports.selectByRequisitionIdOpenedOrder = async (requisitionId) => {
 
         let results = await waYarnOrderRequisitionDetailsQueries.selectByRequisitionId(whereCluse);
         if (Array.isArray(results) && results.length > 0) {
+
             for (let i = 0; i < results.length; i++) {
                 const element = results[i];
                 let warehouseDetailsWhereCluse = {};
@@ -100,10 +101,24 @@ exports.selectByRequisitionIdClosedOrder = async (requisitionId) => {
     }
 };
 
+exports.selectByRequisitionIdOpenedOrderForWaAddRequisition = async (waAddRequisitionDetailsId) => {
+
+    let whereCluse = {};
+    whereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`] = waAddRequisitionDetailsId;
+    whereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.is_deleted`] = 0;
+    whereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.is_active`] = 1;
+    whereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_order`] = 1;
+
+    let results = await waYarnOrderRequisitionDetailsQueries.selectByRequisitionIdForWaAddRequisition(whereCluse);
+
+    return results;
+
+};
+
 exports.selectForCheckOpenedOrderNotExecutedWa = async (whereCluse) => {
 
-        let results = await waYarnOrderRequisitionDetailsQueries.selectForCheckOpenedOrderNotExecutedWa(whereCluse);
-        return results;
+    let results = await waYarnOrderRequisitionDetailsQueries.selectForCheckOpenedOrderNotExecutedWa(whereCluse);
+    return results;
 };
 
 exports.selectOne = async (whereCluse) => {
@@ -348,11 +363,11 @@ exports.update = async (waYarnOrderRequisitionDetails) => {
 exports.updateQuantityForWeDyedFabricOrder = async (waYarnOrderRequisitionDetails, calcStatus) => {
     let updateResults = false
 
-    console.log("waYarnOrderRequisitionDetails ::: ", waYarnOrderRequisitionDetails);
+    // console.log("waYarnOrderRequisitionDetails ::: ", waYarnOrderRequisitionDetails);
 
     let calcQuantity = waYarnOrderRequisitionDetails.defferenceQuantity
-    console.log("calcQuantity ::::::: ", calcQuantity);
-    
+    // console.log("calcQuantity ::::::: ", calcQuantity);
+
     // select yarns of fabric
     const yarnsOfFabricResult = await fabricYarnsService.selectByFabricIdForReport(waYarnOrderRequisitionDetails.row_fabric_id)
     if (yarnsOfFabricResult[0] != null) {
@@ -367,35 +382,35 @@ exports.updateQuantityForWeDyedFabricOrder = async (waYarnOrderRequisitionDetail
             let groupBy = ['orders_requisitions_id'];
 
             const waYarnOrderRequisitionDetaisResults = await waYarnOrderRequisitionDetailsQueries.selectGroupByWhereIn(waYarnOrderRequisitionDetaisWhereCluse, [waYarnOrderRequisitionDetails.orders_requisitions_id], groupBy)
-            console.log("waYarnOrderRequisitionDetaisResults ::: ", waYarnOrderRequisitionDetaisResults);
+            // console.log("waYarnOrderRequisitionDetaisResults ::: ", waYarnOrderRequisitionDetaisResults);
             if (Array.isArray(waYarnOrderRequisitionDetaisResults) && waYarnOrderRequisitionDetaisResults.length > 0) {
-                console.log("waYarnOrderRequisitionDetails.wasteRatio ::: ", waYarnOrderRequisitionDetails.wasteRatio);
-                console.log("yarnOfFabric.total_ratio ::: ", yarnOfFabric.total_ratio);
+                // console.log("waYarnOrderRequisitionDetails.wasteRatio ::: ", waYarnOrderRequisitionDetails.wasteRatio);
+                // console.log("yarnOfFabric.total_ratio ::: ", yarnOfFabric.total_ratio);
 
-            neededYarnQuantity = parseFloat(((( (calcQuantity * parseFloat(yarnOfFabric.total_ratio) / 100) / (1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100))) )).toFixed(3))
-            console.log("neededYarnQuantity 11111111 ::: ", neededYarnQuantity);
+                neededYarnQuantity = parseFloat(((((calcQuantity * parseFloat(yarnOfFabric.total_ratio) / 100) / (1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100))))).toFixed(3))
+                // console.log("neededYarnQuantity 11111111 ::: ", neededYarnQuantity);
 
-            // neededYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((neededYarnQuantity / (1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100))).toFixed(3))
-            //     : neededYarnQuantity
-            //     console.log("neededYarnQuantity 22222222 ::: ", neededYarnQuantity);
+                // neededYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((neededYarnQuantity / (1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100))).toFixed(3))
+                //     : neededYarnQuantity
+                //     console.log("neededYarnQuantity 22222222 ::: ", neededYarnQuantity);
 
                 let currentQuantity = waYarnOrderRequisitionDetaisResults[0].current_quantity
                 let oldQuantity = waYarnOrderRequisitionDetaisResults[0].quantity
                 let newQuantity = 0
-                if(calcStatus == "inc") {
-                    newQuantity =  waYarnOrderRequisitionDetaisResults[0].quantity + neededYarnQuantity
+                if (calcStatus == "inc") {
+                    newQuantity = waYarnOrderRequisitionDetaisResults[0].quantity + neededYarnQuantity
                 } else if (calcStatus == "dec") {
-                    newQuantity =  waYarnOrderRequisitionDetaisResults[0].quantity - neededYarnQuantity
+                    newQuantity = waYarnOrderRequisitionDetaisResults[0].quantity - neededYarnQuantity
                 }
                 let defferenceQuantity = 0
-        
-                console.log("oldQuantity ::::: ", oldQuantity);
-                console.log("newQuantity ::::: ", newQuantity);
-                
+
+                // console.log("oldQuantity ::::: ", oldQuantity);
+                // console.log("newQuantity ::::: ", newQuantity);
+
                 // Check Quantity
                 if (newQuantity > oldQuantity) {
                     defferenceQuantity = parseFloat((newQuantity - oldQuantity).toFixed(3))
-        
+
                     // active order
                     await waYarnOrderRequisitionQueries.update({
                         is_order: '1'
@@ -403,7 +418,7 @@ exports.updateQuantityForWeDyedFabricOrder = async (waYarnOrderRequisitionDetail
                         {
                             id: waYarnOrderRequisitionDetaisResults[0].requisition_id
                         })
-        
+
                     // Update wb manufacturing order requisition details current quantity
                     updateResults = await waYarnOrderRequisitionDetailsQueries.update({
                         initial_quantity: oldQuantity + defferenceQuantity,
@@ -413,13 +428,13 @@ exports.updateQuantityForWeDyedFabricOrder = async (waYarnOrderRequisitionDetail
                         {
                             id: waYarnOrderRequisitionDetaisResults[0].id
                         })
-        
+
                 } else if (newQuantity < oldQuantity) {
                     defferenceQuantity = parseFloat((oldQuantity - newQuantity).toFixed(3))
-        
+
                     // Check current quantity in wb manufacturing order requisition details
                     if (currentQuantity >= defferenceQuantity) {
-        
+
                         // active order
                         await waYarnOrderRequisitionQueries.update({
                             is_order: '1'
@@ -427,7 +442,7 @@ exports.updateQuantityForWeDyedFabricOrder = async (waYarnOrderRequisitionDetail
                             {
                                 id: waYarnOrderRequisitionDetaisResults[0].requisition_id
                             })
-        
+
                         // Update wb manufacturing order requisition details Quantity
                         updateResults = await waYarnOrderRequisitionDetailsQueries.update({
                             initial_quantity: oldQuantity - defferenceQuantity,
@@ -437,7 +452,17 @@ exports.updateQuantityForWeDyedFabricOrder = async (waYarnOrderRequisitionDetail
                             {
                                 id: waYarnOrderRequisitionDetaisResults[0].id
                             })
-        
+
+                        let quantityIsZero = oldQuantity - defferenceQuantity
+                        if (quantityIsZero == 0) {
+                            await waYarnOrderRequisitionDetailsQueries.update({
+                                is_order: '0'
+                            },
+                                {
+                                    id: waYarnOrderRequisitionDetaisResults[0].id
+                                })
+                        }
+
                     } else {
                         return {
                             ...constants.wrongQuantity,
@@ -445,7 +470,7 @@ exports.updateQuantityForWeDyedFabricOrder = async (waYarnOrderRequisitionDetail
                             newQuantity: newQuantity
                         }
                     }
-        
+
                 } else {
                     updateResults = true
                 }

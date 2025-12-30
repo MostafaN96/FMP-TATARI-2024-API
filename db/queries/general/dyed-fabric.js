@@ -11,7 +11,8 @@ const {
   weReconciliationRequisitionDetailsWeTableName, weReconciliationRequisitionTableName, 
   wdDyeingRequisitionDetailsTableName, wdDyeingRequisitionTableName, 
   wdFormDyeingRequisitionDetailsTableName, fabricTableName, colorCategoryTableName, colorTableName, anointedColorsPricesTableName,
-  gradeItemTableName
+  gradeItemTableName,
+  weDyedFabricOrderRequisitionDetailsTableName
 } = require("../../../util/database-tables-name");
 
 exports.insert = async (dyedFabric) => {
@@ -444,3 +445,26 @@ exports.selectStoredDyedFabricsByDyedFabricIdWe = async (whereCluseArray, isGrea
     })
   return queryResults
 }
+
+exports.selectDyedFabricsByOrder = async (whereCluse, whereInWhereCluse) => {
+  let queryResults = [];
+  await knex.select([
+    `${fabricTableName}.id`,
+    `${fabricTableName}.name`,
+    `${fabricTableName}.code`,
+    `${fabricTableName}.dyeing_code`,
+  ])
+    .from(`${fabricTableName}`)
+    .whereIn(`${fabricTableName}.id`, function () {
+      this.select(`${weDyedFabricOrderRequisitionDetailsTableName}.dyed_fabric_id`)
+        .from(`${weDyedFabricOrderRequisitionDetailsTableName}`)
+        .where(whereInWhereCluse)
+    })
+    .andWhere(whereCluse)
+
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};

@@ -38,5 +38,9 @@ exports.create = async (waSellRequisition) => {
 
 exports.select = async () => {
     const results = await waSellRequisitionQueries.select();
+    for (let i = 0; i < results.length; i++) {
+            const element = results[i];
+            element.details = await waSellRequisitionDetailsService.selectByRequisitionId(element.id)
+        }
     return results;
   };

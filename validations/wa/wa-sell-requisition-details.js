@@ -5,6 +5,9 @@ exports.isValid = (waSellRequisition) => {
     const waSellRequisitionSchema = joi.object({
         id: validations.joiText(15, 30),
         warehouseId: validations.joiText(15, 30),
+        ordersRequisitionsId: validations.joiText(15, 30),
+        yarnOrderId: validations.joiText(15, 30),
+
         personid: validations.joiText(3, 50),
         ipaddress: validations.joiText(3, 50),
         items: joi.array().items({

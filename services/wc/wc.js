@@ -19,7 +19,7 @@ const trans = require("../../helpers/transform");
 exports.create = async (wc, items) => {
     wc.wcId = trans.transform();
 
-    const results = await wcQueries.insert(wc, items);
+    const results = await wcQueries.insert(wc, items);    
     if (results) {
         return constants.insertSuccess;
     } else {
@@ -103,6 +103,11 @@ exports.selectByFabricForSell = async (warehouseId, fabricId, consigmentManufact
     transitionBetweenOrdersWhereCluse[`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
     transitionBetweenOrdersWhereCluse[`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.fabric_id`] = fabricId;
     transitionBetweenOrdersWhereCluse[`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.consigment_manufacturing_id`] = consigmentManufacturingId;
+    console.log("warehouseId ::: ", warehouseId);
+    console.log("fabricOrderId ::: ", fabricOrderId);
+    console.log("fabricId ::: ", fabricId);
+    console.log("consigmentManufacturingId ::: ", consigmentManufacturingId);
+    
 
     let andWhereCluse = {whereTableName: `current_quantity`, operator: ">", value: "0"}
     let whereCluseArray = [

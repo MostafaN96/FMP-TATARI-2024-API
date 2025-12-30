@@ -9,6 +9,7 @@ const waYarnOrderRequisitionDetailsQueries = require("../../db/queries/wa/wa-yar
 
 // Services
 const waService = require("../wa/wa");
+const wbService = require("./wb");
 const wbTransportWaWbRequisitionDetailsWaService = require("./wb-transport-wa-wb-details-wa");
 const waYarnOrderRequisitionDetailsService = require("../wa/wa-yarn-order-requisition-details");
 
@@ -29,15 +30,15 @@ exports.create = async (wbTransportWaWbRequisitionDetails) => {
         wbTransportWaWbRequisitionDetails.items[i].wbTransportWaWbDetailsId = trans.transform();
         wbTransportWaWbRequisitionDetails.items[i].wbId = trans.transform();
 
-        // Get yarn order requisitions details id
-        let yarnOrderRequisitionDetailsWhereCluse = {};
-        yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = wbTransportWaWbRequisitionDetails.items[i].fromYarnOrderId;
-        yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.yarn_id`] = wbTransportWaWbRequisitionDetails.items[i].yarnId;
-        yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_deleted`] = 0;
-        yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_active`] = 1;
-        const selectYarnOrderRequisitionDetailsResult = await waYarnOrderRequisitionDetailsService.selectOne(yarnOrderRequisitionDetailsWhereCluse)
-        if (Array.isArray(selectYarnOrderRequisitionDetailsResult) && selectYarnOrderRequisitionDetailsResult.length > 0) {
-            wbTransportWaWbRequisitionDetails.items[i].fromWaYarnOrderRequisitionDetailsId = selectYarnOrderRequisitionDetailsResult[0].id
+        // Get from yarn order requisitions details id
+        let fromYarnOrderRequisitionDetailsWhereCluse = {};
+        fromYarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = wbTransportWaWbRequisitionDetails.fromYarnOrderId;
+        fromYarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.yarn_id`] = wbTransportWaWbRequisitionDetails.items[i].yarnId;
+        fromYarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+        fromYarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_active`] = 1;
+        const selectFromYarnOrderRequisitionDetailsResult = await waYarnOrderRequisitionDetailsService.selectOne(fromYarnOrderRequisitionDetailsWhereCluse)
+        if (Array.isArray(selectFromYarnOrderRequisitionDetailsResult) && selectFromYarnOrderRequisitionDetailsResult.length > 0) {
+            wbTransportWaWbRequisitionDetails.items[i].fromWaYarnOrderRequisitionDetailsId = selectFromYarnOrderRequisitionDetailsResult[0].id
 
             wbTransportWaWbRequisitionDetails.items[i].consigmentYarnId = trans.transform();
             // Check Consigment Yarn Dupplication
@@ -47,6 +48,16 @@ exports.create = async (wbTransportWaWbRequisitionDetails) => {
             } else {
                 await consigmentYarnQueries.insertForTransportWaWb(wbTransportWaWbRequisitionDetails, wbTransportWaWbRequisitionDetails.items[i]);
             }
+        
+            // Get yarn order requisitions details id
+            let yarnOrderRequisitionDetailsWhereCluse = {};
+            yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = wbTransportWaWbRequisitionDetails.items[i].yarnOrderId;
+            yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.yarn_id`] = wbTransportWaWbRequisitionDetails.items[i].yarnId;
+            yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+            yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_active`] = 1;
+            const selectYarnOrderRequisitionDetailsResult = await waYarnOrderRequisitionDetailsService.selectOne(yarnOrderRequisitionDetailsWhereCluse)
+            if (Array.isArray(selectYarnOrderRequisitionDetailsResult) && selectYarnOrderRequisitionDetailsResult.length > 0) {
+                wbTransportWaWbRequisitionDetails.items[i].waYarnOrderRequisitionDetailsId = selectYarnOrderRequisitionDetailsResult[0].id
 
             const results = await wbTransportWaWbDetailsQueries.insert(wbTransportWaWbRequisitionDetails, wbTransportWaWbRequisitionDetails.items[i]);
             if (!results) {
@@ -60,7 +71,7 @@ exports.create = async (wbTransportWaWbRequisitionDetails) => {
                     wbTransportWaWbRequisitionDetails.items[i].yarnId,
                     wbTransportWaWbRequisitionDetails.items[i].yarnLotId,
                     wbTransportWaWbRequisitionDetails.items[i].fromConsigmentYarnId,
-                    wbTransportWaWbRequisitionDetails.items[i].fromYarnOrderId
+                    wbTransportWaWbRequisitionDetails.fromYarnOrderId
                 )
                 if (yarnsStoredInWaResult[0] != null) {
 
@@ -100,6 +111,9 @@ exports.create = async (wbTransportWaWbRequisitionDetails) => {
                 }
 
             }
+        } else {
+
+        }
         } else {
 
         }
@@ -146,6 +160,9 @@ exports.selectWithFabricManufacturedByRequisitionId = async (requisitionId) => {
                 const element = results[i];
                 element.yarnOrderRequisitions = await waService.selectRequisitionsForWaYarnOrderRequisition(
                     element.id
+                )
+                element.manufacturingRequisitions = await wbService.selectManufacturingRequisitionsForTransportWaWb(
+                    element.wb_id
                 )
             }
         } else {            

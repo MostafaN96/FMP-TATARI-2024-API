@@ -44,7 +44,8 @@ exports.isValidUpdate = (weAddRequisition) => {
     const weAddRequisitionSchema = joi.object({
         colorCategoryId: validations.joiText(15, 30),
         colorId: validations.joiText(15, 30),
-        colorCode: validations.joiNumber(1, 60),
+        colorName: validations.joiNotRequiredText(0, 10000),
+        colorCode: validations.joiText(1, 90),
         dyeingCode: validations.joiNotRequiredText(0, 60),
         numberFabricPieces: validations.joiNumber(1, 60),
         workOrderNumber:validations.joiNotRequiredText(0, 60),

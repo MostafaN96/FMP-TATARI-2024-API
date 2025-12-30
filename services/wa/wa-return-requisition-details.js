@@ -7,15 +7,19 @@ const waQueries = require("../../db/queries/wa/wa");
 // Helper
 const trans = require("../../helpers/transform");
 
-// Util
-const constants = require("../../util/constants");
-const constantsPayloads = require("../../util/constants-payloads");
-const waReturnRequisitionDetailsWaTableName = require("../../util/database-tables-name").waReturnRequisitionDetailsWaTableName;
-const waReturnRequisitionDetailsTableName = require("../../util/database-tables-name").waReturnRequisitionDetailsTableName;
-
 // Services
 const waService = require("./wa");
 const waReturnRequisitionDetailsWaService = require("./wa-return-requisition-details-wa");
+const waYarnOrderRequisitionDetailsService = require("./wa-yarn-order-requisition-details");
+
+// Util
+const constants = require("../../util/constants");
+const constantsPayloads = require("../../util/constants-payloads");
+const { 
+    waReturnRequisitionDetailsWaTableName,
+    waReturnRequisitionDetailsTableName,
+    waYarnOrderRequisitionDetailsTableName 
+} = require("../../util/database-tables-name");
 
 exports.create = async (waReturnRequisitionDetails) => {
     // check is found
@@ -29,18 +33,32 @@ exports.create = async (waReturnRequisitionDetails) => {
         for (let i = 0; i < waReturnRequisitionDetails.items.length; i++) {
             waReturnRequisitionDetails.items[i].waReturnRequisitionDetailsId = trans.transform();
 
-            const results = await waReturnRequisitionDetailsQueries.insert(waReturnRequisitionDetails, waReturnRequisitionDetails.items[i]);
-            if (!results) {
-                return constants.insertError;
+
+            // Get yarn order requisitions details id
+            let yarnOrderRequisitionDetailsWhereCluse = {};
+            yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = waReturnRequisitionDetails.items[i].yarnOrderId;
+            yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.yarn_id`] = waReturnRequisitionDetails.items[i].yarnId;
+            yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+            yarnOrderRequisitionDetailsWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.is_active`] = 1;
+            const selectYarnOrderRequisitionDetailsResult = await waYarnOrderRequisitionDetailsService.selectOne(yarnOrderRequisitionDetailsWhereCluse)
+            if (Array.isArray(selectYarnOrderRequisitionDetailsResult) && selectYarnOrderRequisitionDetailsResult.length > 0) {
+                waReturnRequisitionDetails.items[i].waYarnOrderRequisitionDetailsId = selectYarnOrderRequisitionDetailsResult[0].id
+
+                const results = await waReturnRequisitionDetailsQueries.insert(waReturnRequisitionDetails, waReturnRequisitionDetails.items[i]);
+                if (!results) {
+                    return constants.insertError;
             } else {
                 let newQuantity = parseFloat(waReturnRequisitionDetails.items[i].quantity)
 
                 // select Wa Yarn for decrement current quantity
-                const yarnsStoredInWaResult = await waService.selectByYarnForReturn(waReturnRequisitionDetails.warehouseId, 
+                const yarnsStoredInWaResult = await waService.selectByYarnForReturn(
+                    waReturnRequisitionDetails.warehouseId, 
                     waReturnRequisitionDetails.items[i].yarnId, 
                     waReturnRequisitionDetails.items[i].yarnLotId, 
                     waReturnRequisitionDetails.items[i].consigmentYarnId, 
-                    waReturnRequisitionDetails.supplierId)
+                    waReturnRequisitionDetails.supplierId,
+                    waReturnRequisitionDetails.items[i].yarnOrderId
+                )
                 if (yarnsStoredInWaResult[0] != null) {
 
                     for (let j = 0; j < yarnsStoredInWaResult.length; j++) {
@@ -72,7 +90,11 @@ exports.create = async (waReturnRequisitionDetails) => {
                 }
 
             }
+        } else {
+
         }
+        }
+       
         return { ...constants.insertSuccess, ...{ id: waReturnRequisitionDetails.id } };
     } else {
         return constants.itemNotFound;
@@ -148,7 +170,9 @@ exports.update = async (waReturnRequisitionDetails) => {
                 isFound[0].yarn_id, 
                 isFound[0].yarn_lot_id, 
                 isFound[0].consigment_yarn_id, 
-                waReturnRequisitionDetails.supplierId)
+                waReturnRequisitionDetails.supplierId,
+                isFound[0].wa_yarn_order_requisition_id
+        )
             if (sumCurrentQuantityWa[0] != null) {
                 const sumCurrentQuantity = sumCurrentQuantityWa[0].current_quantity
                 if (sumCurrentQuantity >= defferenceQuantity) {
@@ -166,7 +190,9 @@ exports.update = async (waReturnRequisitionDetails) => {
                         isFound[0].yarn_id, 
                         isFound[0].yarn_lot_id, 
                         isFound[0].consigment_yarn_id, 
-                        waReturnRequisitionDetails.supplierId)
+                        waReturnRequisitionDetails.supplierId,
+                        isFound[0].wa_yarn_order_requisition_id
+            )
                     if (waRecords[0] != null) {
                         for (let i = 0; i < waRecords.length; i++) {
                             const waRecord = waRecords[i];

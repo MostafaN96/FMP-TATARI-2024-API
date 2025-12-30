@@ -31,6 +31,8 @@ const weDyedFabricOrderRequisitionDetailsQueries = require("../../db/queries/we/
 const weTransitionBetweenWHRequisitionDetailsQueries = require("../../db/queries/we/we-transition-between-wh-requisition-details");
 const weExecuteOrderRequisitionDetailsQueries = require("../../db/queries/we/we-execute-order-requisition-details");
 const weTransitionBetweenOrdersRequisitionDetailsQueries = require("../../db/queries/we/we-transition-between-orders-requisition-details");
+const wcReportQueries = require("../../db/queries/wc/wc-report");
+const waReportQueries = require("../../db/queries/wa/wa-report");
 
 // Util
 const constantsPayloads = require("../../util/constants-payloads");
@@ -106,7 +108,7 @@ exports.selectInventoryTotal = async (fabricReport) => {
     transitionBetweenToOrdersWhereCluse[`${weTableName}.is_active`] = 1;
     transitionBetweenToOrdersWhereCluse[`${weTableName}.type`] = constantsPayloads.transportBetweenOrdersType;
 
-    let whereCluseArray = [fabricWhereCluse, reconciliationWhereCluse, 
+    let whereCluseArray = [fabricWhereCluse, reconciliationWhereCluse,
         dyeingWhereCluse, transitionBetweenToWHWhereCluse, executeOrderWhereCluse,
         returnSellWhereCluse, transitionBetweenToOrdersWhereCluse
     ]
@@ -191,11 +193,25 @@ exports.selectInventoryTotal = async (fabricReport) => {
             const sortedAsc = [...requisitions[0], ...requisitions[1],
             ...requisitions[2], ...requisitions[3], ...requisitions[4],
             ...requisitions[5], ...requisitions[6], ...requisitions[7],
-            ...requisitions[8], ...requisitions[9], ...requisitions[10], 
+            ...requisitions[8], ...requisitions[9], ...requisitions[10],
             ...requisitions[11]
-        ].sort(
+            ].sort(
                 (objA, objB) => moment(objA.date) - moment(objB.date)
             );
+            
+            // ✅ حساب إجمالي الإدخال والإخراج لكل Yarn
+            const totalInput = sortedAsc
+            .filter(d => d.input_output == 1) // الإدخالات فقط
+            .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+
+            const totalOutput = sortedAsc
+            .filter(d => d.input_output == 0) // الإخراجات فقط
+            .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+
+            // ✅ حفظ القيم داخل الكائن الأساسي
+            data[i].input_quantity = parseFloat((totalInput).toFixed(2));
+            data[i].output_quantity = parseFloat((totalOutput).toFixed(2));
+
             data[i].details = sortedAsc
 
         }
@@ -223,9 +239,9 @@ exports.selectInventoryTotalByFabric = async (fabricId) => {
     const sortedAsc = [...requisitions[0], ...requisitions[1],
     ...requisitions[2], ...requisitions[3], ...requisitions[4],
     ...requisitions[5], ...requisitions[6], ...requisitions[7],
-    ...requisitions[8], ...requisitions[9], ...requisitions[10], 
+    ...requisitions[8], ...requisitions[9], ...requisitions[10],
     ...requisitions[11]
-].sort(
+    ].sort(
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );
 
@@ -298,9 +314,9 @@ exports.selectInventoryDetails = async (fabricReport) => {
     transitionBetweenToOrdersWhereCluse[`${weTableName}.type`] = constantsPayloads.transportBetweenOrdersType;
 
     let whereCluseArray = [
-        fabricWhereCluse, 
-        reconciliationWhereCluse, dyeingWhereCluse, 
-        returnSellWhereCluse, transitionBetweenToWHWhereCluse, 
+        fabricWhereCluse,
+        reconciliationWhereCluse, dyeingWhereCluse,
+        returnSellWhereCluse, transitionBetweenToWHWhereCluse,
         transitionBetweenToOrdersWhereCluse
     ]
 
@@ -391,31 +407,45 @@ exports.selectInventoryDetails = async (fabricReport) => {
             ))
             callArray.push(weTransitionBetweenWHRequisitionDetailsQueries.selectFromWarehouseDetailsByFabricIdByWarehouseId(
                 warehousesFabric.warehouse_id, warehousesFabric.dyed_fabric_id
-                ))
+            ))
             callArray.push(weTransitionBetweenWHRequisitionDetailsQueries.selectToWarehouseDetailsByFabricIdByWarehouseId(
                 warehousesFabric.warehouse_id, warehousesFabric.dyed_fabric_id
-                ))
+            ))
             callArray.push(weExecuteOrderRequisitionDetailsQueries.selectFromWarehouseDetailsByWarehouseByFabric(
                 warehousesFabric.warehouse_id, warehousesFabric.dyed_fabric_id
-                ))
+            ))
             callArray.push(weExecuteOrderRequisitionDetailsQueries.selectToWarehouseDetailsByWarehouseByFabric(
                 warehousesFabric.warehouse_id, warehousesFabric.dyed_fabric_id
-                ))
-                callArray.push(weTransitionBetweenOrdersRequisitionDetailsQueries.selectFromOrderDetailsByFabricIdByWarehouseId(
-                    warehousesFabric.warehouse_id, warehousesFabric.dyed_fabric_id
-                    ))
-                callArray.push(weTransitionBetweenOrdersRequisitionDetailsQueries.selectToOrderDetailsByFabricIdByWarehouseId(
-                    warehousesFabric.warehouse_id, warehousesFabric.dyed_fabric_id
-                    ))
+            ))
+            callArray.push(weTransitionBetweenOrdersRequisitionDetailsQueries.selectFromOrderDetailsByFabricIdByWarehouseId(
+                warehousesFabric.warehouse_id, warehousesFabric.dyed_fabric_id
+            ))
+            callArray.push(weTransitionBetweenOrdersRequisitionDetailsQueries.selectToOrderDetailsByFabricIdByWarehouseId(
+                warehousesFabric.warehouse_id, warehousesFabric.dyed_fabric_id
+            ))
             const requisitions = await Promise.all(callArray)
             const sortedAsc = [...requisitions[0], ...requisitions[1],
             ...requisitions[2], ...requisitions[3], ...requisitions[4],
             ...requisitions[5], ...requisitions[6], ...requisitions[7],
-            ...requisitions[8], ...requisitions[9], ...requisitions[10], 
+            ...requisitions[8], ...requisitions[9], ...requisitions[10],
             ...requisitions[11]
-        ].sort(
+            ].sort(
                 (objA, objB) => moment(objA.date) - moment(objB.date)
             );
+            
+            // ✅ حساب إجمالي الإدخال والإخراج لكل Yarn
+            const totalInput = sortedAsc
+            .filter(d => d.input_output == 1) // الإدخالات فقط
+            .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+
+            const totalOutput = sortedAsc
+            .filter(d => d.input_output == 0) // الإخراجات فقط
+            .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+
+            // ✅ حفظ القيم داخل الكائن الأساسي
+            data[i].input_quantity = parseFloat((totalInput).toFixed(2));
+            data[i].output_quantity = parseFloat((totalOutput).toFixed(2));
+            
             data[i].details = sortedAsc
 
         }
@@ -443,9 +473,9 @@ exports.selectInventoryDetailsByWarehouseByFabric = async (fabricId, warehouseId
     let sortedAsc = [...requisitions[0], ...requisitions[1],
     ...requisitions[2], ...requisitions[3], ...requisitions[4],
     ...requisitions[5], ...requisitions[6], ...requisitions[7],
-    ...requisitions[8], ...requisitions[9], ...requisitions[10], 
+    ...requisitions[8], ...requisitions[9], ...requisitions[10],
     ...requisitions[11]
-].sort(
+    ].sort(
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );
 
@@ -486,7 +516,7 @@ exports.selectPriceWe = async (fabricId, colorId, colorCode) => {
     addRequisitionDetailsWhereCluse[`${weAddRequisitionDetailsTableName}.color_code`] = colorCode;
     addRequisitionDetailsWhereCluse[`${weAddRequisitionDetailsTableName}.is_deleted`] = 0;
     addRequisitionDetailsWhereCluse[`${weAddRequisitionDetailsTableName}.is_active`] = 1;
-    
+
     let reconciliationWhereCluse = {};
     reconciliationWhereCluse[`${weReconciliationRequisitionDetailsTableName}.dyed_fabric_id`] = fabricId;
     reconciliationWhereCluse[`${weReconciliationRequisitionDetailsTableName}.color_id`] = colorId;
@@ -508,7 +538,7 @@ exports.selectPriceWe = async (fabricId, colorId, colorCode) => {
     const requisitions = await Promise.all(callArray)
     const sortedAsc = [...requisitions[0], ...requisitions[1],
     ...requisitions[2]
-].sort(
+    ].sort(
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );
 
@@ -598,9 +628,9 @@ exports.selectInventoryByConsigmentsDyeing = async (consigmentsDyeing) => {
     const requisitions = await Promise.all(callArray)
     const sortedAsc = [...requisitions[0], ...requisitions[1],
     ...requisitions[2], ...requisitions[3], ...requisitions[4],
-    ...requisitions[5], ...requisitions[6], ...requisitions[7], 
-    ...requisitions[8] 
-].sort(
+    ...requisitions[5], ...requisitions[6], ...requisitions[7],
+    ...requisitions[8]
+    ].sort(
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );
 
@@ -624,7 +654,7 @@ exports.selectInventoryTotalByDate = async (bodyPaylod) => {
     const sortedAsc = [...requisitions[0], ...requisitions[1],
     ...requisitions[2], ...requisitions[3], ...requisitions[4],
     ...requisitions[5], ...requisitions[6], ...requisitions[7]
-].sort(
+    ].sort(
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );
 
@@ -647,8 +677,8 @@ exports.dyedFabricReportByOrderBySeller = async (orderId, sellerId) => {
     // waExecuteOrderRequisitionWhereCluse[`${weDyedFabricOrderRequisitionTableName}.is_order`] = 0;
     waExecuteOrderRequisitionWhereCluse[`${weDyedFabricOrderRequisitionTableName}.is_deleted`] = 0;
     waExecuteOrderRequisitionWhereCluse[`${weDyedFabricOrderRequisitionTableName}.is_active`] = 1;
-    const selectWaConsigmentsYarnsResult = await ordersRequisitionsService.selectWaYarnConsigmentsOrder(waExecuteOrderRequisitionWhereCluse)    
-    
+    const selectWaConsigmentsYarnsResult = await ordersRequisitionsService.selectWaYarnConsigmentsOrder(waExecuteOrderRequisitionWhereCluse)
+
     callArray.push(waReportService.selectInventoryByConsigmentsYarn(selectWaConsigmentsYarnsResult))
 
     //
@@ -691,7 +721,7 @@ exports.salesReport = async () => {
 };
 
 exports.dyedFabricOrdersReport = async () => {
-    
+
     let whereCluse = {};
     whereCluse[`we_dyed_fabric_order_requisition_is_order`] = 1;
     whereCluse[`we_dyed_fabric_order_requisition_details_is_order`] = 1;
@@ -701,13 +731,92 @@ exports.dyedFabricOrdersReport = async () => {
 };
 
 exports.dyedFabricOrdersDetailsReport = async () => {
-    
+
     let whereCluse = {};
     whereCluse[`we_dyed_fabric_order_requisition_is_order`] = 1;
     whereCluse[`we_dyed_fabric_order_requisition_details_is_order`] = 1;
 
     const salesReportResult = await weReportQueries.dyedFabricOrdersDetailsReport(whereCluse)
     return salesReportResult
+};
+
+exports.generalOrdersReport = async () => {
+    let data = []
+    let waOrdersData = []
+    let wcOrdersData = []
+    let wcRowFabric = []
+    let weOrdersData = []
+    let waYarn = []
+
+    let weDyedFabricOrderWhereCluse = {};
+    weDyedFabricOrderWhereCluse[`we_dyed_fabric_order_requisition_is_order`] = 1;
+    weDyedFabricOrderWhereCluse[`we_dyed_fabric_order_requisition_details_is_order`] = 1;
+    const weDyedFabricOrderGroupBy = ["bussiness_man_name", "we_dyed_fabric_order_requisition_id"]
+    console.log("weDyedFabricOrderGroupBy ::: ", ...weDyedFabricOrderGroupBy);
+    
+
+    const weDyedFabricOrdersReportResult = await weReportQueries.dyedFabricOrdersTotalForGeneralReport(weDyedFabricOrderWhereCluse, weDyedFabricOrderGroupBy)
+    if (Array.isArray(weDyedFabricOrdersReportResult) && weDyedFabricOrdersReportResult.length > 0) {
+        for (let i = 0; i < weDyedFabricOrdersReportResult.length; i++) {
+            const weDyedFabricOrdersReportData = weDyedFabricOrdersReportResult[i];
+            wcRowFabric = []
+
+            // weOrdersData.push(weDyedFabricOrdersReportData)
+
+            let wcFabricOrdersWhereCluse = {};
+            wcFabricOrdersWhereCluse[`wc_fabric_order_requisition_is_order`] = 1;
+            wcFabricOrdersWhereCluse[`wc_fabric_order_requisition_details_is_order`] = 1;
+            wcFabricOrdersWhereCluse[`orders_requisitions_id`] = weDyedFabricOrdersReportData.orders_requisitions_id;
+
+            let wcFabricOrdersReportResult = await wcReportQueries.fabricOrdersTotalForGeneralReport(wcFabricOrdersWhereCluse)
+            if (Array.isArray(wcFabricOrdersReportResult) && wcFabricOrdersReportResult.length > 0) {
+                for (let j = 0; j < wcFabricOrdersReportResult.length; j++) {
+                    const wcFabricOrdersReportData = wcFabricOrdersReportResult[j];
+
+                    // const exists = wcRowFabric.some(data => 
+                    //     data.orders_requisitions_id === wcFabricOrdersReportData.orders_requisitions_id 
+                    //     &&
+                    //     data.fabric_id === weDyedFabricOrdersReportData.row_fabric_id
+                    //     )                    
+                    // if (!exists) {
+
+                        // wcRowFabric.push({
+                        //     orders_requisitions_id: wcFabricOrdersReportData.orders_requisitions_id,
+                        //     fabric_id: wcFabricOrdersReportData.fabric_id
+                        // })
+
+
+                        const fabricYarnsResults = await fabricYarnsService.selectByFabricIdForReport(wcFabricOrdersReportData.fabric_id)
+                        // const yarns_ids = fabricYarnsResults.map(fabricYarnsData => fabricYarnsData.yarn_id);
+                        wcFabricOrdersReportData.wast_ratio = fabricYarnsResults[0].wast_ratio
+                        let waYarnOrdersWhereCluse = {};
+                        waYarnOrdersWhereCluse[`wa_yarn_order_requisition_is_order`] = 1;
+                        waYarnOrdersWhereCluse[`wa_yarn_order_requisition_details_is_order`] = 1;
+                        waYarnOrdersWhereCluse[`orders_requisitions_id`] = wcFabricOrdersReportData.orders_requisitions_id;
+                        let waYarnOrdersReportResult = await waReportQueries.yarnOrdersTotalForGeneralOrderReport(waYarnOrdersWhereCluse)
+                        if (Array.isArray(waYarnOrdersReportResult) && waYarnOrdersReportResult.length > 0) {
+                            wcFabricOrdersReportData.waYarnOrders = waYarnOrdersReportResult
+                        } else {
+                            waYarnOrdersReportResult = []
+                            weDyedFabricOrdersReportData.wcFabricOrders = wcFabricOrdersReportResult
+                        }
+                    // } else {
+                    //     weDyedFabricOrdersReportData.wcFabricOrders = []
+                    // }
+                    if (wcFabricOrdersReportResult.length - 1 == j) {
+                        weDyedFabricOrdersReportData.wcFabricOrders = [wcFabricOrdersReportData]
+                    }
+                }
+            } else {
+                wcFabricOrdersReportResult = []
+                weDyedFabricOrdersReportData.wcFabricOrders = []
+            }
+            weOrdersData.push(weDyedFabricOrdersReportData)
+        }
+    }
+    // console.log("weOrdersData ::: ", weOrdersData);
+
+    return weOrdersData
 };
 
 exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
@@ -778,7 +887,7 @@ exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
         transitionBetweenToWHWhereCluse[`${weTableName}.type`] = constantsPayloads.transportBetweenType;
 
         let weWhereCluseArray = [
-            weFabricWhereCluse, weReconciliationWhereCluse, 
+            weFabricWhereCluse, weReconciliationWhereCluse,
             weDyeingWhereCluse, warehouseWhereCluse,
             transitionBetweenToWHWhereCluse
         ]
@@ -793,10 +902,10 @@ exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
 
                 data.weFabrics.push(weFabric)
                 isWeFabricsAdded = await this.checkFoundObjectInArray4Attr(
-                    addedData.weFabrics, weFabrics, 
+                    addedData.weFabrics, weFabrics,
                     'dyed_fabric_id',
                     'warehouse_id',
-                    'color_id', 
+                    'color_id',
                     'color_code')
 
                 let getElementOf = (!isWeFabricsAdded) ?
@@ -868,7 +977,7 @@ exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
                     data.wdFormFabrics.push(wdFormFabric)
 
                     isWdFormFabricsAdded = await this.checkFoundObjectInArray2Attr(
-                        addedData.wdFormFabrics, wdFormFabric, 
+                        addedData.wdFormFabrics, wdFormFabric,
                         'fabric_id', 'dyeing_id')
 
                     let getElementOf = (!isWdFormFabricsAdded) ?
@@ -897,9 +1006,9 @@ exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
 
 
                     calcQuantity = (currentQuantity > 0) ?
-                    parseFloat((calcQuantity - parseFloat((currentQuantity).toFixed(3))).toFixed(3)) 
-                    :
-                    parseFloat((calcQuantity).toFixed(3))
+                        parseFloat((calcQuantity - parseFloat((currentQuantity).toFixed(3))).toFixed(3))
+                        :
+                        parseFloat((calcQuantity).toFixed(3))
                 }
             } else {
                 data.wdFormFabrics = []
@@ -914,7 +1023,7 @@ exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
                     data.wdFabrics.push(wdFabric)
 
                     isWdFabricsAdded = await this.checkFoundObjectInArray2Attr(
-                        addedData.wdFabrics, wdFabric, 
+                        addedData.wdFabrics, wdFabric,
                         'fabric_id', 'dyeing_id')
 
                     let getElementOf = (!isWdFabricsAdded) ?
@@ -941,11 +1050,11 @@ exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
                         calcQuantity :
                         currentQuantity
 
-    
-                    calcQuantity = (currentQuantity > 0) ? 
-                    parseFloat((calcQuantity - parseFloat((currentQuantity).toFixed(3))).toFixed(3))
-                    :
-                    parseFloat((calcQuantity).toFixed(3))
+
+                    calcQuantity = (currentQuantity > 0) ?
+                        parseFloat((calcQuantity - parseFloat((currentQuantity).toFixed(3))).toFixed(3))
+                        :
+                        parseFloat((calcQuantity).toFixed(3))
                 }
             } else {
                 data.wdFabrics = []
@@ -962,16 +1071,16 @@ exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
                     const wcFabric = wcFabrics[i];
 
                     wcFabric.ordered_quantity = (calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100)))
-                    
+
                     data.wcFabrics.push(wcFabric)
 
                     isWcFabricsAdded = await this.checkFoundObjectInArray2Attr(
-                        addedData.wcFabrics, wcFabric, 
-                        'id', 
+                        addedData.wcFabrics, wcFabric,
+                        'id',
                         'warehouse_id')
 
                     let getElementOf = (!isWcFabricsAdded) ?
-                    wcFabric
+                        wcFabric
                         :
                         addedData.wcFabrics[await this.getIndexOfElement2Attr(addedData.wcFabrics, wcFabric, 'id', 'warehouse_id')]
 
@@ -1020,8 +1129,8 @@ exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
                         name: fabric.fabric_name,
                         code: fabric.fabric_code,
                         existed_quantity: 0,
-                        needed_quantity: parseFloat((((calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100))) ) ).toFixed(3)),
-                        ordered_quantity: parseFloat((((calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100))) ) ).toFixed(3)),
+                        needed_quantity: parseFloat((((calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100))))).toFixed(3)),
+                        ordered_quantity: parseFloat((((calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100))))).toFixed(3)),
                     }
                 )
             }
@@ -1043,21 +1152,21 @@ exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
                     if (Array.isArray(wbYarns) && wbYarns.length > 0) {
                         let neededYarnQuantity = calcQuantity
                         neededYarnQuantity = parseFloat(((calcQuantity * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
-                        neededYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((neededYarnQuantity / ( 1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100) )).toFixed(3)) 
-                        : neededYarnQuantity
+                        neededYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((neededYarnQuantity / (1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100))).toFixed(3))
+                            : neededYarnQuantity
 
                         for (let j = 0; j < wbYarns.length; j++) {
                             const wbYarn = wbYarns[j];
 
                             // check if yarn added before for not calc same current quantity in all records
                             isWbYarnsAdded = await this.checkFoundObjectInArray2Attr(
-                                addedData.wbYarns, wbYarn, 
-                                'yarn_id', 
+                                addedData.wbYarns, wbYarn,
+                                'yarn_id',
                                 'manufacturer_id'
-                                )
+                            )
 
                             let getElementOf = (!isWbYarnsAdded) ?
-                            wbYarn
+                                wbYarn
                                 :
                                 addedData.wbYarns[await this.getIndexOfElement2Attr(addedData.wbYarns, wbYarn, 'yarn_id', 'manufacturer_id')]
 
@@ -1084,9 +1193,9 @@ exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
                             } else {
                                 wbYarn.existed_quantity = currentQuantity
                                 neededYarnQuantity = (currentQuantity > 0) ?
-                                parseFloat((neededYarnQuantity - currentQuantity).toFixed(3)) 
-                                :
-                                parseFloat((neededYarnQuantity).toFixed(3))
+                                    parseFloat((neededYarnQuantity - currentQuantity).toFixed(3))
+                                    :
+                                    parseFloat((neededYarnQuantity).toFixed(3))
                             }
                             // if(isWbYarnsAdded) {
                             //     wbYarn.current_quantity = wbYarn.current_quantity - getElementOf.current_quantity
@@ -1112,18 +1221,18 @@ exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
                                                 addedData.waYarns, waYarn,
                                                 'id',
                                                 'warehouse_id'
-                                                )
+                                            )
 
                                             let getElementOf = (!isWaYarnsAdded) ?
-                                            waYarn
+                                                waYarn
                                                 :
                                                 addedData.waYarns[await this.getIndexOfElement2Attr(addedData.waYarns, waYarn, 'id', 'warehouse_id')]
 
-                                                let currentQuantity = (!isWaYarnsAdded) ?
+                                            let currentQuantity = (!isWaYarnsAdded) ?
                                                 waYarn.current_quantity
                                                 :
                                                 getElementOf.current_quantity
-            
+
                                             getElementOf.current_quantity = (!isWaYarnsAdded) ?
                                                 (waYarn.current_quantity >= neededYarnQuantity) ?
                                                     waYarn.current_quantity - neededYarnQuantity
@@ -1143,9 +1252,9 @@ exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
                                             } else {
                                                 waYarn.existed_quantity = currentQuantity
                                                 neededYarnQuantity = (currentQuantity > 0) ?
-                                                parseFloat((neededYarnQuantity - currentQuantity).toFixed(3)) 
-                                                :
-                                                parseFloat((neededYarnQuantity).toFixed(3)) 
+                                                    parseFloat((neededYarnQuantity - currentQuantity).toFixed(3))
+                                                    :
+                                                    parseFloat((neededYarnQuantity).toFixed(3))
                                             }
 
                                             if (neededYarnQuantity == 0) {
@@ -1196,13 +1305,13 @@ exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
 
                                 let orderedYarnQuantity = 0
                                 orderedYarnQuantity = parseFloat(((calcQuantityYarn * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
-                                orderedYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((orderedYarnQuantity / ( 1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100) )).toFixed(3)) 
-                                : orderedYarnQuantity
+                                orderedYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((orderedYarnQuantity / (1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100))).toFixed(3))
+                                    : orderedYarnQuantity
 
                                 let neededYarnQuantity = 0
                                 neededYarnQuantity = parseFloat(((calcQuantityYarn * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
-                                neededYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((neededYarnQuantity / ( 1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100) )).toFixed(3)) 
-                                : neededYarnQuantity
+                                neededYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((neededYarnQuantity / (1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100))).toFixed(3))
+                                    : neededYarnQuantity
 
                                 calcQuantityYarn = 0
 
@@ -1210,12 +1319,12 @@ exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
 
                                 // check if yarn added before for not calc same current quantity in all records
                                 isWaYarnsAdded = await this.checkFoundObjectInArray2Attr(
-                                    addedData.waYarns, waYarn, 
+                                    addedData.waYarns, waYarn,
                                     'id',
                                     'warehouse_id')
 
                                 let getElementOf = (!isWaYarnsAdded) ?
-                                waYarn
+                                    waYarn
                                     :
                                     addedData.waYarns[await this.getIndexOfElement2Attr(addedData.waYarns, waYarn, 'id', 'warehouse_id')]
 
@@ -1244,9 +1353,9 @@ exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
                                 } else {
                                     waYarn.existed_quantity = currentQuantity
                                     neededYarnQuantity = (currentQuantity > 0) ?
-                                    parseFloat((neededYarnQuantity - currentQuantity).toFixed(3))
-                                    :
-                                    parseFloat((neededYarnQuantity).toFixed(3))
+                                        parseFloat((neededYarnQuantity - currentQuantity).toFixed(3))
+                                        :
+                                        parseFloat((neededYarnQuantity).toFixed(3))
                                 }
 
                                 if (neededYarnQuantity == 0) {
@@ -1271,8 +1380,8 @@ exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
                             let calcQuantityYarn = parseFloat((calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100))).toFixed(3))
                             let orderedYarnQuantity = 0
                             orderedYarnQuantity = parseFloat(((calcQuantityYarn * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
-                            orderedYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((orderedYarnQuantity / ( 1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100) )).toFixed(3)) 
-                            : orderedYarnQuantity
+                            orderedYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((orderedYarnQuantity / (1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100))).toFixed(3))
+                                : orderedYarnQuantity
 
                             data.waYarns.push(
                                 {
@@ -1288,6 +1397,164 @@ exports.inquireFabricAvilabilityReportWe = async (fabric, addedData) => {
                             )
                         }
                     }
+                }
+            } else {
+                data.waYarns = []
+                data.wbYarns = []
+            }
+        } else {
+            data.waYarns = []
+            data.wbYarns = []
+        }
+
+        // for (const key in data) {
+        //     console.log("key ::: ", key);
+        //     if (data.hasOwnProperty.call(data, key)) {
+        //         const element = data[key];
+        //         console.log(element)
+        //     }
+        // }
+
+        // setTimeout(() => {
+        resolve(data); // Yay! Everything went well!
+        // }, 250);
+    });
+    return await myFirstPromise
+
+};
+
+
+exports.inquireFabricNeededTotalReportWe = async (fabric, addedData) => {
+    let data = {}
+    data.weFabrics = []
+    data.wdFormFabrics = []
+    data.wdFabrics = []
+    data.wcFabrics = []
+    data.wbYarns = []
+    data.waYarns = []
+
+    let isWeFabricsAdded = false
+    let isWdFormFabricsAdded = false
+    let isWdFabricsAdded = false
+    let isWcFabricsAdded = false
+    let isWbYarnsAdded = false
+    let isWaYarnsAdded = false
+
+    const myFirstPromise = new Promise(async (resolve, reject) => {
+        // We call resolve(...) when what we were doing asynchronously was successful, and reject(...) when it failed.
+        // In this example, we use setTimeout(...) to simulate async code.
+        // In reality, you will probably be using something like XHR or an HTML API.
+
+        let calcQuantity = parseFloat(fabric.quantity)
+
+        let warehouseWhereCluse = {};
+        warehouseWhereCluse[`${warehouseTableName}.is_stock`] = 1;
+        warehouseWhereCluse[`${warehouseTableName}.is_deleted`] = 0;
+        warehouseWhereCluse[`${warehouseTableName}.is_active`] = 1;
+
+        let weFabricWhereCluse = {};
+        weFabricWhereCluse[`${fabricTableName}.id`] = fabric.dyedFabricId;
+        weFabricWhereCluse[`${colorTableName}.id`] = fabric.colorId;
+        weFabricWhereCluse[`${weAddRequisitionDetailsTableName}.color_code`] = fabric.colorCode;
+        weFabricWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+        weFabricWhereCluse[`${fabricTableName}.is_active`] = 1;
+        weFabricWhereCluse[`${weTableName}.is_deleted`] = 0;
+        weFabricWhereCluse[`${weTableName}.is_active`] = 1;
+
+        let weReconciliationWhereCluse = {};
+        weReconciliationWhereCluse[`${fabricTableName}.id`] = fabric.dyedFabricId;
+        weReconciliationWhereCluse[`${colorTableName}.id`] = fabric.colorId;
+        weReconciliationWhereCluse[`${weReconciliationRequisitionDetailsTableName}.color_code`] = fabric.colorCode;
+        weReconciliationWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+        weReconciliationWhereCluse[`${fabricTableName}.is_active`] = 1;
+        weReconciliationWhereCluse[`${weTableName}.is_deleted`] = 0;
+        weReconciliationWhereCluse[`${weTableName}.is_active`] = 1;
+        weReconciliationWhereCluse[`${weReconciliationRequisitionDetailsTableName}.input_output`] = 1;
+
+        let weDyeingWhereCluse = {};
+        weDyeingWhereCluse[`${fabricTableName}.id`] = fabric.dyedFabricId;
+        weDyeingWhereCluse[`${anointedColorsPricesTableName}.color_id`] = fabric.colorId;
+        weDyeingWhereCluse[`${anointedColorsPricesTableName}.code`] = fabric.colorCode;
+        weDyeingWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+        weDyeingWhereCluse[`${fabricTableName}.is_active`] = 1;
+        weDyeingWhereCluse[`${weTableName}.is_deleted`] = 0;
+        weDyeingWhereCluse[`${weTableName}.is_active`] = 1;
+        weDyeingWhereCluse[`${weTableName}.type`] = constantsPayloads.dyeingType;
+
+        let transitionBetweenToWHWhereCluse = {};
+        transitionBetweenToWHWhereCluse[`${fabricTableName}.id`] = fabric.dyedFabricId;
+        transitionBetweenToWHWhereCluse[`${colorTableName}.id`] = fabric.colorId;
+        transitionBetweenToWHWhereCluse[`${weTransitionBetweenWHRequisitionDetailsTableName}.color_code`] = fabric.colorCode;
+        transitionBetweenToWHWhereCluse[`${fabricTableName}.is_deleted`] = 0;
+        transitionBetweenToWHWhereCluse[`${fabricTableName}.is_active`] = 1;
+        transitionBetweenToWHWhereCluse[`${weTableName}.is_deleted`] = 0;
+        transitionBetweenToWHWhereCluse[`${weTableName}.is_active`] = 1;
+        transitionBetweenToWHWhereCluse[`${weTableName}.type`] = constantsPayloads.transportBetweenType;
+
+        let weWhereCluseArray = [
+            weFabricWhereCluse, weReconciliationWhereCluse,
+            weDyeingWhereCluse, warehouseWhereCluse,
+            transitionBetweenToWHWhereCluse
+        ]
+
+        data.weFabrics.push(
+                            {
+                                id: fabric.dyed_fabric_id,
+                                dyed_fabric_id: fabric.dyedFabricId,
+                                dyed_fabric_name: fabric.dyed_fabric_name,
+                                dyed_fabric_code: fabric.dyed_fabric_code,
+                                color_id: fabric.colorId,
+                                color_name: fabric.color_name,
+                                color_code: fabric.colorCode,
+                                existed_quantity: 0,
+                                needed_quantity: calcQuantity,
+                                ordered_quantity: calcQuantity,
+                            }
+                        )
+
+      
+        if (calcQuantity > 0) {
+             data.wcFabrics.push(
+                    {
+                        id: fabric.fabricId,
+                        name: fabric.fabric_name,
+                        code: fabric.fabric_code,
+                        existed_quantity: 0,
+                        needed_quantity: parseFloat((((calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100))))).toFixed(3)),
+                        ordered_quantity: parseFloat((((calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100))))).toFixed(3)),
+                    }
+                )
+        }
+
+        if (calcQuantity > 0) {
+            // console.log("if (calcQuantity > 0) { ", calcQuantity);
+
+            ////////////////////////////////////////// WB ///////////////////////////////////////
+            // select yarns of fabric
+            const yarnsOfFabricResult = await fabricYarnsService.selectByFabricIdForReport(fabric.fabricId)
+            if (yarnsOfFabricResult[0] != null) {
+
+                for (let i = 0; i < yarnsOfFabricResult.length; i++) {
+                    const yarnOfFabric = yarnsOfFabricResult[i];
+
+                    let calcQuantityYarn = parseFloat((calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100))).toFixed(3))
+                            let orderedYarnQuantity = 0
+                            orderedYarnQuantity = parseFloat(((calcQuantityYarn * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
+                            orderedYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((orderedYarnQuantity / (1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100))).toFixed(3))
+                                : orderedYarnQuantity
+
+                            data.waYarns.push(
+                                {
+                                    id: yarnOfFabric.yarn_id,
+                                    name: yarnOfFabric.yarn_name,
+                                    code: yarnOfFabric.yarn_code,
+                                    existed_quantity: 0,
+                                    // needed_quantity: parseFloat(((calcQuantity * parseFloat(yarnOfFabric.total_ratio)) / 100).toFixed(3)),
+                                    // ordered_quantity: parseFloat(((calcQuantity * parseFloat(yarnOfFabric.total_ratio)) / 100).toFixed(3)),
+                                    needed_quantity: orderedYarnQuantity,
+                                    ordered_quantity: orderedYarnQuantity,
+                                }
+                            )
                 }
             } else {
                 data.waYarns = []
@@ -1382,7 +1649,7 @@ exports.inquireFabricAvilabilityTotalReportWe = async (fabric, addedData) => {
         transitionBetweenToWHWhereCluse[`${weTableName}.type`] = constantsPayloads.transportBetweenType;
 
         let weWhereCluseArray = [
-            weFabricWhereCluse, weReconciliationWhereCluse, 
+            weFabricWhereCluse, weReconciliationWhereCluse,
             weDyeingWhereCluse, warehouseWhereCluse,
             transitionBetweenToWHWhereCluse
         ]
@@ -1397,13 +1664,13 @@ exports.inquireFabricAvilabilityTotalReportWe = async (fabric, addedData) => {
 
                 data.weFabrics.push(weFabric)
                 isWeFabricsAdded = await this.checkFoundObjectInArray3Attr(
-                    addedData.weFabrics, weFabrics, 
+                    addedData.weFabrics, weFabrics,
                     'dyed_fabric_id',
-                    'color_id', 
+                    'color_id',
                     'color_code')
 
                 let getElementOf = (!isWeFabricsAdded) ?
-                weFabric
+                    weFabric
                     :
                     addedData.weFabrics[await this.getIndexOfElement3Attr(addedData.weFabrics, weFabric, 'dyed_fabric_id', 'color_id', 'color_code')]
 
@@ -1499,9 +1766,9 @@ exports.inquireFabricAvilabilityTotalReportWe = async (fabric, addedData) => {
 
 
                     calcQuantity = (currentQuantity > 0) ?
-                    parseFloat((calcQuantity - parseFloat((currentQuantity).toFixed(3))).toFixed(3)) 
-                    :
-                    parseFloat((calcQuantity).toFixed(3))
+                        parseFloat((calcQuantity - parseFloat((currentQuantity).toFixed(3))).toFixed(3))
+                        :
+                        parseFloat((calcQuantity).toFixed(3))
                 }
             } else {
                 data.wdFormFabrics = []
@@ -1543,11 +1810,11 @@ exports.inquireFabricAvilabilityTotalReportWe = async (fabric, addedData) => {
                         calcQuantity :
                         currentQuantity
 
-    
-                    calcQuantity = (currentQuantity > 0) ? 
-                    parseFloat((calcQuantity - parseFloat((currentQuantity).toFixed(3))).toFixed(3))
-                    :
-                    parseFloat((calcQuantity).toFixed(3))
+
+                    calcQuantity = (currentQuantity > 0) ?
+                        parseFloat((calcQuantity - parseFloat((currentQuantity).toFixed(3))).toFixed(3))
+                        :
+                        parseFloat((calcQuantity).toFixed(3))
                 }
             } else {
                 data.wdFabrics = []
@@ -1562,17 +1829,17 @@ exports.inquireFabricAvilabilityTotalReportWe = async (fabric, addedData) => {
             if (wcFabrics[0] != null) {
                 for (let i = 0; i < wcFabrics.length; i++) {
                     const wcFabric = wcFabrics[i];
-                    
+
                     wcFabric.ordered_quantity = (calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100)))
-                    
+
                     data.wcFabrics.push(wcFabric)
 
                     isWcFabricsAdded = await this.checkFoundObjectInArray1Attr(
-                        addedData.wcFabrics, wcFabric, 
+                        addedData.wcFabrics, wcFabric,
                         'id')
 
                     let getElementOf = (!isWcFabricsAdded) ?
-                    wcFabric
+                        wcFabric
                         :
                         addedData.wcFabrics[await this.getIndexOfElement1Attr(addedData.wcFabrics, wcFabric, 'id')]
 
@@ -1618,8 +1885,8 @@ exports.inquireFabricAvilabilityTotalReportWe = async (fabric, addedData) => {
                         name: fabric.fabric_name,
                         code: fabric.fabric_code,
                         existed_quantity: 0,
-                        needed_quantity: parseFloat((((calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100))) ) ).toFixed(3)),
-                        ordered_quantity: parseFloat((((calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100))) ) ).toFixed(3)),
+                        needed_quantity: parseFloat((((calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100))))).toFixed(3)),
+                        ordered_quantity: parseFloat((((calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100))))).toFixed(3)),
                     }
                 )
             }
@@ -1641,19 +1908,19 @@ exports.inquireFabricAvilabilityTotalReportWe = async (fabric, addedData) => {
                     if (Array.isArray(wbYarns) && wbYarns.length > 0) {
                         let neededYarnQuantity = calcQuantity
                         neededYarnQuantity = parseFloat(((calcQuantity * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
-                        neededYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((neededYarnQuantity / ( 1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100) )).toFixed(3)) 
-                        : neededYarnQuantity
-                        
+                        neededYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((neededYarnQuantity / (1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100))).toFixed(3))
+                            : neededYarnQuantity
+
                         for (let j = 0; j < wbYarns.length; j++) {
                             const wbYarn = wbYarns[j];
 
                             // check if yarn added before for not calc same current quantity in all records
                             isWbYarnsAdded = await this.checkFoundObjectInArray1Attr(
-                                addedData.wbYarns, wbYarn, 
+                                addedData.wbYarns, wbYarn,
                                 'yarn_id')
 
                             let getElementOf = (!isWbYarnsAdded) ?
-                            wbYarn
+                                wbYarn
                                 :
                                 addedData.wbYarns[await this.getIndexOfElement1Attr(addedData.wbYarns, wbYarn, 'yarn_id')]
 
@@ -1680,9 +1947,9 @@ exports.inquireFabricAvilabilityTotalReportWe = async (fabric, addedData) => {
                             } else {
                                 wbYarn.existed_quantity = currentQuantity
                                 neededYarnQuantity = (currentQuantity > 0) ?
-                                parseFloat((neededYarnQuantity - currentQuantity).toFixed(3)) 
-                                :
-                                parseFloat((neededYarnQuantity).toFixed(3))
+                                    parseFloat((neededYarnQuantity - currentQuantity).toFixed(3))
+                                    :
+                                    parseFloat((neededYarnQuantity).toFixed(3))
                             }
                             // if(isWbYarnsAdded) {
                             //     wbYarn.current_quantity = wbYarn.current_quantity - getElementOf.current_quantity
@@ -1710,7 +1977,7 @@ exports.inquireFabricAvilabilityTotalReportWe = async (fabric, addedData) => {
                                                 'id')
 
                                             let getElementOf = (!isWaYarnsAdded) ?
-                                            waYarn
+                                                waYarn
                                                 :
                                                 addedData.waYarns[await this.getIndexOfElement1Attr(addedData.waYarns, waYarn, 'id')]
 
@@ -1738,9 +2005,9 @@ exports.inquireFabricAvilabilityTotalReportWe = async (fabric, addedData) => {
                                             } else {
                                                 waYarn.existed_quantity = currentQuantity
                                                 neededYarnQuantity = (currentQuantity > 0) ?
-                                                parseFloat((neededYarnQuantity - currentQuantity).toFixed(3)) 
-                                                :
-                                                parseFloat((neededYarnQuantity).toFixed(3)) 
+                                                    parseFloat((neededYarnQuantity - currentQuantity).toFixed(3))
+                                                    :
+                                                    parseFloat((neededYarnQuantity).toFixed(3))
                                             }
                                             if (neededYarnQuantity == 0) {
                                                 data.waYarns.push(waYarn)
@@ -1786,24 +2053,24 @@ exports.inquireFabricAvilabilityTotalReportWe = async (fabric, addedData) => {
 
                                 let orderedYarnQuantity = 0
                                 orderedYarnQuantity = parseFloat(((calcQuantityYarn * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
-                                orderedYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((orderedYarnQuantity / ( 1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100) )).toFixed(3)) 
-                                : orderedYarnQuantity
+                                orderedYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((orderedYarnQuantity / (1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100))).toFixed(3))
+                                    : orderedYarnQuantity
 
                                 let neededYarnQuantity = 0
                                 neededYarnQuantity = parseFloat(((calcQuantityYarn * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
-                                neededYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((neededYarnQuantity / ( 1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100) )).toFixed(3)) 
-                                : neededYarnQuantity
+                                neededYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((neededYarnQuantity / (1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100))).toFixed(3))
+                                    : neededYarnQuantity
                                 calcQuantityYarn = 0
 
                                 waYarn.ordered_quantity = orderedYarnQuantity
 
                                 // check if yarn added before for not calc same current quantity in all records
                                 isWaYarnsAdded = await this.checkFoundObjectInArray1Attr(
-                                    addedData.waYarns, waYarn, 
+                                    addedData.waYarns, waYarn,
                                     'id')
 
                                 let getElementOf = (!isWaYarnsAdded) ?
-                                waYarn
+                                    waYarn
                                     :
                                     addedData.waYarns[await this.getIndexOfElement1Attr(addedData.waYarns, waYarn, 'id')]
 
@@ -1833,9 +2100,9 @@ exports.inquireFabricAvilabilityTotalReportWe = async (fabric, addedData) => {
                                 } else {
                                     waYarn.existed_quantity = currentQuantity
                                     neededYarnQuantity = (currentQuantity > 0) ?
-                                    parseFloat((neededYarnQuantity - currentQuantity).toFixed(3))
-                                    :
-                                    parseFloat((neededYarnQuantity).toFixed(3))
+                                        parseFloat((neededYarnQuantity - currentQuantity).toFixed(3))
+                                        :
+                                        parseFloat((neededYarnQuantity).toFixed(3))
 
                                 }
 
@@ -1859,8 +2126,8 @@ exports.inquireFabricAvilabilityTotalReportWe = async (fabric, addedData) => {
                             let calcQuantityYarn = parseFloat((calcQuantity / (1 - (constants.notZero(fabric.wasteRatio) / 100))).toFixed(3))
                             let orderedYarnQuantity = 0
                             orderedYarnQuantity = parseFloat(((calcQuantityYarn * parseFloat(yarnOfFabric.total_ratio) / 100)).toFixed(3))
-                            orderedYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((orderedYarnQuantity / ( 1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100) )).toFixed(3)) 
-                            : orderedYarnQuantity
+                            orderedYarnQuantity = (yarnOfFabric.wast_ratio != 0) ? parseFloat((orderedYarnQuantity / (1 - (constants.notZero(yarnOfFabric.wast_ratio) / 100))).toFixed(3))
+                                : orderedYarnQuantity
 
                             data.waYarns.push(
                                 {
@@ -1901,6 +2168,8 @@ exports.inquireFabricAvilabilityTotalReportWe = async (fabric, addedData) => {
     return await myFirstPromise
 
 };
+
+
 
 exports.inquireFabricAvilabilityByDyeingOrderRequisitionReportWe = async (weDyedFabricOrderRequisitionIds) => {
 
@@ -2007,10 +2276,71 @@ exports.inquireFabricAvilabilityByDyeingOrderRequisitionTotalReportWe = async (w
         // Get Yarns Fabric in wcFabric
 
         for (let j = 0; j < dataResult.wcFabrics.length; j++) {
-                const element = dataResult.wcFabrics[j];
-                element.yarnsDetails = await fabricYarnsService.selectByFabricId(element.id)
-            }
-            
+            const element = dataResult.wcFabrics[j];
+            element.yarnsDetails = await fabricYarnsService.selectByFabricId(element.id)
+        }
+
+        resolve(dataResult); // Yay! Everything went well!
+
+    });
+
+    // console.log("dataResult :::::::: ", await myFirstPromise);
+    return await myFirstPromise
+
+}
+
+exports.inquireFabricNeededByDyeingOrderRequisitionTotalReportWe = async (weDyedFabricOrderRequisitionIds) => {
+
+    let data = []
+    data.weFabrics = []
+    data.wdFormFabrics = []
+    data.wdFabrics = []
+    data.wcFabrics = []
+    data.wbYarns = []
+    data.waYarns = []
+
+    let dataResult = {}
+    dataResult.weFabrics = []
+    dataResult.wdFormFabrics = []
+    dataResult.wdFabrics = []
+    dataResult.wcFabrics = []
+    dataResult.wbYarns = []
+    dataResult.waYarns = []
+
+
+    const myFirstPromise = new Promise(async (resolve, reject) => {
+
+        let whereCluse = {};
+        whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+        whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+        whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_order`] = 1;
+
+        let dyeingOrderRequisitions = await weDyedFabricOrderRequisitionDetailsQueries.selectByRequisitionIds(whereCluse, weDyedFabricOrderRequisitionIds)
+
+        for (let i = 0; i < dyeingOrderRequisitions.length; i++) {
+            const weDyedFabricOrderRequisitionsRecord = dyeingOrderRequisitions[i];
+            weDyedFabricOrderRequisitionsRecord.quantity = weDyedFabricOrderRequisitionsRecord.current_quantity
+            data.push(await this.inquireFabricNeededTotalReportWe(weDyedFabricOrderRequisitionsRecord, await this.breakParentArrayToOneArray(data)))
+        }
+
+        dataResult = await this.breakParentArrayToOneArray(data)
+        // console.log("dataResult :::::::::: breakParentArrayToOneArray => ", dataResult);
+        // get data of object data [...]
+        // for (let J = 0; J < data.length; J++) {
+        //     const element = data[J];
+        //     console.log(" J ========== ", J);
+        //     console.log(" element ========== ", element);
+        dataResult = await this.filterObjectsWarehousesOfParentArrayTotal(dataResult)
+        // }
+        // console.log("dataResult ::::::::: ", dataResult);
+
+        // Get Yarns Fabric in wcFabric
+
+        for (let j = 0; j < dataResult.wcFabrics.length; j++) {
+            const element = dataResult.wcFabrics[j];
+            element.yarnsDetails = await fabricYarnsService.selectByFabricId(element.id)
+        }
+
         resolve(dataResult); // Yay! Everything went well!
 
     });
@@ -2101,20 +2431,20 @@ exports.filterObjectsWarehousesOfParentArray = async (objectsWarehouses) => {
                             for (let w = 0; w < objectWarehouseArrayFiltered.length; w++) {
                                 let objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[w];
 
-                                if ( await this.checkFoundObjectInArray4Attr(
-                                    arrayOfFabrics, objectWarehouseArrayElement, 
+                                if (await this.checkFoundObjectInArray4Attr(
+                                    arrayOfFabrics, objectWarehouseArrayElement,
                                     'dyed_fabric_id', 'warehouse_id',
                                     'color_id', 'color_code')
-                                //     arrayOfFabrics.includes({
-                                //     dyed_fabric_id: objectWarehouseArrayElement.dyed_fabric_id,
-                                //     warehouse_id: objectWarehouseArrayElement.warehouse_id
-                                // }, 0)
+                                    //     arrayOfFabrics.includes({
+                                    //     dyed_fabric_id: objectWarehouseArrayElement.dyed_fabric_id,
+                                    //     warehouse_id: objectWarehouseArrayElement.warehouse_id
+                                    // }, 0)
                                 ) {
                                     // get index of element
-                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement4Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement, 
+                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement4Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement,
                                         'dyed_fabric_id', 'warehouse_id',
                                         'color_id', 'color_code',
-                                        )] 
+                                    )]
                                     objectWarehouseArrayFilteredElement.needed_quantity = objectWarehouseArrayFilteredElement.needed_quantity + objectWarehouseArrayElement.needed_quantity
                                     objectWarehouseArrayFilteredElement.current_quantity = objectWarehouseArrayFilteredElement.current_quantity + objectWarehouseArrayElement.current_quantity
                                     objectWarehouseArrayFilteredElement.ordered_quantity = objectWarehouseArrayFilteredElement.ordered_quantity + objectWarehouseArrayElement.ordered_quantity
@@ -2136,32 +2466,34 @@ exports.filterObjectsWarehousesOfParentArray = async (objectsWarehouses) => {
                         }
 
                         if (data.weFabrics.length > 0) {
-                            let arrayOfFabrics = data.weFabrics.map(function (a) { return {
-                                dyed_fabric_id: a.dyed_fabric_id,
-                                warehouse_id: a.warehouse_id,
-                                color_id: a.color_id,
-                                color_code: a.color_code
-                            }; });
+                            let arrayOfFabrics = data.weFabrics.map(function (a) {
+                                return {
+                                    dyed_fabric_id: a.dyed_fabric_id,
+                                    warehouse_id: a.warehouse_id,
+                                    color_id: a.color_id,
+                                    color_code: a.color_code
+                                };
+                            });
                             for (let e = 0; e < objectWarehouseArrayFiltered.length; e++) {
                                 const objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[e];
 
                                 for (let r = 0; r < data.weFabrics.length; r++) {
                                     let weFabricsElement = data.weFabrics[r];
 
-                                    if ( await this.checkFoundObjectInArray4Attr(
-                                        arrayOfFabrics, objectWarehouseArrayFilteredElement, 
+                                    if (await this.checkFoundObjectInArray4Attr(
+                                        arrayOfFabrics, objectWarehouseArrayFilteredElement,
                                         'dyed_fabric_id', 'warehouse_id',
                                         'color_id', 'color_code')
-                                    //     arrayOfFabrics.includes({
-                                    //     dyed_fabric_id: objectWarehouseArrayFilteredElement.dyed_fabric_id,
-                                    //     warehouse_id: objectWarehouseArrayFilteredElement.warehouse_id
-                                    // }, 0)
+                                        //     arrayOfFabrics.includes({
+                                        //     dyed_fabric_id: objectWarehouseArrayFilteredElement.dyed_fabric_id,
+                                        //     warehouse_id: objectWarehouseArrayFilteredElement.warehouse_id
+                                        // }, 0)
                                     ) {
                                         // get index of element
-                                        weFabricsElement = data.weFabrics[await this.getIndexOfElement4Attr(data.weFabrics, objectWarehouseArrayFilteredElement, 
+                                        weFabricsElement = data.weFabrics[await this.getIndexOfElement4Attr(data.weFabrics, objectWarehouseArrayFilteredElement,
                                             'dyed_fabric_id', 'warehouse_id',
                                             'color_id', 'color_code'
-                                            )] 
+                                        )]
                                         weFabricsElement.needed_quantity = weFabricsElement.needed_quantity + objectWarehouseArrayFiltered.needed_quantity
                                         weFabricsElement.current_quantity = weFabricsElement.current_quantity + objectWarehouseArrayFiltered.current_quantity
                                         weFabricsElement.ordered_quantity = weFabricsElement.ordered_quantity + objectWarehouseArrayFiltered.ordered_quantity
@@ -2201,17 +2533,17 @@ exports.filterObjectsWarehousesOfParentArray = async (objectsWarehouses) => {
                             for (let w = 0; w < objectWarehouseArrayFiltered.length; w++) {
                                 let objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[w];
 
-                                if ( await this.checkFoundObjectInArray2Attr(
-                                    arrayOfFabrics, objectWarehouseArrayElement, 
+                                if (await this.checkFoundObjectInArray2Attr(
+                                    arrayOfFabrics, objectWarehouseArrayElement,
                                     'fabric_id',
                                     'dyeing_id')
-                                //     arrayOfFabrics.includes({
-                                //     id: objectWarehouseArrayElement.id,
-                                //     warehouse_id: objectWarehouseArrayElement.warehouse_id
-                                // }, 0)
+                                    //     arrayOfFabrics.includes({
+                                    //     id: objectWarehouseArrayElement.id,
+                                    //     warehouse_id: objectWarehouseArrayElement.warehouse_id
+                                    // }, 0)
                                 ) {
                                     // get index of element
-                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement2Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement, 'fabric_id', 'dyeing_id')] 
+                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement2Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement, 'fabric_id', 'dyeing_id')]
                                     objectWarehouseArrayFilteredElement.form_current_quantity = objectWarehouseArrayFilteredElement.form_current_quantity + objectWarehouseArrayElement.form_current_quantity
                                     objectWarehouseArrayFilteredElement.existed_quantity = objectWarehouseArrayFilteredElement.existed_quantity + objectWarehouseArrayElement.existed_quantity
                                     break;
@@ -2228,28 +2560,30 @@ exports.filterObjectsWarehousesOfParentArray = async (objectsWarehouses) => {
                         }
 
                         if (data.wdFormFabrics.length > 0) {
-                            let arrayOfFabrics = data.wdFormFabrics.map(function (a) { return {
-                                fabric_id: a.fabric_id,
-                                dyeing_id: a.dyeing_id
-                            } });
+                            let arrayOfFabrics = data.wdFormFabrics.map(function (a) {
+                                return {
+                                    fabric_id: a.fabric_id,
+                                    dyeing_id: a.dyeing_id
+                                }
+                            });
                             for (let e = 0; e < objectWarehouseArrayFiltered.length; e++) {
                                 const objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[e];
 
                                 for (let r = 0; r < data.wdFormFabrics.length; r++) {
                                     let wdFormFabricsElement = data.wdFormFabrics[r];
 
-                                    if ( await this.checkFoundObjectInArray2Attr(
-                                        arrayOfFabrics, objectWarehouseArrayFilteredElement, 
+                                    if (await this.checkFoundObjectInArray2Attr(
+                                        arrayOfFabrics, objectWarehouseArrayFilteredElement,
                                         'fabric_id',
                                         'dyeing_id'
-                                        )
-                                    //     arrayOfFabrics.includes({
-                                    //     id: objectWarehouseArrayFilteredElement.id,
-                                    //     warehouse_id: objectWarehouseArrayFilteredElement.warehouse_id
-                                    // }, 0)
+                                    )
+                                        //     arrayOfFabrics.includes({
+                                        //     id: objectWarehouseArrayFilteredElement.id,
+                                        //     warehouse_id: objectWarehouseArrayFilteredElement.warehouse_id
+                                        // }, 0)
                                     ) {
                                         // get index of element
-                                        wdFormFabricsElement = data.wdFormFabrics[await this.getIndexOfElement2Attr(data.wdFormFabrics, objectWarehouseArrayFilteredElement, 'fabric_id', 'dyeing_id')] 
+                                        wdFormFabricsElement = data.wdFormFabrics[await this.getIndexOfElement2Attr(data.wdFormFabrics, objectWarehouseArrayFilteredElement, 'fabric_id', 'dyeing_id')]
                                         wdFormFabricsElement.form_current_quantity = wdFormFabricsElement.form_current_quantity + objectWarehouseArrayFiltered.form_current_quantity
                                         wdFormFabricsElement.existed_quantity = wdFormFabricsElement.existed_quantity + objectWarehouseArrayFiltered.existed_quantity
                                         break;
@@ -2287,17 +2621,17 @@ exports.filterObjectsWarehousesOfParentArray = async (objectsWarehouses) => {
                             for (let w = 0; w < objectWarehouseArrayFiltered.length; w++) {
                                 let objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[w];
 
-                                if ( await this.checkFoundObjectInArray2Attr(
-                                    arrayOfFabrics, objectWarehouseArrayElement, 
+                                if (await this.checkFoundObjectInArray2Attr(
+                                    arrayOfFabrics, objectWarehouseArrayElement,
                                     'fabric_id',
                                     'dyeing_id')
-                                //     arrayOfFabrics.includes({
-                                //     id: objectWarehouseArrayElement.id,
-                                //     warehouse_id: objectWarehouseArrayElement.warehouse_id
-                                // }, 0)
+                                    //     arrayOfFabrics.includes({
+                                    //     id: objectWarehouseArrayElement.id,
+                                    //     warehouse_id: objectWarehouseArrayElement.warehouse_id
+                                    // }, 0)
                                 ) {
                                     // get index of element
-                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement2Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement, 'fabric_id', 'dyeing_id')] 
+                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement2Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement, 'fabric_id', 'dyeing_id')]
                                     objectWarehouseArrayFilteredElement.current_quantity = objectWarehouseArrayFilteredElement.current_quantity + objectWarehouseArrayElement.current_quantity
                                     objectWarehouseArrayFilteredElement.existed_quantity = objectWarehouseArrayFilteredElement.existed_quantity + objectWarehouseArrayElement.existed_quantity
                                     break;
@@ -2314,28 +2648,30 @@ exports.filterObjectsWarehousesOfParentArray = async (objectsWarehouses) => {
                         }
 
                         if (data.wdFabrics.length > 0) {
-                            let arrayOfFabrics = data.wdFabrics.map(function (a) { return {
-                                fabric_id: a.fabric_id,
-                                dyeing_id: a.dyeing_id
-                            } });
+                            let arrayOfFabrics = data.wdFabrics.map(function (a) {
+                                return {
+                                    fabric_id: a.fabric_id,
+                                    dyeing_id: a.dyeing_id
+                                }
+                            });
                             for (let e = 0; e < objectWarehouseArrayFiltered.length; e++) {
                                 const objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[e];
 
                                 for (let r = 0; r < data.wdFabrics.length; r++) {
                                     let wdFabricsElement = data.wdFabrics[r];
 
-                                    if ( await this.checkFoundObjectInArray2Attr(
-                                        arrayOfFabrics, objectWarehouseArrayFilteredElement, 
+                                    if (await this.checkFoundObjectInArray2Attr(
+                                        arrayOfFabrics, objectWarehouseArrayFilteredElement,
                                         'fabric_id',
                                         'dyeing_id'
-                                        )
-                                    //     arrayOfFabrics.includes({
-                                    //     id: objectWarehouseArrayFilteredElement.id,
-                                    //     warehouse_id: objectWarehouseArrayFilteredElement.warehouse_id
-                                    // }, 0)
+                                    )
+                                        //     arrayOfFabrics.includes({
+                                        //     id: objectWarehouseArrayFilteredElement.id,
+                                        //     warehouse_id: objectWarehouseArrayFilteredElement.warehouse_id
+                                        // }, 0)
                                     ) {
                                         // get index of element
-                                        wdFabricsElement = data.wdFabrics[await this.getIndexOfElement2Attr(data.wdFabrics, objectWarehouseArrayFilteredElement, 'fabric_id', 'dyeing_id')] 
+                                        wdFabricsElement = data.wdFabrics[await this.getIndexOfElement2Attr(data.wdFabrics, objectWarehouseArrayFilteredElement, 'fabric_id', 'dyeing_id')]
                                         wdFabricsElement.current_quantity = wdFabricsElement.current_quantity + objectWarehouseArrayFiltered.current_quantity
                                         wdFabricsElement.existed_quantity = wdFabricsElement.existed_quantity + objectWarehouseArrayFiltered.existed_quantity
                                         break;
@@ -2372,16 +2708,16 @@ exports.filterObjectsWarehousesOfParentArray = async (objectsWarehouses) => {
                             for (let w = 0; w < objectWarehouseArrayFiltered.length; w++) {
                                 let objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[w];
 
-                                if ( await this.checkFoundObjectInArray2Attr(
-                                    arrayOfFabrics, objectWarehouseArrayElement, 
+                                if (await this.checkFoundObjectInArray2Attr(
+                                    arrayOfFabrics, objectWarehouseArrayElement,
                                     'id', 'warehouse_id')
-                                //     arrayOfFabrics.includes({
-                                //     id: objectWarehouseArrayElement.id,
-                                //     warehouse_id: objectWarehouseArrayElement.warehouse_id
-                                // }, 0)
+                                    //     arrayOfFabrics.includes({
+                                    //     id: objectWarehouseArrayElement.id,
+                                    //     warehouse_id: objectWarehouseArrayElement.warehouse_id
+                                    // }, 0)
                                 ) {
                                     // get index of element
-                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement2Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement, 'id', 'warehouse_id')] 
+                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement2Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement, 'id', 'warehouse_id')]
                                     objectWarehouseArrayFilteredElement.needed_quantity = objectWarehouseArrayFilteredElement.needed_quantity + objectWarehouseArrayElement.needed_quantity
                                     objectWarehouseArrayFilteredElement.current_quantity = objectWarehouseArrayFilteredElement.current_quantity + objectWarehouseArrayElement.current_quantity
                                     objectWarehouseArrayFilteredElement.ordered_quantity = objectWarehouseArrayFilteredElement.ordered_quantity + objectWarehouseArrayElement.ordered_quantity
@@ -2403,26 +2739,28 @@ exports.filterObjectsWarehousesOfParentArray = async (objectsWarehouses) => {
                         }
 
                         if (data.wcFabrics.length > 0) {
-                            let arrayOfFabrics = data.wcFabrics.map(function (a) { return {
-                                id: a.id,
-                                warehouse_id: a.warehouse_id
-                            }; });
+                            let arrayOfFabrics = data.wcFabrics.map(function (a) {
+                                return {
+                                    id: a.id,
+                                    warehouse_id: a.warehouse_id
+                                };
+                            });
                             for (let e = 0; e < objectWarehouseArrayFiltered.length; e++) {
                                 const objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[e];
 
                                 for (let r = 0; r < data.wcFabrics.length; r++) {
                                     let wcFabricsElement = data.wcFabrics[r];
 
-                                    if ( await this.checkFoundObjectInArray2Attr(
-                                        arrayOfFabrics, objectWarehouseArrayFilteredElement, 
+                                    if (await this.checkFoundObjectInArray2Attr(
+                                        arrayOfFabrics, objectWarehouseArrayFilteredElement,
                                         'id', 'warehouse_id')
-                                    //     arrayOfFabrics.includes({
-                                    //     id: objectWarehouseArrayFilteredElement.id,
-                                    //     warehouse_id: objectWarehouseArrayFilteredElement.warehouse_id
-                                    // }, 0)
+                                        //     arrayOfFabrics.includes({
+                                        //     id: objectWarehouseArrayFilteredElement.id,
+                                        //     warehouse_id: objectWarehouseArrayFilteredElement.warehouse_id
+                                        // }, 0)
                                     ) {
                                         // get index of element
-                                        wcFabricsElement = data.wcFabrics[await this.getIndexOfElement2Attr(data.wcFabrics, objectWarehouseArrayFilteredElement, 'id', 'warehouse_id')] 
+                                        wcFabricsElement = data.wcFabrics[await this.getIndexOfElement2Attr(data.wcFabrics, objectWarehouseArrayFilteredElement, 'id', 'warehouse_id')]
                                         wcFabricsElement.needed_quantity = wcFabricsElement.needed_quantity + objectWarehouseArrayFiltered.needed_quantity
                                         wcFabricsElement.current_quantity = wcFabricsElement.current_quantity + objectWarehouseArrayFiltered.current_quantity
                                         wcFabricsElement.ordered_quantity = wcFabricsElement.ordered_quantity + objectWarehouseArrayFiltered.ordered_quantity
@@ -2463,14 +2801,14 @@ exports.filterObjectsWarehousesOfParentArray = async (objectsWarehouses) => {
                             for (let w = 0; w < objectWarehouseArrayFiltered.length; w++) {
                                 let objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[w];
 
-                                if ( await this.checkFoundObjectInArray2Attr(arrayOfYarns, objectWarehouseArrayElement, 'yarn_id', 'manufacturer_id')
-                                //     arrayOfYarns.includes({
-                                //     id: objectWarehouseArrayElement.id,
-                                //     warehouse_id: objectWarehouseArrayElement.warehouse_id
-                                // }, 0)
+                                if (await this.checkFoundObjectInArray2Attr(arrayOfYarns, objectWarehouseArrayElement, 'yarn_id', 'manufacturer_id')
+                                    //     arrayOfYarns.includes({
+                                    //     id: objectWarehouseArrayElement.id,
+                                    //     warehouse_id: objectWarehouseArrayElement.warehouse_id
+                                    // }, 0)
                                 ) {
                                     // get index of element
-                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement2Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement, 'yarn_id', 'manufacturer_id')] 
+                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement2Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement, 'yarn_id', 'manufacturer_id')]
                                     objectWarehouseArrayFilteredElement.current_quantity = objectWarehouseArrayFilteredElement.current_quantity + objectWarehouseArrayElement.current_quantity
                                     break;
                                 } else {
@@ -2480,30 +2818,32 @@ exports.filterObjectsWarehousesOfParentArray = async (objectsWarehouses) => {
                                         manufacturer_id: objectWarehouseArrayElement.manufacturer_id,
                                     })
                                     break;
-                                    
+
                                 }
                             }
                         }
 
                         if (data.wbYarns.length > 0) {
-                            let arrayOfYarns = data.wbYarns.map(function (a) { return {
-                                yarn_id: a.yarn_id,
-                                manufacturer_id: a.manufacturer_id,
-                            } });
+                            let arrayOfYarns = data.wbYarns.map(function (a) {
+                                return {
+                                    yarn_id: a.yarn_id,
+                                    manufacturer_id: a.manufacturer_id,
+                                }
+                            });
                             for (let e = 0; e < objectWarehouseArrayFiltered.length; e++) {
                                 const objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[e];
 
                                 for (let r = 0; r < data.wbYarns.length; r++) {
                                     let wbYarnsElement = data.wbYarns[r];
 
-                                    if ( await this.checkFoundObjectInArray2Attr(arrayOfYarns, objectWarehouseArrayFilteredElement, 'yarn_id', 'manufacturer_id')
-                                    //     arrayOfYarns.includes({
-                                    //     id: objectWarehouseArrayFilteredElement.id,
-                                    //     warehouse_id: objectWarehouseArrayFilteredElement.warehouse_id
-                                    // }, 0)
+                                    if (await this.checkFoundObjectInArray2Attr(arrayOfYarns, objectWarehouseArrayFilteredElement, 'yarn_id', 'manufacturer_id')
+                                        //     arrayOfYarns.includes({
+                                        //     id: objectWarehouseArrayFilteredElement.id,
+                                        //     warehouse_id: objectWarehouseArrayFilteredElement.warehouse_id
+                                        // }, 0)
                                     ) {
                                         // get index of element
-                                        wbYarnsElement = data.wbYarns[await this.getIndexOfElement2Attr(data.wbYarns, objectWarehouseArrayFilteredElement, 'yarn_id', 'manufacturer_id')] 
+                                        wbYarnsElement = data.wbYarns[await this.getIndexOfElement2Attr(data.wbYarns, objectWarehouseArrayFilteredElement, 'yarn_id', 'manufacturer_id')]
                                         // wbYarnsElement.needed_quantity = wbYarnsElement.needed_quantity + objectWarehouseArrayFiltered.needed_quantity
                                         wbYarnsElement.current_quantity = wbYarnsElement.current_quantity + objectWarehouseArrayFiltered.current_quantity
                                         break;
@@ -2538,14 +2878,14 @@ exports.filterObjectsWarehousesOfParentArray = async (objectsWarehouses) => {
                             for (let w = 0; w < objectWarehouseArrayFiltered.length; w++) {
                                 let objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[w];
 
-                                if ( await this.checkFoundObjectInArray2Attr(arrayOfYarns, objectWarehouseArrayElement, 'id', 'warehouse_id')
-                                //     arrayOfYarns.includes({
-                                //     id: objectWarehouseArrayElement.id,
-                                //     warehouse_id: objectWarehouseArrayElement.warehouse_id
-                                // }, 0)
+                                if (await this.checkFoundObjectInArray2Attr(arrayOfYarns, objectWarehouseArrayElement, 'id', 'warehouse_id')
+                                    //     arrayOfYarns.includes({
+                                    //     id: objectWarehouseArrayElement.id,
+                                    //     warehouse_id: objectWarehouseArrayElement.warehouse_id
+                                    // }, 0)
                                 ) {
                                     // get index of element
-                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement2Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement, 'id', 'warehouse_id')] 
+                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement2Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement, 'id', 'warehouse_id')]
                                     objectWarehouseArrayFilteredElement.needed_quantity = objectWarehouseArrayFilteredElement.needed_quantity + objectWarehouseArrayElement.needed_quantity
                                     objectWarehouseArrayFilteredElement.current_quantity = objectWarehouseArrayFilteredElement.current_quantity + objectWarehouseArrayElement.current_quantity
                                     objectWarehouseArrayFilteredElement.ordered_quantity = objectWarehouseArrayFilteredElement.ordered_quantity + objectWarehouseArrayElement.ordered_quantity
@@ -2557,7 +2897,7 @@ exports.filterObjectsWarehousesOfParentArray = async (objectsWarehouses) => {
                                         warehouse_id: objectWarehouseArrayElement.warehouse_id
                                     })
                                     break;
-                                    
+
                                 }
                             }
 
@@ -2565,24 +2905,26 @@ exports.filterObjectsWarehousesOfParentArray = async (objectsWarehouses) => {
                         }
 
                         if (data.waYarns.length > 0) {
-                            let arrayOfYarns = data.waYarns.map(function (a) { return {
-                                id: a.id,
-                                warehouse_id: a.warehouse_id
-                            } });
+                            let arrayOfYarns = data.waYarns.map(function (a) {
+                                return {
+                                    id: a.id,
+                                    warehouse_id: a.warehouse_id
+                                }
+                            });
                             for (let e = 0; e < objectWarehouseArrayFiltered.length; e++) {
                                 const objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[e];
 
                                 for (let r = 0; r < data.waYarns.length; r++) {
                                     let waYarnsElement = data.waYarns[r];
 
-                                    if ( await this.checkFoundObjectInArray2Attr(arrayOfYarns, objectWarehouseArrayFilteredElement, 'id', 'warehouse_id')
-                                    //     arrayOfYarns.includes({
-                                    //     id: objectWarehouseArrayFilteredElement.id,
-                                    //     warehouse_id: objectWarehouseArrayFilteredElement.warehouse_id
-                                    // }, 0)
+                                    if (await this.checkFoundObjectInArray2Attr(arrayOfYarns, objectWarehouseArrayFilteredElement, 'id', 'warehouse_id')
+                                        //     arrayOfYarns.includes({
+                                        //     id: objectWarehouseArrayFilteredElement.id,
+                                        //     warehouse_id: objectWarehouseArrayFilteredElement.warehouse_id
+                                        // }, 0)
                                     ) {
                                         // get index of element
-                                        waYarnsElement = data.waYarns[await this.getIndexOfElement2Attr(data.waYarns, objectWarehouseArrayFilteredElement, 'id', 'warehouse_id')] 
+                                        waYarnsElement = data.waYarns[await this.getIndexOfElement2Attr(data.waYarns, objectWarehouseArrayFilteredElement, 'id', 'warehouse_id')]
                                         waYarnsElement.needed_quantity = waYarnsElement.needed_quantity + objectWarehouseArrayFiltered.needed_quantity
                                         waYarnsElement.current_quantity = waYarnsElement.current_quantity + objectWarehouseArrayFiltered.current_quantity
                                         waYarnsElement.ordered_quantity = waYarnsElement.ordered_quantity + objectWarehouseArrayFiltered.ordered_quantity
@@ -2647,20 +2989,20 @@ exports.filterObjectsWarehousesOfParentArrayTotal = async (objectsWarehouses) =>
                             for (let w = 0; w < objectWarehouseArrayFiltered.length; w++) {
                                 let objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[w];
 
-                                if ( await this.checkFoundObjectInArray3Attr(
-                                    arrayOfFabrics, objectWarehouseArrayElement, 
+                                if (await this.checkFoundObjectInArray3Attr(
+                                    arrayOfFabrics, objectWarehouseArrayElement,
                                     'dyed_fabric_id',
                                     'color_id', 'color_code')
-                                //     arrayOfFabrics.includes({
-                                //     dyed_fabric_id: objectWarehouseArrayElement.dyed_fabric_id,
-                                //     warehouse_id: objectWarehouseArrayElement.warehouse_id
-                                // }, 0)
+                                    //     arrayOfFabrics.includes({
+                                    //     dyed_fabric_id: objectWarehouseArrayElement.dyed_fabric_id,
+                                    //     warehouse_id: objectWarehouseArrayElement.warehouse_id
+                                    // }, 0)
                                 ) {
                                     // get index of element
-                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement3Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement, 
+                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement3Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement,
                                         'dyed_fabric_id',
                                         'color_id', 'color_code',
-                                        )] 
+                                    )]
                                     objectWarehouseArrayFilteredElement.needed_quantity = objectWarehouseArrayFilteredElement.needed_quantity + objectWarehouseArrayElement.needed_quantity
                                     objectWarehouseArrayFilteredElement.current_quantity = objectWarehouseArrayFilteredElement.current_quantity + objectWarehouseArrayElement.current_quantity
                                     objectWarehouseArrayFilteredElement.ordered_quantity = objectWarehouseArrayFilteredElement.ordered_quantity + objectWarehouseArrayElement.ordered_quantity
@@ -2683,30 +3025,32 @@ exports.filterObjectsWarehousesOfParentArrayTotal = async (objectsWarehouses) =>
                         }
 
                         if (data.weFabrics.length > 0) {
-                            let arrayOfFabrics = data.weFabrics.map(function (a) { return {
-                                dyed_fabric_id: a.dyed_fabric_id,
-                                color_id: a.color_id,
-                                color_code: a.color_code
-                            }; });
+                            let arrayOfFabrics = data.weFabrics.map(function (a) {
+                                return {
+                                    dyed_fabric_id: a.dyed_fabric_id,
+                                    color_id: a.color_id,
+                                    color_code: a.color_code
+                                };
+                            });
                             for (let e = 0; e < objectWarehouseArrayFiltered.length; e++) {
                                 const objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[e];
 
                                 for (let r = 0; r < data.weFabrics.length; r++) {
                                     let weFabricsElement = data.weFabrics[r];
 
-                                    if ( await this.checkFoundObjectInArray3Attr(
-                                        arrayOfFabrics, objectWarehouseArrayFilteredElement, 
+                                    if (await this.checkFoundObjectInArray3Attr(
+                                        arrayOfFabrics, objectWarehouseArrayFilteredElement,
                                         'dyed_fabric_id',
                                         'color_id', 'color_code')
-                                    //     arrayOfFabrics.includes({
-                                    //     dyed_fabric_id: objectWarehouseArrayFilteredElement.dyed_fabric_id
-                                    // }, 0)
+                                        //     arrayOfFabrics.includes({
+                                        //     dyed_fabric_id: objectWarehouseArrayFilteredElement.dyed_fabric_id
+                                        // }, 0)
                                     ) {
                                         // get index of element
-                                        weFabricsElement = data.weFabrics[await this.getIndexOfElement3Attr(data.weFabrics, objectWarehouseArrayFilteredElement, 
+                                        weFabricsElement = data.weFabrics[await this.getIndexOfElement3Attr(data.weFabrics, objectWarehouseArrayFilteredElement,
                                             'dyed_fabric_id',
                                             'color_id', 'color_code'
-                                            )] 
+                                        )]
                                         weFabricsElement.needed_quantity = weFabricsElement.needed_quantity + objectWarehouseArrayFiltered.needed_quantity
                                         weFabricsElement.current_quantity = weFabricsElement.current_quantity + objectWarehouseArrayFiltered.current_quantity
                                         weFabricsElement.ordered_quantity = weFabricsElement.ordered_quantity + objectWarehouseArrayFiltered.ordered_quantity
@@ -2746,16 +3090,16 @@ exports.filterObjectsWarehousesOfParentArrayTotal = async (objectsWarehouses) =>
                             for (let w = 0; w < objectWarehouseArrayFiltered.length; w++) {
                                 let objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[w];
 
-                                if ( await this.checkFoundObjectInArray1Attr(
-                                    arrayOfFabrics, objectWarehouseArrayElement, 
+                                if (await this.checkFoundObjectInArray1Attr(
+                                    arrayOfFabrics, objectWarehouseArrayElement,
                                     'fabric_id')
-                                //     arrayOfFabrics.includes({
-                                //     id: objectWarehouseArrayElement.id,
-                                //     warehouse_id: objectWarehouseArrayElement.warehouse_id
-                                // }, 0)
+                                    //     arrayOfFabrics.includes({
+                                    //     id: objectWarehouseArrayElement.id,
+                                    //     warehouse_id: objectWarehouseArrayElement.warehouse_id
+                                    // }, 0)
                                 ) {
                                     // get index of element
-                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement1Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement, 'fabric_id')] 
+                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement1Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement, 'fabric_id')]
                                     objectWarehouseArrayFilteredElement.form_current_quantity = objectWarehouseArrayFilteredElement.form_current_quantity + objectWarehouseArrayElement.form_current_quantity
                                     objectWarehouseArrayFilteredElement.existed_quantity = objectWarehouseArrayFilteredElement.existed_quantity + objectWarehouseArrayElement.existed_quantity
                                     break;
@@ -2771,25 +3115,27 @@ exports.filterObjectsWarehousesOfParentArrayTotal = async (objectsWarehouses) =>
                         }
 
                         if (data.wdFormFabrics.length > 0) {
-                            let arrayOfFabrics = data.wdFormFabrics.map(function (a) { return {
-                                fabric_id: a.fabric_id
-                            } });
+                            let arrayOfFabrics = data.wdFormFabrics.map(function (a) {
+                                return {
+                                    fabric_id: a.fabric_id
+                                }
+                            });
                             for (let e = 0; e < objectWarehouseArrayFiltered.length; e++) {
                                 const objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[e];
 
                                 for (let r = 0; r < data.wdFormFabrics.length; r++) {
                                     let wdFormFabricsElement = data.wdFormFabrics[r];
 
-                                    if ( await this.checkFoundObjectInArray1Attr(
-                                        arrayOfFabrics, objectWarehouseArrayFilteredElement, 
+                                    if (await this.checkFoundObjectInArray1Attr(
+                                        arrayOfFabrics, objectWarehouseArrayFilteredElement,
                                         'fabric_id')
-                                    //     arrayOfFabrics.includes({
-                                    //     id: objectWarehouseArrayFilteredElement.id,
-                                    //     warehouse_id: objectWarehouseArrayFilteredElement.warehouse_id
-                                    // }, 0)
+                                        //     arrayOfFabrics.includes({
+                                        //     id: objectWarehouseArrayFilteredElement.id,
+                                        //     warehouse_id: objectWarehouseArrayFilteredElement.warehouse_id
+                                        // }, 0)
                                     ) {
                                         // get index of element
-                                        wdFormFabricsElement = data.wdFormFabrics[await this.getIndexOfElement1Attr(data.wdFormFabrics, objectWarehouseArrayFilteredElement, 'fabric_id')] 
+                                        wdFormFabricsElement = data.wdFormFabrics[await this.getIndexOfElement1Attr(data.wdFormFabrics, objectWarehouseArrayFilteredElement, 'fabric_id')]
                                         wdFormFabricsElement.form_current_quantity = wdFormFabricsElement.form_current_quantity + objectWarehouseArrayFiltered.form_current_quantity
                                         wdFormFabricsElement.existed_quantity = wdFormFabricsElement.existed_quantity + objectWarehouseArrayFiltered.existed_quantity
                                         break;
@@ -2825,16 +3171,16 @@ exports.filterObjectsWarehousesOfParentArrayTotal = async (objectsWarehouses) =>
                             for (let w = 0; w < objectWarehouseArrayFiltered.length; w++) {
                                 let objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[w];
 
-                                if ( await this.checkFoundObjectInArray1Attr(
-                                    arrayOfFabrics, objectWarehouseArrayElement, 
+                                if (await this.checkFoundObjectInArray1Attr(
+                                    arrayOfFabrics, objectWarehouseArrayElement,
                                     'fabric_id')
-                                //     arrayOfFabrics.includes({
-                                //     id: objectWarehouseArrayElement.id,
-                                //     warehouse_id: objectWarehouseArrayElement.warehouse_id
-                                // }, 0)
+                                    //     arrayOfFabrics.includes({
+                                    //     id: objectWarehouseArrayElement.id,
+                                    //     warehouse_id: objectWarehouseArrayElement.warehouse_id
+                                    // }, 0)
                                 ) {
                                     // get index of element
-                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement1Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement, 'fabric_id')] 
+                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement1Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement, 'fabric_id')]
                                     objectWarehouseArrayFilteredElement.current_quantity = objectWarehouseArrayFilteredElement.current_quantity + objectWarehouseArrayElement.current_quantity
                                     objectWarehouseArrayFilteredElement.existed_quantity = objectWarehouseArrayFilteredElement.existed_quantity + objectWarehouseArrayElement.existed_quantity
                                     break;
@@ -2850,25 +3196,27 @@ exports.filterObjectsWarehousesOfParentArrayTotal = async (objectsWarehouses) =>
                         }
 
                         if (data.wdFabrics.length > 0) {
-                            let arrayOfFabrics = data.wdFabrics.map(function (a) { return {
-                                fabric_id: a.fabric_id
-                            } });
+                            let arrayOfFabrics = data.wdFabrics.map(function (a) {
+                                return {
+                                    fabric_id: a.fabric_id
+                                }
+                            });
                             for (let e = 0; e < objectWarehouseArrayFiltered.length; e++) {
                                 const objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[e];
 
                                 for (let r = 0; r < data.wdFabrics.length; r++) {
                                     let wdFabricsElement = data.wdFabrics[r];
 
-                                    if ( await this.checkFoundObjectInArray1Attr(
-                                        arrayOfFabrics, objectWarehouseArrayFilteredElement, 
+                                    if (await this.checkFoundObjectInArray1Attr(
+                                        arrayOfFabrics, objectWarehouseArrayFilteredElement,
                                         'fabric_id')
-                                    //     arrayOfFabrics.includes({
-                                    //     id: objectWarehouseArrayFilteredElement.id,
-                                    //     warehouse_id: objectWarehouseArrayFilteredElement.warehouse_id
-                                    // }, 0)
+                                        //     arrayOfFabrics.includes({
+                                        //     id: objectWarehouseArrayFilteredElement.id,
+                                        //     warehouse_id: objectWarehouseArrayFilteredElement.warehouse_id
+                                        // }, 0)
                                     ) {
                                         // get index of element
-                                        wdFabricsElement = data.wdFabrics[await this.getIndexOfElement1Attr(data.wdFabrics, objectWarehouseArrayFilteredElement, 'fabric_id')] 
+                                        wdFabricsElement = data.wdFabrics[await this.getIndexOfElement1Attr(data.wdFabrics, objectWarehouseArrayFilteredElement, 'fabric_id')]
                                         wdFabricsElement.current_quantity = wdFabricsElement.current_quantity + objectWarehouseArrayFiltered.current_quantity
                                         wdFabricsElement.existed_quantity = wdFabricsElement.existed_quantity + objectWarehouseArrayFiltered.existed_quantity
                                         break;
@@ -2903,16 +3251,16 @@ exports.filterObjectsWarehousesOfParentArrayTotal = async (objectsWarehouses) =>
                             for (let w = 0; w < objectWarehouseArrayFiltered.length; w++) {
                                 let objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[w];
 
-                                if ( await this.checkFoundObjectInArray1Attr(
-                                    arrayOfFabrics, objectWarehouseArrayElement, 
+                                if (await this.checkFoundObjectInArray1Attr(
+                                    arrayOfFabrics, objectWarehouseArrayElement,
                                     'id')
-                                //     arrayOfFabrics.includes({
-                                //     id: objectWarehouseArrayElement.id,
-                                //     warehouse_id: objectWarehouseArrayElement.warehouse_id
-                                // }, 0)
+                                    //     arrayOfFabrics.includes({
+                                    //     id: objectWarehouseArrayElement.id,
+                                    //     warehouse_id: objectWarehouseArrayElement.warehouse_id
+                                    // }, 0)
                                 ) {
                                     // get index of element
-                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement1Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement, 'id')] 
+                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement1Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement, 'id')]
                                     objectWarehouseArrayFilteredElement.needed_quantity = objectWarehouseArrayFilteredElement.needed_quantity + objectWarehouseArrayElement.needed_quantity
                                     objectWarehouseArrayFilteredElement.current_quantity = objectWarehouseArrayFilteredElement.current_quantity + objectWarehouseArrayElement.current_quantity
                                     objectWarehouseArrayFilteredElement.ordered_quantity = objectWarehouseArrayFilteredElement.ordered_quantity + objectWarehouseArrayElement.ordered_quantity
@@ -2933,25 +3281,27 @@ exports.filterObjectsWarehousesOfParentArrayTotal = async (objectsWarehouses) =>
                         }
 
                         if (data.wcFabrics.length > 0) {
-                            let arrayOfFabrics = data.wcFabrics.map(function (a) { return {
-                                id: a.id
-                            }; });
+                            let arrayOfFabrics = data.wcFabrics.map(function (a) {
+                                return {
+                                    id: a.id
+                                };
+                            });
                             for (let e = 0; e < objectWarehouseArrayFiltered.length; e++) {
                                 const objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[e];
 
                                 for (let r = 0; r < data.wcFabrics.length; r++) {
                                     let wcFabricsElement = data.wcFabrics[r];
 
-                                    if ( await this.checkFoundObjectInArray1Attr(
-                                        arrayOfFabrics, objectWarehouseArrayFilteredElement, 
+                                    if (await this.checkFoundObjectInArray1Attr(
+                                        arrayOfFabrics, objectWarehouseArrayFilteredElement,
                                         'id')
-                                    //     arrayOfFabrics.includes({
-                                    //     id: objectWarehouseArrayFilteredElement.id,
-                                    //     warehouse_id: objectWarehouseArrayFilteredElement.warehouse_id
-                                    // }, 0)
+                                        //     arrayOfFabrics.includes({
+                                        //     id: objectWarehouseArrayFilteredElement.id,
+                                        //     warehouse_id: objectWarehouseArrayFilteredElement.warehouse_id
+                                        // }, 0)
                                     ) {
                                         // get index of element
-                                        wcFabricsElement = data.wcFabrics[await this.getIndexOfElement1Attr(data.wcFabrics, objectWarehouseArrayFilteredElement, 'id')] 
+                                        wcFabricsElement = data.wcFabrics[await this.getIndexOfElement1Attr(data.wcFabrics, objectWarehouseArrayFilteredElement, 'id')]
                                         wcFabricsElement.needed_quantity = wcFabricsElement.needed_quantity + objectWarehouseArrayFiltered.needed_quantity
                                         wcFabricsElement.current_quantity = wcFabricsElement.current_quantity + objectWarehouseArrayFiltered.current_quantity
                                         wcFabricsElement.ordered_quantity = wcFabricsElement.ordered_quantity + objectWarehouseArrayFiltered.ordered_quantity
@@ -2990,14 +3340,14 @@ exports.filterObjectsWarehousesOfParentArrayTotal = async (objectsWarehouses) =>
                             for (let w = 0; w < objectWarehouseArrayFiltered.length; w++) {
                                 let objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[w];
 
-                                if ( await this.checkFoundObjectInArray1Attr(arrayOfYarns, objectWarehouseArrayElement, 'yarn_id')
-                                //     arrayOfYarns.includes({
-                                //     id: objectWarehouseArrayElement.id,
-                                //     warehouse_id: objectWarehouseArrayElement.warehouse_id
-                                // }, 0)
+                                if (await this.checkFoundObjectInArray1Attr(arrayOfYarns, objectWarehouseArrayElement, 'yarn_id')
+                                    //     arrayOfYarns.includes({
+                                    //     id: objectWarehouseArrayElement.id,
+                                    //     warehouse_id: objectWarehouseArrayElement.warehouse_id
+                                    // }, 0)
                                 ) {
                                     // get index of element
-                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement1Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement, 'yarn_id')] 
+                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement1Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement, 'yarn_id')]
                                     objectWarehouseArrayFilteredElement.current_quantity = objectWarehouseArrayFilteredElement.current_quantity + objectWarehouseArrayElement.current_quantity
                                     break;
                                 } else {
@@ -3006,29 +3356,31 @@ exports.filterObjectsWarehousesOfParentArrayTotal = async (objectsWarehouses) =>
                                         yarn_id: objectWarehouseArrayElement.yarn_id
                                     })
                                     break;
-                                    
+
                                 }
                             }
                         }
 
                         if (data.wbYarns.length > 0) {
-                            let arrayOfYarns = data.wbYarns.map(function (a) { return {
-                                yarn_id: a.yarn_id
-                            } });
+                            let arrayOfYarns = data.wbYarns.map(function (a) {
+                                return {
+                                    yarn_id: a.yarn_id
+                                }
+                            });
                             for (let e = 0; e < objectWarehouseArrayFiltered.length; e++) {
                                 const objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[e];
 
                                 for (let r = 0; r < data.wbYarns.length; r++) {
                                     let wbYarnsElement = data.wbYarns[r];
 
-                                    if ( await this.checkFoundObjectInArray1Attr(arrayOfYarns, objectWarehouseArrayFilteredElement, 'yarn_id')
-                                    //     arrayOfYarns.includes({
-                                    //     id: objectWarehouseArrayFilteredElement.id,
-                                    //     warehouse_id: objectWarehouseArrayFilteredElement.warehouse_id
-                                    // }, 0)
+                                    if (await this.checkFoundObjectInArray1Attr(arrayOfYarns, objectWarehouseArrayFilteredElement, 'yarn_id')
+                                        //     arrayOfYarns.includes({
+                                        //     id: objectWarehouseArrayFilteredElement.id,
+                                        //     warehouse_id: objectWarehouseArrayFilteredElement.warehouse_id
+                                        // }, 0)
                                     ) {
                                         // get index of element
-                                        wbYarnsElement = data.wbYarns[await this.getIndexOfElement1Attr(data.wbYarns, objectWarehouseArrayFilteredElement, 'yarn_id')] 
+                                        wbYarnsElement = data.wbYarns[await this.getIndexOfElement1Attr(data.wbYarns, objectWarehouseArrayFilteredElement, 'yarn_id')]
                                         // wbYarnsElement.needed_quantity = wbYarnsElement.needed_quantity + objectWarehouseArrayFiltered.needed_quantity
                                         wbYarnsElement.current_quantity = wbYarnsElement.current_quantity + objectWarehouseArrayFiltered.current_quantity
                                         break;
@@ -3062,14 +3414,14 @@ exports.filterObjectsWarehousesOfParentArrayTotal = async (objectsWarehouses) =>
                             for (let w = 0; w < objectWarehouseArrayFiltered.length; w++) {
                                 let objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[w];
 
-                                if ( await this.checkFoundObjectInArray1Attr(arrayOfYarns, objectWarehouseArrayElement, 'id')
-                                //     arrayOfYarns.includes({
-                                //     id: objectWarehouseArrayElement.id,
-                                //     warehouse_id: objectWarehouseArrayElement.warehouse_id
-                                // }, 0)
+                                if (await this.checkFoundObjectInArray1Attr(arrayOfYarns, objectWarehouseArrayElement, 'id')
+                                    //     arrayOfYarns.includes({
+                                    //     id: objectWarehouseArrayElement.id,
+                                    //     warehouse_id: objectWarehouseArrayElement.warehouse_id
+                                    // }, 0)
                                 ) {
                                     // get index of element
-                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement1Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement, 'id')] 
+                                    objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[await this.getIndexOfElement1Attr(objectWarehouseArrayFiltered, objectWarehouseArrayElement, 'id')]
                                     objectWarehouseArrayFilteredElement.needed_quantity = objectWarehouseArrayFilteredElement.needed_quantity + objectWarehouseArrayElement.needed_quantity
                                     objectWarehouseArrayFilteredElement.current_quantity = objectWarehouseArrayFilteredElement.current_quantity + objectWarehouseArrayElement.current_quantity
                                     objectWarehouseArrayFilteredElement.ordered_quantity = objectWarehouseArrayFilteredElement.ordered_quantity + objectWarehouseArrayElement.ordered_quantity
@@ -3080,7 +3432,7 @@ exports.filterObjectsWarehousesOfParentArrayTotal = async (objectsWarehouses) =>
                                         id: objectWarehouseArrayElement.id
                                     })
                                     break;
-                                    
+
                                 }
                             }
 
@@ -3088,23 +3440,25 @@ exports.filterObjectsWarehousesOfParentArrayTotal = async (objectsWarehouses) =>
                         }
 
                         if (data.waYarns.length > 0) {
-                            let arrayOfYarns = data.waYarns.map(function (a) { return {
-                                id: a.id
-                            } });
+                            let arrayOfYarns = data.waYarns.map(function (a) {
+                                return {
+                                    id: a.id
+                                }
+                            });
                             for (let e = 0; e < objectWarehouseArrayFiltered.length; e++) {
                                 const objectWarehouseArrayFilteredElement = objectWarehouseArrayFiltered[e];
 
                                 for (let r = 0; r < data.waYarns.length; r++) {
                                     let waYarnsElement = data.waYarns[r];
 
-                                    if ( await this.checkFoundObjectInArray1Attr(arrayOfYarns, objectWarehouseArrayFilteredElement, 'id')
-                                    //     arrayOfYarns.includes({
-                                    //     id: objectWarehouseArrayFilteredElement.id,
-                                    //     warehouse_id: objectWarehouseArrayFilteredElement.warehouse_id
-                                    // }, 0)
+                                    if (await this.checkFoundObjectInArray1Attr(arrayOfYarns, objectWarehouseArrayFilteredElement, 'id')
+                                        //     arrayOfYarns.includes({
+                                        //     id: objectWarehouseArrayFilteredElement.id,
+                                        //     warehouse_id: objectWarehouseArrayFilteredElement.warehouse_id
+                                        // }, 0)
                                     ) {
                                         // get index of element
-                                        waYarnsElement = data.waYarns[await this.getIndexOfElement1Attr(data.waYarns, objectWarehouseArrayFilteredElement, 'id')] 
+                                        waYarnsElement = data.waYarns[await this.getIndexOfElement1Attr(data.waYarns, objectWarehouseArrayFilteredElement, 'id')]
                                         waYarnsElement.needed_quantity = waYarnsElement.needed_quantity + objectWarehouseArrayFiltered.needed_quantity
                                         waYarnsElement.current_quantity = waYarnsElement.current_quantity + objectWarehouseArrayFiltered.current_quantity
                                         waYarnsElement.ordered_quantity = waYarnsElement.ordered_quantity + objectWarehouseArrayFiltered.ordered_quantity
@@ -3138,8 +3492,8 @@ exports.filterObjectsWarehousesOfParentArrayTotal = async (objectsWarehouses) =>
 exports.checkFoundObjectInArray1Attr = async (array, object, attr1) => {
     for (let i = 0; i < array.length; i++) {
         const element = array[i];
-        
-        if(element[attr1] == object[attr1] ) {
+
+        if (element[attr1] == object[attr1]) {
             return true
         }
     }
@@ -3150,8 +3504,8 @@ exports.checkFoundObjectInArray1Attr = async (array, object, attr1) => {
 exports.checkFoundObjectInArray2Attr = async (array, object, attr1, attr2) => {
     for (let i = 0; i < array.length; i++) {
         const element = array[i];
-        
-        if(element[attr1] == object[attr1] && element[attr2] == object[attr2]) {
+
+        if (element[attr1] == object[attr1] && element[attr2] == object[attr2]) {
             return true
         }
     }
@@ -3162,8 +3516,8 @@ exports.checkFoundObjectInArray2Attr = async (array, object, attr1, attr2) => {
 exports.checkFoundObjectInArray4Attr = async (array, object, attr1, attr2, attr3, attr4) => {
     for (let i = 0; i < array.length; i++) {
         const element = array[i];
-        
-        if(element[attr1] == object[attr1] && element[attr2] == object[attr2] 
+
+        if (element[attr1] == object[attr1] && element[attr2] == object[attr2]
             && element[attr3] == object[attr3] && element[attr4] == object[attr4]) {
             return true
         }
@@ -3175,9 +3529,9 @@ exports.checkFoundObjectInArray4Attr = async (array, object, attr1, attr2, attr3
 exports.checkFoundObjectInArray3Attr = async (array, object, attr1, attr2, attr3) => {
     for (let i = 0; i < array.length; i++) {
         const element = array[i];
-        
-        if(element[attr1] == object[attr1] && element[attr2] == object[attr2] 
-            && element[attr3] == object[attr3] ) {
+
+        if (element[attr1] == object[attr1] && element[attr2] == object[attr2]
+            && element[attr3] == object[attr3]) {
             return true
         }
     }
@@ -3188,8 +3542,8 @@ exports.checkFoundObjectInArray3Attr = async (array, object, attr1, attr2, attr3
 exports.getIndexOfElement1Attr = async (searchArray, goalObject, attr1) => {
     for (let i = 0; i < searchArray.length; i++) {
         const element = searchArray[i];
-        
-        if(element[attr1] == goalObject[attr1]) {
+
+        if (element[attr1] == goalObject[attr1]) {
             return i
         }
     }
@@ -3199,8 +3553,8 @@ exports.getIndexOfElement1Attr = async (searchArray, goalObject, attr1) => {
 exports.getIndexOfElement2Attr = async (searchArray, goalObject, attr1, attr2) => {
     for (let i = 0; i < searchArray.length; i++) {
         const element = searchArray[i];
-        
-        if(element[attr1] == goalObject[attr1] && element[attr2] == goalObject[attr2]) {
+
+        if (element[attr1] == goalObject[attr1] && element[attr2] == goalObject[attr2]) {
             return i
         }
     }
@@ -3210,10 +3564,10 @@ exports.getIndexOfElement2Attr = async (searchArray, goalObject, attr1, attr2) =
 exports.getIndexOfElement3Attr = async (searchArray, goalObject, attr1, attr2, attr3) => {
     for (let i = 0; i < searchArray.length; i++) {
         const element = searchArray[i];
-        
-        if(element[attr1] == goalObject[attr1] && element[attr2] == goalObject[attr2] &&
-            element[attr3] == goalObject[attr3] 
-            ) {
+
+        if (element[attr1] == goalObject[attr1] && element[attr2] == goalObject[attr2] &&
+            element[attr3] == goalObject[attr3]
+        ) {
             return i
         }
     }
@@ -3223,10 +3577,10 @@ exports.getIndexOfElement3Attr = async (searchArray, goalObject, attr1, attr2, a
 exports.getIndexOfElement4Attr = async (searchArray, goalObject, attr1, attr2, attr3, attr4) => {
     for (let i = 0; i < searchArray.length; i++) {
         const element = searchArray[i];
-        
-        if(element[attr1] == goalObject[attr1] && element[attr2] == goalObject[attr2] &&
+
+        if (element[attr1] == goalObject[attr1] && element[attr2] == goalObject[attr2] &&
             element[attr3] == goalObject[attr3] && element[attr4] == goalObject[attr4]
-            ) {
+        ) {
             return i
         }
     }

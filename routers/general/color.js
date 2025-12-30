@@ -18,6 +18,11 @@ router.get("/:deyingId",
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   colorController.selectByCategory);
   
+router.get("/by-order-by-dyed-fabric-by-color-category/:orderRequisitionId/:dyedFabricId/:colorCategoryId",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  colorController.selectByOrderByDyedFabricByColorCategoryWe);
+  
 router.get("/:deyingId/:colorCategoryId",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
@@ -28,7 +33,6 @@ router.get("/:fabricId/:supplierId/:colorCategoryId/:requisitionId",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   colorController.selectDyersAndRequisitionsColorOfFabrics);
-
   
 router.get("",
 middleWeres.checkAuth(),

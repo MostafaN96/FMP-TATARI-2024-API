@@ -30,7 +30,8 @@ const {
     wbTransitionBetweenIndustriesRequisitionDetailsTableName, 
     waTransitionBetweenWHRequisitionDetailsTableName,
     wbTransportRequisitionWbWaDetailsTableName,
-    waReconciliationRequisitionDetailsTableName
+    waReconciliationRequisitionDetailsTableName,
+    waAddRequisitionTableName
 } = require("../../util/database-tables-name");
 
 exports.create = async (waYarnOrderRequisition) => {
@@ -240,6 +241,32 @@ exports.selectByWarehouseWa = async (warehouseId) => {
     const results = await waYarnOrderRequisitionQueries.selectByWarehouseWa(whereCluseArray);
     return results;
   };
+
+exports.selectByWarehouseBySupplierWa = async (warehouseId, supplierId) => {
+    let whereCluse = {};
+    whereCluse[`${waAddRequisitionTableName}.supplier_id`] = supplierId;
+    whereCluse[`${waAddRequisitionDetailsTableName}.is_deleted`] = 0;
+    whereCluse[`${waAddRequisitionDetailsTableName}.is_active`] = 1;
+    whereCluse[`${waAddRequisitionDetailsTableName}.warehouse_id`] = warehouseId;
+
+    let transitionBetweenWhWhereCluse = {};
+    transitionBetweenWhWhereCluse[`${waTableName}.supplier_id`] = supplierId;
+    transitionBetweenWhWhereCluse[`${waTableName}.is_deleted`] = 0;
+    transitionBetweenWhWhereCluse[`${waTableName}.is_active`] = 1;
+    transitionBetweenWhWhereCluse[`${waTableName}.type`] = constantsPayloads.transportBetweenType;
+    transitionBetweenWhWhereCluse[`${waTransitionBetweenWHRequisitionTableName}.to_warehouse_id`] = warehouseId;
+
+    let andWhereCluse = { whereTableName: `current_quantity`, operator: ">", value: "0" }
+
+    let whereCluseArray = [
+        whereCluse, 
+        andWhereCluse,
+        transitionBetweenWhWhereCluse
+    ]
+
+    const results = await waYarnOrderRequisitionQueries.selectByWarehouseBySupplierWa(whereCluseArray);
+    return results;
+};
 
   
 exports.selectByIndustryWb = async (industryId) => {

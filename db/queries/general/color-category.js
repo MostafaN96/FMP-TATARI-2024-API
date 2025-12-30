@@ -1,4 +1,5 @@
 // Config
+const { weDyedFabricOrderRequisitionDetailsTableName } = require("../../../util/database-tables-name");
 const sqlFun = require("../../config/sql-fun");
 const knex = require("../../config/connection").getConnection();
 
@@ -215,6 +216,29 @@ exports.selectDyersAndRequisitionsColorCategoryOfFabrics = async (fabricId, supp
     .andWhere({ "supplier_id": supplierId, "fabric_id": fabricId })
     .groupBy("color_category_name", "color_category_id")
     .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.selectByOrderByDyedFabricWe = async (whereCluse, whereInWhereCluse) => {
+  let queryResults = [];
+  await knex.select([
+      `${colorCategoryTableName}.id`,
+      `${colorCategoryTableName}.name`,
+  ])
+    .from(`${colorCategoryTableName}`)
+    .whereIn(`${colorCategoryTableName}.id`, function () {
+      this.select(`${weDyedFabricOrderRequisitionDetailsTableName}.color_category_id`)
+        .from(`${weDyedFabricOrderRequisitionDetailsTableName}`)
+        .where(whereInWhereCluse)
+    })
+    .andWhere(whereCluse)
+
+    .then((data) => {
+      console.log("data ::::: ", data);
+      
       queryResults = data;
     })
     .catch((error) => console.error(error));

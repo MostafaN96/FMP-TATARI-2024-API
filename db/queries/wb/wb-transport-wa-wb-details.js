@@ -3,7 +3,7 @@ const sqlFun = require("../../config/sql-fun");
 const knex = require("../../config/connection").getConnection();
 
 // Util
-const { wbTransportWaWbTableName, wbTransportWaWbDetailsTableName, warehouseTableName, yarnTableName, yarnLotTableName, bussinessmanTableName, wbTableName, wbTransportWaWbDetailsWaTableName, waTableName, fabricTableName, consigmentYarnTableName, waYarnOrderRequisitionTableName, wbManufacturingInputWbTableName, wbManufacturingInputTableName, wbManufacturingInputOutputTableName, wbManufacturingRequisitionTableName, wbTransitionBetweenIndustriesRequisitionDetailsWbTableName } = require("../../../util/database-tables-name");
+const { wbTransportWaWbTableName, wbTransportWaWbDetailsTableName, warehouseTableName, yarnTableName, yarnLotTableName, bussinessmanTableName, wbTableName, wbTransportWaWbDetailsWaTableName, waTableName, fabricTableName, consigmentYarnTableName, waYarnOrderRequisitionTableName, wbManufacturingInputWbTableName, wbManufacturingInputTableName, wbManufacturingInputOutputTableName, wbManufacturingRequisitionTableName, wbTransitionBetweenIndustriesRequisitionDetailsWbTableName, waAddRequisitionTableName, waAddRequisitionDetailsYarnOrderTableName, waAddRequisitionDetailsTableName } = require("../../../util/database-tables-name");
 
 exports.insert = async (wbTransportWaWb, items) => {
   let queryResults = false;
@@ -15,8 +15,8 @@ exports.insert = async (wbTransportWaWb, items) => {
       wa_yarn_order_requisition_id: items.yarnOrderId,
       orders_requisitions_id: items.ordersRequisitionsId,
       from_wa_yarn_order_requisition_details_id: items.fromWaYarnOrderRequisitionDetailsId,
-      from_wa_yarn_order_requisition_id: items.fromYarnOrderId,
-      from_orders_requisitions_id: items.fromOrdersRequisitionsId,
+      from_wa_yarn_order_requisition_id: wbTransportWaWb.fromYarnOrderId,
+      from_orders_requisitions_id: wbTransportWaWb.fromOrdersRequisitionsId,
       yarn_id: items.yarnId,
       yarn_lot_id: items.yarnLotId,
       consigment_yarn_id: items.consigmentYarnId,
@@ -877,6 +877,7 @@ exports.selectTotalByYarnByWarehouseId = async (yarnId, warehouseId) => {
   await knex.from(wbTransportWaWbDetailsTableName)
     .select(
       [
+        `${wbTransportWaWbDetailsTableName}.id`,
         `${wbTransportWaWbDetailsTableName}.price`,
         `${wbTransportWaWbDetailsTableName}.price_dollar`,
         `${wbTransportWaWbDetailsTableName}.quantity`,
@@ -969,19 +970,22 @@ exports.selectTotalDetailsByYarnIdByWarehouseId = async (yarnId, warehouseId) =>
 exports.selectDetailsByWarehouseByYarnByLot = async (
   warehouseId, yarnId, 
   yarnLotId, consigmentYarnId,
-  yarnOrderId
+  yarnOrderId,
+  supplierId
 ) => {
   let queryResults = [];
   let whereCluse = {};
+  whereCluse[`${waAddRequisitionTableName}.supplier_id`] = supplierId;
   whereCluse[`${wbTransportWaWbTableName}.warehouse_id`] = warehouseId;
   whereCluse[`${wbTransportWaWbDetailsTableName}.yarn_id`] = yarnId;
   whereCluse[`${wbTransportWaWbDetailsTableName}.yarn_lot_id`] = yarnLotId;
-          whereCluse[`${wbTransportWaWbDetailsTableName}.from_consigment_yarn_id`] = consigmentYarnId;
-          whereCluse[`${wbTransportWaWbDetailsTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
+  whereCluse[`${wbTransportWaWbDetailsTableName}.from_consigment_yarn_id`] = consigmentYarnId;
+  whereCluse[`${wbTransportWaWbDetailsTableName}.from_wa_yarn_order_requisition_id`] = yarnOrderId;
   whereCluse[`${wbTransportWaWbDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${wbTransportWaWbDetailsTableName}.is_active`] = 1;
 
   await knex.from(wbTransportWaWbDetailsTableName)
+  .distinct(`${wbTransportWaWbDetailsTableName}.id`)
     .select(
       [
         `${wbTransportWaWbDetailsTableName}.price`,
@@ -993,7 +997,18 @@ exports.selectDetailsByWarehouseByYarnByLot = async (
         knex.raw('? as input_output', '0')
       ],
     )
-    .innerJoin(`${wbTransportWaWbTableName}`, `${wbTransportWaWbTableName}.id`, `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
+    .innerJoin(`${wbTransportWaWbTableName}`, 
+      `${wbTransportWaWbTableName}.id`, 
+      `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
+      .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`, 
+      `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`, 
+      `${wbTransportWaWbDetailsTableName}.wa_yarn_order_requisition_id`)
+    .innerJoin(`${waAddRequisitionDetailsTableName}`, 
+      `${waAddRequisitionDetailsTableName}.id`, 
+      `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`)
+    .innerJoin(`${waAddRequisitionTableName}`, 
+      `${waAddRequisitionTableName}.id`, 
+      `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
     .where(whereCluse)
     .andWhere(`${wbTransportWaWbDetailsTableName}.quantity`, ">", 0)
     .then((data) => {

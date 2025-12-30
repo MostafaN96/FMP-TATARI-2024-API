@@ -83,7 +83,7 @@ exports.create = async (wbManufacturingInput, isOrder) => {
 
                             // Add wb Manufacturing Input wb
                             await wbManufacturingInputWbService.create(wbManufacturingInput, wbManufacturingInput.items[i])
-
+                    
                             // Enter to if condition when stock runs out
                             if (newQuantity == 0) {
                                 break;
@@ -326,6 +326,7 @@ exports.update = async (wbManufacturingInput) => {
                 isFound[0].yarn_id,
                 isFound[0].yarn_lot_id,
                 isFound[0].consigment_yarn_id,
+                isFound[0].wa_yarn_order_requisition_id,
             )
             if (sumCurrentQuantityWb[0] != null) {
                 console.log("sumCurrentQuantityWb ::: ", sumCurrentQuantityWb);
@@ -350,6 +351,7 @@ exports.update = async (wbManufacturingInput) => {
                         isFound[0].yarn_id,
                         isFound[0].yarn_lot_id,
                         isFound[0].consigment_yarn_id,
+                        isFound[0].wa_yarn_order_requisition_id,
                     )
                     if (wbRecords[0] != null) {
                         // console.log("wbRecords ::: ", wbRecords);

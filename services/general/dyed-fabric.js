@@ -5,7 +5,8 @@ const trans = require("../../helpers/transform");
 const { 
   wdDyeingRequisitionDetailsTableName, fabricTableName, 
   weTableName, weReconciliationRequisitionDetailsTableName, 
-  colorTableName, weAddRequisitionDetailsTableName, anointedColorsPricesTableName 
+  colorTableName, weAddRequisitionDetailsTableName, anointedColorsPricesTableName, 
+  weDyedFabricOrderRequisitionDetailsTableName
 } = require("../../util/database-tables-name");
 
 exports.create = async (fabric) => {
@@ -56,6 +57,21 @@ exports.selectDyedFabric = async () => {
   return results;
 };
 
+
+exports.selectDyedFabricsByOrderWe = async (orderRequisitionId) => {
+  
+  let whereCluse = {};
+  whereCluse[`${fabricTableName}.is_deleted`] = 0;
+  whereCluse[`${fabricTableName}.is_active`] = 1;
+  whereCluse[`${fabricTableName}.is_dyed_fabric`] = 1;
+
+  let whereInWhereCluse = {};
+  whereInWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`] = orderRequisitionId;
+  whereInWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+  whereInWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+  const results = await dyedFabricQueries.selectDyedFabricsByOrder(whereCluse, whereInWhereCluse);
+  return results;
+};
 
 exports.selectStoredDyedFabricsByDyedFabricByColorByColorCodeWe = async (dyedFabricId, colorId, colorCode) => {
 

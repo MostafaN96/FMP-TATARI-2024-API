@@ -14,7 +14,13 @@ const {
   warehouseTableName,
   consigmentYarnTableName, 
   wbTransportWaWbDetailsWaTableName, 
-  waTransitionBetweenWHRequisitionDetailsWaTableName 
+  waTransitionBetweenWHRequisitionDetailsWaTableName, 
+  waAddRequisitionDetailsYarnOrderTableName,
+  waAddRequisitionDetailsTableName,
+  waAddRequisitionTableName,
+  waYarnOrderRequisitionTableName,
+  waYarnOrderRequisitionDetailsTableName,
+  waReturnRequisitionDetailsTableName
 } = require("../../../util/database-tables-name");
 
 exports.insert = async (waReconciliationRequisitionDetails, items) => {
@@ -74,13 +80,20 @@ exports.selectByRequisitionId = async (requisitionId) => {
         `${warehouseTableName}.id as warehouse_id`,
         `${warehouseTableName}.name as warehouse_name`,
         `${consigmentYarnTableName}.number as consigment_yarn_number`,
+        `${waYarnOrderRequisitionTableName}.name as wa_yarn_order_requisition_name`,
       ],
     )
     .innerJoin(`${waReconciliationRequisitionTableName}`, `${waReconciliationRequisitionTableName}.id`, `${waReconciliationRequisitionDetailsTableName}.wa_reconcilition_requisition_id`)
     .innerJoin(`${yarnTableName}`, `${yarnTableName}.id`, `${waReconciliationRequisitionDetailsTableName}.yarn_id`)
     .innerJoin(`${yarnLotTableName}`, `${yarnLotTableName}.id`, `${waReconciliationRequisitionDetailsTableName}.yarn_lot_id`)
     .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${waReconciliationRequisitionTableName}.warehouse_id`)
-            .innerJoin(`${consigmentYarnTableName}`, `${consigmentYarnTableName}.id`, `${waReconciliationRequisitionDetailsTableName}.consigment_yarn_id`)
+    .innerJoin(`${consigmentYarnTableName}`, `${consigmentYarnTableName}.id`, `${waReconciliationRequisitionDetailsTableName}.consigment_yarn_id`)
+       .innerJoin(`${waYarnOrderRequisitionDetailsTableName}`, 
+      `${waYarnOrderRequisitionDetailsTableName}.id`, 
+      `${waReconciliationRequisitionDetailsTableName}.wa_yarn_order_requisition_details_id`)
+    .innerJoin(`${waYarnOrderRequisitionTableName}`, 
+      `${waYarnOrderRequisitionTableName}.id`, 
+      `${waYarnOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_id`)
     .where(whereCluse)
     .andWhere(`${waReconciliationRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -243,10 +256,12 @@ exports.selectTotalDetailsByYarnIdByWarehouseId = async (yarnId, warehouseId) =>
 exports.selectDetailsByWarehouseByYarnByLot = async (
   warehouseId, yarnId, 
   yarnLotId, consigmentYarnId,
-  yarnOrderId
+  yarnOrderId,
+  supplierId
 ) => {
   let queryResults = [];
   let whereCluse = {};
+    whereCluse[`${waAddRequisitionTableName}.supplier_id`] = supplierId;
   whereCluse[`${waReconciliationRequisitionTableName}.warehouse_id`] = warehouseId;
   whereCluse[`${waReconciliationRequisitionDetailsTableName}.yarn_id`] = yarnId;
   whereCluse[`${waReconciliationRequisitionDetailsTableName}.yarn_lot_id`] = yarnLotId;
@@ -256,6 +271,7 @@ exports.selectDetailsByWarehouseByYarnByLot = async (
   whereCluse[`${waReconciliationRequisitionDetailsTableName}.is_active`] = 1;
 
   await knex.from(waReconciliationRequisitionDetailsTableName)
+  .distinct(`${waReconciliationRequisitionDetailsTableName}.id`)
     .select(
       [
         `${waReconciliationRequisitionDetailsTableName}.price`,
@@ -266,7 +282,18 @@ exports.selectDetailsByWarehouseByYarnByLot = async (
         `${waReconciliationRequisitionDetailsTableName}.input_output`
       ],
     )
-    .innerJoin(`${waReconciliationRequisitionTableName}`, `${waReconciliationRequisitionTableName}.id`, `${waReconciliationRequisitionDetailsTableName}.wa_reconcilition_requisition_id`)
+    .innerJoin(`${waReconciliationRequisitionTableName}`, 
+      `${waReconciliationRequisitionTableName}.id`, 
+      `${waReconciliationRequisitionDetailsTableName}.wa_reconcilition_requisition_id`)
+       .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`, 
+      `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`, 
+      `${waReconciliationRequisitionDetailsTableName}.wa_yarn_order_requisition_id`)
+    .innerJoin(`${waAddRequisitionDetailsTableName}`, 
+      `${waAddRequisitionDetailsTableName}.id`, 
+      `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`)
+    .innerJoin(`${waAddRequisitionTableName}`, 
+      `${waAddRequisitionTableName}.id`, 
+      `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
     .where(whereCluse)
     .andWhere(`${waReconciliationRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {

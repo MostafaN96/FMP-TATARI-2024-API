@@ -98,6 +98,16 @@ exports.selectByWarehouseWa = async (request, response) => {
     response.status(200).json(results);
   };
   
+exports.selectByWarehouseBySupplierWa = async (request, response) => {
+    // logging
+    const { id } = request.params;
+    const { supplierId } = request.params;
+  
+    // call service
+    const results = await waYarnOrderRequisitionService.selectByWarehouseBySupplierWa(id, supplierId);
+    response.status(200).json(results);
+  };
+  
 exports.selectByIndustryWb = async (request, response) => {
     // logging
     const { id } = request.params;

@@ -63,7 +63,7 @@ exports.selectByRequisitionIdOpenedOrder = async (requisitionId) => {
         whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`] = requisitionId;
         whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
         whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
-        whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_order`] = 1;
+        // whereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_order`] = 1;
 
         let results = await weDyedFabricOrderRequisitionDetailsQueries.selectByRequisitionId(whereCluse);
         if (Array.isArray(results) && results.length > 0) {
@@ -395,6 +395,15 @@ exports.update = async (weDyedFabricOrderRequisitionDetails) => {
             // update wc fabric order quantity
             await wcFabricOrderRequisitionDetailsService.updateQuantityForWeDyedFabricOrder(Object.assign(weDyedFabricOrderRequisitionDetails, isFound[0]))
 
+            let quantityIsZero = oldQuantity - defferenceQuantity
+            if(quantityIsZero == 0) {
+                await weDyedFabricOrderRequisitionDetailsQueries.update({
+                    is_order: '0'
+                },
+                    {
+                        id: weDyedFabricOrderRequisitionDetails.id
+                    })
+            }
             } else {
                 return {
                     ...constants.wrongQuantity,

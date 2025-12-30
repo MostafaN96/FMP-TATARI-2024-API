@@ -33,6 +33,11 @@ router.get("/deleted",
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   dyedFabricController.selectStoredDyedFabricsByDyedFabricByColorByColorCodeWe);
 
+router.get("/dyed-fabric-by-order/:orderRequisitionId",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  dyedFabricController.selectDyedFabricsByOrderWe);
+
 router.post(
   "",
   middleWeres.checkAuth(),

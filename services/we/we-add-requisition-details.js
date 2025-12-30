@@ -42,6 +42,9 @@ exports.create = async (weAddRequisitionDetails) => {
             
         for (let j = 0; j < weAddRequisitionDetails.orderId.length; j++) {
             const orderElement = weAddRequisitionDetails.orderId[j];
+            console.log("orderElement :::: ", orderElement);
+            console.log("weAddRequisitionDetails.items[i] :::: ", weAddRequisitionDetails.items[i]);
+            
   
             let weDyedFabricOrderRequisitionDetailsWhereCluse = {};
             weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
@@ -51,6 +54,8 @@ exports.create = async (weAddRequisitionDetails) => {
             weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.dyed_fabric_id`] = weAddRequisitionDetails.items[i].dyedFabricId;
   
             const selectDyedFabricOrderRequisitionDetailsResult = await weDyedFabricOrderRequisitionDetailsQueries.selectByRequisitionId(weDyedFabricOrderRequisitionDetailsWhereCluse)
+            console.log("selectDyedFabricOrderRequisitionDetailsResult ::::: ", selectDyedFabricOrderRequisitionDetailsResult);
+            
             if (Array.isArray(selectDyedFabricOrderRequisitionDetailsResult) && selectDyedFabricOrderRequisitionDetailsResult.length > 0) {
               for (let f = 0; f < selectDyedFabricOrderRequisitionDetailsResult.length; f++) {
                 const dyedFabricOrderRequisitionDetailsElement = selectDyedFabricOrderRequisitionDetailsResult[f];
@@ -58,7 +63,40 @@ exports.create = async (weAddRequisitionDetails) => {
                 await weAddRequisitionDetailsDyedFabricOrderService.create({ ...dyedFabricOrderRequisitionDetailsElement, ...weAddRequisitionDetails }, orderElement)
   
               }
-            }
+            } else {
+                            orderElement.weDyedFabricOrderRequisitionDetailsId = trans.transform();
+                            let weDyedFabricOrderRequisitionDetailsOneWhereCluse = {};
+                            weDyedFabricOrderRequisitionDetailsOneWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+                            weDyedFabricOrderRequisitionDetailsOneWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+                            weDyedFabricOrderRequisitionDetailsOneWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_order`] = 1;
+                            weDyedFabricOrderRequisitionDetailsOneWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`] = orderElement.ordersRequisitionsId;
+                          
+                            const selectOneDyedFabricOrderRequisitionDetailsResult = await weDyedFabricOrderRequisitionDetailsQueries.selectOneForUpdate(weDyedFabricOrderRequisitionDetailsOneWhereCluse)
+                            if (Array.isArray(selectOneDyedFabricOrderRequisitionDetailsResult) && selectOneDyedFabricOrderRequisitionDetailsResult.length > 0) {
+                              orderElement.weDyedFabricOrderRequisitionId = selectOneDyedFabricOrderRequisitionDetailsResult[0].we_dyed_fabric_order_requisition_id
+                
+                              const addWeDyedFabricOrderRequisitionDetailsResult = await weDyedFabricOrderRequisitionDetailsQueries.insertForPurchaseOrder(weAddRequisitionDetails, orderElement, weAddRequisitionDetails.items[i])
+                              if(addWeDyedFabricOrderRequisitionDetailsResult) {
+                                let weDyedFabricOrderRequisitionDetailsWhereCluse = {};
+                                weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+                                weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+                                weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_order`] = 1;
+                                weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`] = orderElement.ordersRequisitionsId;
+                                weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.dyed_fabric_id`] = weAddRequisitionDetails.items[i].dyedFabricId;
+                  
+                                const selecDyedFabricOrderRequisitionDetailsResult = await weDyedFabricOrderRequisitionDetailsQueries.selectByRequisitionId(weDyedFabricOrderRequisitionDetailsWhereCluse)
+                                if (Array.isArray(selecDyedFabricOrderRequisitionDetailsResult) && selecDyedFabricOrderRequisitionDetailsResult.length > 0) {
+                                  for (let f = 0; f < selecDyedFabricOrderRequisitionDetailsResult.length; f++) {
+                                    const dyedFabricOrderRequisitionDetailsElement = selecDyedFabricOrderRequisitionDetailsResult[f];
+                  
+                                    await weAddRequisitionDetailsDyedFabricOrderService.create({ ...dyedFabricOrderRequisitionDetailsElement, ...wcAddRequisitionDetails }, orderElement)
+                  
+                                  }
+                                }
+                              }
+                            }
+                
+                          }
           }
           
         }

@@ -5,6 +5,7 @@ exports.isValid = (wcAddRequisition) => {
         supplierId: validations.joiText(15, 30),
         date: validations.joiText(5, 50),
         note: validations.joiNotRequiredText(0, 100000),
+        ordersRequisitionsItems:joi.array(),
         personid: validations.joiText(3, 50),
         ipaddress: validations.joiText(3, 50),
         items:joi.array().items( {

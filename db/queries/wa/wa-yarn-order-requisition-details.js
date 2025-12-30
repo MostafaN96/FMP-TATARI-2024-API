@@ -119,6 +119,72 @@ exports.selectByRequisitionId = async (whereCluse) => {
   return queryResults;
 };
 
+
+exports.selectByRequisitionIdForWaAddRequisition = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.select([
+    `${waYarnOrderRequisitionTableName}.id as requisition_id`,
+    `${waYarnOrderRequisitionTableName}.date`,
+    `${waYarnOrderRequisitionTableName}.number`,
+    `${waYarnOrderRequisitionTableName}.name as order_name`,
+    `${waYarnOrderRequisitionTableName}.note`,
+    `${waYarnOrderRequisitionDetailsTableName}.id`,
+    `${waYarnOrderRequisitionDetailsTableName}.orders_requisitions_id`,
+    `${waYarnOrderRequisitionDetailsTableName}.note as note2`,
+    `${waYarnOrderRequisitionDetailsTableName}.initial_quantity  as quantity`,
+    // `${waYarnOrderRequisitionDetailsTableName}.current_quantity`,
+    knex.raw(
+      `CASE WHEN ${waYarnOrderRequisitionDetailsTableName}.current_quantity < ${0}
+      THEN ${0}
+      ELSE ${waYarnOrderRequisitionDetailsTableName}.current_quantity
+      END as current_quantity`),
+        knex.raw(
+                                        `CASE WHEN ${waYarnOrderRequisitionDetailsTableName}.current_quantity < ${0}
+                                        THEN coalesce( (${waYarnOrderRequisitionDetailsTableName}.current_quantity * -1) + ${waYarnOrderRequisitionDetailsTableName}.initial_quantity )
+                                        ELSE coalesce( ${waYarnOrderRequisitionDetailsTableName}.initial_quantity - ${waYarnOrderRequisitionDetailsTableName}.current_quantity )
+                                        END as net_current_quantity`),
+    knex.raw(
+      `CASE WHEN ${waYarnOrderRequisitionDetailsTableName}.current_quantity < ${0}
+      THEN coalesce( ${waYarnOrderRequisitionDetailsTableName}.current_quantity * -1 )
+      ELSE ${0}
+      END as over_current_quantity`),
+      knex.raw(
+      `CASE WHEN ${waYarnOrderRequisitionDetailsTableName}.current_quantity < ${0}
+      THEN coalesce( ((${waYarnOrderRequisitionDetailsTableName}.current_quantity * -1) / ${waYarnOrderRequisitionDetailsTableName}.initial_quantity) * 100 )
+      ELSE ${0}
+      END as over_current_quantity_ratio`),
+    `${yarnTableName}.id as yarn_id`,
+    `${yarnTableName}.name as yarn_name`,
+    `${yarnTableName}.code as yarn_code`,
+    `${bussinessmanTableName}.id as seller_id`,
+    `${bussinessmanTableName}.name as seller_name`,
+    `${bussinessmanTableName}.phone as seller_phone`,
+  ])
+  .groupBy(`${waYarnOrderRequisitionTableName}.id`)
+    .from(`${waYarnOrderRequisitionDetailsTableName}`)
+    .innerJoin(`${waYarnOrderRequisitionTableName}`,
+      `${waYarnOrderRequisitionTableName}.id`,
+      `${waYarnOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_id`)
+    .innerJoin(`${yarnTableName}`,
+      `${yarnTableName}.id`,
+      `${waYarnOrderRequisitionDetailsTableName}.yarn_id`)
+    .innerJoin(`${bussinessmanTableName}`,
+      `${bussinessmanTableName}.id`,
+      `${waYarnOrderRequisitionTableName}.seller_id`)
+    .where(whereCluse)
+    .andWhere(`${waYarnOrderRequisitionDetailsTableName}.initial_quantity`, ">", 0)
+    .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`,
+        `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`,
+        `${waYarnOrderRequisitionTableName}.id`)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+
 exports.selectOutputWarehouseByRequisitionDetailsId = async (whereCluse) => {
   let queryResults = [];
 
@@ -206,8 +272,13 @@ exports.selectOne = async (whereCluse) => {
       `${waYarnOrderRequisitionDetailsTableName}.id`,
       `${waYarnOrderRequisitionDetailsTableName}.initial_quantity`,
       `${waYarnOrderRequisitionDetailsTableName}.current_quantity`,
+      // `${waAddRequisitionDetailsYarnOrderTableName}.supplier_id`,
+      // `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_id`,
   ])
     .from(`${waYarnOrderRequisitionDetailsTableName}`)
+    // .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`,
+    //   `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`,
+    //   `${waYarnOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_id`)
     .where(whereCluse)
     .limit(1)
     .then((data) => {

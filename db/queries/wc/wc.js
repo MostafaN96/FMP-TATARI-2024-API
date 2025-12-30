@@ -469,7 +469,7 @@ exports.selectConsigmentManufacturingQuantityByWarehouseByFabricWc = async (wher
             `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_transition_between_orders_requisitions_id`)
           .innerJoin(`${consigmentManufacturingTableName}`,
             `${consigmentManufacturingTableName}.id`,
-            `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.from_consigment_manufacturing_id`)
+            `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.consigment_manufacturing_id`)
           .where(whereCluseArray[6])
       })
   }).as('temp')

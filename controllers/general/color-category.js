@@ -42,6 +42,16 @@ exports.selectDyersAndRequisitionsColorCategoryOfFabrics = async (request, respo
   response.status(200).json(results);
 };
 
+exports.selectByOrderByDyedFabricWe = async (request, response) => {
+  // logging
+  const { orderRequisitionId } = request.params;
+  const { dyedFabricId } = request.params;
+
+  // call service
+  const results = await colorCategoryService.selectByOrderByDyedFabricWe(orderRequisitionId, dyedFabricId);
+  response.status(200).json(results);
+};
+
 exports.create = async (request, response) => {
   const bodyPalod = request.body;
 

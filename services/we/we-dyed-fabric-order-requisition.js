@@ -179,6 +179,8 @@ exports.closedOrderByRequisition = async (requisitionId) => {
                 result = await waYarnOrderRequisitionService.closedOrderByOrdersRequisitionsId(selectOpenedOrderResults[0].orders_requisitions_id)
                 result = await this.closedOrderByOrdersRequisitionsId(selectOpenedOrderResults[0].orders_requisitions_id)
             }
+        } else {
+                result = await this.closedOrderByOrdersRequisitionsId(selectOpenedOrderResults[0].orders_requisitions_id)
         }
 
     } else {

@@ -41,6 +41,11 @@ router.get("/closed-orders",
     middleWeres.checkIdentity(usersType.ADMIN_STR),
     waYarnOrderRequisitionController.selectByWarehouseWa);
     
+  router.get("/by-warehouse-by-supplier-wa/:id/:supplierId",
+    middleWeres.checkAuth(),
+    middleWeres.checkIdentity(usersType.ADMIN_STR),
+    waYarnOrderRequisitionController.selectByWarehouseBySupplierWa);
+    
   router.get("/by-industry-wb/:id",
     middleWeres.checkAuth(),
     middleWeres.checkIdentity(usersType.ADMIN_STR),

@@ -95,9 +95,14 @@ exports.selectByRequisitionId = async (whereCluse) => {
       END as over_current_quantity`),
             knex.raw(
             `CASE WHEN ${wcFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
-            THEN coalesce( ((${wcFabricOrderRequisitionDetailsTableName}.current_quantity * -1) / ${wcFabricOrderRequisitionDetailsTableName}.initial_quantity) * 100 )
+            THEN coalesce( ( 1 - ((((${wcFabricOrderRequisitionDetailsTableName}.current_quantity) ) + ${wcFabricOrderRequisitionDetailsTableName}.initial_quantity) / ${wcFabricOrderRequisitionDetailsTableName}.initial_quantity)) * 100 )
             ELSE ${0}
             END as over_current_quantity_ratio`),
+            //  knex.raw(
+            // `CASE WHEN ${wcFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
+            // THEN ${0}
+            // ELSE coalesce( ( ${wcFabricOrderRequisitionDetailsTableName}.current_quantity / ${wcFabricOrderRequisitionDetailsTableName}.initial_quantity)  * 100 )
+            // END as remaining_quantity_ratio`),
     `${fabricTableName}.id as fabric_id`,
     `${fabricTableName}.name as fabric_name`,
     `${fabricTableName}.code as fabric_code`,
@@ -276,6 +281,7 @@ exports.selectByRequisitionIdForWcAddRequisition = async (whereCluse) => {
         `${wcFabricOrderRequisitionTableName}.id`)
     .where(whereCluse)
     .andWhere(`${wcFabricOrderRequisitionDetailsTableName}.initial_quantity`, ">", 0)
+    .groupBy(`${wcFabricOrderRequisitionTableName}.id`)
     .then((data) => {
       queryResults = data;
     })

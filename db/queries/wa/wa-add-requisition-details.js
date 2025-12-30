@@ -19,7 +19,8 @@ const {
   waAddRequisitionTableName,
   bussinessmanTableName,
   waTableName,
-  waTransitionBetweenWHRequisitionDetailsWaTableName
+  waTransitionBetweenWHRequisitionDetailsWaTableName,
+  ordersRequisitionsTableName
 } = require("../../../util/database-tables-name");
 
 exports.insert = async (waAddRequisitionDetails, items) => {
@@ -28,6 +29,7 @@ exports.insert = async (waAddRequisitionDetails, items) => {
     .insert(waAddRequisitionDetailsTableName, {
       id: waAddRequisitionDetails.waRequisitionDetailsId,
       wa_add_requisition_id: waAddRequisitionDetails.id,
+      supplier_id: waAddRequisitionDetails.supplierId,
       yarn_id: items.yarnId,
       yarn_lot_id: items.yarnLotId,
       warehouse_id: items.warehouseId,
@@ -74,6 +76,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
         `${yarnLotTableName}.code as yarn_lot_code`,
         `${warehouseTableName}.name as warehouse_name`,
         `${consigmentYarnTableName}.number as consigment_yarn_number`,
+        knex.raw('JSON_ARRAYAGG(JSON_OBJECT("id", or.id, "name", or.name)) as details')
       ],
     )
     .innerJoin(`${waAddRequisitionTableName}`, `${waAddRequisitionTableName}.id`, `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
@@ -81,10 +84,10 @@ exports.selectByRequisitionId = async (requisitionId) => {
     .innerJoin(`${yarnTableName}`, `${yarnTableName}.id`, `${waAddRequisitionDetailsTableName}.yarn_id`)
     .innerJoin(`${yarnLotTableName}`, `${yarnLotTableName}.id`, `${waAddRequisitionDetailsTableName}.yarn_lot_id`)
     .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${waAddRequisitionDetailsTableName}.warehouse_id`)
-    .innerJoin(`${consigmentYarnTableName}`, `${consigmentYarnTableName}.id`, `${waAddRequisitionDetailsTableName}.consigment_yarn_id`)
+    .innerJoin(`${consigmentYarnTableName}`, `${consigmentYarnTableName}.id`, `${waAddRequisitionDetailsTableName}.consigment_yarn_id`)    
     .where(whereCluse)
     .andWhere(`${waAddRequisitionDetailsTableName}.quantity`, ">", 0)
-    .then((data) => {
+    .then((data) => {      
       queryResults = data;
     })
     .catch((error) => console.error(error));
@@ -245,6 +248,7 @@ exports.selectTotalByYarnByWarehouseId = async (yarnId, warehouseId) => {
   await knex.from(waAddRequisitionDetailsTableName)
     .select(
       [
+        `${waAddRequisitionDetailsTableName}.id`,
         `${waAddRequisitionDetailsTableName}.price`,
         `${waAddRequisitionDetailsTableName}.price_dollar`,
         `${waAddRequisitionDetailsTableName}.quantity`,
@@ -253,7 +257,9 @@ exports.selectTotalByYarnByWarehouseId = async (yarnId, warehouseId) => {
         knex.raw('? as input_output', '1')
       ],
     )
-    .innerJoin(`${waAddRequisitionTableName}`, `${waAddRequisitionTableName}.id`, `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
+    .innerJoin(`${waAddRequisitionTableName}`, 
+      `${waAddRequisitionTableName}.id`, 
+      `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
     .where(whereCluse)
     .andWhere(`${waAddRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -322,7 +328,8 @@ exports.selectTotalDetailsByYarnIdByWarehouseId = async (yarnId, warehouseId) =>
 exports.selectDetailsByWarehouseByYarnByLot = async (
   warehouseId, yarnId, 
   yarnLotId, consigmentYarnId,
-  yarnOrderId
+  yarnOrderId,
+  supplierId
 ) => {
   let queryResults = [];
   let whereCluse = {};
@@ -331,10 +338,12 @@ exports.selectDetailsByWarehouseByYarnByLot = async (
   whereCluse[`${waAddRequisitionDetailsTableName}.yarn_lot_id`] = yarnLotId;
   whereCluse[`${waAddRequisitionDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
   whereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
+  whereCluse[`${waAddRequisitionTableName}.supplier_id`] = supplierId;
   whereCluse[`${waAddRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${waAddRequisitionDetailsTableName}.is_active`] = 1;
 
   await knex.from(waAddRequisitionDetailsTableName)
+  .distinct(`${waAddRequisitionDetailsTableName}.id`)
     .select(
       [
         `${waAddRequisitionDetailsTableName}.price`,

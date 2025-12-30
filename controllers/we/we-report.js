@@ -87,6 +87,12 @@ exports.dyedFabricOrdersDetailsReport = async (request, response) => {
   response.status(200).json(results);
 };
 
+exports.generalOrdersReport = async (request, response) => {
+
+  const results = await weReportService.generalOrdersReport();
+  response.status(200).json(results);
+};
+
 exports.inquireFabricAvilabilityReportWe = async (request, response) => {
   // logging
   const bodyPalod = request.body;
@@ -116,5 +122,13 @@ exports.inquireFabricAvilabilityByDyeingOrderRequisitionTotalReportWe = async (r
   const bodyPalod = request.body;
 
   const results = await weReportService.inquireFabricAvilabilityByDyeingOrderRequisitionTotalReportWe(bodyPalod);
+    response.status(200).json(results);
+};
+
+exports.inquireFabricNeededByDyeingOrderRequisitionTotalReportWe = async (request, response) => {
+  // logging
+  const bodyPalod = request.body;
+
+  const results = await weReportService.inquireFabricNeededByDyeingOrderRequisitionTotalReportWe(bodyPalod);
     response.status(200).json(results);
 };

@@ -22,10 +22,15 @@ const {
 
 exports.create = async (wcAddRequisitionDetails, isOrder) => {
     for (let i = 0; i < wcAddRequisitionDetails.items.length; i++) {
+        console.log("wcAddRequisitionDetails.items.length ::: ", wcAddRequisitionDetails.items.length);
+        
         wcAddRequisitionDetails.wcRequisitionDetailsId = trans.transform();
-
+                
         // Add Consigment
+        console.log("wcAddRequisitionDetails.items[i].isNewConsigment ::: ", wcAddRequisitionDetails.items[i].isNewConsigment);
         if (wcAddRequisitionDetails.items[i].isNewConsigment) {
+            console.log("wcAddRequisitionDetails.items[i].isNewConsigment ---- inside");
+            
             wcAddRequisitionDetails.items[i].consigmentManufacturingId = trans.transform();
             wcAddRequisitionDetails.items[i].personid = wcAddRequisitionDetails.personid
             wcAddRequisitionDetails.items[i].ipaddress = wcAddRequisitionDetails.ipaddress
@@ -39,14 +44,17 @@ exports.create = async (wcAddRequisitionDetails, isOrder) => {
 
         // Add wcAddRequisitionDetails
         const results = await wcAddRequisitionDetailsQueries.insert(wcAddRequisitionDetails, wcAddRequisitionDetails.items[i]);
+        console.log("results ::::, i ::::", results + " ::: i ::: " + i);
+        
         if (!results) {
             return constants.insertError;
         } else {
             await wcService.create(wcAddRequisitionDetails, wcAddRequisitionDetails.items[i])
             if (isOrder) {
-            
+            console.log("if (isOrder) ::: ", isOrder);
+
         for (let j = 0; j < wcAddRequisitionDetails.ordersRequisitionsItems.length; j++) {
-            const orderElement = wcAddRequisitionDetails.ordersRequisitionsItems[j];
+            const orderElement = wcAddRequisitionDetails.ordersRequisitionsItems[j];            
   
             let fabricOrderRequisitionDetailsWhereCluse = {};
             fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
@@ -86,8 +94,8 @@ exports.create = async (wcAddRequisitionDetails, isOrder) => {
       
                     const selecFabricOrderRequisitionDetailsResult = await wcFabricOrderRequisitionDetailsQueries.selectByRequisitionId(wcFabricOrderRequisitionDetailsWhereCluse)
                     if (Array.isArray(selecFabricOrderRequisitionDetailsResult) && selecFabricOrderRequisitionDetailsResult.length > 0) {
-                      for (let f = 0; f < selecFabricOrderRequisitionDetailsResult.length; f++) {
-                        const fabricOrderRequisitionDetailsElement = selecFabricOrderRequisitionDetailsResult[f];
+                      for (let k = 0; k < selecFabricOrderRequisitionDetailsResult.length; k++) {
+                        const fabricOrderRequisitionDetailsElement = selecFabricOrderRequisitionDetailsResult[k];
       
                         await wcAddRequisitionDetailsFabricOrderService.create({ ...fabricOrderRequisitionDetailsElement, ...wcAddRequisitionDetails }, orderElement)
       
@@ -113,6 +121,15 @@ exports.selectByRequisitionId = async (requisitionId) => {
     if (isFound[0] != null) {
 
         const results = await wcAddRequisitionDetailsQueries.selectByRequisitionId(requisitionId);
+        if (Array.isArray(results) && results.length > 0) {
+            let orders = []
+            for (let i = 0; i < results.length; i++) {
+                const element = results[i];
+                const ordersResult = await wcFabricOrderRequisitionDetailsService.selectByRequisitionIdOpenedOrderForWcAddRequisition(element.id)
+                orders.push(ordersResult)
+            }                        
+            results[0].orders = orders[0]
+        }
         return results;
     } else {
         return constants.itemNotFound;
@@ -132,11 +149,10 @@ exports.selectByRequisitionIdForOrder = async (requisitionId) => {
             let orders = []
             for (let i = 0; i < results.length; i++) {
                 const element = results[i];
-                orders.push(await wcFabricOrderRequisitionDetailsService.selectByRequisitionIdOpenedOrderForWcAddRequisition(element.id))
-            }
-            console.log(orders);
-            
-            results.orders = orders
+                const ordersResult = await wcFabricOrderRequisitionDetailsService.selectByRequisitionIdOpenedOrderForWcAddRequisition(element.id)
+                orders.push(ordersResult)
+            }                        
+            results[0].orders = orders[0]
         }
         return results;
     } else {

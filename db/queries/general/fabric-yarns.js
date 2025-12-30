@@ -67,7 +67,7 @@ exports.select = async (whereCluse) => {
       `${fabricYarnsTableName}.fabric_id`)
       .where(whereCluse)
       .then((data) => {
-        console.log("fabricYarns ::::: data => ", data);
+        // console.log("fabricYarns ::::: data => ", data);
         queryResults = data;
       })
       .catch((error) => console.error(error));
@@ -128,6 +128,7 @@ exports.selectByFabricIdForReport = async (whereCluse) => {
           `${fabricTableName}.fabric_quantity_m2`,
           // knex.raw(`coalesce((SUM(${fabricYarnsTableName}.ratio) + ${fabricYarnsTableName}.wast_ratio), 0) as total_ratio`),
           knex.raw(`coalesce((SUM(${fabricYarnsTableName}.ratio) ), 0) as total_ratio`),
+          knex.raw(`JSON_ARRAYAGG(${fabricYarnsTableName}.yarn_id) as yarns_ids`)
         ],
       )
       .groupBy(`${yarnTableName}.id`)

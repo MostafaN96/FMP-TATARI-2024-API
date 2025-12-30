@@ -77,6 +77,13 @@ router.get(
   weReportController.dyedFabricOrdersDetailsReport
 );
 
+router.get(
+  "/general-orders-report",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  weReportController.generalOrdersReport
+);
+
 // Post Queries
 router.post(
   "/select-inventory-total",
@@ -119,6 +126,13 @@ router.post(
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   weReportController.inquireFabricAvilabilityByDyeingOrderRequisitionTotalReportWe
+);
+
+router.post(
+  "/inquire-fabric-needed-by-dyeing-order-requisition-total-report-we",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  weReportController.inquireFabricNeededByDyeingOrderRequisitionTotalReportWe
 );
 
 module.exports = router;

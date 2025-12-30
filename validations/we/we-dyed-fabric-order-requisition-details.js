@@ -48,6 +48,7 @@ exports.isValidUpdate = (weDyedFabricOrderRequisitionDetails) => {
         date: validations.joiText(5, 50),
         name: validations.joiText(1, 90),
         note: validations.joiNotRequiredText(0, 100000),
+        note2: validations.joiNotRequiredText(0, 100000),
         quantity: validations.joiNumber(1, 60),
         wasteRatio: validations.joiNotRequiredText(0, 90),
         fabricWidth: validations.joiNotRequiredNumber(0, 50),

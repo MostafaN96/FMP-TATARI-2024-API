@@ -9,7 +9,9 @@ const {
   fabricTableName, wbManufacturingInputOutputTableName, 
   wbManufacturingOutputTableName, wbManufacturingOutputOrderTableName, 
   wbManufacturingOrderRequisitionTableName, 
-  wcFabricOrderRequisitionTableName
+  wcFabricOrderRequisitionTableName,
+  circularKnittingMachineTableName,
+  circularKnittingMachineBussinessmanTableName
 } = require("../../../util/database-tables-name");
 
 exports.insert = async (wbManufacturingRequisition) => {
@@ -95,6 +97,8 @@ exports.select = async () => {
         ELSE ''  
         END as status_name`),
         `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
+            knex.raw(`CONCAT(${circularKnittingMachineTableName}.type, ' - طراز (', ${circularKnittingMachineTableName}.model, ')') as circular_knitting_machine_name`),
+
     ])
     .from(`${wbManufacturingRequisitionTableName}`)
     .innerJoin(`${wbManufacturingInputOutputTableName}`,
@@ -112,6 +116,12 @@ exports.select = async () => {
     .innerJoin(`${wcFabricOrderRequisitionTableName}`,
       `${wcFabricOrderRequisitionTableName}.id`,
       `${wbManufacturingOutputTableName}.wc_fabric_order_requisition_id`)
+      .innerJoin(`${circularKnittingMachineBussinessmanTableName}`,
+      `${circularKnittingMachineBussinessmanTableName}.id`,
+      `${wbManufacturingOutputTableName}.circular_knitting_machine_bussiness_man_id`)
+      .innerJoin(`${circularKnittingMachineTableName}`,
+      `${circularKnittingMachineTableName}.id`,
+      `${circularKnittingMachineBussinessmanTableName}.circular_knitting_machine_id`)
     .leftOuterJoin(`${wbManufacturingOutputOrderTableName}`,
     `${wbManufacturingOutputOrderTableName}.wb_manufacturing_output_id`,
     `${wbManufacturingOutputTableName}.id`)

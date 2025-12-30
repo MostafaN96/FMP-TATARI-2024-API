@@ -28,6 +28,7 @@ const waPurchaseOrderDetailsService = require("./wa-purchase-order-details");
 const waAddRequisitionDetailsPurchaseOrderService = require("./wa-add-requisition-details-purchase-order");
 const waAddRequisitionDetailsYarnOrderService = require("./wa-add-requisition-details-yarn-order");
 const wbManufacturingOutputService = require("../wb/wb-manufacturing-output");
+const waYarnOrderRequisitionDetailsService = require("./wa-yarn-order-requisition-details");
 
 const { waPurchaseOrderDetailsTableName, waTableName, waAddRequisitionDetailsTableName,
   waAddRequisitionDetailsPurchaseOrderTableName,
@@ -40,7 +41,8 @@ const { waPurchaseOrderDetailsTableName, waTableName, waAddRequisitionDetailsTab
 exports.create = async (waAddRequisitionDetails, isOrder) => {
   for (let i = 0; i < waAddRequisitionDetails.items.length; i++) {
     waAddRequisitionDetails.waRequisitionDetailsId = trans.transform();
-    waAddRequisitionDetails.items[i].consigmentYarnNumber = waAddRequisitionDetails.items[i].consigmentYarnNumber + "-" + waAddRequisitionDetails.supplierName
+    // waAddRequisitionDetails.items[i].consigmentYarnNumber = waAddRequisitionDetails.items[i].consigmentYarnNumber + "-" + waAddRequisitionDetails.supplierName
+    waAddRequisitionDetails.items[i].consigmentYarnNumber = waAddRequisitionDetails.items[i].consigmentYarnNumber
 
     waAddRequisitionDetails.items[i].consigmentYarnId = trans.transform();
     // Check Consigment Yarn Dupplication
@@ -67,6 +69,7 @@ exports.create = async (waAddRequisitionDetails, isOrder) => {
     if (!results) {
       return constants.insertError;
     } else {
+      waAddRequisitionDetails.waAddRequisitionId = waAddRequisitionDetails.id
       await waService.create(waAddRequisitionDetails, waAddRequisitionDetails.items[i])
       if (isOrder) {
         await this.createOrder(waAddRequisitionDetails, waAddRequisitionDetails.items[i])
@@ -90,7 +93,6 @@ exports.create = async (waAddRequisitionDetails, isOrder) => {
               const yarnOrderRequisitionDetailsElement = selectYarnOrderRequisitionDetailsResult[f];
 
               await waAddRequisitionDetailsYarnOrderService.create({ ...yarnOrderRequisitionDetailsElement, ...waAddRequisitionDetails }, orderElement)
-
             }
           } else {
             orderElement.waYarnOrderRequisitionDetailsId = trans.transform();
@@ -115,8 +117,8 @@ exports.create = async (waAddRequisitionDetails, isOrder) => {
   
                 const selectYarnOrderRequisitionDetailsResult = await waYarnOrderRequisitionDetailsQueries.selectByRequisitionId(waYarnOrderRequisitionDetailsWhereCluse)
                 if (Array.isArray(selectYarnOrderRequisitionDetailsResult) && selectYarnOrderRequisitionDetailsResult.length > 0) {
-                  for (let f = 0; f < selectYarnOrderRequisitionDetailsResult.length; f++) {
-                    const yarnOrderRequisitionDetailsElement = selectYarnOrderRequisitionDetailsResult[f];
+                  for (let k = 0; f < selectYarnOrderRequisitionDetailsResult.length; k++) {
+                    const yarnOrderRequisitionDetailsElement = selectYarnOrderRequisitionDetailsResult[k];
   
                     await waAddRequisitionDetailsYarnOrderService.create({ ...yarnOrderRequisitionDetailsElement, ...waAddRequisitionDetails }, orderElement)
   
@@ -188,6 +190,18 @@ exports.selectByRequisitionIdForOrder = async (requisitionId) => {
   if (isFound[0] != null) {
 
     const results = await waAddRequisitionDetailsQueries.selectByRequisitionIdForOrder(requisitionId);
+    if (Array.isArray(results) && results.length > 0) {
+                let orders = []
+                for (let i = 0; i < 1; i++) {
+                    const element = results[i];
+
+                    const data = await waYarnOrderRequisitionDetailsService.selectByRequisitionIdOpenedOrderForWaAddRequisition(element.id)
+                    orders.push(...data)
+                }                
+                results[0].orders = orders
+            }
+                            console.log(results);
+
     return results;
   } else {
     return constants.itemNotFound;
@@ -358,7 +372,8 @@ exports.updateForOrder = async (waAddRequisitionDetails) => {
       waAddRequisitionDetailsPurchaseOrderWhereCluse[`${waAddRequisitionDetailsPurchaseOrderTableName}.is_active`] = 1;
       const selectWaAddRequisitionDetailsPurchaseOrderOneResult = await waAddRequisitionDetailsPurchaseOrderQueries.selectOne(waAddRequisitionDetailsPurchaseOrderWhereCluse)
       if (selectWaAddRequisitionDetailsPurchaseOrderOneResult[0] != null) {
-
+        console.log("ssss ::::::: ", selectWaAddRequisitionDetailsPurchaseOrderOneResult);
+        
         // update prices waAddRequisitionDetailsPurchaseOrderQueries
         await updatePrices(waAddRequisitionDetails, selectWaAddRequisitionDetailsPurchaseOrderOneResult, isFound);
 
@@ -405,7 +420,8 @@ exports.updateForOrder = async (waAddRequisitionDetails) => {
             if (selectWaPurchaseOrderDetailsOneResult[0].current_quantity >= defferenceQuantity) {
               // Step 4 => Decrement current_quantity in wa_yarn_order_requisition_details
               await waPurchaseOrderDetailsQueries.update({
-                current_quantity: selectWaPurchaseOrderDetailsOneResult[0].current_quantity - defferenceQuantity
+                initial_quantity: selectWaPurchaseOrderDetailsOneResult[0].initial_quantity + defferenceQuantity,
+                current_quantity: selectWaPurchaseOrderDetailsOneResult[0].current_quantity + defferenceQuantity
               }, {
                 id: selectWaPurchaseOrderDetailsOneResult[0].id
               })
@@ -449,7 +465,8 @@ exports.updateForOrder = async (waAddRequisitionDetails) => {
               })
               // Step 4 => Increment current_quantity in  wa_yarn_order_requisition_details
               await waPurchaseOrderDetailsQueries.update({
-                current_quantity: selectWaPurchaseOrderDetailsOneResult[0].current_quantity + defferenceQuantity
+                initial_quantity: selectWaPurchaseOrderDetailsOneResult[0].initial_quantity - defferenceQuantity,
+                current_quantity: selectWaPurchaseOrderDetailsOneResult[0].current_quantity - defferenceQuantity
               }, {
                 id: selectWaPurchaseOrderDetailsOneResult[0].id
               })

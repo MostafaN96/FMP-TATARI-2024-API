@@ -86,6 +86,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
         `${wdFormDyeingRequisitionTableName}.number`,
         `${wdFormDyeingRequisitionTableName}.work_order_number`,
         `${wdFormDyeingRequisitionTableName}.date`,
+        `${wdFormDyeingRequisitionTableName}.note`,
         `${wdFormDyeingRequisitionTableName}.is_order`,
         `${bussinessmanTableName}.id as dyeing_id`,
         `${bussinessmanTableName}.name as dyeing_name`,
@@ -121,7 +122,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
     .innerJoin(`${colorCategoryTableName}`, `${colorCategoryTableName}.id`, `${anointedColorsPricesTableName}.color_category_id`)
     .innerJoin(`${colorTableName}`, `${colorTableName}.id`, `${anointedColorsPricesTableName}.color_id`)
     .where(whereCluse)
-    // .andWhere(`${wdFormDyeingRequisitionDetailsTableName}.quantity`, ">", 0)
+    .andWhere(`${wdFormDyeingRequisitionDetailsTableName}.quantity`, ">", 0)
     .then(async (data) => {
 
       // Get current quantity

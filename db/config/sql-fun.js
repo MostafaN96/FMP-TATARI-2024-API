@@ -252,3 +252,16 @@ exports.selectWithJionByDate = async (
     .where(whereCluse)
     .whereBetween(whereBetween, whereBetween2);
 };
+
+
+exports.selectSum = async (
+  fromTableName, 
+  atrributeValue, 
+  groupByColumn, 
+  whereCluse
+) => {
+  return knex(fromTableName)
+    .sum(atrributeValue)
+    .groupBy(groupByColumn)
+    .where(whereCluse)
+};

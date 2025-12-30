@@ -282,6 +282,8 @@ exports.selectOne = async (whereCluse) => {
   await knex
     .select([
       `${weTransitionBetweenOrdersRequisitionDetailsTableName}.we_transition_between_orders_requisitions_id`,
+      `${weTransitionBetweenOrdersRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_details_id`,
+      `${weTransitionBetweenOrdersRequisitionDetailsTableName}.from_we_dyed_fabric_order_requisition_details_id`,
       `${weTransitionBetweenOrdersRequisitionDetailsTableName}.dyed_fabric_id`,
       `${weTransitionBetweenOrdersRequisitionDetailsTableName}.quantity`,
       `${weTransitionBetweenOrdersRequisitionDetailsTableName}.warehouse_id`,

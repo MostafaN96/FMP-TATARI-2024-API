@@ -86,6 +86,12 @@ exports.create = async (weTransitionBetweenOrdersRequisitionDetails) => {
                     // Add we Transition Between Industries Requisition Details wb
                     await weTransitionBetweenOrdersRequisitionDetailsWeService.create(weTransitionBetweenOrdersRequisitionDetails, weTransitionBetweenOrdersRequisitionDetails.items[i])
 
+                    // update order quantity
+                    await weDyedFabricOrderRequisitionDetailsService.updateForDecrementQuantity(selectFromDyedFabricOrderRequisitionDetailsResult[0].id, updatedQuantity)
+                    
+                    // update order quantity
+                    await weDyedFabricOrderRequisitionDetailsService.updateForIncrementQuantity(weTransitionBetweenOrdersRequisitionDetails.items[i].fromWeDyedFabricOrderRequisitionDetailsId, updatedQuantity)
+                    
                     // Enter to if condition when stock runs out
                     if (newQuantity == 0) {
                         break;
@@ -213,6 +219,12 @@ exports.update = async (weTransitionBetweenOrdersRequisitionDetails) => {
                                 id: selectOneWeRecord[0].id
                             })
 
+                            // update order quantity
+                            await weDyedFabricOrderRequisitionDetailsService.updateForDecrementQuantity(isFound[0].we_dyed_fabric_order_requisition_details_id, defferenceQuantity)
+                            
+                            // update order quantity
+                            await weDyedFabricOrderRequisitionDetailsService.updateForIncrementQuantity(isFound[0].from_we_dyed_fabric_order_requisition_details_id, defferenceQuantity)
+
 
                             let currentQuantity = selectOldOneWeRecord[0].current_quantity
                             let updatedQuantity = 0
@@ -258,6 +270,12 @@ exports.update = async (weTransitionBetweenOrdersRequisitionDetails) => {
                                 id: selectOneWeRecord[0].id
                             })
 
+                            // update order quantity
+                            await weDyedFabricOrderRequisitionDetailsService.updateForDecrementQuantity(isFound[0].from_we_dyed_fabric_order_requisition_details_id, defferenceQuantity)
+                            
+                            // update order quantity
+                            await weDyedFabricOrderRequisitionDetailsService.updateForIncrementQuantity(isFound[0].we_dyed_fabric_order_requisition_details_id, defferenceQuantity)
+                            
 
                             let weTransitionBetweenWarehousesRequisitionDetailsWeQuantity = weTransitionBetweenOrdersRequisitionDetailsWeSelectOneResult[0].quantity
                             let updatedQuantity = 0

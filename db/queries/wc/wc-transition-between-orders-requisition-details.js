@@ -155,6 +155,7 @@ exports.selectOne = async (whereCluse) => {
       `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_fabric_order_requisition_details_id`,
       `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_fabric_order_requisition_id`,
       `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.from_wc_fabric_order_requisition_id`,
+      `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.from_wc_fabric_order_requisition_details_id`,
       `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.quantity`,
       `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.fabric_piece`,
       `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.warehouse_id`,
@@ -245,6 +246,7 @@ exports.selectSumCurrentQuantityByWarehouseByFabricWc = async (whereCluse) => {
       })
   return queryResults
 }
+
 exports.selectFromTotalByFabricId = async (fabricId) => {
   let queryResults = [];
   let whereCluse = {};

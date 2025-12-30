@@ -13,6 +13,7 @@ const wbManufacturingInputQueries = require("../../db/queries/wb/wb-manufacturin
 // Services
 const wbManufacturingInputService = require("./wb-manufacturing-input");
 const wbService = require("./wb");
+const wcFabricOrderRequisitionDetailsService = require("../wc/wc-fabric-order-requisition-details");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -20,15 +21,16 @@ const trans = require("../../helpers/transform");
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-const { wbManufacturingRequisitionTableName, 
-  wbManufacturingOutputTableName, 
-  wcTableName, 
-  wbManufacturingOrderRequisitionDetailsTableName, 
-  wbManufacturingInputOutputTableName, 
-  wbManufacturingInputTableName 
+const { wbManufacturingRequisitionTableName,
+  wbManufacturingOutputTableName,
+  wcTableName,
+  wbManufacturingOrderRequisitionDetailsTableName,
+  wbManufacturingInputOutputTableName,
+  wbManufacturingInputTableName
 } = require("../../util/database-tables-name");
 
 exports.create = async (wbManufacturingOutput) => {
+
   if (wbManufacturingOutput.isNewConsigment) {
     wbManufacturingOutput.consigmentManufacturingId = trans.transform();
 
@@ -40,26 +42,28 @@ exports.create = async (wbManufacturingOutput) => {
       await consigmentManufacturingQueries.insertForManufacturing(wbManufacturingOutput);
     }
   }
-
   // Check Circular Knitting Machine
-  const selectCircularKnittingMachineOneResult = await circularKnittingMachineBussinessmanQueries.selectOne({ 
+  const selectCircularKnittingMachineOneResult = await circularKnittingMachineBussinessmanQueries.selectOne({
     id: wbManufacturingOutput.circularKnittingMachineId,
     // manufacturer_id: wbManufacturingOutput.industryId,
     // fabric_id: wbManufacturingOutput.fabricId,
   })
-    if (selectCircularKnittingMachineOneResult[0] != null) {
-      wbManufacturingOutput.circularKnittingMachineId = selectCircularKnittingMachineOneResult[0].id;
-    } else {
-      wbManufacturingOutput.circularKnittingMachineId = trans.transform();
+  if (selectCircularKnittingMachineOneResult[0] != null) {
+    wbManufacturingOutput.circularKnittingMachineId = selectCircularKnittingMachineOneResult[0].id;
+  } else {
+    wbManufacturingOutput.circularKnittingMachineId = trans.transform();
 
-      const createCircularKnittingMachine =  await circularKnittingMachineQueries.insertForManufacturingWb(wbManufacturingOutput);
-      if(createCircularKnittingMachine) {
-        wbManufacturingOutput.circularKnittingMachineBussinessmanId = trans.transform();
-        await circularKnittingMachineBussinessmanQueries.insertForManufacturingWb(wbManufacturingOutput)
-        
-        wbManufacturingOutput.circularKnittingMachineId = wbManufacturingOutput.circularKnittingMachineBussinessmanId
-      }
+    const createCircularKnittingMachine = await circularKnittingMachineQueries.insertForManufacturingWb(wbManufacturingOutput);
+    if (createCircularKnittingMachine) {
+      wbManufacturingOutput.circularKnittingMachineBussinessmanId = trans.transform();
+      await circularKnittingMachineBussinessmanQueries.insertForManufacturingWb(wbManufacturingOutput)
+
+      wbManufacturingOutput.circularKnittingMachineId = wbManufacturingOutput.circularKnittingMachineBussinessmanId
     }
+  }
+
+  // update order quantity
+  await wcFabricOrderRequisitionDetailsService.updateForDecrementQuantity(wbManufacturingOutput.wcFabricOrderRequisitionDetailsId, wbManufacturingOutput.fabricQuantity)
 
   const results = await wbManufacturingOutputQueries.insert(wbManufacturingOutput);
   if (results) {
@@ -92,15 +96,16 @@ exports.selectByRequisitionId = async (requisitionId) => {
     if (Array.isArray(results) && results.length > 0) {
 
       for (let i = 0; i < results.length; i++) {
-          const element = results[i];
+        const element = results[i];
 
-          element.fabricOrderRequisitions = await wbService.selectRequisitionsForWdFabricOrderRequisitionForWbOutputManufacturingRequisition(
-              element.orders_requisitions_id,
-              element.wc_fabric_order_requisition_details_id
-          )
+        element.fabricOrderRequisitions = await wbService.selectRequisitionsForWdFabricOrderRequisitionForWbOutputManufacturingRequisition(
+          element.orders_requisitions_id,
+          element.wc_fabric_order_requisition_details_id,
+          element.fabric_id
+        )
       }
 
-  }
+    }
 
     return results;
   } else {
@@ -143,21 +148,21 @@ exports.confirm = async (wbManufacturingOutput) => {
     id: wbManufacturingOutput.id,
   });
   if (isFound[0] != null) {
-      let whereCluse = {};
-      whereCluse[`${wbManufacturingOutputTableName}.id`] = wbManufacturingOutput.id;
-      whereCluse[`${wbManufacturingOutputTableName}.is_deleted`] = 0;
-      whereCluse[`${wbManufacturingOutputTableName}.is_active`] = 1;
+    let whereCluse = {};
+    whereCluse[`${wbManufacturingOutputTableName}.id`] = wbManufacturingOutput.id;
+    whereCluse[`${wbManufacturingOutputTableName}.is_deleted`] = 0;
+    whereCluse[`${wbManufacturingOutputTableName}.is_active`] = 1;
 
-      // updated
-      const updateResults = await wbManufacturingOutputQueries.update(
-          {
-              is_approved: wbManufacturingOutput.isApproved
-          }, whereCluse);
-      if (updateResults) {
-        return constants.updateSuccess;
-      } else {
-        return constants.updateError;
-      }
+    // updated
+    const updateResults = await wbManufacturingOutputQueries.update(
+      {
+        is_approved: wbManufacturingOutput.isApproved
+      }, whereCluse);
+    if (updateResults) {
+      return constants.updateSuccess;
+    } else {
+      return constants.updateError;
+    }
   } else {
     return constants.itemNotFound;
   }
@@ -206,6 +211,9 @@ exports.update = async (wbManufacturingOutput) => {
       if (newQuantity > oldQuantity) {
         defferenceQuantity = parseFloat((newQuantity - oldQuantity).toFixed(3))
 
+        // update order quantity
+        await wcFabricOrderRequisitionDetailsService.updateForDecrementQuantity(isFound[0].wc_fabric_order_requisition_details_id, defferenceQuantity)
+
         // Step 1 => Increment quantity in  wc
         await wcQueries.update({
           current_quantity: currentQuantity + defferenceQuantity
@@ -226,6 +234,9 @@ exports.update = async (wbManufacturingOutput) => {
 
         // Check if has enough current quantity in wc
         if (currentQuantity >= defferenceQuantity) {
+
+          // update order quantity
+          await wcFabricOrderRequisitionDetailsService.updateForIncrementQuantity(isFound[0].wc_fabric_order_requisition_details_id, defferenceQuantity)
 
           // Step 1 => Decrement quantity in  wb_manufacturing_output
           await wbManufacturingOutputQueries.update({
@@ -465,7 +476,7 @@ exports.calcAvgFabricPrice = async (wbInputManufacturingResult, wboutputManufact
   // inputCostWithWaste = wbInputManufacturingResult.map(function (a) { return parseFloat(a['quantity_with_waste']) * parseFloat(a['price']) }).reduce((acc, value) => acc + value, 0);
   // outputCostManufacturingFee = wboutputManufacturingResult[0].quantity * parseFloat(wboutputManufacturingResult[0].manufacturing_fee)
   // avgFabricPrice = (inputCostWithWaste + outputCostManufacturingFee) / wboutputManufacturingResult[0].quantity
-  
+
   let inputCostWithWaste = 0
   let outputCostManufacturingFee = 0
   let avgFabricPrice = 0
@@ -478,7 +489,7 @@ exports.calcAvgFabricPrice = async (wbInputManufacturingResult, wboutputManufact
   // console.log("outputCostManufacturingFee ::::::::::: ", outputCostManufacturingFee);
   // console.log("totalInputOutput ::::::::::: ", totalInputOutput);
 
-  if(totalOutputQuantity == 0) {
+  if (totalOutputQuantity == 0) {
     avgFabricPrice = 0
   } else {
     avgFabricPrice = (inputCostWithWaste + outputCostManufacturingFee) / totalOutputQuantity
@@ -522,7 +533,7 @@ exports.calcAvgFabricPriceDollar = async (wbInputManufacturingResult, wboutputMa
   // inputCostWithWaste = wbInputManufacturingResult.map(function (a) { return parseFloat(a['quantity_with_waste']) * parseFloat(a['price_dollar']) }).reduce((acc, value) => acc + value, 0);
   // outputCostManufacturingFee = wboutputManufacturingResult[0].quantity * parseFloat(wboutputManufacturingResult[0].manufacturing_fee)
   // avgFabricPrice = (inputCostWithWaste + outputCostManufacturingFee) / wboutputManufacturingResult[0].quantity
-  
+
   let inputCostWithWaste = 0
   let outputCostManufacturingFee = 0
   let avgFabricPrice = 0
@@ -532,7 +543,7 @@ exports.calcAvgFabricPriceDollar = async (wbInputManufacturingResult, wboutputMa
   inputCostWithWaste = parseFloat((totalInputOutput[0]).toFixed(3))
   outputCostManufacturingFee = parseFloat((totalInputOutput[1]).toFixed(3))
   totalOutputQuantity = parseFloat((totalInputOutput[2]).toFixed(3))
-  if(totalOutputQuantity == 0) {
+  if (totalOutputQuantity == 0) {
     avgFabricPrice = 0
   } else {
     avgFabricPrice = (inputCostWithWaste + outputCostManufacturingFee) / totalOutputQuantity
@@ -552,14 +563,14 @@ exports.getTotalInputQuantityOfConsigment = async (wbOutputManufacturingResult, 
   if (Array.isArray(selectInputsManufaturingResults) && selectInputsManufaturingResults.length > 0) {
     for (let j = 0; j < selectInputsManufaturingResults.length; j++) {
       const selectInputsManufaturing = selectInputsManufaturingResults[j];
-      
+
       let wbInputManufacturingWhereCluse = {};
       wbInputManufacturingWhereCluse[`${wbManufacturingInputTableName}.id`] = selectInputsManufaturing.wb_manufacturing_input_id;
       wbInputManufacturingWhereCluse[`${wbManufacturingInputTableName}.is_deleted`] = 0;
       wbInputManufacturingWhereCluse[`${wbManufacturingInputTableName}.is_active`] = 1;
       const selectWbInputManufacturingResult = await wbManufacturingInputQueries.selectOne(wbInputManufacturingWhereCluse)
       if (Array.isArray(selectWbInputManufacturingResult) && selectWbInputManufacturingResult.length > 0) {
-        totalInputCostWithWaste = totalInputCostWithWaste + ( parseFloat(selectWbInputManufacturingResult[0].quantity_with_waste) * parseFloat(selectWbInputManufacturingResult[0][priceType]) )
+        totalInputCostWithWaste = totalInputCostWithWaste + (parseFloat(selectWbInputManufacturingResult[0].quantity_with_waste) * parseFloat(selectWbInputManufacturingResult[0][priceType]))
       }
     }
   } else {
@@ -586,7 +597,7 @@ exports.getTotalOutputQuantityOfConsigment = async (wbOutputManufacturingResult,
       const selectOutputManufaturingElement = selectOutputManufaturingResults[i];
       totalOutputCostManufacturingFee = totalOutputCostManufacturingFee + (selectOutputManufaturingElement.quantity * parseFloat(selectOutputManufaturingElement[manufacturingFeeType]))
       totalOutputQuantity = totalOutputQuantity + selectOutputManufaturingElement.quantity
-      
+
       // input
       const selectInputManufaturingResults = await this.getTotalInputQuantityOfConsigment(selectOutputManufaturingElement, totalInputCostWithWaste, priceType)
       totalInputCostWithWaste = totalInputCostWithWaste + selectInputManufaturingResults
@@ -595,9 +606,9 @@ exports.getTotalOutputQuantityOfConsigment = async (wbOutputManufacturingResult,
   } else {
     return [0, 0, 0]
   }
-  if(totalInputCostWithWaste == 0) {
-    return [0, 0, 0] 
+  if (totalInputCostWithWaste == 0) {
+    return [0, 0, 0]
   } else {
     return [totalInputCostWithWaste, totalOutputCostManufacturingFee, totalOutputQuantity]
   }
-  }
+}

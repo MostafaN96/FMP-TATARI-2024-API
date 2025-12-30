@@ -5,6 +5,7 @@ const waTransitionBetweenWHRequisitionQueries = require("../../db/queries/wa/wa-
 const waQueries = require("../../db/queries/wa/wa");
 const consigmentYarnQueries = require("../../db/queries/general/consigment-yarn");
 const yarnLotQueries = require("../../db/queries/general/yarn-lot");
+const waYarnOrderRequisitionDetailsYarnOrderQueries = require("../../db/queries/wa/wa-add-requisition-details-yarn-order");
 
 // Services
 const waTransitionBetweenWHRequisitionDetailsWaService = require("./wa-transition-between-wh-requisition-details-wa");
@@ -19,7 +20,8 @@ const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
 const { waTransitionBetweenWHRequisitionDetailsTableName,
     waTransitionBetweenWHRequisitionDetailsWaTableName,
-    waYarnOrderRequisitionDetailsTableName
+    waYarnOrderRequisitionDetailsTableName,
+    waAddRequisitionDetailsYarnOrderTableName
 } = require("../../util/database-tables-name");
 
 exports.create = async (waTransitionBetweenWHRequisitionDetails) => {
@@ -37,6 +39,20 @@ exports.create = async (waTransitionBetweenWHRequisitionDetails) => {
         const selectYarnOrderRequisitionDetailsResult = await waYarnOrderRequisitionDetailsService.selectOne(yarnOrderRequisitionDetailsWhereCluse)
         if (Array.isArray(selectYarnOrderRequisitionDetailsResult) && selectYarnOrderRequisitionDetailsResult.length > 0) {
             waTransitionBetweenWHRequisitionDetails.items[i].fromWaYarnOrderRequisitionDetailsId = selectYarnOrderRequisitionDetailsResult[0].id
+
+            // Get wa_yarn_order_requisition_id supplier_id
+            let waAddRequisitionDetailsYarnOrderWhereCluse = {};
+            waAddRequisitionDetailsYarnOrderWhereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`] = waTransitionBetweenWHRequisitionDetails.items[i].yarnOrderId;
+            waAddRequisitionDetailsYarnOrderWhereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.is_deleted`] = 0;
+            waAddRequisitionDetailsYarnOrderWhereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.is_active`] = 1;
+            const selectWaAddRequisitionDetailsYarnOrderResult = await waYarnOrderRequisitionDetailsYarnOrderQueries.selectOne(waAddRequisitionDetailsYarnOrderWhereCluse)
+            if (Array.isArray(selectWaAddRequisitionDetailsYarnOrderResult) && selectWaAddRequisitionDetailsYarnOrderResult.length > 0) {
+                waTransitionBetweenWHRequisitionDetails.items[i].supplierId = selectWaAddRequisitionDetailsYarnOrderResult[0].supplier_id
+                waTransitionBetweenWHRequisitionDetails.items[i].waAddRequisitionId = selectWaAddRequisitionDetailsYarnOrderResult[0].wa_add_requisition_id
+            } else {
+                waTransitionBetweenWHRequisitionDetails.items[i].supplierId = null
+                waTransitionBetweenWHRequisitionDetails.items[i].waAddRequisitionId = null
+            }
 
             // Check Consigment Yarn Dupplication
             const selectConsigmentYarnOneResult = await consigmentYarnQueries.selectOne({ number: waTransitionBetweenWHRequisitionDetails.items[i].newConsigmentYarnNumber })

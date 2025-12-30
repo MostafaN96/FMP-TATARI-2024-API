@@ -749,7 +749,7 @@ exports.selectStoreWe = async (whereCluseArray, orderByCluse) => {
           .where(whereCluseArray[6])
       })
   }).as('temp')
-    .distinct(`warehouse_id`, `requisition_details_id`, 
+    .groupBy(`we_id`, `warehouse_id`, `requisition_details_id`, 
       `work_order_number`, `dyed_fabric_id`, 
       `color_id`, `color_category_id`, `grade_item_id`)
     .andWhere(whereCluseArray[2].whereTableName, whereCluseArray[2].operator, whereCluseArray[2].value)

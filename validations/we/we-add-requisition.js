@@ -6,6 +6,7 @@ exports.isValid = (weAddRequisition) => {
         date: validations.joiText(5, 50),
         note: validations.joiNotRequiredText(0, 100000),
         workOrderNumber:validations.joiNotRequiredText(0, 60),
+        orderId:joi.array(),
         personid: validations.joiText(3, 50),
         ipaddress: validations.joiText(3, 50),
         items:joi.array().items( {
@@ -13,8 +14,9 @@ exports.isValid = (weAddRequisition) => {
             dyedFabricId: validations.joiText(15, 30),
             colorCategoryId: validations.joiText(15, 30),
             colorId: validations.joiText(15, 30),
-            colorCode: validations.joiNumber(1, 60),
+            colorCode: validations.joiText(1, 60),
             consigmentDyeingNumber: validations.joiNumber(1, 60),
+            gradeItemId: validations.joiText(15, 30),
             dyeingCode: validations.joiNotRequiredText(0, 60),
             numberFabricPieces: validations.joiNumber(1, 60),
             price: validations.joiNumber(1, 60),

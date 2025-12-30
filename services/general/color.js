@@ -2,6 +2,7 @@ const colorQueries = require("../../db/queries/general/color");
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
 const trans = require("../../helpers/transform");
+const { weDyedFabricOrderRequisitionDetailsTableName, colorTableName } = require("../../util/database-tables-name");
 
 exports.create = async (color) => {
   color.id = trans.transform();
@@ -46,6 +47,23 @@ exports.selectByCategory = async (colorCategoryId) => {
 
 exports.selectDyersAndRequisitionsColorOfFabrics = async (fabricId, supplierId, colorCategoryId, requisitionId) => {
   const results = await colorQueries.selectDyersAndRequisitionsColorOfFabrics(fabricId, supplierId, colorCategoryId, requisitionId);
+  return results;
+};
+
+exports.selectByOrderByDyedFabricByColorCategoryWe = async (orderRequisitionId, dyedFabricId, colorCategoryId) => {
+  
+  let whereCluse = {};
+  whereCluse[`${colorTableName}.is_deleted`] = 0;
+  whereCluse[`${colorTableName}.is_active`] = 1;
+
+  let whereInWhereCluse = {};
+  whereInWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`] = orderRequisitionId;
+  whereInWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.dyed_fabric_id`] = dyedFabricId;
+  whereInWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.color_category_id`] = colorCategoryId;
+  whereInWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+  whereInWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+
+  const results = await colorQueries.selectByOrderByDyedFabricByColorCategoryWe(whereCluse, whereInWhereCluse);
   return results;
 };
 

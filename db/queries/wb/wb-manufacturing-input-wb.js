@@ -1,8 +1,13 @@
 // Config
 const sqlFun = require("../../config/sql-fun");
+const knex = require("../../config/connection").getConnection();
 
 // Util
-const wbManufacturingInputWbTableName = require("../../../util/database-tables-name").wbManufacturingInputWbTableName;
+const { 
+  wbManufacturingRequisitionTableName, 
+  wbManufacturingInputOutputTableName, 
+  wbManufacturingInputWbTableName, 
+} = require("../../../util/database-tables-name");
 
 exports.insert = async (wbManufacturingInputWb, items) => {
   let queryResults = false;
@@ -72,5 +77,34 @@ exports.update = async (wbManufacturingInputWb, whereCluse) => {
       queryResults = true;
     })
     .catch((err) => console.log(err));
+  return queryResults;
+};
+
+exports.selectManufacturingRequisitionsForTransportWaWb = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.from(wbManufacturingRequisitionTableName)
+    .select(
+      [
+        `${wbManufacturingRequisitionTableName}.number`,
+        `${wbManufacturingRequisitionTableName}.id as requisition_id`,
+        knex.raw('? as type_of_requisition', 'اذن تصنيع'),
+      ],
+    )
+    .innerJoin(`${wbManufacturingInputOutputTableName}`,
+      `${wbManufacturingInputOutputTableName}.wb_manufacturing_requisition_id`,
+      `${wbManufacturingRequisitionTableName}.id`)
+    .innerJoin(`${wbManufacturingInputWbTableName}`,
+      `${wbManufacturingInputWbTableName}.wb_manufacturing_input_id`,
+      `${wbManufacturingInputOutputTableName}.wb_manufacturing_input_id`)
+    .where(whereCluse)
+    .andWhere(`${wbManufacturingInputWbTableName}.quantity`, ">", 0)
+    .groupBy(
+      `${wbManufacturingRequisitionTableName}.id`
+    )
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
   return queryResults;
 };

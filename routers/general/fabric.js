@@ -37,6 +37,11 @@ router.get("/fabric-by-order/:orderRequisitionId",
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   fabricController.selectByWarehouseWc);
   
+  router.get("/by-warehouse-wc-for-transition-between-order/:id/:fabricOrderId/:toFabricOrderId",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  fabricController.selectByWarehouseWcForTransitionBetweenOrder);
+  
   router.get("/stored-fabrics-by-fabric-wc/:id",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),

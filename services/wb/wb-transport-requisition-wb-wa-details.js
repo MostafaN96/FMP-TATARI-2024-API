@@ -4,6 +4,7 @@ const wbTransportWbWaDetailsWbQueries = require("../../db/queries/wb/wb-transpor
 const wbTransportRequisitionWbWaQueries = require("../../db/queries/wb/wb-transport-requisition-wb-wa");
 const wbQueries = require("../../db/queries/wb/wb");
 const waQueries = require("../../db/queries/wa/wa");
+const waYarnOrderRequisitionDetailsYarnOrderQueries = require("../../db/queries/wa/wa-add-requisition-details-yarn-order");
 
 // Services
 const wbService = require("../wb/wb");
@@ -19,7 +20,8 @@ const constantsPayloads = require("../../util/constants-payloads");
 const { wbTransportRequisitionWbWaDetailsWbTableName,
     wbTransportRequisitionWbWaDetailsTableName,
     wbTransportRequisitionWbWaTableName,
-    waYarnOrderRequisitionDetailsTableName
+    waYarnOrderRequisitionDetailsTableName,
+    waAddRequisitionDetailsYarnOrderTableName
 } = require("../../util/database-tables-name");
 
 exports.create = async (wbTransportRequisitionWbWaDetails) => {
@@ -36,6 +38,20 @@ exports.create = async (wbTransportRequisitionWbWaDetails) => {
         const selectYarnOrderRequisitionDetailsResult = await waYarnOrderRequisitionDetailsService.selectOne(yarnOrderRequisitionDetailsWhereCluse)
         if (Array.isArray(selectYarnOrderRequisitionDetailsResult) && selectYarnOrderRequisitionDetailsResult.length > 0) {
             wbTransportRequisitionWbWaDetails.items[i].waYarnOrderRequisitionDetailsId = selectYarnOrderRequisitionDetailsResult[0].id
+
+            // Get wa_yarn_order_requisition_id supplier_id
+            let waAddRequisitionDetailsYarnOrderWhereCluse = {};
+            waAddRequisitionDetailsYarnOrderWhereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`] = wbTransportRequisitionWbWaDetails.items[i].yarnOrderId;
+            waAddRequisitionDetailsYarnOrderWhereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.is_deleted`] = 0;
+            waAddRequisitionDetailsYarnOrderWhereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.is_active`] = 1;
+            const selectWaAddRequisitionDetailsYarnOrderResult = await waYarnOrderRequisitionDetailsYarnOrderQueries.selectOne(waAddRequisitionDetailsYarnOrderWhereCluse)
+            if (Array.isArray(selectWaAddRequisitionDetailsYarnOrderResult) && selectWaAddRequisitionDetailsYarnOrderResult.length > 0) {
+                wbTransportRequisitionWbWaDetails.items[i].supplierId = selectWaAddRequisitionDetailsYarnOrderResult[0].supplier_id
+                wbTransportRequisitionWbWaDetails.items[i].waAddRequisitionId = selectWaAddRequisitionDetailsYarnOrderResult[0].wa_add_requisition_id
+            } else {
+                wbTransportRequisitionWbWaDetails.items[i].supplierId = null
+                wbTransportRequisitionWbWaDetails.items[i].waAddRequisitionId = null
+            }
 
             const results = await wbTransportRequisitionWbWaDetailsQueries.insert(wbTransportRequisitionWbWaDetails, wbTransportRequisitionWbWaDetails.items[i]);
             if (!results) {

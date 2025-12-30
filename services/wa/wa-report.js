@@ -47,6 +47,7 @@ exports.selectInventoryTotal = async (yarnReport) => {
     reconciliationWhereCluse[`${waTableName}.is_deleted`] = 0;
     reconciliationWhereCluse[`${waTableName}.is_active`] = 1;
     reconciliationWhereCluse[`${waReconciliationRequisitionDetailsTableName}.input_output`] = 1;
+    reconciliationWhereCluse[`${waTableName}.type`] = constantsPayloads.reconcilitionType;
 
     let transportWbWaWhereCluse = {};
     transportWbWaWhereCluse[`${yarnTableName}.is_deleted`] = 0;
@@ -55,13 +56,6 @@ exports.selectInventoryTotal = async (yarnReport) => {
     transportWbWaWhereCluse[`${waTableName}.is_active`] = 1;
     transportWbWaWhereCluse[`${waTableName}.type`] = constantsPayloads.transportFromBToAType;
 
-    let executeOrderRequisitionWbWaWhereCluse = {};
-    executeOrderRequisitionWbWaWhereCluse[`${yarnTableName}.is_deleted`] = 0;
-    executeOrderRequisitionWbWaWhereCluse[`${yarnTableName}.is_active`] = 1;
-    executeOrderRequisitionWbWaWhereCluse[`${waTableName}.is_deleted`] = 0;
-    executeOrderRequisitionWbWaWhereCluse[`${waTableName}.is_active`] = 1;
-    executeOrderRequisitionWbWaWhereCluse[`${waTableName}.type`] = constantsPayloads.executeOrderType;
-
     let transitionBetweenWhWhereCluse = {};
     transitionBetweenWhWhereCluse[`${yarnTableName}.is_deleted`] = 0;
     transitionBetweenWhWhereCluse[`${yarnTableName}.is_active`] = 1;
@@ -69,11 +63,12 @@ exports.selectInventoryTotal = async (yarnReport) => {
     transitionBetweenWhWhereCluse[`${waTableName}.is_active`] = 1;
     transitionBetweenWhWhereCluse[`${waTableName}.type`] = constantsPayloads.transportBetweenType;
 
-    let whereCluseArray = [yarnWhereCluse, 
+    let whereCluseArray = [
+        yarnWhereCluse, 
         reconciliationWhereCluse, 
         transportWbWaWhereCluse, 
-        executeOrderRequisitionWbWaWhereCluse,
-        transitionBetweenWhWhereCluse]
+        transitionBetweenWhWhereCluse
+    ]
 
     // select yarns 
     const yarns = (yarnReport.isShowClosedBalances == 1) ? await yarnQueries.selectStoredWaYarnsAndWarehouses(whereCluseArray, 0) : await yarnQueries.selectStoredWaYarnsAndWarehouses(whereCluseArray)
@@ -114,18 +109,32 @@ exports.selectInventoryTotal = async (yarnReport) => {
             callArray.push(waReconciliationRequisitionDetailsQueries.selectTotalByYarnByWarehouseId(yarn.id, yarn.warehouse_id))
             callArray.push(wbTransportWaWbDetailsQueries.selectTotalByYarnByWarehouseId(yarn.id, yarn.warehouse_id))
             callArray.push(wbTransportRequisitionWbWaDetailsQueries.selectTotalByYarnByWarehouseId(yarn.id, yarn.warehouse_id))
-            callArray.push(waExecuteOrderRequisitionDetailsQueries.selectFromWarehouseTotalByYarnIdByWarehouseId(yarn.id, yarn.warehouse_id))
-            callArray.push(waExecuteOrderRequisitionDetailsQueries.selectToWarehouseTotalByYarnIdByWarehouseId(yarn.id, yarn.warehouse_id))
+            // callArray.push(waExecuteOrderRequisitionDetailsQueries.selectFromWarehouseTotalByYarnIdByWarehouseId(yarn.id, yarn.warehouse_id))
+            // callArray.push(waExecuteOrderRequisitionDetailsQueries.selectToWarehouseTotalByYarnIdByWarehouseId(yarn.id, yarn.warehouse_id))
             callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectFromWarehouseTotalByYarnIdByWarehouseId(yarn.id, yarn.warehouse_id))
             callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectToWarehouseTotalByYarnIdByWarehouseId(yarn.id, yarn.warehouse_id))
+
             const requisitions = await Promise.all(callArray)
             const sortedAsc = [...requisitions[0], ...requisitions[1],
             ...requisitions[2], ...requisitions[3], ...requisitions[4],
-            ...requisitions[5], ...requisitions[6], ...requisitions[7],
-            ...requisitions[8], ...requisitions[9]
+            ...requisitions[5], ...requisitions[6], ...requisitions[7]
         ].sort(
                 (objA, objB) => moment(objA.date) - moment(objB.date)
             );
+
+                        // ✅ حساب إجمالي الإدخال والإخراج لكل Yarn
+            const totalInput = sortedAsc
+            .filter(d => d.input_output == 1) // الإدخالات فقط
+            .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+
+            const totalOutput = sortedAsc
+            .filter(d => d.input_output == 0) // الإخراجات فقط
+            .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+
+            // ✅ حفظ القيم داخل الكائن الأساسي
+            data[i].input_quantity = parseFloat((totalInput).toFixed(2));
+            data[i].output_quantity = parseFloat((totalOutput).toFixed(2));
+
             data[i].details = sortedAsc
 
         }
@@ -143,15 +152,14 @@ exports.selectInventoryTotalByYarnByWarehouse = async (yarnId, warehouseId) => {
     callArray.push(waReconciliationRequisitionDetailsQueries.selectTotalDetailsByYarnIdByWarehouseId(yarnId, warehouseId))
     callArray.push(wbTransportWaWbDetailsQueries.selectTotalDetailsByYarnIdByWarehouseId(yarnId, warehouseId))
     callArray.push(wbTransportRequisitionWbWaDetailsQueries.selectTotalDetailsByYarnIdByWarehouseId(yarnId, warehouseId))
-    callArray.push(waExecuteOrderRequisitionDetailsQueries.selectFromWarehouseTotalDetailsByYarnIdByWarehouseId(yarnId, warehouseId))
-    callArray.push(waExecuteOrderRequisitionDetailsQueries.selectToWarehouseTotalDetailsByYarnIdByWarehouseId(yarnId, warehouseId))
+    // callArray.push(waExecuteOrderRequisitionDetailsQueries.selectFromWarehouseTotalDetailsByYarnIdByWarehouseId(yarnId, warehouseId))
+    // callArray.push(waExecuteOrderRequisitionDetailsQueries.selectToWarehouseTotalDetailsByYarnIdByWarehouseId(yarnId, warehouseId))
     callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectFromWarehouseTotalDetailsByYarnIdByWarehouseId(yarnId, warehouseId))
     callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectToWarehouseTotalDetailsByYarnIdByWarehouseId(yarnId, warehouseId))
     const requisitions = await Promise.all(callArray)
-    const sortedAsc = [...requisitions[0], ...requisitions[1],
+    let sortedAsc = [...requisitions[0], ...requisitions[1],
     ...requisitions[2], ...requisitions[3], ...requisitions[4],
-    ...requisitions[5], ...requisitions[6], ...requisitions[7],
-    ...requisitions[8], ...requisitions[9]
+    ...requisitions[5], ...requisitions[6], ...requisitions[7]
 ].sort(
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );
@@ -170,14 +178,24 @@ exports.selectInventoryTotalByYarnByWarehouse = async (yarnId, warehouseId) => {
         waAddRequisitionDetailsWhereCluse[`${waAddRequisitionDetailsTableName}.yarn_id`] = yarnId;
         waAddRequisitionDetailsWhereCluse[`${waAddRequisitionTableName}.date`] = selectMaxDate[0]?.date;
         const latestPrice = await waAddRequisitionDetailsQueries.selectLatestPrice(waAddRequisitionDetailsWhereCluse)
-        if(sortedAsc[0] == undefined) {
-            sortedAsc = [{"latest_price": 0}, {"latest_price_dollar": 0}]
+         if (!sortedAsc || sortedAsc.length === 0) {
+            // إذا فاضية، أنشئ عنصر واحد لتخزين السعر
+            sortedAsc = [{
+            latest_price: latestPrice?.[0]?.price || 0,
+            latest_price_dollar: latestPrice?.[0]?.price_dollar || 0
+            }];
         } else {
-            sortedAsc[0].latest_price = (latestPrice[0] == undefined) ? 0 : latestPrice[0]?.price
-            sortedAsc[0].latest_price_dollar = (latestPrice[0] == undefined) ? 0 : latestPrice[0]?.price_dollar
+            sortedAsc[0].latest_price = latestPrice?.[0]?.price || 0;
+            sortedAsc[0].latest_price_dollar = latestPrice?.[0]?.price_dollar || 0;
         }
     } else {
-        sortedAsc[0].latest_price = 0
+        // 🟢 إذا ما في تاريخ، خليه 0 بأمان
+  if (!sortedAsc || sortedAsc.length === 0) {
+    sortedAsc = [{ latest_price: 0, latest_price_dollar: 0 }];
+  } else {
+    sortedAsc[0].latest_price = 0;
+    sortedAsc[0].latest_price_dollar = 0;
+  }
     }
     return sortedAsc;
 };
@@ -188,28 +206,30 @@ exports.selectInventoryDetails = async (yarnReport) => {
     let yarnWhereCluse = {};
     yarnWhereCluse[`${waTableName}.is_deleted`] = 0;
     yarnWhereCluse[`${waTableName}.is_active`] = 1;
+    yarnWhereCluse[`${waTableName}.type`] = constantsPayloads.addType;
 
     let reconciliationWhereCluse = {};
     reconciliationWhereCluse[`${waTableName}.is_deleted`] = 0;
     reconciliationWhereCluse[`${waTableName}.is_active`] = 1;
     reconciliationWhereCluse[`${waReconciliationRequisitionDetailsTableName}.input_output`] = 1;
+    reconciliationWhereCluse[`${waTableName}.type`] = constantsPayloads.reconcilitionType;
 
     let transportWbWaWhereCluse = {};
     transportWbWaWhereCluse[`${waTableName}.is_deleted`] = 0;
     transportWbWaWhereCluse[`${waTableName}.is_active`] = 1;
     transportWbWaWhereCluse[`${waTableName}.type`] = constantsPayloads.transportFromBToAType;
 
-    let executeOrderRequisitionWbWaWhereCluse = {};
-    executeOrderRequisitionWbWaWhereCluse[`${waTableName}.is_deleted`] = 0;
-    executeOrderRequisitionWbWaWhereCluse[`${waTableName}.is_active`] = 1;
+    // let executeOrderRequisitionWbWaWhereCluse = {};
+    // executeOrderRequisitionWbWaWhereCluse[`${waTableName}.is_deleted`] = 0;
+    // executeOrderRequisitionWbWaWhereCluse[`${waTableName}.is_active`] = 1;
 
     let transitionBetweenWhWhereCluse = {};
     transitionBetweenWhWhereCluse[`${waTableName}.is_deleted`] = 0;
     transitionBetweenWhWhereCluse[`${waTableName}.is_active`] = 1;
-    // executeOrderRequisitionWbWaWhereCluse[`${waTableName}.type`] = constantsPayloads.executeOrderType;
+    transitionBetweenWhWhereCluse[`${waTableName}.type`] = constantsPayloads.transportBetweenType;
 
     let whereCluseArray = [yarnWhereCluse, reconciliationWhereCluse, 
-        transportWbWaWhereCluse, executeOrderRequisitionWbWaWhereCluse,
+        transportWbWaWhereCluse,
         transitionBetweenWhWhereCluse]
 
     // select warehousesYarnsLots 
@@ -249,42 +269,50 @@ exports.selectInventoryDetails = async (yarnReport) => {
             callArray.push(waAddRequisitionDetailsQueries.selectDetailsByWarehouseByYarnByLot(
                 warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, 
                 warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id,
-                warehouseYarnLot.wa_yarn_order_requisition_id
+                warehouseYarnLot.wa_yarn_order_requisition_id,
+                warehouseYarnLot.supplier_id
             ))
             callArray.push(waSellRequisitionDetailsQueries.selectDetailsByWarehouseByYarnByLot(
                 warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, 
                 warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id, 
-                warehouseYarnLot.wa_yarn_order_requisition_id
+                warehouseYarnLot.wa_yarn_order_requisition_id,
+                warehouseYarnLot.supplier_id
             ))
             callArray.push(waReturnRequisitionDetailsQueries.selectDetailsByWarehouseByYarnByLot(
                 warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, 
                 warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id,
-                warehouseYarnLot.wa_yarn_order_requisition_id
+                warehouseYarnLot.wa_yarn_order_requisition_id,
+                warehouseYarnLot.supplier_id
             ))
             callArray.push(waReconciliationRequisitionDetailsQueries.selectDetailsByWarehouseByYarnByLot(
                 warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, 
                 warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id,
-                warehouseYarnLot.wa_yarn_order_requisition_id
+                warehouseYarnLot.wa_yarn_order_requisition_id,
+                warehouseYarnLot.supplier_id
             ))
             callArray.push(wbTransportWaWbDetailsQueries.selectDetailsByWarehouseByYarnByLot(
                 warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, 
                 warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id,
-                warehouseYarnLot.wa_yarn_order_requisition_id
+                warehouseYarnLot.wa_yarn_order_requisition_id,
+                warehouseYarnLot.supplier_id
             ))
             callArray.push(wbTransportRequisitionWbWaDetailsQueries.selectDetailsByWarehouseByYarnByLot(
                 warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, 
                 warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id,
-                warehouseYarnLot.wa_yarn_order_requisition_id
+                warehouseYarnLot.wa_yarn_order_requisition_id,
+                warehouseYarnLot.supplier_id
             ))
             callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectFromWarehouseDetailsByWarehouseByYarnByLot(
                 warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, 
                 warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id,
-                warehouseYarnLot.wa_yarn_order_requisition_id
+                warehouseYarnLot.wa_yarn_order_requisition_id,
+                warehouseYarnLot.supplier_id
             ))
             callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectToWarehouseDetailsByWarehouseByYarnByLot(
                 warehouseYarnLot.warehouse_id, warehouseYarnLot.yarn_id, 
                 warehouseYarnLot.yarn_lot_id, warehouseYarnLot.consigment_yarn_id,
-                warehouseYarnLot.wa_yarn_order_requisition_id
+                warehouseYarnLot.wa_yarn_order_requisition_id,
+                warehouseYarnLot.supplier_id
             ))
             const requisitions = await Promise.all(callArray)
             const sortedAsc = [...requisitions[0], ...requisitions[1],
@@ -293,6 +321,19 @@ exports.selectInventoryDetails = async (yarnReport) => {
         ].sort(
                 (objA, objB) => moment(objA.date) - moment(objB.date)
             );
+
+            // ✅ حساب إجمالي الإدخال والإخراج لكل Yarn
+            const totalInput = sortedAsc
+            .filter(d => d.input_output == 1) // الإدخالات فقط
+            .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+
+            const totalOutput = sortedAsc
+            .filter(d => d.input_output == 0) // الإخراجات فقط
+            .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+
+            // ✅ حفظ القيم داخل الكائن الأساسي
+            data[i].input_quantity = parseFloat((totalInput).toFixed(2));
+            data[i].output_quantity = parseFloat((totalOutput).toFixed(2));
             data[i].details = sortedAsc
 
         }
@@ -313,7 +354,7 @@ exports.selectInventoryDetailsByWarehouseByYarnByLot = async (warehouseId, yarnI
     callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectFromWarehouseDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId))
     callArray.push(waTransitionBetweenWHRequisitionDetailsQueries.selectToWarehouseDetailsDetailsByWarehouseByYarnByLot(warehouseId, yarnId, yarnLotId, consigmentYarnId, yarnOrderId))
     const requisitions = await Promise.all(callArray)
-    const sortedAsc = [...requisitions[0], ...requisitions[1],
+    let sortedAsc = [...requisitions[0], ...requisitions[1],
     ...requisitions[2], ...requisitions[3], ...requisitions[4],
     ...requisitions[5], ...requisitions[6], ...requisitions[7]
 ].sort(
@@ -335,11 +376,24 @@ exports.selectInventoryDetailsByWarehouseByYarnByLot = async (warehouseId, yarnI
         waAddRequisitionDetailsWhereCluse[`${waAddRequisitionDetailsTableName}.yarn_id`] = yarnId;
         waAddRequisitionDetailsWhereCluse[`${waAddRequisitionTableName}.date`] = selectMaxDate[0]?.date;
         const latestPrice = await waAddRequisitionDetailsQueries.selectLatestPrice(waAddRequisitionDetailsWhereCluse)
-        sortedAsc[0].latest_price = latestPrice[0]?.price
-        sortedAsc[0].latest_price_dollar = latestPrice[0]?.price_dollar
+        if (!sortedAsc || sortedAsc.length === 0) {
+            // إذا فاضية، أنشئ عنصر واحد لتخزين السعر
+            sortedAsc = [{
+            latest_price: latestPrice?.[0]?.price || 0,
+            latest_price_dollar: latestPrice?.[0]?.price_dollar || 0
+            }];
+        } else {
+            sortedAsc[0].latest_price = latestPrice?.[0]?.price || 0;
+            sortedAsc[0].latest_price_dollar = latestPrice?.[0]?.price_dollar || 0;
+        }
     } else {
-        sortedAsc[0].latest_price = 0
-        sortedAsc[0].latest_price_dollar = 0
+        // 🟢 إذا ما في تاريخ، خليه 0 بأمان
+  if (!sortedAsc || sortedAsc.length === 0) {
+    sortedAsc = [{ latest_price: 0, latest_price_dollar: 0 }];
+  } else {
+    sortedAsc[0].latest_price = 0;
+    sortedAsc[0].latest_price_dollar = 0;
+  }
     }
     return sortedAsc;
 };

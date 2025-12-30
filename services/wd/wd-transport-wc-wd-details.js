@@ -78,7 +78,7 @@ exports.create = async (wdTransportWcWdRequisitionDetails) => {
                     await wdTransportWcWdRequisitionDetailsWcService.create(wdTransportWcWdRequisitionDetails, wdTransportWcWdRequisitionDetails.items[i])
 
                     // update order quantity
-                    await wcFabricOrderRequisitionDetailsService.updateForDecrementQuantity(selectFabricOrderRequisitionDetailsResult[0].id, updatedQuantity)
+                    // await wcFabricOrderRequisitionDetailsService.updateForDecrementQuantity(selectFabricOrderRequisitionDetailsResult[0].id, updatedQuantity)
 
                     // Enter to if condition when stock runs out
                     if (newQuantity == 0) {
@@ -216,7 +216,7 @@ exports.update = async (wdTransportWcWdRequisitionDetails) => {
                     if (sumCurrentQuantity >= defferenceQuantity) {
 
                         // update order quantity
-                        await wcFabricOrderRequisitionDetailsService.updateForDecrementQuantity(isFound[0].wc_fabric_order_requisition_details_id, defferenceQuantity)
+                        // await wcFabricOrderRequisitionDetailsService.updateForDecrementQuantity(isFound[0].wc_fabric_order_requisition_details_id, defferenceQuantity)
 
                         // Step 2 => Increment quantity in  wc_sell_requisition_details
                         await wdTransportWcWdDetailsQueries.update({
@@ -304,7 +304,7 @@ exports.update = async (wdTransportWcWdRequisitionDetails) => {
                 if (selectOneWbRecord[0].current_quantity >= defferenceQuantity) {
 
                     // update order quantity
-                    await wcFabricOrderRequisitionDetailsService.updateForIncrementQuantity(isFound[0].wc_fabric_order_requisition_details_id, defferenceQuantity)
+                    // await wcFabricOrderRequisitionDetailsService.updateForIncrementQuantity(isFound[0].wc_fabric_order_requisition_details_id, defferenceQuantity)
 
                     // Step 1 => Decrement quantity in  wb_transport_wa_wb_details
                     await wdTransportWcWdDetailsQueries.update({
