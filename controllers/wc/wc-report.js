@@ -95,3 +95,10 @@ exports.selectInventoryTotal = async (request, response) => {
     const results = await wcReportService.fabricOrdersReport();
     response.status(200).json(results);
   };
+
+  exports.updateReportStoragePlace = async (request, response) => {
+    const { wcIds, storagePlace } = request.body;
+
+    const results = await wcReportService.updateReportStoragePlace(wcIds, storagePlace);
+    response.status(200).json(results);
+  };

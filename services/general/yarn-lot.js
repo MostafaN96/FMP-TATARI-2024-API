@@ -42,9 +42,12 @@ exports.update = async (yarnLot) => {
       id: yarnLot.id,
     });
     if (isFound[0] != null) {
+      
       // chick on duplication
       const checkDuplication = await yarnLotQueries.selectOne(function () {
-        this.where("code", "=", yarnLot.code).andWhere("id", "<>", yarnLot.id);
+        this.where("code", "=", yarnLot.code)
+        .andWhere("yarn_id", "=", yarnLot.yarnId)
+        .andWhere("id", "<>", yarnLot.id);
       });
   
       if (checkDuplication[0] != null) {

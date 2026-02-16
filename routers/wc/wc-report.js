@@ -98,4 +98,12 @@ router.post(
   wcReportController.selectInventoryDetails
 );
 
+// Put Queries
+router.put(
+  "/update-report",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  wcReportController.updateReportStoragePlace
+);
+
 module.exports = router;

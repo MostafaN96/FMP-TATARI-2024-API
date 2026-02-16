@@ -113,28 +113,35 @@ exports.create = async (wcAddRequisitionDetails, isOrder) => {
 };
 
 exports.selectByRequisitionId = async (requisitionId) => {
-    // check is found
-    const isFound = await wcAddRequisitionQueries.selectOne({
-        ...constantsPayloads.deletePayload,
-        id: requisitionId,
-    });
-    if (isFound[0] != null) {
+  const isFound = await wcAddRequisitionQueries.selectOne({
+    ...constantsPayloads.deletePayload,
+    id: requisitionId,
+  });
 
-        const results = await wcAddRequisitionDetailsQueries.selectByRequisitionId(requisitionId);
-        if (Array.isArray(results) && results.length > 0) {
-            let orders = []
-            for (let i = 0; i < results.length; i++) {
-                const element = results[i];
-                const ordersResult = await wcFabricOrderRequisitionDetailsService.selectByRequisitionIdOpenedOrderForWcAddRequisition(element.id)
-                orders.push(ordersResult)
-            }                        
-            results[0].orders = orders[0]
-        }
-        return results;
-    } else {
-        return constants.itemNotFound;
-    }
+  if (!isFound || !isFound[0]) return constants.itemNotFound;
+
+  const results = await wcAddRequisitionDetailsQueries.selectByRequisitionId(requisitionId);
+
+  // ✅ دايمًا رجّع عنصر واحد فيه orders لو ما في نتائج
+  if (!Array.isArray(results) || results.length === 0) {
+    return [{ orders: [] }];
+  }
+
+  const ordersResults = await Promise.all(
+    results.map(r =>
+      wcFabricOrderRequisitionDetailsService
+        .selectByRequisitionIdOpenedOrderForWcAddRequisition(r.id)
+    )
+  );
+
+  results.forEach((r, i) => {
+    r.orders = ordersResults[i] || [];
+  });
+
+  return results;
 };
+
+
 
 exports.selectByRequisitionIdForOrder = async (requisitionId) => {
     // check is found

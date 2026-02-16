@@ -229,8 +229,8 @@ exports.update = async (wbTransportWaWbRequisitionDetails) => {
             wb_transport_wa_wb_details_id: wbTransportWaWbRequisitionDetails.id
         })
 
-        console.log("newQuantity ::: ", newQuantity);
-        console.log("oldQuantity ::: ", oldQuantity);
+        // console.log("newQuantity ::: ", newQuantity);
+        // console.log("oldQuantity ::: ", oldQuantity);
         if (selectOneWbRecord[0] != null) {
 
             // Check Quantity
@@ -246,7 +246,7 @@ exports.update = async (wbTransportWaWbRequisitionDetails) => {
                     isFound[0].from_consigment_yarn_id,
                     isFound[0].from_wa_yarn_order_requisition_id
                 )
-                console.log("sumCurrentQuantityWa ::: ", sumCurrentQuantityWa);
+                // console.log("sumCurrentQuantityWa ::: ", sumCurrentQuantityWa);
                 if (sumCurrentQuantityWa[0] != null) {
                     // console.log("sumCurrentQuantityWa ::: ", sumCurrentQuantityWa);
                     const sumCurrentQuantity = sumCurrentQuantityWa[0].current_quantity

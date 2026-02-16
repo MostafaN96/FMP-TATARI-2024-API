@@ -518,6 +518,8 @@ exports.selectStoredWarehouseAndFabricAndConsigmentManufacturing = async (whereC
     `warehouse_name`,
     `wc_fabric_order_requisition_id`,
     `wc_fabric_order_requisition_name`,
+    `manufaturing_output_id`,
+    `storage_place`,
     `quantity`
   ]
   await knex.select(columns).from(function () {
@@ -532,6 +534,8 @@ exports.selectStoredWarehouseAndFabricAndConsigmentManufacturing = async (whereC
       `${warehouseTableName}.name as warehouse_name`,
       `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
       `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
+      knex.raw('? as manufaturing_output_id', '0'),
+      `${wcTableName}.storage_place`,
       `${wcAddRequisitionDetailsTableName}.quantity`,
       `${wcTableName}.current_quantity`
     ])
@@ -576,6 +580,8 @@ exports.selectStoredWarehouseAndFabricAndConsigmentManufacturing = async (whereC
           `${warehouseTableName}.name as warehouse_name`,
           `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
           `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
+            knex.raw('? as manufaturing_output_id', '0'),
+      `${wcTableName}.storage_place`,
           `${wcReconciliationRequisitionDetailsTableName}.quantity`,
           `${wcTableName}.current_quantity`
         ])
@@ -625,6 +631,8 @@ exports.selectStoredWarehouseAndFabricAndConsigmentManufacturing = async (whereC
           `${warehouseTableName}.name as warehouse_name`,
           `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
           `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
+            knex.raw('? as manufaturing_output_id', '0'),
+      `${wcTableName}.storage_place`,
           `${wdTransportRequisitionWdWcDetailsTableName}.quantity`,
           `${wcTableName}.current_quantity`
         ])
@@ -669,6 +677,8 @@ exports.selectStoredWarehouseAndFabricAndConsigmentManufacturing = async (whereC
           `${warehouseTableName}.name as warehouse_name`,
           `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
           `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
+          `${wbManufacturingOutputTableName}.id as manufaturing_output_id`,
+      `${wcTableName}.storage_place`,
           `${wbManufacturingOutputTableName}.quantity`,
           `${wcTableName}.current_quantity`
         ])
@@ -711,6 +721,8 @@ exports.selectStoredWarehouseAndFabricAndConsigmentManufacturing = async (whereC
           `${warehouseTableName}.name as warehouse_name`,
           `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
           `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
+      knex.raw('? as manufaturing_output_id', '0'),
+      `${wcTableName}.storage_place`,
           `${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
           `${wcTableName}.current_quantity`
         ])
@@ -755,6 +767,8 @@ exports.selectStoredWarehouseAndFabricAndConsigmentManufacturing = async (whereC
           `${warehouseTableName}.name as warehouse_name`,
           `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
           `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
+      knex.raw('? as manufaturing_output_id', '0'),
+      `${wcTableName}.storage_place`,
           `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.quantity`,
           `${wcTableName}.current_quantity`
         ])

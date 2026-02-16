@@ -554,7 +554,7 @@ exports.updateFabricToBeManufactured = async (wb) => {
             let newQuantity = parseFloat(wb.quantity)
             // let oldQuantity = isFound[0].current_quantity
             defferenceQuantity = parseFloat((sumCurrentQuantity - newQuantity).toFixed(3))
-
+            
             if (sumCurrentQuantity >= newQuantity) {
 
                 // Step 3 => select from (WB) Records for decrement current quantity
@@ -612,6 +612,8 @@ exports.updateFabricToBeManufactured = async (wb) => {
                             const wbTransportWaWbDetailsResult = await wbTransportWaWbDetailsService.updateDecrement(wbRecord)
 
                             if (wbTransportWaWbDetailsResult) {
+                                wbRecord.fromYarnOrderId = wbRecord.items[0].fromYarnOrderId
+                                wbRecord.fromOrdersRequisitionsId = wbRecord.items[0].fromOrdersRequisitionsId
                                 await wbTransportWaWbDetailsService.create(wbRecord)
                             } else {
                                 updateResults = false

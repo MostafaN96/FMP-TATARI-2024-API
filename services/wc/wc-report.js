@@ -5,6 +5,7 @@ const knex = require("../../db/config/connection").getConnection();
 
 // Service
 const wcReportQueries = require("../../db/queries/wc/wc-report");
+const fabricYarnsService = require("../general/fabric-yarns");
 
 // Queries
 const fabricQueries = require("../../db/queries/general/fabric");
@@ -143,6 +144,12 @@ exports.selectInventoryTotal = async (fabricReport) => {
             // Get Sum Current Quantity Of fabric 
             // const sumCurrentQuantity = await waService.selectSumCurrentQuantityByYarnWa(fabric.id)
             // fabric.current_quantity = sumCurrentQuantity[0].current_quantity
+            fabric.yarns = await fabricYarnsService.selectByFabricId(fabric.id);
+
+            // قيم جاهزة للفلترة (string[])
+            fabric.yarns_flat = (fabric.yarns || [])
+            .map((y) => y.yarn_name)   // ✅ الاسم الصح
+            .filter(Boolean);          // ✅ إزالة null / undefined
 
             data.push(fabric)
 
@@ -275,6 +282,8 @@ exports.selectInventoryDetails = async (fabricReport) => {
     // select warehousesFabricsConsigmentsManufacturing 
     const warehousesFabricsConsigmentsManufacturing = (fabricReport.isShowClosedBalances == 1) ? await wcQueries.selectStoredWarehouseAndFabricAndConsigmentManufacturing(whereCluseArray, 0) : await wcQueries.selectStoredWarehouseAndFabricAndConsigmentManufacturing(whereCluseArray)
     if (warehousesFabricsConsigmentsManufacturing[0] != null) {
+                    let manufaturingOutputId = ['0']
+
         for (let i = 0; i < warehousesFabricsConsigmentsManufacturing.length; i++) {
             let warehousesFabricConsigmentManufacturing = warehousesFabricsConsigmentsManufacturing[i];
             let callArray = []
@@ -330,6 +339,45 @@ exports.selectInventoryDetails = async (fabricReport) => {
             // const sumCurrentQuantity = await waService.selectSumCurrentQuantityByYarnWa(warehousesFabricConsigmentManufacturing.id)
             // warehousesFabricConsigmentManufacturing.current_quantity = sumCurrentQuantity[0].current_quantity
 
+            if(!manufaturingOutputId.includes(warehousesFabricConsigmentManufacturing.manufaturing_output_id)){
+                manufaturingOutputId.push(warehousesFabricConsigmentManufacturing.manufaturing_output_id);
+                            let wbManufacturingOutput2WhereCluse = {};
+            wbManufacturingOutput2WhereCluse[`${wbManufacturingOutputTableName}.id`] = warehousesFabricConsigmentManufacturing.manufaturing_output_id;
+            wbManufacturingOutput2WhereCluse[`${wbManufacturingOutputTableName}.fabric_id`] = warehousesFabricConsigmentManufacturing.fabric_id;
+            wbManufacturingOutput2WhereCluse[`${wbManufacturingOutputTableName}.warehouse_id`] = warehousesFabricConsigmentManufacturing.warehouse_id;
+            const selectDetailsResult = await wbManufacturingOutputQueries.select2(wbManufacturingOutput2WhereCluse);
+            
+            // قيم جاهزة للفلترة (string[])
+            warehousesFabricConsigmentManufacturing.documents = (selectDetailsResult || [])
+            .map((y) => y.document)   // ✅ الاسم الصح
+            .filter(Boolean);          // ✅ إزالة null / undefined
+            
+            warehousesFabricConsigmentManufacturing.status_grade = (selectDetailsResult || [])
+            .map((y) => y.status_name)   // ✅ الاسم الصح
+            .filter(Boolean);          // ✅ إزالة null / undefined
+
+            warehousesFabricConsigmentManufacturing.statement = (selectDetailsResult || [])
+            .map((y) => y.statement)   // ✅ الاسم الصح
+            .filter(Boolean);          // ✅ إزالة null / undefined
+
+            warehousesFabricConsigmentManufacturing.storage_place = (selectDetailsResult || [])
+            .map((y) => y.storage_place)   // ✅ الاسم الصح
+            .filter(Boolean);          // ✅ إزالة null / undefined
+
+            warehousesFabricConsigmentManufacturing.manufacturing_quantity = (selectDetailsResult || [])
+            .map((y) => y.quantity || 0)   // ✅ الاسم الصح
+            .filter(Boolean);          // ✅ إزالة null / undefined
+
+            warehousesFabricConsigmentManufacturing.output_current_quantity = (selectDetailsResult || [])
+            .map((y) => y.output_current_quantity || 0)   // ✅ الاسم الصح
+            .filter(Boolean);          // ✅ إزالة null / undefined
+
+            warehousesFabricConsigmentManufacturing.manufacturing_current_quantity = (selectDetailsResult || [])
+            .map((y) => y.manufacturing_current_quantity || 0)   // ✅ الاسم الصح
+            .filter(Boolean);          // ✅ إزالة null / undefined
+
+            }
+
             data.push(warehousesFabricConsigmentManufacturing)
 
             callArray.push(wcAddRequisitionDetailsQueries.selectDetailsByWarehouseByFabricByConsigmentManufacturing(
@@ -381,16 +429,29 @@ exports.selectInventoryDetails = async (fabricReport) => {
                 warehousesFabricConsigmentManufacturing.wc_fabric_order_requisition_id
             ))
             callArray.push(wcTransitionBetweenWHRequisitionDetailsQueries.selectToWarehouseDetailsByWarehouseByFabricByConsigmentManufacturing(
-                warehousesFabricConsigmentManufacturing.warehouse_id, 
-                warehousesFabricConsigmentManufacturing.fabric_id, 
+                warehousesFabricConsigmentManufacturing.warehouse_id,
+                warehousesFabricConsigmentManufacturing.fabric_id,
                 warehousesFabricConsigmentManufacturing.consigment_manufacturing_id,
                 warehousesFabricConsigmentManufacturing.wc_fabric_order_requisition_id
             ))
+            callArray.push(wcTransitionBetweenOrdersRequisitionDetailsQueries.selectFromWarehouseDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(
+                warehousesFabricConsigmentManufacturing.warehouse_id,
+                warehousesFabricConsigmentManufacturing.fabric_id,
+                warehousesFabricConsigmentManufacturing.consigment_manufacturing_id,
+                warehousesFabricConsigmentManufacturing.wc_fabric_order_requisition_id
+            ))
+            callArray.push(wcTransitionBetweenOrdersRequisitionDetailsQueries.selectToWarehouseDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(
+                warehousesFabricConsigmentManufacturing.warehouse_id,
+                warehousesFabricConsigmentManufacturing.fabric_id,
+                warehousesFabricConsigmentManufacturing.consigment_manufacturing_id,
+                warehousesFabricConsigmentManufacturing.wc_fabric_order_requisition_id
+            ))
+
             const requisitions = await Promise.all(callArray)
             const sortedAsc = [...requisitions[0], ...requisitions[1],
             ...requisitions[2], ...requisitions[3], ...requisitions[4],
             ...requisitions[5], ...requisitions[6], ...requisitions[7],
-            ...requisitions[8]
+            ...requisitions[8], ...requisitions[9], ...requisitions[10]
         ].sort(
                 (objA, objB) => moment(objA.date) - moment(objB.date)
             );
@@ -428,11 +489,14 @@ exports.selectInventoryDetailsByWarehouseByFabricByConsigmentManufacturing = asy
     callArray.push(wbManufacturingOutputQueries.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId, fabricOrderId))
     callArray.push(wcTransitionBetweenWHRequisitionDetailsQueries.selectFromWarehouseDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId, fabricOrderId))
     callArray.push(wcTransitionBetweenWHRequisitionDetailsQueries.selectToWarehouseDetailsDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId, fabricOrderId))
+    callArray.push(wcTransitionBetweenOrdersRequisitionDetailsQueries.selectFromWarehouseDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId, fabricOrderId))
+    callArray.push(wcTransitionBetweenOrdersRequisitionDetailsQueries.selectToWarehouseDetailsByWarehouseByFabricByConsigmentManufacturing(warehouseId, fabricId, consigmentManufacturingId, fabricOrderId))
+
     const requisitions = await Promise.all(callArray)
     let sortedAsc = [...requisitions[0], ...requisitions[1],
     ...requisitions[2], ...requisitions[3], ...requisitions[4],
     ...requisitions[5], ...requisitions[6], ...requisitions[7],
-    ...requisitions[8]
+    ...requisitions[8], ...requisitions[9], ...requisitions[10]
 ].sort(
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );
@@ -887,3 +951,13 @@ exports.fabricsForOrderWc = async (dyeingOrderRequisitions) => {
     return await myFirstPromise
 
 }
+
+exports.updateReportStoragePlace = async (wcIds, storagePlace) => {
+    const results = await wcReportQueries.updateStoragePlace(wcIds, storagePlace);
+    
+    if (results) {
+        return constants.updateSuccess;
+    } else {
+        return constants.updateError;
+    }
+};

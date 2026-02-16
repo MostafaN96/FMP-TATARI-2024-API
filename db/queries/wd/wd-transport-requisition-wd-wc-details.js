@@ -6,7 +6,8 @@ const knex = require("../../config/connection").getConnection();
 const constants = require("../../../util/constants");
 const { wdTransportRequisitionWdWcTableName, wdTransportRequisitionWdWcDetailsTableName, 
   warehouseTableName, fabricTableName, consigmentManufacturingTableName, bussinessmanTableName, wdTableName, wcTableName, consigmentDyeingTableName, 
-  wcFabricOrderRequisitionTableName} = require("../../../util/database-tables-name");
+  wcFabricOrderRequisitionTableName,
+  ordersRequisitionsTableName} = require("../../../util/database-tables-name");
 
 exports.insert = async (wdTransportRequisitionWdWc, items) => {
   let queryResults = false;
@@ -488,6 +489,7 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
         knex.raw('? as type_of_requisition', 'اذن نقل من (D) الى (C)'),
         knex.raw('? as input_output', '1'),
         knex.raw(`CONCAT(${warehouseTableName}.name) as side_of`),
+        `${ordersRequisitionsTableName}.name as order_name`,
       ],
     )
     .innerJoin(`${wdTransportRequisitionWdWcDetailsTableName}`, `${wdTransportRequisitionWdWcDetailsTableName}.wd_transport_requisition_wd_wc_id`, `${wdTransportRequisitionWdWcTableName}.id`)
@@ -496,6 +498,9 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
     .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${wdTransportRequisitionWdWcDetailsTableName}.fabric_id`)
     .innerJoin(`${consigmentManufacturingTableName}`, `${consigmentManufacturingTableName}.id`, `${wdTransportRequisitionWdWcDetailsTableName}.consigment_manufacturing_id`)
     .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${wdTransportRequisitionWdWcTableName}.dyeing_id`)
+    .innerJoin(`${ordersRequisitionsTableName}`, 
+    `${ordersRequisitionsTableName}.id`, 
+    `${wdTransportRequisitionWdWcDetailsTableName}.orders_requisitions_id`)
     .where(whereCluse)
     .andWhere(`${wdTransportRequisitionWdWcDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -569,6 +574,8 @@ exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async
         knex.raw('? as type_of_requisition', 'اذن نقل من (D) الى (C)'),
         knex.raw('? as input_output', '1'),
         knex.raw(`CONCAT(${warehouseTableName}.name) as side_of`),
+        `${wcTableName}.id as wc_id`,
+        `${wcTableName}.storage_place`,
       ],
     )
     .innerJoin(`${wdTransportRequisitionWdWcTableName}`, `${wdTransportRequisitionWdWcTableName}.id`, `${wdTransportRequisitionWdWcDetailsTableName}.wd_transport_requisition_wd_wc_id`)
@@ -579,6 +586,7 @@ exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async
     .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${wdTransportRequisitionWdWcDetailsTableName}.fabric_id`)
     .innerJoin(`${consigmentManufacturingTableName}`, `${consigmentManufacturingTableName}.id`, `${wdTransportRequisitionWdWcDetailsTableName}.consigment_manufacturing_id`)
     .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${wdTransportRequisitionWdWcTableName}.dyeing_id`)
+    .innerJoin(`${wcTableName}`, `${wcTableName}.wd_transport_requisition_wd_wc_details_id`, `${wdTransportRequisitionWdWcDetailsTableName}.id`)
     .where(whereCluse)
     .andWhere(`${wdTransportRequisitionWdWcDetailsTableName}.quantity`, ">", 0)
     .then((data) => {

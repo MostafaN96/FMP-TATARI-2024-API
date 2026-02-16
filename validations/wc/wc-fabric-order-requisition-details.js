@@ -12,7 +12,7 @@ exports.isValid = (wcFabricOrderRequisitionDetails) => {
             fabricWidth: validations.joiNotRequiredText(0, 100000),
             fabricQuantityM2: validations.joiNotRequiredText(0, 100000),
             quantity: validations.joiText(1, 60),
-            note: validations.joiNotRequiredNumber(0, 50),
+            note: validations.joiNotRequiredText(0, 90),
         })
     });
     const joiErrors = wcFabricOrderRequisitionDetailsSchema.validate(wcFabricOrderRequisitionDetails);

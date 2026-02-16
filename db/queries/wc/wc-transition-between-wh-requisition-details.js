@@ -12,7 +12,8 @@ const {
   consigmentManufacturingTableName,
   wcTransitionBetweenWHRequisitionDetailsWcTableName,
   wcFabricOrderRequisitionTableName,
-  wdTransportWcWdDetailsWcTableName
+  wdTransportWcWdDetailsWcTableName,
+  ordersRequisitionsTableName
 } = require("../../../util/database-tables-name");
 
 exports.insert = async (wcTransitionBetweenWHRequisitionDetails, items) => {
@@ -334,6 +335,7 @@ exports.selectFromTotalDetailsByFabricId = async (fabricId) => {
         knex.raw('? as type_of_requisition', 'اذن نقل بين المخازن'),
         knex.raw('? as input_output', '0'),
         knex.raw(`CONCAT(${warehouseTableName}.name) as side_of`),
+        `${ordersRequisitionsTableName}.name as wc_fabric_order_requisition_name`,
       ],
     )
     .innerJoin(`${wcTransitionBetweenWHRequisitionTableName}`,
@@ -354,6 +356,9 @@ exports.selectFromTotalDetailsByFabricId = async (fabricId) => {
     .innerJoin(`${consigmentManufacturingTableName}`, 
     `${consigmentManufacturingTableName}.id`, 
     `${wcTransitionBetweenWHRequisitionDetailsTableName}.consigment_manufacturing_id`)
+    .innerJoin(`${ordersRequisitionsTableName}`, 
+    `${ordersRequisitionsTableName}.id`, 
+    `${wcTransitionBetweenWHRequisitionDetailsTableName}.orders_requisitions_id`)
     .where(whereCluse)
     .andWhere(`${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -392,6 +397,7 @@ exports.selectToTotalDetailsByFabricId = async (fabricId) => {
         knex.raw('? as type_of_requisition', 'اذن نقل بين المخازن'),
         knex.raw('? as input_output', '1'),
         knex.raw(`CONCAT(${warehouseTableName}.name) as side_of`),
+        `${ordersRequisitionsTableName}.name as order_name`,
       ],
     )
     .innerJoin(`${wcTransitionBetweenWHRequisitionTableName}`,
@@ -409,6 +415,9 @@ exports.selectToTotalDetailsByFabricId = async (fabricId) => {
     .innerJoin(`${consigmentManufacturingTableName}`, 
     `${consigmentManufacturingTableName}.id`, 
     `${wcTransitionBetweenWHRequisitionDetailsTableName}.consigment_manufacturing_id`)
+    .innerJoin(`${ordersRequisitionsTableName}`, 
+    `${ordersRequisitionsTableName}.id`, 
+    `${wcTransitionBetweenWHRequisitionDetailsTableName}.orders_requisitions_id`)
     .where(whereCluse)
     .andWhere(`${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -599,6 +608,8 @@ exports.selectToWarehouseDetailsDetailsByWarehouseByFabricByConsigmentManufactur
         knex.raw('? as type_of_requisition', 'اذن نقل بين المخازن'),
         knex.raw('? as input_output', '1'),
         knex.raw(`CONCAT(${warehouseTableName}.name) as side_of`),
+        `${wcTableName}.id as wc_id`,
+        `${wcTableName}.storage_place`,
       ],
     )
     .innerJoin(`${wcTransitionBetweenWHRequisitionTableName}`,

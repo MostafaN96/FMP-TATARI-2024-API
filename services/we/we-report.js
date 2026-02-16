@@ -711,7 +711,7 @@ exports.dyedFabricReportByOrderBySeller = async (orderId, sellerId) => {
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );
 
-    selectbyConsigmentYarnForDyedFabricOrder
+    return sortedAsc;
 };
 
 exports.salesReport = async () => {

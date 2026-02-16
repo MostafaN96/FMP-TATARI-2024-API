@@ -9,7 +9,8 @@ const wdFormDyeingRequisitionDetailsQueries = require("./wd-form-dyeing-requisit
 const { wdTransportWcWdTableName, wdTransportWcWdDetailsTableName,
   warehouseTableName, fabricTableName, consigmentManufacturingTableName,
   bussinessmanTableName, wdTableName, consigmentDyeingTableName, wdFormDyeingRequisitionDetailsWdTableName, wdFormDyeingRequisitionDetailsTableName, 
-  wcFabricOrderRequisitionTableName} = require("../../../util/database-tables-name");
+  wcFabricOrderRequisitionTableName,
+  ordersRequisitionsTableName} = require("../../../util/database-tables-name");
   const constantsPayloads = require("../../../util/constants-payloads");
 
 exports.insert = async (wdTransportWcWd, items) => {
@@ -626,6 +627,7 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
         knex.raw('? as type_of_requisition', 'اذن نقل من (C) الى (D)'),
         knex.raw('? as input_output', '0'),
         knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
+        `${ordersRequisitionsTableName}.name as order_name`,
 
       ],
     )
@@ -635,6 +637,9 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
     .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${wdTransportWcWdDetailsTableName}.fabric_id`)
     .innerJoin(`${consigmentManufacturingTableName}`, `${consigmentManufacturingTableName}.id`, `${wdTransportWcWdDetailsTableName}.consigment_manufacturing_id`)
     .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${wdTableName}.dyeing_id`)
+    .innerJoin(`${ordersRequisitionsTableName}`, 
+    `${ordersRequisitionsTableName}.id`, 
+    `${wdTransportWcWdDetailsTableName}.orders_requisitions_id`)
     .where(whereCluse)
     .andWhere(`${wdTransportWcWdDetailsTableName}.quantity`, ">", 0)
     .then((data) => {

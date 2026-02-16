@@ -117,7 +117,7 @@ exports.create = async (waAddRequisitionDetails, isOrder) => {
   
                 const selectYarnOrderRequisitionDetailsResult = await waYarnOrderRequisitionDetailsQueries.selectByRequisitionId(waYarnOrderRequisitionDetailsWhereCluse)
                 if (Array.isArray(selectYarnOrderRequisitionDetailsResult) && selectYarnOrderRequisitionDetailsResult.length > 0) {
-                  for (let k = 0; f < selectYarnOrderRequisitionDetailsResult.length; k++) {
+                  for (let k = 0; k < selectYarnOrderRequisitionDetailsResult.length; k++) {
                     const yarnOrderRequisitionDetailsElement = selectYarnOrderRequisitionDetailsResult[k];
   
                     await waAddRequisitionDetailsYarnOrderService.create({ ...yarnOrderRequisitionDetailsElement, ...waAddRequisitionDetails }, orderElement)

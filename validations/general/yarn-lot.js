@@ -24,6 +24,7 @@ exports.isValid = (cotton) => {
 
 exports.isValidUpdate = (cotton) => {
   const cottonSchema = joi.object({
+    yarnId: validations.joiText(15, 30),
     code: validations.joiText(3, 1000),
     personid: validations.joiText(1, 90),
     ipaddress: validations.joiText(1, 90)

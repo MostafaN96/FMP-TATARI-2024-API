@@ -8,7 +8,8 @@ const { consigmentManufacturingTableName,
   wcReconciliationRequisitionTableName, wcReconciliationRequisitionDetailsTableName, wcReconciliationRequisitionDetailsWcTableName,
   fabricTableName, wcTableName, warehouseTableName, 
   wcFabricOrderRequisitionTableName,
-  wdTransportWcWdDetailsWcTableName} = require("../../../util/database-tables-name");
+  wdTransportWcWdDetailsWcTableName,
+  ordersRequisitionsTableName} = require("../../../util/database-tables-name");
 
 exports.insert = async (wcReconciliationRequisitionDetails, items) => {
   let queryResults = false;
@@ -141,12 +142,16 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
         knex.raw('? as type_of_requisition', 'اذن تسوية'),
         `${wcReconciliationRequisitionDetailsTableName}.input_output`,
         knex.raw(`CONCAT(${warehouseTableName}.name) as side_of`),
+        `${ordersRequisitionsTableName}.name as order_name`,
       ],
     )
     .innerJoin(`${wcReconciliationRequisitionTableName}`, `${wcReconciliationRequisitionTableName}.id`, `${wcReconciliationRequisitionDetailsTableName}.wc_reconcilition_requisition_id`)
     .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${wcReconciliationRequisitionDetailsTableName}.fabric_id`)
     .innerJoin(`${consigmentManufacturingTableName}`, `${consigmentManufacturingTableName}.id`, `${wcReconciliationRequisitionDetailsTableName}.consigment_manufacturing_id`)
     .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${wcReconciliationRequisitionTableName}.warehouse_id`)
+    .innerJoin(`${ordersRequisitionsTableName}`, 
+    `${ordersRequisitionsTableName}.id`, 
+    `${wcReconciliationRequisitionDetailsTableName}.orders_requisitions_id`)
     .where(whereCluse)
     .andWhere(`${wcReconciliationRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {

@@ -107,6 +107,54 @@ exports.select = async () => {
   return queryResults;
 };
 
+exports.selectLazy = (whereCluse) => {
+
+  return knex
+    .select([
+      `${wdFormDyeingRequisitionTableName}.id`,
+      `${wdFormDyeingRequisitionTableName}.number`,
+      `${wdFormDyeingRequisitionTableName}.work_order_number`,
+      `${wdFormDyeingRequisitionTableName}.date`,
+      `${wdFormDyeingRequisitionTableName}.note`,
+      `${wdFormDyeingRequisitionTableName}.is_order`,
+      // `${wdDyeingOrderRequisitionDetailsTableName}.quantity`,
+      // `${wdDyeingOrderRequisitionDetailsTableName}.form_current_quantity`,
+      `${bussinessmanTableName}.id as dyeing_id`,
+      `${bussinessmanTableName}.name as dyeing_name`,
+      `${wdDyeingOrderRequisitionTableName}.work_order_number as order_number`,
+      `seller.id as seller_id`,
+      `seller.name as seller_name`,
+      `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
+    ])
+    .sum(`${wdDyeingOrderRequisitionDetailsTableName}.quantity as quantity`)
+    .sum(`${wdDyeingOrderRequisitionDetailsTableName}.form_current_quantity as form_current_quantity`)
+    .from(`${wdFormDyeingRequisitionTableName}`)
+    .innerJoin(`${bussinessmanTableName}`,
+    `${bussinessmanTableName}.id`,
+    `${wdFormDyeingRequisitionTableName}.dyeing_id`)
+    .innerJoin(`${wdFormDyeingRequisitionDetailsTableName}`,
+    `${wdFormDyeingRequisitionDetailsTableName}.wd_form_dyeing_requisition_id`,
+    `${wdFormDyeingRequisitionTableName}.id`)
+    .innerJoin(`${wcFabricOrderRequisitionTableName}`,
+      `${wcFabricOrderRequisitionTableName}.id`,
+      `${wdFormDyeingRequisitionDetailsTableName}.wc_fabric_order_requisition_id`)
+    .leftOuterJoin(`${wdFormOrderDetailsWdFormDetailsTableName}`,
+    `${wdFormOrderDetailsWdFormDetailsTableName}.wd_form_dyeing_requisition_details_id`,
+    `${wdFormDyeingRequisitionDetailsTableName}.id`)
+    .leftOuterJoin(`${wdDyeingOrderRequisitionDetailsTableName}`,
+    `${wdDyeingOrderRequisitionDetailsTableName}.id`,
+    `${wdFormOrderDetailsWdFormDetailsTableName}.wd_form_dyeing_order_requisition_details_id`)
+    .leftOuterJoin(`${wdDyeingOrderRequisitionTableName}`,
+    `${wdDyeingOrderRequisitionTableName}.id`,
+    `${wdDyeingOrderRequisitionDetailsTableName}.wd_form_dyeing_order_requisition_id`)
+    .leftOuterJoin(`${bussinessmanTableName} as seller`,
+    `seller.id`,
+    `${wdDyeingOrderRequisitionTableName}.seller_id`)
+    .where(whereCluse)
+    .orderBy(`${wdFormDyeingRequisitionTableName}.number`, 'desc')
+    .groupBy(`${wdFormDyeingRequisitionTableName}.id`)
+};
+
 exports.selectOrders = async () => {
   let queryResults = [];
   let whereCluse = {};

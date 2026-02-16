@@ -378,6 +378,7 @@ exports.selectFromTotalDetailsByFabricId = async (fabricId) => {
     `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.from_consigment_manufacturing_id`)
     .where(whereCluse)
     .andWhere(`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.quantity`, ">", 0)
+    .groupBy(`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.id`)
     .then((data) => {
       queryResults = data;
     })
@@ -508,6 +509,8 @@ exports.selectToWarehouseDetailsByWarehouseByFabricByConsigmentManufacturing = a
         `${wcTransitionBetweenOrdersRequisitionTableName}.date`,
         knex.raw('? as type_of_requisition', 'اذن نقل بين الطلبيات'),
         knex.raw('? as input_output', '1'),
+        `${wcTableName}.id as wc_id`,
+        `${wcTableName}.storage_place`,
       ],
     )
     .innerJoin(`${wcTransitionBetweenOrdersRequisitionTableName}`,

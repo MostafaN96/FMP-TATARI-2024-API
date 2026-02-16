@@ -498,15 +498,15 @@ exports.update = async (wbManufacturingInput) => {
             let fabricPriceDollar = 0
             const selectInputManufacturingResult = await this.selectByRequisitionId(isFound[0].wb_manufacturing_requisition_id)
             if (selectInputManufacturingResult[0] != null) {
-                console.log("selectInputManufacturingResult ::: ", selectInputManufacturingResult);
+                // console.log("selectInputManufacturingResult ::: ", selectInputManufacturingResult);
                 
                 const selectOutputManufacturingOneResult = await wbManufacturingOutputQueries.selectByRequisitionId(isFound[0].wb_manufacturing_requisition_id)
                 if (selectOutputManufacturingOneResult[0] != null) {
                     fabricPrice = parseFloat((await wbManufacturingOutputService.calcAvgFabricPrice(selectInputManufacturingResult, selectOutputManufacturingOneResult)).toFixed(3))
                     fabricPriceDollar = parseFloat((await wbManufacturingOutputService.calcAvgFabricPriceDollar(selectInputManufacturingResult, selectOutputManufacturingOneResult)).toFixed(3))
                                     console.log("fabricPrice ::: ", fabricPrice);
-                console.log("fabricPriceDollar ::: ", fabricPriceDollar);
-                console.log("selectOutputManufacturingOneResult ::: ", selectOutputManufacturingOneResult);
+                // console.log("fabricPriceDollar ::: ", fabricPriceDollar);
+                // console.log("selectOutputManufacturingOneResult ::: ", selectOutputManufacturingOneResult);
 
                     await wbManufacturingOutputQueries.update({
                         price: fabricPrice,

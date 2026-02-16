@@ -57,6 +57,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
       [
         `${wcAddRequisitionDetailsTableName}.id`,
         `${wcAddRequisitionDetailsTableName}.price`,
+        `${wcAddRequisitionDetailsTableName}.price_dollar`,
         `${wcAddRequisitionDetailsTableName}.quantity`,
         `${wcAddRequisitionDetailsTableName}.fabric_piece`,
         `${wcAddRequisitionDetailsTableName}.document`,
@@ -69,6 +70,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
         `${fabricTableName}.code as fabric_code`,
         `${consigmentManufacturingTableName}.number as consigment_number`,
         `${warehouseTableName}.name as warehouse_name`,
+        `${wcTableName}.current_quantity`,
             // knex.raw('JSON_ARRAYAGG(JSON_OBJECT("id", or.id, "name", or.name)) as details')
       ],
     )
@@ -77,6 +79,9 @@ exports.selectByRequisitionId = async (requisitionId) => {
     .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${wcAddRequisitionDetailsTableName}.fabric_id`)
     .innerJoin(`${consigmentManufacturingTableName}`, `${consigmentManufacturingTableName}.id`, `${wcAddRequisitionDetailsTableName}.consigment_manufacturing_id`)
     .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${wcAddRequisitionDetailsTableName}.warehouse_id`)
+    .innerJoin(`${wcTableName}`, 
+      `${wcTableName}.wc_add_requisition_details_id`, 
+      `${wcAddRequisitionDetailsTableName}.id`)
     // .leftOuterJoin(`${wcAddRequisitionDetailsFabricOrderTableName}`,`${wcAddRequisitionDetailsFabricOrderTableName}.wc_add_requisition_details_id`, `${wcAddRequisitionDetailsTableName}.id`)
     // .leftOuterJoin(`${ordersRequisitionsTableName} as or`, 'or.id', `${wcAddRequisitionDetailsFabricOrderTableName}.orders_requisitions_id`)
     .where(whereCluse)
@@ -144,6 +149,7 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
         knex.raw('? as type_of_requisition', 'اذن اضافة'),
         knex.raw('? as input_output', '1'),
         knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
+        `${ordersRequisitionsTableName}.name as order_name`,
       ],
     )
     .innerJoin(`${wcAddRequisitionTableName}`, `${wcAddRequisitionTableName}.id`, `${wcAddRequisitionDetailsTableName}.wc_add_requisition_id`)
@@ -151,8 +157,15 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
     .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${wcAddRequisitionDetailsTableName}.fabric_id`)
     .innerJoin(`${consigmentManufacturingTableName}`, `${consigmentManufacturingTableName}.id`, `${wcAddRequisitionDetailsTableName}.consigment_manufacturing_id`)
     .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${wcAddRequisitionDetailsTableName}.warehouse_id`)
+    .leftOuterJoin(`${wcAddRequisitionDetailsFabricOrderTableName}`, 
+    `${wcAddRequisitionDetailsFabricOrderTableName}.wc_add_requisition_details_id`, 
+    `${wcAddRequisitionDetailsTableName}.id`)
+    .leftOuterJoin(`${ordersRequisitionsTableName}`, 
+    `${ordersRequisitionsTableName}.id`, 
+    `${wcAddRequisitionDetailsFabricOrderTableName}.orders_requisitions_id`)
     .where(whereCluse)
     .andWhere(`${wcAddRequisitionDetailsTableName}.quantity`, ">", 0)
+    .groupBy(`${wcAddRequisitionDetailsTableName}.id`)
     .then((data) => {
       queryResults = data;
     })
@@ -230,6 +243,8 @@ exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async
         knex.raw('? as type_of_requisition', 'اذن اضافة'),
         knex.raw('? as input_output', '1'),
         knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
+        `${wcTableName}.id as wc_id`,
+        `${wcTableName}.storage_place`,
       ],
     )
     .innerJoin(`${wcAddRequisitionTableName}`, `${wcAddRequisitionTableName}.id`, `${wcAddRequisitionDetailsTableName}.wc_add_requisition_id`)
@@ -243,8 +258,10 @@ exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async
     .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${wcAddRequisitionDetailsTableName}.fabric_id`)
     .innerJoin(`${consigmentManufacturingTableName}`, `${consigmentManufacturingTableName}.id`, `${wcAddRequisitionDetailsTableName}.consigment_manufacturing_id`)
     .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${wcAddRequisitionDetailsTableName}.warehouse_id`)
+    .innerJoin(`${wcTableName}`, `${wcTableName}.wc_add_requisition_details_id`, `${wcAddRequisitionDetailsTableName}.id`)
     .where(whereCluse)
     .andWhere(`${wcAddRequisitionDetailsTableName}.quantity`, ">", 0)
+    .groupBy(`${wcAddRequisitionDetailsTableName}.id`)
     .then((data) => {
       queryResults = data;
     })

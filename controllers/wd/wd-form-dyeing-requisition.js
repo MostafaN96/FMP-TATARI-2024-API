@@ -59,3 +59,12 @@ exports.select = async (request, response) => {
     const results = await wdFormDyeingRequisitionService.select();
     response.status(200).json(results);
   };
+
+exports.selectAllLazy = async (request, response) => {
+    // logging
+      const bodyPalod = request.body;
+
+    // call service
+    const results = await wdFormDyeingRequisitionService.selectAllLazy(bodyPalod);
+    response.status(200).json(results);
+  };

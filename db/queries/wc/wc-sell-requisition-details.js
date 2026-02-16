@@ -1,5 +1,5 @@
 // Config
-const { consigmentManufacturingTableName, wcFabricOrderRequisitionTableName } = require("../../../util/database-tables-name");
+const { consigmentManufacturingTableName, wcFabricOrderRequisitionTableName, ordersRequisitionsTableName } = require("../../../util/database-tables-name");
 const sqlFun = require("../../config/sql-fun");
 const knex = require("../../config/connection").getConnection();
 
@@ -146,6 +146,7 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
         knex.raw('? as type_of_requisition', 'اذن بيع'),
         knex.raw('? as input_output', '0'),
         knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
+        `${ordersRequisitionsTableName}.name as order_name`,
       ],
     )
     .innerJoin(`${wcSellRequisitionTableName}`, `${wcSellRequisitionTableName}.id`, `${wcSellRequisitionDetailsTableName}.wc_sell_requisition_id`)
@@ -153,6 +154,9 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
     .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${wcSellRequisitionDetailsTableName}.fabric_id`)
     .innerJoin(`${consigmentManufacturingTableName}`, `${consigmentManufacturingTableName}.id`, `${wcSellRequisitionDetailsTableName}.consigment_manufacturing_id`)
     .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${wcSellRequisitionTableName}.warehouse_id`)
+    .innerJoin(`${ordersRequisitionsTableName}`, 
+    `${ordersRequisitionsTableName}.id`, 
+    `${wcSellRequisitionDetailsTableName}.orders_requisitions_id`)
     .where(whereCluse)
     .andWhere(`${wcSellRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {

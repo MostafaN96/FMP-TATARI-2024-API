@@ -8,6 +8,7 @@ const weDyedFabricOrderRequisitionDetailsQueries = require("../../db/queries/we/
 // Services
 const weService = require("./we");
 const weAddRequisitionDetailsDyedFabricOrderService = require("./we-add-requisition-details-dyed-fabric-order");
+const weDyedFabricOrderRequisitionDetailsService = require("./we-dyed-fabric-order-requisition-details");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -86,10 +87,10 @@ exports.create = async (weAddRequisitionDetails) => {
                   
                                 const selecDyedFabricOrderRequisitionDetailsResult = await weDyedFabricOrderRequisitionDetailsQueries.selectByRequisitionId(weDyedFabricOrderRequisitionDetailsWhereCluse)
                                 if (Array.isArray(selecDyedFabricOrderRequisitionDetailsResult) && selecDyedFabricOrderRequisitionDetailsResult.length > 0) {
-                                  for (let f = 0; f < selecDyedFabricOrderRequisitionDetailsResult.length; f++) {
-                                    const dyedFabricOrderRequisitionDetailsElement = selecDyedFabricOrderRequisitionDetailsResult[f];
+                                  for (let h = 0; h < selecDyedFabricOrderRequisitionDetailsResult.length; h++) {
+                                    const dyedFabricOrderRequisitionDetailsElement = selecDyedFabricOrderRequisitionDetailsResult[h];
                   
-                                    await weAddRequisitionDetailsDyedFabricOrderService.create({ ...dyedFabricOrderRequisitionDetailsElement, ...wcAddRequisitionDetails }, orderElement)
+                                    await weAddRequisitionDetailsDyedFabricOrderService.create({ ...dyedFabricOrderRequisitionDetailsElement, ...weAddRequisitionDetails }, orderElement)
                   
                                   }
                                 }
@@ -110,13 +111,27 @@ exports.selectByRequisitionId = async (requisitionId) => {
         ...constantsPayloads.deletePayload,
         id: requisitionId,
     });
-    if (isFound[0] != null) {
+  if (!isFound || !isFound[0]) return constants.itemNotFound;
 
         const results = await weAddRequisitionDetailsQueries.selectByRequisitionId(requisitionId);
-        return results;
-    } else {
-        return constants.itemNotFound;
-    }
+    
+        // ✅ دايمًا رجّع عنصر واحد فيه orders لو ما في نتائج
+          if (!Array.isArray(results) || results.length === 0) {
+            return [{ orders: [] }];
+          }
+        
+          const ordersResults = await Promise.all(
+            results.map(r =>
+              weDyedFabricOrderRequisitionDetailsService
+                .selectByRequisitionIdOpenedOrderForWeAddRequisition(r.id)
+            )
+          );
+        
+          results.forEach((r, i) => {
+            r.orders = ordersResults[i] || [];
+          });
+        
+          return results;
 };
 
 exports.update = async (weAddRequisitionDetails) => {

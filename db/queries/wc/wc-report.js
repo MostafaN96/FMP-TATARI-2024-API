@@ -427,3 +427,19 @@ exports.fabricOrdersTotalForGeneralReport = async (whereCluse) => {
     return queryResults
 }
 
+exports.updateStoragePlace = async (wcIds, storagePlace) => {
+    let queryResults = false;
+    await knex('wc')
+        .whereIn('id', wcIds)
+        .update({ 
+            storage_place: storagePlace 
+        })
+        .then(() => {
+            queryResults = true;
+        })
+        .catch(error => {
+            console.log(error);
+        });
+    return queryResults;
+};
+

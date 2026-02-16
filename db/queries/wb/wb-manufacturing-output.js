@@ -3,7 +3,8 @@ const sqlFun = require("../../config/sql-fun");
 const knex = require("../../config/connection").getConnection();
 
 // Util
-const { wbManufacturingOutputTableName, wbManufacturingRequisitionTableName, wbManufacturingInputOutputTableName, fabricTableName, circularKnittingMachineTableName, consigmentManufacturingTableName, circularKnittingMachineBussinessmanTableName, warehouseTableName, wbManufacturingOutputOrderTableName, wbManufacturingOrderRequisitionDetailsTableName, wbManufacturingOrderRequisitionTableName, bussinessmanTableName, wcTableName, wbManufacturingInputTableName, wcFabricOrderRequisitionTableName, wdTransportWcWdDetailsWcTableName } = require("../../../util/database-tables-name");
+const constants = require("../../../util/constants");
+const { wbManufacturingOutputTableName, wbManufacturingRequisitionTableName, wbManufacturingInputOutputTableName, fabricTableName, circularKnittingMachineTableName, consigmentManufacturingTableName, circularKnittingMachineBussinessmanTableName, warehouseTableName, wbManufacturingOutputOrderTableName, wbManufacturingOrderRequisitionDetailsTableName, wbManufacturingOrderRequisitionTableName, bussinessmanTableName, wcTableName, wbManufacturingInputTableName, wcFabricOrderRequisitionTableName, wdTransportWcWdDetailsWcTableName, ordersRequisitionsTableName } = require("../../../util/database-tables-name");
 
 exports.insert = async (wbManufacturingOutput, items) => {
   let queryResults = false;
@@ -76,9 +77,61 @@ exports.select = async (whereCluse) => {
     `${wbManufacturingOutputTableName}.document`,
     `${wbManufacturingOutputTableName}.statement`,
   ])
-    .from(`${wbManufacturingOutputTableName}`) 
+    .from(`${wbManufacturingOutputTableName}`)
     .where(whereCluse)
     .andWhere(`${wbManufacturingOutputTableName}.quantity`, ">", 0)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.select2 = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.select([
+    `${wbManufacturingRequisitionTableName}.id as requisition_id`,
+    `${wbManufacturingOutputTableName}.id`,
+    `${wbManufacturingOutputTableName}.consigment_manufacturing_id`,
+    `${wbManufacturingOutputTableName}.quantity`,
+    `${wbManufacturingOutputTableName}.price`,
+    `${wbManufacturingOutputTableName}.price_dollar`,
+    `${wbManufacturingOutputTableName}.manufacturing_fee`,
+    `${wbManufacturingOutputTableName}.manufacturing_fee_dollar`,
+    `${wbManufacturingOutputTableName}.fabric_piece`,
+    `${wbManufacturingOutputTableName}.document`,
+    `${wbManufacturingOutputTableName}.statement`,
+    knex.raw(
+            `CASE 
+            WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_new}' THEN '${constants.wb_manufacturing_requisition_status_new_trans}' 
+            WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_good_after_check}' THEN '${constants.wb_manufacturing_requisition_status_good_after_check_trans}'  
+            WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_not_good_after_check}' THEN '${constants.wb_manufacturing_requisition_status_not_good_after_check_trans}'  
+            WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_white}' THEN '${constants.wb_manufacturing_requisition_status_white_trans}'  
+            ELSE ''  
+            END as status_name`),
+            `${wcTableName}.current_quantity as manufacturing_current_quantity`,
+            knex.raw(
+            `CASE WHEN ${wcTableName}.current_quantity > ${0}
+            THEN coalesce( ${wbManufacturingOutputTableName}.quantity - ${wcTableName}.current_quantity )
+            ELSE ${0}
+            END as output_current_quantity`),
+                `${wbManufacturingOutputTableName}.document`,
+                `${wcTableName}.storage_place`,
+  ])
+    .from(`${wbManufacturingOutputTableName}`)
+    .innerJoin(`${wbManufacturingInputOutputTableName}`,
+      `${wbManufacturingInputOutputTableName}.wb_manufacturing_output_id`,
+      `${wbManufacturingOutputTableName}.id`)
+    .innerJoin(`${wbManufacturingRequisitionTableName}`,
+      `${wbManufacturingRequisitionTableName}.id`,
+      `${wbManufacturingInputOutputTableName}.wb_manufacturing_requisition_id`)
+    .innerJoin(`${wcTableName}`,
+      `${wcTableName}.wb_manufacturing_output_id`,
+      `${wbManufacturingOutputTableName}.id`)
+    .where(whereCluse)
+    .andWhere(`${wbManufacturingOutputTableName}.quantity`, ">", 0)
+    .groupBy(`requisition_id`)
     .then((data) => {
       queryResults = data;
     })
@@ -120,6 +173,14 @@ exports.selectByRequisitionId = async (requisitionId) => {
     `${consigmentManufacturingTableName}.number as consigment_number`,
     `${warehouseTableName}.name as warehouse_name`,
     `${wbManufacturingRequisitionTableName}.industry_id as manufacture_id`,
+    knex.raw(
+            `CASE 
+            WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_new}' THEN '${constants.wb_manufacturing_requisition_status_new_trans}' 
+            WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_good_after_check}' THEN '${constants.wb_manufacturing_requisition_status_good_after_check_trans}'  
+            WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_not_good_after_check}' THEN '${constants.wb_manufacturing_requisition_status_not_good_after_check_trans}'  
+            WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_white}' THEN '${constants.wb_manufacturing_requisition_status_white_trans}'  
+            ELSE ''  
+            END as status_name`),
         `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
         `${wcTableName}.current_quantity`,
   ])
@@ -409,6 +470,14 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
         `${wbManufacturingRequisitionTableName}.date`,
         `${wbManufacturingRequisitionTableName}.note`,
         `${wbManufacturingRequisitionTableName}.is_order`,
+                    knex.raw(
+            `CASE 
+            WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_new}' THEN '${constants.wb_manufacturing_requisition_status_new_trans}' 
+            WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_good_after_check}' THEN '${constants.wb_manufacturing_requisition_status_good_after_check_trans}'  
+            WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_not_good_after_check}' THEN '${constants.wb_manufacturing_requisition_status_not_good_after_check_trans}'  
+            WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_white}' THEN '${constants.wb_manufacturing_requisition_status_white_trans}'  
+            ELSE ''  
+            END as status_name`),
         `${bussinessmanTableName}.id as bussinessman_id`,
         `${bussinessmanTableName}.name as bussinessman_name`,
         `${fabricTableName}.id as fabric_id`,
@@ -419,6 +488,7 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
         knex.raw('? as type_of_requisition', 'اذن تصنيع'),
         knex.raw('? as input_output', '1'),
         knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
+        `${ordersRequisitionsTableName}.name as order_name`,
       ],
     )
     .distinct()
@@ -433,6 +503,9 @@ exports.selectTotalDetailsByFabricId = async (fabricId) => {
     .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${wbManufacturingOutputTableName}.fabric_id`)
     .innerJoin(`${consigmentManufacturingTableName}`, `${consigmentManufacturingTableName}.id`, `${wbManufacturingOutputTableName}.consigment_manufacturing_id`)
     .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${wbManufacturingRequisitionTableName}.industry_id`)
+    .innerJoin(`${ordersRequisitionsTableName}`, 
+    `${ordersRequisitionsTableName}.id`, 
+    `${wbManufacturingOutputTableName}.orders_requisitions_id`)
     .where(whereCluse)
     .andWhere(`${wbManufacturingOutputTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -506,6 +579,14 @@ exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async
         `${wbManufacturingRequisitionTableName}.date`,
         `${wbManufacturingRequisitionTableName}.note`,
         `${wbManufacturingRequisitionTableName}.is_order`,
+        knex.raw(
+            `CASE 
+            WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_new}' THEN '${constants.wb_manufacturing_requisition_status_new_trans}' 
+            WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_good_after_check}' THEN '${constants.wb_manufacturing_requisition_status_good_after_check_trans}'  
+            WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_not_good_after_check}' THEN '${constants.wb_manufacturing_requisition_status_not_good_after_check_trans}'  
+            WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_white}' THEN '${constants.wb_manufacturing_requisition_status_white_trans}'  
+            ELSE ''  
+            END as status_name`),
         `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
         `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
         `${bussinessmanTableName}.id as bussinessman_id`,
@@ -518,6 +599,8 @@ exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async
         knex.raw('? as type_of_requisition', 'اذن تصنيع'),
         knex.raw('? as input_output', '1'),
         knex.raw(`CONCAT(${bussinessmanTableName}.name) as side_of`),
+        `${wcTableName}.id as wc_id`,
+        `${wcTableName}.storage_place`,
       ],
     )
     .distinct()
@@ -534,6 +617,7 @@ exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async
     .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${wbManufacturingOutputTableName}.fabric_id`)
     .innerJoin(`${consigmentManufacturingTableName}`, `${consigmentManufacturingTableName}.id`, `${wbManufacturingOutputTableName}.consigment_manufacturing_id`)
     .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${wbManufacturingOutputTableName}.warehouse_id`)
+    .innerJoin(`${wcTableName}`, `${wcTableName}.wb_manufacturing_output_id`, `${wbManufacturingOutputTableName}.id`)
     .where(whereCluse)
     .andWhere(`${wbManufacturingOutputTableName}.quantity`, ">", 0)
     .then((data) => {

@@ -225,6 +225,28 @@ exports.selectByRequisitionId = async (requisitionId) => {
     }
 };
 
+exports.selectByRequisitionIds = async (requisitionIds = []) => {
+        const results = await wdFormDyeingRequisitionDetailsQueries.selectByRequisitionIds(requisitionIds);
+        if (Array.isArray(results) && results.length > 0) {
+            for (let i = 0; i < results.length; i++) {
+                const element = results[i];
+                element.fabricOrderRequisitions = await wdService.selectRequisitionsForWcFabricOrderRequisition(
+                    element.id
+                )
+            }
+        }
+
+        const map = {};
+  for (const d of results) {
+    if (!map[d.requisition_id]) {
+      map[d.requisition_id] = [];
+    }
+    map[d.requisition_id].push(d);
+  }
+
+  return map;
+};
+
 exports.selectBy = async (whereCluse) => {
         const results = await wdFormDyeingRequisitionDetailsQueries.selectBy(whereCluse);
         return results;

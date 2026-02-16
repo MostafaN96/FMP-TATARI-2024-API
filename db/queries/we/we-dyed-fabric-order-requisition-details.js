@@ -290,6 +290,87 @@ exports.selectByRequisitionIdsForWeDyedFabricOrder = async (whereCluse, requisit
     return queryResults;
 };
 
+exports.selectByRequisitionIdForWeAddRequisition = async (whereCluse) => {
+    let queryResults = [];
+
+    await knex.select([
+        `${ordersRequisitionsTableName}.name as order_name`,
+        `${weDyedFabricOrderRequisitionTableName}.id as requisition_id`,
+        `${weDyedFabricOrderRequisitionTableName}.orders_requisitions_id`,
+        `${weDyedFabricOrderRequisitionTableName}.date`,
+        `${weDyedFabricOrderRequisitionTableName}.number`,
+        `${weDyedFabricOrderRequisitionTableName}.note`,
+        `${weDyedFabricOrderRequisitionDetailsTableName}.id`,
+        `${weDyedFabricOrderRequisitionDetailsTableName}.note as details_note`,
+        `${weDyedFabricOrderRequisitionDetailsTableName}.initial_quantity  as quantity`,
+        // `${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity`,
+        knex.raw(
+            `CASE WHEN ${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
+            THEN ${0}
+            ELSE ${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity
+            END as current_quantity`),
+        knex.raw(
+            `CASE WHEN ${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
+                                        THEN coalesce( (${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity * -1) + ${weDyedFabricOrderRequisitionDetailsTableName}.initial_quantity )
+                                        ELSE coalesce( ${weDyedFabricOrderRequisitionDetailsTableName}.initial_quantity - ${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity )
+                                        END as net_current_quantity`),
+        knex.raw(
+            `CASE WHEN ${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
+            THEN coalesce( ${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity * -1 )
+            ELSE ${0}
+            END as over_current_quantity`),
+        knex.raw(
+            `CASE WHEN ${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity < ${0}
+            THEN coalesce( ((${weDyedFabricOrderRequisitionDetailsTableName}.current_quantity * -1) / ${weDyedFabricOrderRequisitionDetailsTableName}.initial_quantity) * 100 )
+            ELSE ${0}
+            END as over_current_quantity_ratio`),
+        `${weDyedFabricOrderRequisitionDetailsTableName}.color_code`,
+        `${weDyedFabricOrderRequisitionDetailsTableName}.waste_ratio`,
+        `${weDyedFabricOrderRequisitionDetailsTableName}.fabric_width`,
+        `${weDyedFabricOrderRequisitionDetailsTableName}.fabric_quantity_m2`,
+        `${weDyedFabricOrderRequisitionDetailsTableName}.price`,
+        `${weDyedFabricOrderRequisitionDetailsTableName}.price_dollar`,
+        `${fabricTableName}.id as dyed_fabric_id`,
+        `${fabricTableName}.name as dyed_fabric_name`,
+        `${fabricTableName}.code as dyed_fabric_code`,
+        `${bussinessmanTableName}.id as seller_id`,
+        `${bussinessmanTableName}.name as seller_name`,
+        `${bussinessmanTableName}.phone as seller_phone`,
+        `${colorCategoryTableName}.id as color_category_id`,
+        `${colorCategoryTableName}.name as color_category_name`,
+        `${colorTableName}.id as color_id`,
+        `${colorTableName}.name as color_name`,
+        knex.raw(`CONCAT(${colorTableName}.name, ' (كود: ', ${weDyedFabricOrderRequisitionDetailsTableName}.color_code, ')' ) as "color_name_code"`),
+    ])
+        .from(`${weDyedFabricOrderRequisitionDetailsTableName}`)
+        .innerJoin(`${ordersRequisitionsTableName}`,
+            `${ordersRequisitionsTableName}.id`,
+            `${weDyedFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`)
+        .innerJoin(`${weDyedFabricOrderRequisitionTableName}`,
+            `${weDyedFabricOrderRequisitionTableName}.id`,
+            `${weDyedFabricOrderRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`)
+        .innerJoin(`${fabricTableName}`,
+            `${fabricTableName}.id`,
+            `${weDyedFabricOrderRequisitionDetailsTableName}.dyed_fabric_id`)
+        .innerJoin(`${bussinessmanTableName}`,
+            `${bussinessmanTableName}.id`,
+            `${weDyedFabricOrderRequisitionTableName}.seller_id`)
+        .innerJoin(`${colorCategoryTableName}`,
+            `${colorCategoryTableName}.id`,
+            `${weDyedFabricOrderRequisitionDetailsTableName}.color_category_id`)
+        .innerJoin(`${colorTableName}`,
+            `${colorTableName}.id`,
+            `${weDyedFabricOrderRequisitionDetailsTableName}.color_id`)
+        .where(whereCluse)
+        .andWhere(`${weDyedFabricOrderRequisitionDetailsTableName}.initial_quantity`, ">", 0)
+        .groupBy(`${weDyedFabricOrderRequisitionTableName}.id`)
+        .then((data) => {
+            queryResults = data;
+        })
+        .catch((error) => console.error(error));
+    return queryResults;
+};
+
 exports.selectWarehouseByRequisitionDetailsId = async (whereCluse) => {
     //     let queryResults = [];
     //     let columns = [
