@@ -26,14 +26,6 @@ exports.selectInventoryTotal = async (request, response) => {
     response.status(200).json(results);
   };
 
-  exports.selectInventoryDetails = async (request, response) => {
-    // logging
-    const bodyPalod = request.body;
-
-    const results = await waReportService.selectInventoryDetails(bodyPalod);
-    response.status(200).json(results);
-  };
-
   exports.selectInventoryDetailsByWarehouseByYarnByLot = async (request, response) => {
     // logging
     const { id } = request.params;

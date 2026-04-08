@@ -4,9 +4,9 @@ const wbManufacturingInputOutputQueries = require("../../db/queries/wb/wb-manufa
 // Util
 const constants = require("../../util/constants");
 
-exports.create = async (wbManufacturingInputOutput, items, isOrder) => {
+exports.create = async (wbManufacturingInputOutput, items, isOrder, trx = null) => {
 
-  const results = await wbManufacturingInputOutputQueries.insert(wbManufacturingInputOutput, items, isOrder);
+  const results = await wbManufacturingInputOutputQueries.insert(wbManufacturingInputOutput, items, isOrder, trx);
   if (results) {
     return constants.insertSuccess;
   } else {

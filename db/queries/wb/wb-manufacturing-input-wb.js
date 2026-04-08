@@ -9,7 +9,7 @@ const {
   wbManufacturingInputWbTableName, 
 } = require("../../../util/database-tables-name");
 
-exports.insert = async (wbManufacturingInputWb, items) => {
+exports.insert = async (wbManufacturingInputWb, items, trx = null) => {
   let queryResults = false;
   await sqlFun
     .insert(wbManufacturingInputWbTableName, {
@@ -18,7 +18,7 @@ exports.insert = async (wbManufacturingInputWb, items) => {
       quantity: items.updatedQuantity,
       creator_id: wbManufacturingInputWb.personid,
       ip_address: wbManufacturingInputWb.ipaddress,
-    })
+    }, trx)
     .then((data) => {
       queryResults = true;
     })

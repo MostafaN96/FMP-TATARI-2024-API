@@ -84,6 +84,7 @@ const wbManufacturingInputWbTableName = 'wb_manufacture_input_wb'
 const wbManufacturingOutputTableName = 'wb_manufacturing_output'
 const wbManufacturingInputOutputTableName = 'wb_manufacturing_input_output'
 const wbManufacturingOutputOrderTableName = 'wb_manufacturing_output_order'
+const wbManufacturingOutputAllocationTableName = 'wb_manufacturing_output_allocation'
 const wbTransitionBetweenIndustriesRequisitionTableName = 'wb_transition_between_industries_requisition'
 const wbTransitionBetweenIndustriesRequisitionDetailsTableName = 'wb_transition_between_industries_requisition_details'
 const wbTransitionBetweenIndustriesRequisitionDetailsWbTableName = 'wb_transition_between_industries_requisition_details_wb'
@@ -278,6 +279,7 @@ module.exports = {
     wbManufacturingOutputTableName,
     wbManufacturingInputOutputTableName,
     wbManufacturingOutputOrderTableName,
+    wbManufacturingOutputAllocationTableName,
     wbTransitionBetweenIndustriesRequisitionTableName,
     wbTransitionBetweenIndustriesRequisitionDetailsTableName,
     wbTransitionBetweenIndustriesRequisitionDetailsWbTableName,

@@ -1,8 +1,9 @@
 const databaseConnection = require("../config/connection");
 const knex = databaseConnection.getConnection()
 
-exports.insert = async (tableName, payload) => {
-  return knex(`${tableName}`).insert(payload);
+exports.insert = async (tableName, payload, trx = null) => {
+  const queryBuilder = trx || knex;
+  return queryBuilder(`${tableName}`).insert(payload);
 };
 
 exports.selectMaxValue = async (tableName, atrributeMaxValue) => {

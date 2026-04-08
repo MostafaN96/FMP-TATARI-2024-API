@@ -7,11 +7,13 @@ const wbManufacturingRequisitionQueries = require("../../db/queries/wb/wb-manufa
 const wbManufacturingOrderRequisitionDetailsQueries = require("../../db/queries/wb/wb-manufacturing-order-requisition-details");
 const wbQueries = require("../../db/queries/wb/wb");
 const wcFabricOrderRequisitionDetailsQueries = require("../../db/queries/wc/wc-fabric-order-requisition-details");
+const waYarnOrderRequisitionDetailsQueries = require("../../db/queries/wa/wa-yarn-order-requisition-details");
 
 // Services
 const wbService = require("./wb");
 const wbManufacturingInputWbService = require("./wb-manufacturing-input-wb");
 const wbManufacturingOutputService = require("./wb-manufacturing-output");
+const wbManufacturingOutputAllocationService = require("./wb-manufacturing-output-allocation");
 const wbManufacturingInputOutputService = require("./wb-manufacturing-input-output");
 const wbManufacturingOutputOrderService = require("./wb-manufacturing-output-order");
 const wcService = require("../wc/wc");
@@ -22,98 +24,268 @@ const trans = require("../../helpers/transform");
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
+const db = require("../../db/config/connection").getConnection();
+const knex = require("../../db/config/connection").getConnection();
 const {
     wbManufacturingOrderRequisitionDetailsTableName,
     wbManufacturingInputTableName,
     wbManufacturingInputWbTableName,
     wbManufacturingInputOutputTableName,
-    wcFabricOrderRequisitionDetailsTableName
+    wcFabricOrderRequisitionDetailsTableName,
+    wcFabricOrderRequisitionTableName,
+    waYarnOrderRequisitionDetailsTableName
 } = require("../../util/database-tables-name");
 
-exports.create = async (wbManufacturingInput, isOrder) => {
+const getMergedOrderIds = async (parentOrderId) => {
+    const mergedOrders = await knex(wcFabricOrderRequisitionTableName)
+        .select("id")
+        .where({
+            is_deleted: 0,
+            is_active: 1
+        })
+        .andWhere(function () {
+            this.where("id", parentOrderId)
+                .orWhere("parent_wc_fabric_order_requisition_id", parentOrderId);
+        })
+        .orderBy("date", "asc")
+        .orderBy("number", "asc");
 
-    // Get wc fabric order by order requisition id
-    let wcFabricOrderRequisitionDetailsWhereCluse = {};
-    wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
-    wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
-    // wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_order`] = 1;
-    wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`] = wbManufacturingInput.ordersRequisitionsId;
-    wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.fabric_id`] = wbManufacturingInput.fabricId;
+    return mergedOrders.length > 0
+        ? mergedOrders.map((order) => order.id)
+        : [parentOrderId];
+};
 
-    const selectWcFabricOrderRequisitionDetailsResult = await wcFabricOrderRequisitionDetailsQueries.selectByRequisitionId(wcFabricOrderRequisitionDetailsWhereCluse)
-    if (Array.isArray(selectWcFabricOrderRequisitionDetailsResult) && selectWcFabricOrderRequisitionDetailsResult.length > 0) {
-        wbManufacturingInput.wcFabricOrderRequisitionDetailsId = selectWcFabricOrderRequisitionDetailsResult[0].id
-        wbManufacturingInput.fabricOrderId = selectWcFabricOrderRequisitionDetailsResult[0].requisition_id
+exports.create = async (wbManufacturingInput, isOrder, trx = null) => {
+    // إذا كانت trx موجودة، استخدمها، وإلا أنشئ واحدة جديدة
+    const transaction = trx || await db.transaction();
+    const shouldCommit = !trx; // فقط نعمل commit إذا لم تعطينا trx من الخارج
+    
+    try {
+        // Get wc fabric order by order requisition id
+        let wcFabricOrderRequisitionDetailsWhereCluse = {};
+        wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+        wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+        wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`] = wbManufacturingInput.ordersRequisitionsId;
+        wcFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.fabric_id`] = wbManufacturingInput.fabricId;
 
-        // wbManufacturingOutput
-        wbManufacturingInput.wbManufacturingOutputId = trans.transform();
-        const wbManufacturingOutputResult = await wbManufacturingOutputService.create(wbManufacturingInput)
+        const selectWcFabricOrderRequisitionDetailsResult = await wcFabricOrderRequisitionDetailsQueries.selectByRequisitionId(wcFabricOrderRequisitionDetailsWhereCluse)
+        if (Array.isArray(selectWcFabricOrderRequisitionDetailsResult) && selectWcFabricOrderRequisitionDetailsResult.length > 0) {
+            const selectedOrderId = selectWcFabricOrderRequisitionDetailsResult[0].requisition_id;
 
-        if (wbManufacturingOutputResult == constants.insertSuccess) {
-            for (let i = 0; i < wbManufacturingInput.items.length; i++) {
-                wbManufacturingInput.items[i].wbManufacturingInputId = trans.transform();
+            const selectParentOrderResult = await knex(wcFabricOrderRequisitionTableName)
+                .select("parent_wc_fabric_order_requisition_id")
+                .where({ id: selectedOrderId, is_deleted: 0, is_active: 1 })
+                .limit(1);
 
-                // Add wbManufacturingInput
-                const results = await wbManufacturingInputQueries.insert(wbManufacturingInput, wbManufacturingInput.items[i]);
-                if (!results) {
-                    return constants.insertError;
-                } else {
-                    let newQuantity = parseFloat(wbManufacturingInput.items[i].quantityWithWaste)
-                    // select wb Yarn for decrement current quantity
-                    const yarnsStoredInWaResult = await wbService.selectRecordsByIndustryByYarnByYarnLot(
-                        wbManufacturingInput.industryId,
-                        wbManufacturingInput.items[i].yarnId,
-                        wbManufacturingInput.items[i].yarnLotId,
-                        wbManufacturingInput.items[i].consigmentYarnId,
-                        wbManufacturingInput.yarnOrderId
+            const parentOrderId = selectParentOrderResult.length > 0
+                ? (selectParentOrderResult[0].parent_wc_fabric_order_requisition_id || selectedOrderId)
+                : selectedOrderId;
+
+            const mergedOrderIds = await getMergedOrderIds(parentOrderId);
+            let selectedFabricOrderDetails = null;
+            let selectedFabricOrderId = null;
+
+            for (let orderIndex = 0; orderIndex < mergedOrderIds.length; orderIndex++) {
+                const currentOrderId = mergedOrderIds[orderIndex];
+                let mergedWhereCluse = {};
+                mergedWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+                mergedWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+                mergedWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = currentOrderId;
+                mergedWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.fabric_id`] = wbManufacturingInput.fabricId;
+
+                const mergedDetailsResult = await wcFabricOrderRequisitionDetailsQueries.selectByRequisitionId(mergedWhereCluse);
+                if (Array.isArray(mergedDetailsResult) && mergedDetailsResult.length > 0) {
+                    const availableDetails = mergedDetailsResult.find((detail) => detail.current_quantity > 0) || mergedDetailsResult[0];
+                    selectedFabricOrderDetails = availableDetails;
+                    selectedFabricOrderId = currentOrderId;
+                    break;
+                }
+            }
+
+            if (!selectedFabricOrderDetails) {
+                if (shouldCommit) await transaction.rollback();
+                return constants.itemNotFound;
+            }
+
+            wbManufacturingInput.wcFabricOrderRequisitionDetailsId = selectedFabricOrderDetails.id;
+            wbManufacturingInput.fabricOrderId = selectedFabricOrderId || selectedFabricOrderDetails.requisition_id;
+            wbManufacturingInput.ordersRequisitionsId = selectedFabricOrderDetails.orders_requisitions_id;
+
+            // wbManufacturingOutput
+            wbManufacturingInput.wbManufacturingOutputId = trans.transform();
+            const wbManufacturingOutputResult = await wbManufacturingOutputService.create(wbManufacturingInput, transaction)
+
+            if (wbManufacturingOutputResult == constants.insertSuccess) {
+                // 🔵 التخصيص التلقائي: جلب الطلبات الفرعية المدمجة من الطلب الأب
+                console.log("🔍 جلب الطلبات الفرعية المدمجة للطلب:", selectedFabricOrderId);
+                
+                const mergedChildOrders = await knex(wcFabricOrderRequisitionDetailsTableName)
+                    .select(
+                        `${wcFabricOrderRequisitionDetailsTableName}.id as details_id`,
+                        `${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id as order_id`,
+                        `${wcFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`,
+                        `${wcFabricOrderRequisitionDetailsTableName}.current_quantity`,
+                        `${wcFabricOrderRequisitionTableName}.number as order_number`
                     )
-                    if (yarnsStoredInWaResult[0] != null) {
+                    .innerJoin(
+                        wcFabricOrderRequisitionTableName,
+                        `${wcFabricOrderRequisitionTableName}.id`,
+                        `${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`
+                    )
+                    .where({
+                        [`${wcFabricOrderRequisitionDetailsTableName}.fabric_id`]: wbManufacturingInput.fabricId,
+                        [`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`]: 0,
+                        [`${wcFabricOrderRequisitionDetailsTableName}.is_active`]: 1,
+                        [`${wcFabricOrderRequisitionTableName}.is_deleted`]: 0,
+                        [`${wcFabricOrderRequisitionTableName}.is_active`]: 1
+                    })
+                    .whereIn(
+                        `${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`,
+                        mergedOrderIds
+                    )
+                    .where(`${wcFabricOrderRequisitionDetailsTableName}.current_quantity`, '>', 0)
+                    .orderBy(`${wcFabricOrderRequisitionTableName}.date`, 'asc')
+                    .orderBy(`${wcFabricOrderRequisitionTableName}.number`, 'asc');
 
-                        for (let j = 0; j < yarnsStoredInWaResult.length; j++) {
-                            const yarnStoredInWb = yarnsStoredInWaResult[j];
-                            let currentQuantity = yarnStoredInWb.current_quantity
-                            let updatedQuantity = 0
+                console.log(`✅ تم إيجاد ${mergedChildOrders.length} طلب فرعي يحتاج تخصيص`);
 
-                            // decrement wb Yarn CurrentQuantity
-                            let returnedQuantityObj = await wbService.decrementWbCurrentQuantity(newQuantity, currentQuantity, yarnStoredInWb, updatedQuantity);
-                            newQuantity = returnedQuantityObj.newQuantity
-                            updatedQuantity = returnedQuantityObj.updatedQuantity
-                            wbManufacturingInput.items[i].wbId = yarnStoredInWb.id
-                            wbManufacturingInput.items[i].updatedQuantity = updatedQuantity
-
-                            // Add wb Manufacturing Input wb
-                            await wbManufacturingInputWbService.create(wbManufacturingInput, wbManufacturingInput.items[i])
+                if (mergedChildOrders.length > 0) {
+                    console.log("🔵 بدء التخصيص التلقائي للمخرجات");
+                    console.log("الطلبات الفرعية:", JSON.stringify(mergedChildOrders, null, 2));
                     
-                            // Enter to if condition when stock runs out
-                            if (newQuantity == 0) {
-                                break;
+                    const childOrdersWithUserData = mergedChildOrders.map(order => ({
+                        order_id: order.orders_requisitions_id,
+                        details_id: order.details_id,
+                        required_quantity: order.current_quantity,
+                        creator_id: wbManufacturingInput.personid,
+                        ip_address: wbManufacturingInput.ipaddress
+                    }));
+
+                    console.log("بيانات التخصيص:", JSON.stringify(childOrdersWithUserData, null, 2));
+
+                    const allocationResult = await wbManufacturingOutputAllocationService.allocateOutput(
+                        wbManufacturingInput.wbManufacturingOutputId,
+                        childOrdersWithUserData,
+                        transaction
+                    );
+
+                    console.log("نتيجة التخصيص:", JSON.stringify(allocationResult, null, 2));
+
+                    // إذا فشل التخصيص، أرجع الخطأ
+                    if (allocationResult.status !== 200 && allocationResult.status !== 206) {
+                        if (shouldCommit) await transaction.rollback();
+                        console.error("❌ فشل التخصيص:", allocationResult);
+                        return allocationResult;
+                    }
+                    
+                    console.log("✅ تم التخصيص بنجاح");
+                } else {
+                    console.log("⚠️ لا توجد طلبات فرعية تحتاج تخصيص");
+                }
+                
+                // معالجة العناصر
+                for (let i = 0; i < wbManufacturingInput.items.length; i++) {
+                    wbManufacturingInput.items[i].wbManufacturingInputId = trans.transform();
+
+                    // Add wbManufacturingInput
+                    const results = await wbManufacturingInputQueries.insert(wbManufacturingInput, wbManufacturingInput.items[i], transaction);
+                    if (!results) {
+                        if (shouldCommit) await transaction.rollback();
+                        return constants.insertError;
+                    } else {
+                        let newQuantity = parseFloat(wbManufacturingInput.items[i].quantityWithWaste)
+                        // select wb Yarn for decrement current quantity
+                        const yarnsStoredInWaResult = await wbService.selectRecordsByIndustryByYarnByYarnLot(
+                            wbManufacturingInput.industryId,
+                            wbManufacturingInput.items[i].yarnId,
+                            wbManufacturingInput.items[i].yarnLotId,
+                            wbManufacturingInput.items[i].consigmentYarnId,
+                            wbManufacturingInput.yarnOrderId
+                        )
+                        if (yarnsStoredInWaResult[0] != null) {
+
+                            for (let j = 0; j < yarnsStoredInWaResult.length; j++) {
+                                const yarnStoredInWb = yarnsStoredInWaResult[j];
+                                let currentQuantity = yarnStoredInWb.current_quantity
+                                let updatedQuantity = 0
+
+                                // decrement wb Yarn CurrentQuantity
+                                let returnedQuantityObj = await wbService.decrementWbCurrentQuantity(newQuantity, currentQuantity, yarnStoredInWb, updatedQuantity);
+                                newQuantity = returnedQuantityObj.newQuantity
+                                updatedQuantity = returnedQuantityObj.updatedQuantity
+                                wbManufacturingInput.items[i].wbId = yarnStoredInWb.id
+                                wbManufacturingInput.items[i].updatedQuantity = updatedQuantity
+
+                                // Add wb Manufacturing Input wb
+                                await wbManufacturingInputWbService.create(wbManufacturingInput, wbManufacturingInput.items[i], transaction)
+                        
+                                // Enter to if condition when stock runs out
+                                if (newQuantity == 0) {
+                                    break;
+                                }
+                            }
+
+                            const requestedYarnOrderId = wbManufacturingInput.yarnOrderId;
+                            if (!requestedYarnOrderId) {
+                                if (shouldCommit) await transaction.rollback();
+                                return constants.itemNotFound;
+                            }
+
+                            const detailsByOrderWhere = {};
+                            detailsByOrderWhere[`${waYarnOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+                            detailsByOrderWhere[`${waYarnOrderRequisitionDetailsTableName}.is_active`] = 1;
+                            detailsByOrderWhere[`${waYarnOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = requestedYarnOrderId;
+                            detailsByOrderWhere[`${waYarnOrderRequisitionDetailsTableName}.yarn_id`] = wbManufacturingInput.items[i].yarnId;
+
+                            const yarnOrderDetailsResult = await waYarnOrderRequisitionDetailsQueries.selectOneForUpdate(detailsByOrderWhere);
+
+                            if (Array.isArray(yarnOrderDetailsResult) && yarnOrderDetailsResult.length > 0) {
+                                wbManufacturingInput.items[i].waYarnOrderRequisitionDetailsId = yarnOrderDetailsResult[0].id;
+                                wbManufacturingInput.items[i].waYarnOrderRequisitionId = yarnOrderDetailsResult[0].wa_yarn_order_requisition_id;
+                                wbManufacturingInput.items[i].waYarnOrdersRequisitionsId = yarnOrderDetailsResult[0].orders_requisitions_id;
+                            } else {
+                                if (shouldCommit) await transaction.rollback();
+                                return constants.itemNotFound;
+                            }
+
+                            // Add wb Manufacturing Input Output
+                            await wbManufacturingInputOutputService.create(wbManufacturingInput, wbManufacturingInput.items[i], isOrder, transaction)
+
+                        } else {
+                            if (shouldCommit) await transaction.rollback();
+                            return {
+                                ...constants.wrongQuantity,
+                                spentQuantity: 0,
+                                newQuantity: newQuantity
                             }
                         }
-
-                        // Add wb Manufacturing Input Output
-                        await wbManufacturingInputOutputService.create(wbManufacturingInput, wbManufacturingInput.items[i], isOrder)
-
-                    } else {
-                        return {
-                            ...constants.wrongQuantity,
-                            spentQuantity: 0,
-                            newQuantity: newQuantity
-                        }
                     }
-                }
-                if (i == wbManufacturingInput.items.length - 1) {
-                    // Add Wc
-                    await wcService.createForManufacturing(wbManufacturingInput)
-                    // manufacturing order
-                    if (isOrder) {
-                        await this.createOrder(wbManufacturingInput)
+                    if (i == wbManufacturingInput.items.length - 1) {
+                        // Add Wc
+                        await wcService.createForManufacturing(wbManufacturingInput, transaction)
+                        // manufacturing order
+                        if (isOrder) {
+                            await this.createOrder(wbManufacturingInput, transaction)
+                        }
                     }
                 }
             }
+
+            // Commit فقط إذا أنشأنا نحن الـ transaction
+            if (shouldCommit) await transaction.commit();
+            return { ...constants.insertSuccess, ...{ id: wbManufacturingInput.id } };
+        } else {
+            if (shouldCommit) await transaction.rollback();
+            return constants.itemNotFound;
         }
-
-
-        return { ...constants.insertSuccess, ...{ id: wbManufacturingInput.id } };
+    } catch (error) {
+        if (shouldCommit) await transaction.rollback();
+        console.error("خطأ في create:", error);
+        return {
+            status: 500,
+            message: "خطأ في الخادم",
+            error: error.message
+        };
     }
 };
 
@@ -156,6 +328,27 @@ exports.createInputDetails = async (wbManufacturingInput, isOrder) => {
                     if (newQuantity == 0) {
                         break;
                     }
+                }
+
+                const requestedYarnOrderId = wbManufacturingInput.yarnOrderId;
+                if (!requestedYarnOrderId) {
+                    return constants.itemNotFound;
+                }
+
+                const detailsByOrderWhere = {};
+                detailsByOrderWhere[`${waYarnOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+                detailsByOrderWhere[`${waYarnOrderRequisitionDetailsTableName}.is_active`] = 1;
+                detailsByOrderWhere[`${waYarnOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = requestedYarnOrderId;
+                detailsByOrderWhere[`${waYarnOrderRequisitionDetailsTableName}.yarn_id`] = wbManufacturingInput.items[i].yarnId;
+
+                const yarnOrderDetailsResult = await waYarnOrderRequisitionDetailsQueries.selectOneForUpdate(detailsByOrderWhere);
+
+                if (Array.isArray(yarnOrderDetailsResult) && yarnOrderDetailsResult.length > 0) {
+                    wbManufacturingInput.items[i].waYarnOrderRequisitionDetailsId = yarnOrderDetailsResult[0].id;
+                    wbManufacturingInput.items[i].waYarnOrderRequisitionId = yarnOrderDetailsResult[0].wa_yarn_order_requisition_id;
+                    wbManufacturingInput.items[i].waYarnOrdersRequisitionsId = yarnOrderDetailsResult[0].orders_requisitions_id;
+                } else {
+                    return constants.itemNotFound;
                 }
 
                 // Add wb Manufacturing Input Output
@@ -243,7 +436,7 @@ exports.selectInputQuantitiesByRequisitionId = async (requisitionId) => {
 
 
 // Order Function
-exports.createOrder = async (wbManufacturingInput) => {
+exports.createOrder = async (wbManufacturingInput, trx = null) => {
     for (let i = 0; i < wbManufacturingInput.itemsOrder.length; i++) {
         const orderElement = wbManufacturingInput.itemsOrder[i];
         await wbManufacturingOutputOrderService.create(wbManufacturingInput, orderElement)

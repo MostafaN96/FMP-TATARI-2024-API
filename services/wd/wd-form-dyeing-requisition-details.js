@@ -15,85 +15,138 @@ const wcFabricOrderRequisitionDetailsService = require("../wc/wc-fabric-order-re
 // Helper
 const trans = require("../../helpers/transform");
 
+// Config
+const knex = require("../../db/config/connection").getConnection();
+
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
 const { 
     wdFormDyeingRequisitionDetailsTableName, 
     wdFormDyeingRequisitionDetailsWdTableName, 
-    wcFabricOrderRequisitionDetailsTableName
+    wcFabricOrderRequisitionDetailsTableName,
+    wcFabricOrderRequisitionTableName
 } = require("../../util/database-tables-name");
 
 exports.create = async (wdFormDyeingRequisitionDetails) => {
     for (let i = 0; i < wdFormDyeingRequisitionDetails.items.length; i++) {
         wdFormDyeingRequisitionDetails.items[i].wdFormDyeingRequisitionDetailsId = trans.transform();
 
-        // Get fabric order requisitions details id
-        let fabricOrderRequisitionDetailsWhereCluse = {};
-        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = wdFormDyeingRequisitionDetails.items[i].fabricOrderId;
-        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.fabric_id`] = wdFormDyeingRequisitionDetails.items[i].fabricId;
-        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
-        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
-        const selectFabricOrderRequisitionDetailsResult = await wcFabricOrderRequisitionDetailsService.selectOne(fabricOrderRequisitionDetailsWhereCluse)
+        // Resolve parent/child orders to include all merged orders
+        const parentResult = await knex(wcFabricOrderRequisitionTableName)
+          .select("id", "parent_wc_fabric_order_requisition_id")
+          .where({ id: wdFormDyeingRequisitionDetails.items[i].fabricOrderId, is_deleted: 0, is_active: 1 })
+          .limit(1);
+
+        const parentOrderId = parentResult && parentResult.length > 0
+          ? (parentResult[0].parent_wc_fabric_order_requisition_id || wdFormDyeingRequisitionDetails.items[i].fabricOrderId)
+          : wdFormDyeingRequisitionDetails.items[i].fabricOrderId;
+
+        const mergedOrders = await knex(wcFabricOrderRequisitionTableName)
+          .select("id")
+          .where({ is_deleted: 0, is_active: 1 })
+          .andWhere(function () {
+            this.where("id", parentOrderId)
+              .orWhere("parent_wc_fabric_order_requisition_id", parentOrderId);
+          })
+          .orderBy("date", "asc")
+          .orderBy("number", "asc");
+
+        const orderIdsToConsume = mergedOrders.length > 0
+          ? mergedOrders.map((order) => order.id)
+          : [parentOrderId];
+
+        // Get fabric order requisitions details id for one of the merged orders (first match)
+        let selectFabricOrderRequisitionDetailsResult = [];
+        for (let orderIndex = 0; orderIndex < orderIdsToConsume.length; orderIndex++) {
+            const currentOrderId = orderIdsToConsume[orderIndex];
+            let fabricOrderRequisitionDetailsWhereCluse = {};
+            fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = currentOrderId;
+            fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.fabric_id`] = wdFormDyeingRequisitionDetails.items[i].fabricId;
+            fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+            fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+            const result = await wcFabricOrderRequisitionDetailsService.selectOne(fabricOrderRequisitionDetailsWhereCluse);
+            if (Array.isArray(result) && result.length > 0) {
+                selectFabricOrderRequisitionDetailsResult = result;
+                break;
+            }
+        }
+
         if (Array.isArray(selectFabricOrderRequisitionDetailsResult) && selectFabricOrderRequisitionDetailsResult.length > 0) {
             wdFormDyeingRequisitionDetails.items[i].wcFabricOrderRequisitionDetailsId = selectFabricOrderRequisitionDetailsResult[0].id
+            wdFormDyeingRequisitionDetails.items[i].wcFabricOrderRequisitionId = selectFabricOrderRequisitionDetailsResult[0].wc_fabric_order_requisition_id
+            wdFormDyeingRequisitionDetails.items[i].ordersRequisitionsId = selectFabricOrderRequisitionDetailsResult[0].orders_requisitions_id
+            wdFormDyeingRequisitionDetails.items[i].parentWcFabricOrderRequisitionId = selectFabricOrderRequisitionDetailsResult[0].parent_wc_fabric_order_requisition_id
+            wdFormDyeingRequisitionDetails.items[i].parentOrdersRequisitionsId = selectFabricOrderRequisitionDetailsResult[0].parent_orders_requisitions_id
 
         const results = await wdFormDyeingRequisitionDetailsQueries.insert(wdFormDyeingRequisitionDetails, wdFormDyeingRequisitionDetails.items[i]);
         if (!results) {
             return constants.insertError;
         } else {
             let newQuantity = parseFloat(wdFormDyeingRequisitionDetails.items[i].quantity)
+            const originalQuantity = newQuantity;
+            let foundStock = false;
 
-            // select Wd for decrement current quantity
-            const fabricsStoredInWdResult = await wdService.selectRecordsByDyeingByFabricByConsigmentDyeing(
-                wdFormDyeingRequisitionDetails.dyeingId,
-                wdFormDyeingRequisitionDetails.items[i].fabricId,
-                wdFormDyeingRequisitionDetails.items[i].consigmentDyeingId,
-                wdFormDyeingRequisitionDetails.items[i].fabricOrderId
-            )
-            if (fabricsStoredInWdResult[0] != null) {
+            // Iterate through merged orders to consume quantity
+            for (let orderIndex = 0; orderIndex < orderIdsToConsume.length; orderIndex++) {
+                const currentOrderId = orderIdsToConsume[orderIndex];
+                if (newQuantity == 0) {
+                    break;
+                }
 
-                for (let j = 0; j < fabricsStoredInWdResult.length; j++) {
-                    const fabricStoredInWd = fabricsStoredInWdResult[j];
-                    let currentQuantity = fabricStoredInWd.current_quantity
-                    let updatedQuantity = 0
+                // select Wd for decrement current quantity
+                const fabricsStoredInWdResult = await wdService.selectRecordsByDyeingByFabricByConsigmentDyeing(
+                    wdFormDyeingRequisitionDetails.dyeingId,
+                    wdFormDyeingRequisitionDetails.items[i].fabricId,
+                    wdFormDyeingRequisitionDetails.items[i].consigmentDyeingId,
+                    currentOrderId
+                )
+                if (fabricsStoredInWdResult[0] != null) {
+                    foundStock = true;
 
-                    // decrement wd CurrentQuantity
-                    let returnedQuantityObj = await wdService.decrementWdCurrentQuantity(newQuantity, currentQuantity, fabricStoredInWd, updatedQuantity);
-                    newQuantity = returnedQuantityObj.newQuantity
-                    updatedQuantity = returnedQuantityObj.updatedQuantity
-                    wdFormDyeingRequisitionDetails.items[i].wdId = fabricStoredInWd.id
-                    wdFormDyeingRequisitionDetails.items[i].updatedQuantity = updatedQuantity
+                    for (let j = 0; j < fabricsStoredInWdResult.length; j++) {
+                        const fabricStoredInWd = fabricsStoredInWdResult[j];
+                        let currentQuantity = fabricStoredInWd.current_quantity
+                        let updatedQuantity = 0
 
-                    // Add wdFormDyeingRequisitionDetailsWd
-                    await wdFormDyeingRequisitionDetailsWdService.create(wdFormDyeingRequisitionDetails, wdFormDyeingRequisitionDetails.items[i])
+                        // decrement wd CurrentQuantity
+                        let returnedQuantityObj = await wdService.decrementWdCurrentQuantity(newQuantity, currentQuantity, fabricStoredInWd, updatedQuantity);
+                        newQuantity = returnedQuantityObj.newQuantity
+                        updatedQuantity = returnedQuantityObj.updatedQuantity
+                        wdFormDyeingRequisitionDetails.items[i].wdId = fabricStoredInWd.id
+                        wdFormDyeingRequisitionDetails.items[i].updatedQuantity = updatedQuantity
 
-                    // Enter to if condition when stock runs out
-                    if (newQuantity == 0) {
-                        break;
+                        // Add wdFormDyeingRequisitionDetailsWd
+                        await wdFormDyeingRequisitionDetailsWdService.create(wdFormDyeingRequisitionDetails, wdFormDyeingRequisitionDetails.items[i])
+
+                        // Enter to if condition when stock runs out
+                        if (newQuantity == 0) {
+                            break;
+                        }
                     }
                 }
+            }
 
-                // Add Dyeing Services
-                for (let k = 0; k < wdFormDyeingRequisitionDetails.items[i].dyeingServices.length; k++) {
-                    const dyeingService = wdFormDyeingRequisitionDetails.items[i].dyeingServices[k];
-
-                    // Add wd_form_dyeing_requisition_details_dyeing_services
-                    await wdFormDyeingRequisitionDetailsDyeingServicesService.create(wdFormDyeingRequisitionDetails, wdFormDyeingRequisitionDetails.items[i], dyeingService[0])
-
-                }
-
-            } else {
+            if (!foundStock || newQuantity > 0) {
                 return {
                     ...constants.wrongQuantity,
-                    spentQuantity: 0,
+                    spentQuantity: parseFloat((originalQuantity - newQuantity).toFixed(3)),
                     newQuantity: newQuantity
-                }
+                };
+            }
+
+            // Add Dyeing Services
+            for (let k = 0; k < wdFormDyeingRequisitionDetails.items[i].dyeingServices.length; k++) {
+                const dyeingService = wdFormDyeingRequisitionDetails.items[i].dyeingServices[k];
+
+                // Add wd_form_dyeing_requisition_details_dyeing_services
+                await wdFormDyeingRequisitionDetailsDyeingServicesService.create(wdFormDyeingRequisitionDetails, wdFormDyeingRequisitionDetails.items[i], dyeingService[0])
+
             }
 
         }
     } else {
-
+        return constants.itemNotFound;
     }
     } 
     return { ...constants.insertSuccess, ...{ id: wdFormDyeingRequisitionDetails.id } };
@@ -103,6 +156,19 @@ exports.create = async (wdFormDyeingRequisitionDetails) => {
 exports.createForOrder = async (wdFormDyeingRequisitionDetails) => {
     for (let i = 0; i < wdFormDyeingRequisitionDetails.items.length; i++) {
         wdFormDyeingRequisitionDetails.items[i].wdFormDyeingRequisitionDetailsId = trans.transform();
+
+        // Get parent values if wc_fabric_order_requisition_id exists
+        if (wdFormDyeingRequisitionDetails.items[i].wcFabricOrderRequisitionId) {
+            let fabricOrderRequisitionDetailsWhereCluse = {};
+            fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = wdFormDyeingRequisitionDetails.items[i].wcFabricOrderRequisitionId;
+            fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+            fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+            const result = await wcFabricOrderRequisitionDetailsService.selectOne(fabricOrderRequisitionDetailsWhereCluse);
+            if (Array.isArray(result) && result.length > 0) {
+                wdFormDyeingRequisitionDetails.items[i].parentWcFabricOrderRequisitionId = result[0].parent_wc_fabric_order_requisition_id;
+                wdFormDyeingRequisitionDetails.items[i].parentOrdersRequisitionsId = result[0].parent_orders_requisitions_id;
+            }
+        }
 
         const results = await wdFormDyeingRequisitionDetailsQueries.insert(wdFormDyeingRequisitionDetails, wdFormDyeingRequisitionDetails.items[i]);
         if (!results) {

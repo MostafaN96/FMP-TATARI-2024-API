@@ -5,7 +5,7 @@ const knex = require("../../config/connection").getConnection();
 // Util
 const { wbManufacturingInputTableName, wbManufacturingRequisitionTableName, yarnTableName, yarnLotTableName, bussinessmanTableName, wbManufacturingInputOutputTableName, wbManufacturingOutputTableName, fabricTableName, consigmentYarnTableName, waYarnOrderRequisitionTableName } = require("../../../util/database-tables-name");
 
-exports.insert = async (wbManufacturingInput, items) => {
+exports.insert = async (wbManufacturingInput, items, trx = null) => {
   let queryResults = false;
   await sqlFun
     .insert(wbManufacturingInputTableName, {
@@ -22,7 +22,7 @@ exports.insert = async (wbManufacturingInput, items) => {
       statement: items.statement,
       creator_id: wbManufacturingInput.personid,
       ip_address: wbManufacturingInput.ipaddress,
-    })
+    }, trx)
     .then((data) => {
       queryResults = true;
     })

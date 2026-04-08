@@ -18,8 +18,11 @@ exports.insert = async (wcSellRequisitionDetails, items) => {
       id: items.wcSellRequisitionDetailsId,
       wc_sell_requisition_id: wcSellRequisitionDetails.id,
       wc_fabric_order_requisition_details_id: items.wcFabricOrderRequisitionDetailsId,
+      parent_wc_fabric_order_requisition_details_id: items.parentWcFabricOrderRequisitionDetailsId,
       wc_fabric_order_requisition_id: items.fabricOrderId,
+      parent_wc_fabric_order_requisition_id: items.parentFabricOrderId,
       orders_requisitions_id: items.ordersRequisitionsId,
+      parent_orders_requisitions_id: items.parentOrdersRequisitionsId,
       fabric_id: items.fabricId,
       consigment_manufacturing_id: items.consigmentManufacturingId,
       price: items.price,
@@ -188,7 +191,9 @@ exports.selectDetailsByWarehouseByFabricByConsigmentManufacturing = async (wareh
         knex.raw('? as input_output', '0')
       ],
     )
-    .innerJoin(`${wcSellRequisitionTableName}`, `${wcSellRequisitionTableName}.id`, `${wcSellRequisitionDetailsTableName}.wc_sell_requisition_id`)
+    .innerJoin(`${wcSellRequisitionTableName}`, 
+      `${wcSellRequisitionTableName}.id`, 
+      `${wcSellRequisitionDetailsTableName}.wc_sell_requisition_id`)
     .where(whereCluse)
     .andWhere(`${wcSellRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -204,7 +209,7 @@ exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async
   whereCluse[`${wcSellRequisitionTableName}.warehouse_id`] = warehouseId;
   whereCluse[`${wcSellRequisitionDetailsTableName}.fabric_id`] = fabricId;
   whereCluse[`${wcSellRequisitionDetailsTableName}.consigment_manufacturing_id`] = consigmentManufacturingId;
-  whereCluse[`${wcSellRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
+  whereCluse[`${wcSellRequisitionDetailsTableName}.parent_wc_fabric_order_requisition_id`] = fabricOrderId;
   whereCluse[`${wcSellRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${wcSellRequisitionDetailsTableName}.is_active`] = 1;
 
@@ -222,7 +227,7 @@ exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async
         `${wcSellRequisitionTableName}.number`,
         `${wcSellRequisitionTableName}.date`,
         `${wcSellRequisitionTableName}.note`,
-        `${wcFabricOrderRequisitionTableName}.id as wc_fabric_order_requisition_id`,
+        `${wcSellRequisitionDetailsTableName}.parent_wc_fabric_order_requisition_id as wc_fabric_order_requisition_id`,
         `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
         `${bussinessmanTableName}.id as bussinessman_id`,
         `${bussinessmanTableName}.name as bussinessman_name`,
@@ -237,8 +242,8 @@ exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async
     )
     .innerJoin(`${wcSellRequisitionTableName}`, `${wcSellRequisitionTableName}.id`, `${wcSellRequisitionDetailsTableName}.wc_sell_requisition_id`)
     .innerJoin(`${wcFabricOrderRequisitionTableName}`,
-      `${wcFabricOrderRequisitionTableName}.id`,
-      `${wcSellRequisitionDetailsTableName}.wc_fabric_order_requisition_id`)
+      `${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id`,
+      `${wcSellRequisitionDetailsTableName}.parent_wc_fabric_order_requisition_id`)
     .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${wcSellRequisitionTableName}.seller_id`)
     .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${wcSellRequisitionDetailsTableName}.fabric_id`)
     .innerJoin(`${consigmentManufacturingTableName}`, `${consigmentManufacturingTableName}.id`, `${wcSellRequisitionDetailsTableName}.consigment_manufacturing_id`)

@@ -8,7 +8,8 @@ const trans = require("../../helpers/transform");
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-const { wbTableName, fabricTableName, wbManufacturingOutputTableName, wcTableName, wcReconciliationRequisitionDetailsTableName, wcFabricOrderRequisitionDetailsTableName } = require("../../util/database-tables-name");
+const knex = require("../../db/config/connection").getConnection();
+const { wbTableName, fabricTableName, wbManufacturingOutputTableName, wcTableName, wcReconciliationRequisitionDetailsTableName, wcFabricOrderRequisitionDetailsTableName, wcFabricOrderRequisitionTableName } = require("../../util/database-tables-name");
 
 // Services
 const fabricYarnsService = require("./fabric-yarns");
@@ -169,7 +170,6 @@ exports.selectFabricsByOrderWc = async (orderRequisitionId) => {
 };
 
 exports.selectByWarehouseWc = async (warehouseId, fabricOrderId) => {
-  
   let whereCluse = {};
   whereCluse[`${fabricTableName}.is_deleted`] = 0;
   whereCluse[`${fabricTableName}.is_active`] = 1;
@@ -177,24 +177,98 @@ exports.selectByWarehouseWc = async (warehouseId, fabricOrderId) => {
   let wcWhereCluse = {};
   wcWhereCluse[`${wcTableName}.is_deleted`] = 0;
   wcWhereCluse[`${wcTableName}.is_active`] = 1;
-  wcWhereCluse[`wc_fabric_order_requisition_id`] = fabricOrderId;
 
-  const results = await fabricQueries.selectStoredFabricsWc(whereCluse, wcWhereCluse, warehouseId);
+  // Resolve parent/child orders to include all merged orders
+  const parentResult = await knex(wcFabricOrderRequisitionTableName)
+    .select("id", "parent_wc_fabric_order_requisition_id")
+    .where({ id: fabricOrderId, is_deleted: 0, is_active: 1 })
+    .limit(1);
+
+  const parentOrderId = parentResult && parentResult.length > 0
+    ? (parentResult[0].parent_wc_fabric_order_requisition_id || fabricOrderId)
+    : fabricOrderId;
+
+  const mergedOrders = await knex(wcFabricOrderRequisitionTableName)
+    .select("id")
+    .where({ is_deleted: 0, is_active: 1 })
+    .andWhere(function () {
+      this.where("id", parentOrderId)
+        .orWhere("parent_wc_fabric_order_requisition_id", parentOrderId);
+    });
+
+  const fabricOrderIds = mergedOrders.length > 0
+    ? mergedOrders.map((order) => order.id)
+    : [parentOrderId];
+
+  const results = await fabricQueries.selectStoredFabricsWc(
+    whereCluse,
+    wcWhereCluse,
+    warehouseId,
+    fabricOrderIds
+  );
   return results;
 };
 
 exports.selectByWarehouseWcForTransitionBetweenOrder = async (warehouseId, fabricOrderId, toFabricOrderId) => {
-  
   let whereCluse = {};
   whereCluse[`${fabricTableName}.is_deleted`] = 0;
   whereCluse[`${fabricTableName}.is_active`] = 1;
 
+  // Resolve parent/child orders for FROM fabricOrderId to include all merged orders
+  const parentResult = await knex(wcFabricOrderRequisitionTableName)
+    .select("id", "parent_wc_fabric_order_requisition_id")
+    .where({ id: fabricOrderId, is_deleted: 0, is_active: 1 })
+    .limit(1);
+
+  const parentOrderId = parentResult && parentResult.length > 0
+    ? (parentResult[0].parent_wc_fabric_order_requisition_id || fabricOrderId)
+    : fabricOrderId;
+
+  const mergedOrders = await knex(wcFabricOrderRequisitionTableName)
+    .select("id")
+    .where({ is_deleted: 0, is_active: 1 })
+    .andWhere(function () {
+      this.where("id", parentOrderId)
+        .orWhere("parent_wc_fabric_order_requisition_id", parentOrderId);
+    });
+
+  const fabricOrderIds = mergedOrders.length > 0
+    ? mergedOrders.map((order) => order.id)
+    : [parentOrderId];
+
+  // Resolve parent/child orders for TO toFabricOrderId to include all merged orders
+  const toParentResult = await knex(wcFabricOrderRequisitionTableName)
+    .select("id", "parent_wc_fabric_order_requisition_id")
+    .where({ id: toFabricOrderId, is_deleted: 0, is_active: 1 })
+    .limit(1);
+
+  const toParentOrderId = toParentResult && toParentResult.length > 0
+    ? (toParentResult[0].parent_wc_fabric_order_requisition_id || toFabricOrderId)
+    : toFabricOrderId;
+
+  const toMergedOrders = await knex(wcFabricOrderRequisitionTableName)
+    .select("id")
+    .where({ is_deleted: 0, is_active: 1 })
+    .andWhere(function () {
+      this.where("id", toParentOrderId)
+        .orWhere("parent_wc_fabric_order_requisition_id", toParentOrderId);
+    });
+
+  const toFabricOrderIds = toMergedOrders.length > 0
+    ? toMergedOrders.map((order) => order.id)
+    : [toParentOrderId];
+
   let wcWhereCluse = {};
   wcWhereCluse[`${wcTableName}.is_deleted`] = 0;
   wcWhereCluse[`${wcTableName}.is_active`] = 1;
-  wcWhereCluse[`wc_fabric_order_requisition_id`] = fabricOrderId;
 
-  const results = await fabricQueries.selectByWarehouseWcForTransitionBetweenOrder(whereCluse, wcWhereCluse, warehouseId, toFabricOrderId);
+  const results = await fabricQueries.selectByWarehouseWcForTransitionBetweenOrder(
+    whereCluse,
+    wcWhereCluse,
+    warehouseId,
+    fabricOrderIds,
+    toFabricOrderIds
+  );
   return results;
 };
 

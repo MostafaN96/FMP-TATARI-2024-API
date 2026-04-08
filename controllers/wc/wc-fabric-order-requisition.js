@@ -97,3 +97,109 @@ exports.selectByDyeingWd = async (request, response) => {
     const results = await wcFabricOrderRequisitionService.selectByDyeingWd(id);
     response.status(200).json(results);
   };
+
+/**
+ * دمج طلبيات متعددة تحت parent واحد
+ * Body: { orderIds: [id1, id2, id3], parentOrderId: id }
+ */
+exports.mergeOrders = async (request, response) => {
+    const { orderIds, parentOrderId } = request.body;
+
+    // Validation
+    if (!orderIds || !Array.isArray(orderIds) || orderIds.length < 2) {
+        return response.status(400).json({ 
+            ...constants.invalidDataResponse, 
+            message: 'يجب تحديد طلبيتين على الأقل للدمج' 
+        });
+    }
+
+    if (!parentOrderId) {
+        return response.status(400).json({ 
+            ...constants.invalidDataResponse, 
+            message: 'يجب تحديد الطلبية الأم (parent)' 
+        });
+    }
+
+    // Call service
+    const results = await wcFabricOrderRequisitionService.mergeOrders(orderIds, parentOrderId);
+    
+    if (results === constants.updateError) {
+        return response.status(500).json(results);
+    } else if (results.status === constants.itemNotFound.status) {
+        return response.status(404).json(results);
+    } else {
+        return response.status(200).json(results);
+    }
+};
+
+/**
+ * فصل طلبية من parent وجعلها مستقلة
+ * Params: { id } - ID الطلبية المراد فصلها
+ */
+exports.detachOrder = async (request, response) => {
+    const { id } = request.params;
+
+    if (!id) {
+        return response.status(400).json({ 
+            ...constants.invalidDataResponse, 
+            message: 'يجب تحديد ID الطلبية' 
+        });
+    }
+
+    // Call service
+    const results = await wcFabricOrderRequisitionService.detachOrder(id);
+    
+    if (results === constants.updateError) {
+        return response.status(500).json(results);
+    } else if (results === constants.itemNotFound) {
+        return response.status(404).json(results);
+    } else {
+        return response.status(200).json(results);
+    }
+};
+
+/**
+ * جلب الطلبيات المدموجة تحت parent معين
+ * Params: { id } - ID الطلبية الأم
+ */
+exports.selectMergedOrders = async (request, response) => {
+    const { id } = request.params;
+
+    if (!id) {
+        return response.status(400).json({ 
+            ...constants.invalidDataResponse, 
+            message: 'يجب تحديد ID الطلبية الأم' 
+        });
+    }
+
+    const results = await wcFabricOrderRequisitionService.selectMergedOrders(id);
+    response.status(200).json(results);
+};
+
+/**
+ * جلب جميع الطلبيات مع معلومات parent
+ */
+exports.selectOrdersWithParentInfo = async (request, response) => {
+    const results = await wcFabricOrderRequisitionService.selectOrdersWithParentInfo();
+    response.status(200).json(results);
+};
+
+/**
+ * جلب جميع الطلبيات مع معلومات الدمج
+ * يرجع فقط الطلبيات الأم (Parent) والطلبيات العادية (بدون children)
+ * Query params: { status } - "opened" أو "closed" - اختياري
+ */
+exports.selectAllWithMergeInfo = async (request, response) => {
+    const { status } = request.query;
+    
+    // تحويل status إلى قيمة is_order (1 = opened, 0 = closed) أو null
+    let isOrderValue = null;
+    if (status === 'opened' || status === '1') {
+        isOrderValue = 1;  // مفتوحة
+    } else if (status === 'closed' || status === '0') {
+        isOrderValue = 0;  // مغلقة
+    }
+    
+    const results = await wcFabricOrderRequisitionService.selectAllWithMergeInfo(isOrderValue);
+    response.status(200).json(results);
+};

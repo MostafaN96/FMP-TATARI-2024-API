@@ -178,6 +178,43 @@ exports.selectByCategoryAndDeying = async (deyingId, colorCategoryId) => {
   return queryResults;
 };
 
+exports.selectByCategoryAndDeyingByDyedFabricByFabricOrder = async (deyingId, colorCategoryId, dyedFabricId, fabricOrderId) => {
+  let queryResults = [];
+  let whereCluse = {};
+  whereCluse[`${colorTableName}.is_deleted`] = 0;
+  whereCluse[`${colorTableName}.is_active`] = 1;
+  whereCluse[`${anointedColorsPricesTableName}.is_deleted`] = 0;
+  whereCluse[`${anointedColorsPricesTableName}.is_active`] = 1;
+  whereCluse[`${anointedColorsPricesTableName}.dyeing_id`] = deyingId;
+  whereCluse[`${anointedColorsPricesTableName}.color_category_id`] = colorCategoryId;
+
+  await knex(colorTableName)
+    .select([
+      `${colorTableName}.id`,
+      // `${colorTableName}.name`,
+      knex.raw(`CONCAT(${colorTableName}.name, ' (السعر: ', ${anointedColorsPricesTableName}.price, ')' ) as "name"`),
+      `${anointedColorsPricesTableName}.code`,
+      `${anointedColorsPricesTableName}.price`,
+      `${anointedColorsPricesTableName}.id as dyeing_colors_prices_id`,
+    ])
+    .innerJoin(`${anointedColorsPricesTableName}`, 
+    `${anointedColorsPricesTableName}.color_id`, 
+    `${colorTableName}.id`)
+    .whereIn(`${colorTableName}.id`, function () {
+      this.select(`${weDyedFabricOrderRequisitionDetailsTableName}.color_id`)
+        .from(`${weDyedFabricOrderRequisitionDetailsTableName}`)
+        .where(`${weDyedFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`, fabricOrderId)
+        .andWhere(`${weDyedFabricOrderRequisitionDetailsTableName}.dyed_fabric_id`, dyedFabricId)
+    })
+    .where(whereCluse)
+    .orderBy(`${colorTableName}.name`)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
 exports.selectByCategory = async (colorCategoryId) => {
   let queryResults = [];
   let whereCluse = {};

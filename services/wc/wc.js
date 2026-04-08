@@ -8,10 +8,13 @@ const wcExecuteOrderRequisitionDetailsQueries = require("../../db/queries/wc/wc-
 const wcTransitionBetweenWhRequisitionDetailsQueries = require("../../db/queries/wc/wc-transition-between-wh-requisition-details");
 const wcTransitionBetweenOrdersRequisitionDetailsQueries = require("../../db/queries/wc/wc-transition-between-orders-requisition-details");
 
+// Config
+const knex = require("../../db/config/connection").getConnection();
+
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-const { wcTableName, wcAddRequisitionDetailsTableName, wdTransportRequisitionWdWcTableName, wdTransportRequisitionWdWcDetailsTableName, wcReconciliationRequisitionTableName, wcReconciliationRequisitionDetailsTableName, wcAddRequisitionTableName, wbManufacturingOutputTableName, wcExecuteOrderRequisitionTableName, wcExecuteOrderRequisitionDetailsTableName, wcTransitionBetweenWHRequisitionTableName, wcTransitionBetweenWHRequisitionDetailsTableName, wcAddRequisitionDetailsFabricOrderTableName, wcTransitionBetweenOrdersRequisitionDetailsTableName, wdTransportWcWdDetailsWcTableName } = require("../../util/database-tables-name");
+const { wcTableName, wcAddRequisitionDetailsTableName, wdTransportRequisitionWdWcTableName, wdTransportRequisitionWdWcDetailsTableName, wcReconciliationRequisitionTableName, wcReconciliationRequisitionDetailsTableName, wcAddRequisitionTableName, wbManufacturingOutputTableName, wcExecuteOrderRequisitionTableName, wcExecuteOrderRequisitionDetailsTableName, wcTransitionBetweenWHRequisitionTableName, wcTransitionBetweenWHRequisitionDetailsTableName, wcAddRequisitionDetailsFabricOrderTableName, wcTransitionBetweenOrdersRequisitionDetailsTableName, wdTransportWcWdDetailsWcTableName, wcFabricOrderRequisitionTableName } = require("../../util/database-tables-name");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -27,10 +30,10 @@ exports.create = async (wc, items) => {
     }
 };
 
-exports.createForManufacturing = async (wc) => {
+exports.createForManufacturing = async (wc, trx = null) => {
     wc.wcId = trans.transform();
 
-    const results = await wcQueries.insertForManufacturing(wc);
+    const results = await wcQueries.insertForManufacturing(wc, trx);
     if (results) {
         return constants.insertSuccess;
     } else {
@@ -140,12 +143,34 @@ exports.selectByFabricForReturn = async (warehouseId, fabricId, consigmentManufa
 };
 
 exports.selectConsigmentManufacturingQuantityByWarehouseByFabricWc = async (warehouseId, fabricId, fabricOrderId) => {
+    // Resolve parent/child orders to include all merged orders
+    const parentResult = await knex(wcFabricOrderRequisitionTableName)
+      .select("id", "parent_wc_fabric_order_requisition_id")
+      .where({ id: fabricOrderId, is_deleted: 0, is_active: 1 })
+      .limit(1);
+
+    const parentOrderId = parentResult && parentResult.length > 0
+      ? (parentResult[0].parent_wc_fabric_order_requisition_id || fabricOrderId)
+      : fabricOrderId;
+
+    const mergedOrders = await knex(wcFabricOrderRequisitionTableName)
+      .select("id")
+      .where({ is_deleted: 0, is_active: 1 })
+      .andWhere(function () {
+        this.where("id", parentOrderId)
+          .orWhere("parent_wc_fabric_order_requisition_id", parentOrderId);
+      });
+
+    const fabricOrderIds = mergedOrders.length > 0
+      ? mergedOrders.map((order) => order.id)
+      : [parentOrderId];
+
     let addWhereCluse = {};
     addWhereCluse[`${wcTableName}.is_deleted`] = 0;
     addWhereCluse[`${wcTableName}.is_active`] = 1;
     addWhereCluse[`${wcAddRequisitionDetailsTableName}.warehouse_id`] = warehouseId;
     addWhereCluse[`${wcAddRequisitionDetailsTableName}.fabric_id`] = fabricId;
-    addWhereCluse[`${wcAddRequisitionDetailsFabricOrderTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
+    addWhereCluse[`${wcAddRequisitionDetailsFabricOrderTableName}.wc_fabric_order_requisition_id`] = fabricOrderIds;
     
     let reconciliationWhereCluse = {};
     reconciliationWhereCluse[`${wcTableName}.is_deleted`] = 0;
@@ -153,7 +178,7 @@ exports.selectConsigmentManufacturingQuantityByWarehouseByFabricWc = async (ware
     reconciliationWhereCluse[`${wcTableName}.type`] = constantsPayloads.reconcilitionType;
     reconciliationWhereCluse[`${wcReconciliationRequisitionTableName}.warehouse_id`] = warehouseId;
     reconciliationWhereCluse[`${wcReconciliationRequisitionDetailsTableName}.fabric_id`] = fabricId;
-    reconciliationWhereCluse[`${wcReconciliationRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
+    reconciliationWhereCluse[`${wcReconciliationRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderIds;
     reconciliationWhereCluse[`${wcReconciliationRequisitionDetailsTableName}.input_output`] = 1;
 
     let transportWdWcWhereCluse = {};
@@ -162,7 +187,7 @@ exports.selectConsigmentManufacturingQuantityByWarehouseByFabricWc = async (ware
     transportWdWcWhereCluse[`${wcTableName}.type`] = constantsPayloads.transportFromBToAType;
     transportWdWcWhereCluse[`${wdTransportRequisitionWdWcTableName}.warehouse_id`] = warehouseId;
     transportWdWcWhereCluse[`${wdTransportRequisitionWdWcDetailsTableName}.fabric_id`] = fabricId;
-    transportWdWcWhereCluse[`${wdTransportRequisitionWdWcDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
+    transportWdWcWhereCluse[`${wdTransportRequisitionWdWcDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderIds;
 
     let manufacturingOutputWhereCluse = {};
     manufacturingOutputWhereCluse[`${wcTableName}.is_deleted`] = 0;
@@ -170,7 +195,7 @@ exports.selectConsigmentManufacturingQuantityByWarehouseByFabricWc = async (ware
     manufacturingOutputWhereCluse[`${wcTableName}.type`] = constantsPayloads.manufactruingType;
     manufacturingOutputWhereCluse[`${wbManufacturingOutputTableName}.warehouse_id`] = warehouseId;
     manufacturingOutputWhereCluse[`${wbManufacturingOutputTableName}.fabric_id`] = fabricId;
-    manufacturingOutputWhereCluse[`${wbManufacturingOutputTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
+    manufacturingOutputWhereCluse[`${wbManufacturingOutputTableName}.wc_fabric_order_requisition_id`] = fabricOrderIds;
 
     let transitionBetweenWhWhereCluse = {};
     transitionBetweenWhWhereCluse[`${wcTableName}.is_deleted`] = 0;
@@ -178,7 +203,7 @@ exports.selectConsigmentManufacturingQuantityByWarehouseByFabricWc = async (ware
     transitionBetweenWhWhereCluse[`${wcTableName}.type`] = constantsPayloads.transportBetweenType;
     transitionBetweenWhWhereCluse[`${wcTransitionBetweenWHRequisitionTableName}.to_warehouse_id`] = warehouseId;
     transitionBetweenWhWhereCluse[`${wcTransitionBetweenWHRequisitionDetailsTableName}.fabric_id`] = fabricId;
-    transitionBetweenWhWhereCluse[`${wcTransitionBetweenWHRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
+    transitionBetweenWhWhereCluse[`${wcTransitionBetweenWHRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderIds;
 
     let transitionBetweenOrdersWhereCluse = {};
     transitionBetweenOrdersWhereCluse[`${wcTableName}.is_deleted`] = 0;
@@ -186,7 +211,7 @@ exports.selectConsigmentManufacturingQuantityByWarehouseByFabricWc = async (ware
     transitionBetweenOrdersWhereCluse[`${wcTableName}.type`] = constantsPayloads.transportBetweenOrdersType;
     transitionBetweenOrdersWhereCluse[`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.warehouse_id`] = warehouseId;
     transitionBetweenOrdersWhereCluse[`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.fabric_id`] = fabricId;
-    transitionBetweenOrdersWhereCluse[`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
+    transitionBetweenOrdersWhereCluse[`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderIds;
 
     let andWhereCluse = {whereTableName: `current_quantity`, operator: ">", value: "0"}
 

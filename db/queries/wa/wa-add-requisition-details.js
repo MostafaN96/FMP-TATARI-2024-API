@@ -337,13 +337,11 @@ exports.selectDetailsByWarehouseByYarnByLot = async (
   whereCluse[`${waAddRequisitionDetailsTableName}.yarn_id`] = yarnId;
   whereCluse[`${waAddRequisitionDetailsTableName}.yarn_lot_id`] = yarnLotId;
   whereCluse[`${waAddRequisitionDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
-  whereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`] = yarnOrderId;
   whereCluse[`${waAddRequisitionTableName}.supplier_id`] = supplierId;
   whereCluse[`${waAddRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${waAddRequisitionDetailsTableName}.is_active`] = 1;
 
   await knex.from(waAddRequisitionDetailsTableName)
-  .distinct(`${waAddRequisitionDetailsTableName}.id`)
     .select(
       [
         `${waAddRequisitionDetailsTableName}.price`,
@@ -357,11 +355,14 @@ exports.selectDetailsByWarehouseByYarnByLot = async (
     .innerJoin(`${waAddRequisitionTableName}`, 
       `${waAddRequisitionTableName}.id`, 
       `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
-      .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`,
-        `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`,
-        `${waAddRequisitionDetailsTableName}.id`)
     .where(whereCluse)
     .andWhere(`${waAddRequisitionDetailsTableName}.quantity`, ">", 0)
+    .whereExists(function() {
+      this.select(knex.raw(1))
+        .from(waAddRequisitionDetailsYarnOrderTableName)
+        .where(`${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`, knex.raw(`${waAddRequisitionDetailsTableName}.id`))
+        .andWhere(`${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`, yarnOrderId);
+    })
     .then((data) => {
       queryResults = data;
     })

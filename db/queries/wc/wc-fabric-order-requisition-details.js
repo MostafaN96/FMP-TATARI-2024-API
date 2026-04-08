@@ -17,6 +17,9 @@ exports.insert = async (wcFabricOrderRequisitionDetails, items) => {
   await sqlFun
     .insert(wcFabricOrderRequisitionDetailsTableName, {
       id: items.wcFabricOrderRequisitionDetailsId,
+      parent_wc_fabric_order_requisition_details_id: items.parentWcFabricOrderRequisitionDetailsId || items.wcFabricOrderRequisitionDetailsId,
+      parent_wc_fabric_order_requisition_id: wcFabricOrderRequisitionDetails.parentWcFabricOrderRequisitionId || wcFabricOrderRequisitionDetails.id,
+      parent_orders_requisitions_id: wcFabricOrderRequisitionDetails.parentOrdersRequisitionsId || wcFabricOrderRequisitionDetails.ordersRequisitionsId,
       wc_fabric_order_requisition_id: wcFabricOrderRequisitionDetails.id,
       orders_requisitions_id: wcFabricOrderRequisitionDetails.ordersRequisitionsId,
       fabric_id: items.fabricId,
@@ -42,6 +45,9 @@ exports.insertForPurchaseOrder = async (wcFabricOrderRequisition, wcFabricOrderR
   await sqlFun
     .insert(wcFabricOrderRequisitionDetailsTableName, {
       id: wcFabricOrderRequisitionDetails.wcFabricOrderRequisitionDetailsId,
+      parent_wc_fabric_order_requisition_details_id: wcFabricOrderRequisitionDetails.parentWcFabricOrderRequisitionDetailsId || wcFabricOrderRequisitionDetails.wcFabricOrderRequisitionDetailsId,
+      parent_wc_fabric_order_requisition_id: wcFabricOrderRequisitionDetails.parentWcFabricOrderRequisitionId || wcFabricOrderRequisitionDetails.wcFabricOrderRequisitionId,
+      parent_orders_requisitions_id: wcFabricOrderRequisitionDetails.parentOrdersRequisitionsId || wcFabricOrderRequisitionDetails.ordersRequisitionsId,
       wc_fabric_order_requisition_id: wcFabricOrderRequisitionDetails.wcFabricOrderRequisitionId,
       orders_requisitions_id: wcFabricOrderRequisitionDetails.ordersRequisitionsId,
       fabric_id: items.fabricId,
@@ -321,15 +327,32 @@ exports.selectOutputWarehouseByRequisitionDetailsId = async (whereCluse) => {
 
 exports.selectOne = async (whereCluse) => {
   let queryResults = false;
+  
+  // Helper function to apply where clauses, handling both single values and arrays
+  const applyWhereClauses = (query, whereCluse) => {
+    for (const [key, value] of Object.entries(whereCluse)) {
+      if (Array.isArray(value)) {
+        query.whereIn(key, value);
+      } else {
+        query.where(key, value);
+      }
+    }
+    return query;
+  };
+  
   await knex
     .select([
       `${wcFabricOrderRequisitionDetailsTableName}.id`,
       `${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`,
+      `${wcFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`,
+      `${wcFabricOrderRequisitionDetailsTableName}.parent_wc_fabric_order_requisition_details_id`,
+      `${wcFabricOrderRequisitionDetailsTableName}.parent_wc_fabric_order_requisition_id`,
+      `${wcFabricOrderRequisitionDetailsTableName}.parent_orders_requisitions_id`,
       `${wcFabricOrderRequisitionDetailsTableName}.initial_quantity`,
       `${wcFabricOrderRequisitionDetailsTableName}.current_quantity`,
   ])
     .from(`${wcFabricOrderRequisitionDetailsTableName}`)
-    .where(whereCluse)
+    .modify((qb) => applyWhereClauses(qb, whereCluse))
     .limit(1)
     .then((data) => {
       // console.log("data ::: ", data);

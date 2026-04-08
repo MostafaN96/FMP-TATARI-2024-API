@@ -30,6 +30,11 @@ const { wcFabricOrderRequisitionTableName, wcFabricOrderRequisitionDetailsTableN
 exports.create = async (wcFabricOrderRequisitionDetails) => {
     for (let i = 0; i < wcFabricOrderRequisitionDetails.items.length; i++) {
         wcFabricOrderRequisitionDetails.items[i].wcFabricOrderRequisitionDetailsId = trans.transform();
+        
+        // Set parent ids to self if not provided (تفاصيل جديدة تكون parent لنفسها)
+        if (!wcFabricOrderRequisitionDetails.items[i].parentWcFabricOrderRequisitionDetailsId) {
+            wcFabricOrderRequisitionDetails.items[i].parentWcFabricOrderRequisitionDetailsId = wcFabricOrderRequisitionDetails.items[i].wcFabricOrderRequisitionDetailsId;
+        }
 
         const results = await wcFabricOrderRequisitionDetailsQueries.insert(wcFabricOrderRequisitionDetails, wcFabricOrderRequisitionDetails.items[i]);
         if (!results) {
@@ -43,6 +48,11 @@ exports.create = async (wcFabricOrderRequisitionDetails) => {
 exports.createDetails = async (wcFabricOrderRequisitionDetails) => {
     for (let i = 0; i < wcFabricOrderRequisitionDetails.items.length; i++) {
         wcFabricOrderRequisitionDetails.items[i].wcFabricOrderRequisitionDetailsId = trans.transform();
+        
+        // Set parent ids to self if not provided
+        if (!wcFabricOrderRequisitionDetails.items[i].parentWcFabricOrderRequisitionDetailsId) {
+            wcFabricOrderRequisitionDetails.items[i].parentWcFabricOrderRequisitionDetailsId = wcFabricOrderRequisitionDetails.items[i].wcFabricOrderRequisitionDetailsId;
+        }
 
         const results = await wcFabricOrderRequisitionDetailsQueries.insert(wcFabricOrderRequisitionDetails, wcFabricOrderRequisitionDetails.items[i]);
         if (!results) {

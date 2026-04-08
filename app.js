@@ -81,6 +81,7 @@ const wbManufacturingOrderRequisitionRouter = require("./routers/wb/wb-manufactu
 const wbManufacturingOrderRequisitionDetailsRouter = require("./routers/wb/wb-manufacturing-order-requisition-details");
 const wbManufacturingRequisitionRouter = require("./routers/wb/wb-manufacturing-requisition");
 const wbManufacturingOutputRouter = require("./routers/wb/wb-manufacturing-output");
+const wbManufacturingOutputAllocationRouter = require("./routers/wb/wb-manufacturing-output-allocation");
 const wbManufacturingInputRouter = require("./routers/wb/wb-manufacturing-input");
 const wbTransitionBetweenIndustriesRequisitionRouter = require("./routers/wb/wb-transition-between-industries-requisition");
 const wbTransitionBetweenIndustriesRequisitionDetailsRouter = require("./routers/wb/wb-transition-between-industries-requisition-details");
@@ -264,6 +265,7 @@ app.use('/api/wb-manufactiring-order-requisition', wbManufacturingOrderRequisiti
 app.use('/api/wb-manufactiring-order-requisition-details', wbManufacturingOrderRequisitionDetailsRouter)
 app.use('/api/wb-manufactiring-requisition', wbManufacturingRequisitionRouter)
 app.use('/api/wb-manufactiring-output', wbManufacturingOutputRouter)
+app.use('/api/wb-output-allocation', wbManufacturingOutputAllocationRouter)
 app.use('/api/wb-manufactiring-input', wbManufacturingInputRouter)
 app.use('/api/wb-transition-between-industries-requisition', wbTransitionBetweenIndustriesRequisitionRouter)
 app.use('/api/wb-transition-between-industries-requisition-details', wbTransitionBetweenIndustriesRequisitionDetailsRouter)

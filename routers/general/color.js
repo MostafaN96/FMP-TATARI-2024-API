@@ -27,6 +27,11 @@ router.get("/:deyingId/:colorCategoryId",
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   colorController.selectByCategoryAndDeying);
+  
+router.get("/:deyingId/:colorCategoryId/:dyedFabricId/:fabricOrderId",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  colorController.selectByCategoryAndDeyingByDyedFabricByFabricOrder);
 
 
 router.get("/:fabricId/:supplierId/:colorCategoryId/:requisitionId",

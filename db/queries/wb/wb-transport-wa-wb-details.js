@@ -2,6 +2,9 @@
 const sqlFun = require("../../config/sql-fun");
 const knex = require("../../config/connection").getConnection();
 
+// Queries
+const wbManufacturingOutputQueries = require("../wb/wb-manufacturing-output");
+
 // Util
 const { wbTransportWaWbTableName, wbTransportWaWbDetailsTableName, warehouseTableName, yarnTableName, yarnLotTableName, bussinessmanTableName, wbTableName, wbTransportWaWbDetailsWaTableName, waTableName, fabricTableName, consigmentYarnTableName, waYarnOrderRequisitionTableName, wbManufacturingInputWbTableName, wbManufacturingInputTableName, wbManufacturingInputOutputTableName, wbManufacturingRequisitionTableName, wbTransitionBetweenIndustriesRequisitionDetailsWbTableName, waAddRequisitionTableName, waAddRequisitionDetailsYarnOrderTableName, waAddRequisitionDetailsTableName } = require("../../../util/database-tables-name");
 
@@ -911,6 +914,7 @@ exports.selectTotalDetailsByYarnIdByWarehouseId = async (yarnId, warehouseId) =>
     .select(
       [
         `${wbTransportWaWbDetailsTableName}.id`,
+        `${wbTransportWaWbDetailsTableName}.wa_yarn_order_requisition_details_id`,
         `${wbTransportWaWbDetailsTableName}.price`,
         `${wbTransportWaWbDetailsTableName}.price_dollar`,
         `${wbTransportWaWbDetailsTableName}.quantity`,
@@ -960,8 +964,18 @@ exports.selectTotalDetailsByYarnIdByWarehouseId = async (yarnId, warehouseId) =>
       `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`)
     .where(whereCluse)
     .andWhere(`${wbTransportWaWbDetailsTableName}.quantity`, ">", 0)
-    .then((data) => {
+    .then(async (data) => {
       queryResults = data;
+
+      for (const element of queryResults) {
+            let wbManufacturingWhereCluse = {};
+            wbManufacturingWhereCluse[`${wbManufacturingInputOutputTableName}.is_deleted`] = 0;
+            wbManufacturingWhereCluse[`${wbManufacturingInputOutputTableName}.is_active`] = 1;
+            wbManufacturingWhereCluse[`${wbManufacturingInputOutputTableName}.wa_yarn_order_requisition_details_id`] = element.wa_yarn_order_requisition_details_id;
+            wbManufacturingWhereCluse[`${wbManufacturingInputTableName}.yarn_id`] = yarnId;
+            element.manufacturingDocuments = await wbManufacturingOutputQueries.selectRequisitionsForWaYarnOrderRequisition(wbManufacturingWhereCluse)
+
+      }
     })
     .catch((error) => console.error(error));
   return queryResults;
@@ -975,7 +989,6 @@ exports.selectDetailsByWarehouseByYarnByLot = async (
 ) => {
   let queryResults = [];
   let whereCluse = {};
-  whereCluse[`${waAddRequisitionTableName}.supplier_id`] = supplierId;
   whereCluse[`${wbTransportWaWbTableName}.warehouse_id`] = warehouseId;
   whereCluse[`${wbTransportWaWbDetailsTableName}.yarn_id`] = yarnId;
   whereCluse[`${wbTransportWaWbDetailsTableName}.yarn_lot_id`] = yarnLotId;
@@ -985,7 +998,6 @@ exports.selectDetailsByWarehouseByYarnByLot = async (
   whereCluse[`${wbTransportWaWbDetailsTableName}.is_active`] = 1;
 
   await knex.from(wbTransportWaWbDetailsTableName)
-  .distinct(`${wbTransportWaWbDetailsTableName}.id`)
     .select(
       [
         `${wbTransportWaWbDetailsTableName}.price`,
@@ -1000,15 +1012,6 @@ exports.selectDetailsByWarehouseByYarnByLot = async (
     .innerJoin(`${wbTransportWaWbTableName}`, 
       `${wbTransportWaWbTableName}.id`, 
       `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`)
-      .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`, 
-      `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`, 
-      `${wbTransportWaWbDetailsTableName}.wa_yarn_order_requisition_id`)
-    .innerJoin(`${waAddRequisitionDetailsTableName}`, 
-      `${waAddRequisitionDetailsTableName}.id`, 
-      `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`)
-    .innerJoin(`${waAddRequisitionTableName}`, 
-      `${waAddRequisitionTableName}.id`, 
-      `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
     .where(whereCluse)
     .andWhere(`${wbTransportWaWbDetailsTableName}.quantity`, ">", 0)
     .then((data) => {

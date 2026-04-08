@@ -116,104 +116,138 @@ exports.selectInventoryTotal = async (fabricReport) => {
     // select fabrics 
     const fabrics = (fabricReport.isShowClosedBalances == 1) ? await fabricQueries.selectStoredWeFabrics(whereCluseArray, 0) : await fabricQueries.selectStoredWeFabrics(whereCluseArray)
     if (fabrics[0] != null) {
-        for (let i = 0; i < fabrics.length; i++) {
-            let fabric = fabrics[i];
-            let callArray = []
-
-            // Select Max Added Date
+        
+        // 🚀 استدعاء جميع الأسعار بـ Parallel
+        const pricePromises = fabrics.map(fabric => {
             let maxDateWhereCluse = {};
             maxDateWhereCluse[`${weAddRequisitionDetailsTableName}.dyed_fabric_id`] = fabric.dyed_fabric_id;
-            const selectMaxDate = await generalQueries.selectMaxValueWithJoinCondition(weAddRequisitionTableName,
+            
+            const addReqPromise = generalQueries.selectMaxValueWithJoinCondition(weAddRequisitionTableName,
                 { date: 'date' }, maxDateWhereCluse,
                 weAddRequisitionDetailsTableName,
                 `${weAddRequisitionDetailsTableName}.we_add_requisition_id`,
                 `${weAddRequisitionTableName}.id`)
-            if (selectMaxDate[0] != null) {
-                // Select Latest Price
-                let wcAddRequisitionDetailsWhereCluse = {};
-                wcAddRequisitionDetailsWhereCluse[`${weAddRequisitionDetailsTableName}.dyed_fabric_id`] = fabric.dyed_fabric_id;
-                wcAddRequisitionDetailsWhereCluse[`${weAddRequisitionTableName}.date`] = selectMaxDate[0]?.date;
-                const latestPrice = await weAddRequisitionDetailsQueries.selectLatestPrice(wcAddRequisitionDetailsWhereCluse)
-                if (latestPrice[0] != null) {
-                    fabric.latest_price = latestPrice[0]?.price
-                    fabric.latest_price_dollar = latestPrice[0]?.price_dollar
-                } else {
-                    fabric.latest_price = 0
-                    fabric.latest_price_dollar = 0
-                }
-            } else {
-                fabric.latest_price = 0
-                fabric.latest_price_dollar = 0
-            }
+                .then(selectMaxDate => {
+                    if (selectMaxDate[0] != null) {
+                        let wcAddRequisitionDetailsWhereCluse = {};
+                        wcAddRequisitionDetailsWhereCluse[`${weAddRequisitionDetailsTableName}.dyed_fabric_id`] = fabric.dyed_fabric_id;
+                        wcAddRequisitionDetailsWhereCluse[`${weAddRequisitionTableName}.date`] = selectMaxDate[0]?.date;
+                        return weAddRequisitionDetailsQueries.selectLatestPrice(wcAddRequisitionDetailsWhereCluse)
+                            .then(latestPrice => ({
+                                price: latestPrice[0]?.price || 0,
+                                price_dollar: latestPrice[0]?.price_dollar || 0
+                            }));
+                    }
+                    return { price: 0, price_dollar: 0 };
+                });
+
             let dyeingMaxDateWhereCluse = {};
             dyeingMaxDateWhereCluse[`${wdDyeingRequisitionDetailsTableName}.dyed_fabric_id`] = fabric.dyed_fabric_id;
-            const selectDyeingMaxDate = await knex(wdDyeingRequisitionDetailsTableName)
+            const dyeingPromise = knex(wdDyeingRequisitionDetailsTableName)
                 .max({ date: 'date' })
                 .innerJoin(wdDyeingRequisitionTableName,
                     `${wdDyeingRequisitionTableName}.id`,
                     `${wdDyeingRequisitionDetailsTableName}.wd_dyeing_requisition_id`)
                 .where(dyeingMaxDateWhereCluse)
+                .then(selectDyeingMaxDate => {
+                    if (selectDyeingMaxDate[0].date != null) {
+                        let wdDyeingWhereCluse = {};
+                        wdDyeingWhereCluse[`${wdDyeingRequisitionDetailsTableName}.dyed_fabric_id`] = fabric.dyed_fabric_id;
+                        wdDyeingWhereCluse[`${wdDyeingRequisitionTableName}.date`] = selectDyeingMaxDate[0]?.date;
+                        return wdDyeingRequisitionDetailsQueries.selectLatestPrice(wdDyeingWhereCluse)
+                            .then(latestDyeingPrice => ({
+                                dyeingPrice: latestDyeingPrice[0]?.price || 0,
+                                dyeingPriceDollar: latestDyeingPrice[0]?.price_dollar || 0
+                            }));
+                    }
+                    return { dyeingPrice: 0, dyeingPriceDollar: 0 };
+                });
 
-            if (selectDyeingMaxDate[0].date != null) {
-                // Select Latest Manufacturing Price
-                let wdDyeingWhereCluse = {};
-                wdDyeingWhereCluse[`${wdDyeingRequisitionDetailsTableName}.dyed_fabric_id`] = fabric.dyed_fabric_id;
-                wdDyeingWhereCluse[`${wdDyeingRequisitionTableName}.date`] = selectDyeingMaxDate[0]?.date;
-                const latestDyeingPrice = await wdDyeingRequisitionDetailsQueries.selectLatestPrice(wdDyeingWhereCluse)
-                if (latestDyeingPrice[0] != null) {
-                    fabric.latest_dyeing_price = latestDyeingPrice[0]?.price
-                    fabric.latest_dyeing_price_dollar = latestDyeingPrice[0]?.price_dollar
-                } else {
-                    fabric.latest_dyeing_price = 0
-                    fabric.latest_dyeing_price_dollar = 0
-                }
-            } else {
-                fabric.latest_dyeing_price = 0
-                fabric.latest_dyeing_price_dollar = 0
-            }
-            // Get Sum Current Quantity Of fabric 
-            // const sumCurrentQuantity = await waService.selectSumCurrentQuantityByYarnWa(fabric.dyed_fabric_id)
-            // fabric.current_quantity = sumCurrentQuantity[0].current_quantity
+            return Promise.all([addReqPromise, dyeingPromise])
+                .then(([addData, dyeingData]) => ({ 
+                    fabricId: fabric.dyed_fabric_id,
+                    ...addData, 
+                    ...dyeingData 
+                }));
+        });
+        
+        const prices = await Promise.all(pricePromises);
+        const priceMap = new Map(prices.map(p => [p.fabricId, {
+            price: p.price,
+            price_dollar: p.price_dollar,
+            dyeingPrice: p.dyeingPrice,
+            dyeingPriceDollar: p.dyeingPriceDollar
+        }]));
 
-            data.push(fabric)
-
-            callArray.push(weAddRequisitionDetailsQueries.selectTotalByFabricId(fabric.dyed_fabric_id))
-            callArray.push(weSellRequisitionDetailsQueries.selectTotalByFabricId(fabric.dyed_fabric_id))
-            callArray.push(weReturnRequisitionDetailsQueries.selectTotalByFabricId(fabric.dyed_fabric_id))
-            callArray.push(weReconciliationRequisitionDetailsQueries.selectTotalByFabricId(fabric.dyed_fabric_id))
-            callArray.push(wdDyeingRequisitionDetailsQueries.selectTotalByFabricIdForWe(fabric.dyed_fabric_id))
-            callArray.push(weReturnSellRequisitionDetailsQueries.selectTotalByFabricId(fabric.dyed_fabric_id))
-            callArray.push(weTransitionBetweenWHRequisitionDetailsQueries.selectToWarehouseTotalByFabricId(fabric.dyed_fabric_id))
-            callArray.push(weTransitionBetweenWHRequisitionDetailsQueries.selectFromWarehouseTotalByFabricId(fabric.dyed_fabric_id))
-            callArray.push(weExecuteOrderRequisitionDetailsQueries.selectFromTotalByFabricId(fabric.dyed_fabric_id))
-            callArray.push(weExecuteOrderRequisitionDetailsQueries.selectToTotalByFabricId(fabric.dyed_fabric_id))
-            callArray.push(weTransitionBetweenOrdersRequisitionDetailsQueries.selectToOrderTotalByFabricId(fabric.dyed_fabric_id))
-            callArray.push(weTransitionBetweenOrdersRequisitionDetailsQueries.selectFromOrderTotalByFabricId(fabric.dyed_fabric_id))
-            const requisitions = await Promise.all(callArray)
-            const sortedAsc = [...requisitions[0], ...requisitions[1],
-            ...requisitions[2], ...requisitions[3], ...requisitions[4],
-            ...requisitions[5], ...requisitions[6], ...requisitions[7],
-            ...requisitions[8], ...requisitions[9], ...requisitions[10],
-            ...requisitions[11]
-            ].sort(
-                (objA, objB) => moment(objA.date) - moment(objB.date)
-            );
+        // 🚀 حلقة واحدة - استدعاء جميع detail queries بـ parallel
+        const allDetailPromises = [];
+        
+        for (let i = 0; i < fabrics.length; i++) {
+            let fabric = fabrics[i];
             
-            // ✅ حساب إجمالي الإدخال والإخراج لكل Yarn
+            // تحديث الأسعار من الـ map
+            const priceData = priceMap.get(fabric.dyed_fabric_id);
+            fabric.latest_price = priceData?.price || 0;
+            fabric.latest_price_dollar = priceData?.price_dollar || 0;
+            fabric.latest_dyeing_price = priceData?.dyeingPrice || 0;
+            fabric.latest_dyeing_price_dollar = priceData?.dyeingPriceDollar || 0;
+            
+            data.push(fabric);
+            
+            // تجميع جميع promises
+            allDetailPromises.push(weAddRequisitionDetailsQueries.selectTotalByFabricId(fabric.dyed_fabric_id));
+            allDetailPromises.push(weSellRequisitionDetailsQueries.selectTotalByFabricId(fabric.dyed_fabric_id));
+            allDetailPromises.push(weReturnRequisitionDetailsQueries.selectTotalByFabricId(fabric.dyed_fabric_id));
+            allDetailPromises.push(weReconciliationRequisitionDetailsQueries.selectTotalByFabricId(fabric.dyed_fabric_id));
+            allDetailPromises.push(wdDyeingRequisitionDetailsQueries.selectTotalByFabricIdForWe(fabric.dyed_fabric_id));
+            allDetailPromises.push(weReturnSellRequisitionDetailsQueries.selectTotalByFabricId(fabric.dyed_fabric_id));
+            allDetailPromises.push(weTransitionBetweenWHRequisitionDetailsQueries.selectToWarehouseTotalByFabricId(fabric.dyed_fabric_id));
+            allDetailPromises.push(weTransitionBetweenWHRequisitionDetailsQueries.selectFromWarehouseTotalByFabricId(fabric.dyed_fabric_id));
+            allDetailPromises.push(weExecuteOrderRequisitionDetailsQueries.selectFromTotalByFabricId(fabric.dyed_fabric_id));
+            allDetailPromises.push(weExecuteOrderRequisitionDetailsQueries.selectToTotalByFabricId(fabric.dyed_fabric_id));
+            allDetailPromises.push(weTransitionBetweenOrdersRequisitionDetailsQueries.selectToOrderTotalByFabricId(fabric.dyed_fabric_id));
+            allDetailPromises.push(weTransitionBetweenOrdersRequisitionDetailsQueries.selectFromOrderTotalByFabricId(fabric.dyed_fabric_id));
+        }
+        
+        // استدعاء جميع queries مرة واحدة
+        const allResults = await Promise.all(allDetailPromises);
+        
+        // معالجة النتائج
+        let resultIndex = 0;
+        for (let i = 0; i < fabrics.length; i++) {
+            const requisitions = [
+                allResults[resultIndex++],
+                allResults[resultIndex++],
+                allResults[resultIndex++],
+                allResults[resultIndex++],
+                allResults[resultIndex++],
+                allResults[resultIndex++],
+                allResults[resultIndex++],
+                allResults[resultIndex++],
+                allResults[resultIndex++],
+                allResults[resultIndex++],
+                allResults[resultIndex++],
+                allResults[resultIndex++]
+            ];
+            
+            const sortedAsc = [...requisitions[0], ...requisitions[1],
+                ...requisitions[2], ...requisitions[3], ...requisitions[4],
+                ...requisitions[5], ...requisitions[6], ...requisitions[7],
+                ...requisitions[8], ...requisitions[9], ...requisitions[10],
+                ...requisitions[11]
+            ].sort((objA, objB) => moment(objA.date) - moment(objB.date));
+
             const totalInput = sortedAsc
-            .filter(d => d.input_output == 1) // الإدخالات فقط
-            .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+                .filter(d => d.input_output == 1)
+                .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
 
             const totalOutput = sortedAsc
-            .filter(d => d.input_output == 0) // الإخراجات فقط
-            .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+                .filter(d => d.input_output == 0)
+                .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
 
-            // ✅ حفظ القيم داخل الكائن الأساسي
             data[i].input_quantity = parseFloat((totalInput).toFixed(2));
             data[i].output_quantity = parseFloat((totalOutput).toFixed(2));
-
-            data[i].details = sortedAsc
-
+            data[i].details = sortedAsc;
         }
     }
 
@@ -323,131 +357,151 @@ exports.selectInventoryDetails = async (fabricReport) => {
     // select warehousesFabrics 
     const warehousesFabrics = (fabricReport.isShowClosedBalances == 1) ? await weQueries.selectStoredWarehouseAndFabricForReport(whereCluseArray, 0) : await weQueries.selectStoredWarehouseAndFabricForReport(whereCluseArray)
     if (warehousesFabrics[0] != null) {
-        for (let i = 0; i < warehousesFabrics.length; i++) {
-            let warehousesFabric = warehousesFabrics[i];
-            let callArray = []
-
-            // Select Max Added Date
+        
+        // 🚀 استدعاء جميع الأسعار بـ Parallel
+        const pricePromises = warehousesFabrics.map(item => {
             let maxDateWhereCluse = {};
-            maxDateWhereCluse[`${weAddRequisitionDetailsTableName}.dyed_fabric_id`] = warehousesFabric.dyed_fabric_id;
-            const selectMaxDate = await generalQueries.selectMaxValueWithJoinCondition(weAddRequisitionTableName,
+            maxDateWhereCluse[`${weAddRequisitionDetailsTableName}.dyed_fabric_id`] = item.dyed_fabric_id;
+            
+            const addReqPromise = generalQueries.selectMaxValueWithJoinCondition(weAddRequisitionTableName,
                 { date: 'date' }, maxDateWhereCluse,
                 weAddRequisitionDetailsTableName,
                 `${weAddRequisitionDetailsTableName}.we_add_requisition_id`,
                 `${weAddRequisitionTableName}.id`)
-            if (selectMaxDate[0] != null) {
-                // Select Latest Price
-                let wcAddRequisitionDetailsWhereCluse = {};
-                wcAddRequisitionDetailsWhereCluse[`${weAddRequisitionDetailsTableName}.dyed_fabric_id`] = warehousesFabric.dyed_fabric_id;
-                wcAddRequisitionDetailsWhereCluse[`${weAddRequisitionTableName}.date`] = selectMaxDate[0]?.date;
-                const latestPrice = await weAddRequisitionDetailsQueries.selectLatestPrice(wcAddRequisitionDetailsWhereCluse)
-                if (latestPrice[0] != null) {
-                    warehousesFabric.latest_price = latestPrice[0]?.price
-                    warehousesFabric.latest_price_dollar = latestPrice[0]?.price_dollar
-                } else {
-                    warehousesFabric.latest_price = 0
-                    warehousesFabric.latest_price_dollar = 0
-                }
-            } else {
-                warehousesFabric.latest_price = 0
-                warehousesFabric.latest_price_dollar = 0
-            }
+                .then(selectMaxDate => {
+                    if (selectMaxDate[0] != null) {
+                        let wcAddRequisitionDetailsWhereCluse = {};
+                        wcAddRequisitionDetailsWhereCluse[`${weAddRequisitionDetailsTableName}.dyed_fabric_id`] = item.dyed_fabric_id;
+                        wcAddRequisitionDetailsWhereCluse[`${weAddRequisitionTableName}.date`] = selectMaxDate[0]?.date;
+                        return weAddRequisitionDetailsQueries.selectLatestPrice(wcAddRequisitionDetailsWhereCluse)
+                            .then(latestPrice => ({
+                                price: latestPrice[0]?.price || 0,
+                                price_dollar: latestPrice[0]?.price_dollar || 0
+                            }));
+                    }
+                    return { price: 0, price_dollar: 0 };
+                });
 
             let dyeingMaxDateWhereCluse = {};
-            dyeingMaxDateWhereCluse[`${wdDyeingRequisitionDetailsTableName}.dyed_fabric_id`] = warehousesFabric.dyed_fabric_id;
-            const selectDyeingMaxDate = await knex(wdDyeingRequisitionDetailsTableName)
+            dyeingMaxDateWhereCluse[`${wdDyeingRequisitionDetailsTableName}.dyed_fabric_id`] = item.dyed_fabric_id;
+            const dyeingPromise = knex(wdDyeingRequisitionDetailsTableName)
                 .max({ date: 'date' })
                 .innerJoin(wdDyeingRequisitionTableName,
                     `${wdDyeingRequisitionTableName}.id`,
                     `${wdDyeingRequisitionDetailsTableName}.wd_dyeing_requisition_id`)
                 .where(dyeingMaxDateWhereCluse)
+                .then(selectDyeingMaxDate => {
+                    if (selectDyeingMaxDate[0].date != null) {
+                        let wdDyeingWhereCluse = {};
+                        wdDyeingWhereCluse[`${wdDyeingRequisitionDetailsTableName}.dyed_fabric_id`] = item.dyed_fabric_id;
+                        wdDyeingWhereCluse[`${wdDyeingRequisitionTableName}.date`] = selectDyeingMaxDate[0]?.date;
+                        return wdDyeingRequisitionDetailsQueries.selectLatestPrice(wdDyeingWhereCluse)
+                            .then(latestDyeingPrice => ({
+                                dyeingPrice: latestDyeingPrice[0]?.price || 0,
+                                dyeingPriceDollar: latestDyeingPrice[0]?.price_dollar || 0
+                            }));
+                    }
+                    return { dyeingPrice: 0, dyeingPriceDollar: 0 };
+                });
 
-            if (selectDyeingMaxDate[0].date != null) {
-                // Select Latest Manufacturing Price
-                let wdDyeingWhereCluse = {};
-                wdDyeingWhereCluse[`${wdDyeingRequisitionDetailsTableName}.dyed_fabric_id`] = warehousesFabric.dyed_fabric_id;
-                wdDyeingWhereCluse[`${wdDyeingRequisitionTableName}.date`] = selectDyeingMaxDate[0]?.date;
-                const latestDyeingPrice = await wdDyeingRequisitionDetailsQueries.selectLatestPrice(wdDyeingWhereCluse)
-                if (latestDyeingPrice[0] != null) {
-                    warehousesFabric.latest_dyeing_price = latestDyeingPrice[0]?.price
-                    warehousesFabric.latest_dyeing_price_dollar = latestDyeingPrice[0]?.price_dollar
-                } else {
-                    warehousesFabric.latest_dyeing_price = 0
-                    warehousesFabric.latest_dyeing_price_dollar = 0
-                }
-            } else {
-                warehousesFabric.latest_dyeing_price = 0
-                warehousesFabric.latest_dyeing_price_dollar = 0
-            }
+            return Promise.all([addReqPromise, dyeingPromise])
+                .then(([addData, dyeingData]) => ({ 
+                    fabricId: item.dyed_fabric_id,
+                    warehouseId: item.warehouse_id,
+                    ...addData, 
+                    ...dyeingData 
+                }));
+        });
+        
+        const prices = await Promise.all(pricePromises);
+        const priceMap = new Map(prices.map(p => [`${p.fabricId}_${p.warehouseId}`, {
+            price: p.price,
+            price_dollar: p.price_dollar,
+            dyeingPrice: p.dyeingPrice,
+            dyeingPriceDollar: p.dyeingPriceDollar
+        }]));
 
-
-            // Get Sum Current Quantity Of warehousesFabric
-            // const sumCurrentQuantity = await waService.selectSumCurrentQuantityByYarnWa(warehousesFabricConsigmentManufacturing.id)
-            // warehousesFabric.current_quantity = sumCurrentQuantity[0].current_quantity
-
-            data.push(warehousesFabric)
-
-            callArray.push(weAddRequisitionDetailsQueries.selectDetailsByWarehouseByFabric(
-                warehousesFabric.warehouse_id, warehousesFabric.dyed_fabric_id
-            ))
-            callArray.push(weSellRequisitionDetailsQueries.selectDetailsByWarehouseByFabric(
-                warehousesFabric.warehouse_id, warehousesFabric.dyed_fabric_id
-            ))
-            callArray.push(weReturnRequisitionDetailsQueries.selectDetailsByWarehouseByFabric(
-                warehousesFabric.warehouse_id, warehousesFabric.dyed_fabric_id
-            ))
-            callArray.push(weReconciliationRequisitionDetailsQueries.selectDetailsByWarehouseByFabric(
-                warehousesFabric.warehouse_id, warehousesFabric.dyed_fabric_id
-            ))
-            callArray.push(weReturnSellRequisitionDetailsQueries.selectDetailsByWarehouseByFabric(
-                warehousesFabric.warehouse_id, warehousesFabric.dyed_fabric_id
-            ))
-            callArray.push(wdDyeingRequisitionDetailsQueries.selectDetailsDetailsByFabricByWarehouseForWe(
-                warehousesFabric.warehouse_id, warehousesFabric.dyed_fabric_id
-            ))
-            callArray.push(weTransitionBetweenWHRequisitionDetailsQueries.selectFromWarehouseDetailsByFabricIdByWarehouseId(
-                warehousesFabric.warehouse_id, warehousesFabric.dyed_fabric_id
-            ))
-            callArray.push(weTransitionBetweenWHRequisitionDetailsQueries.selectToWarehouseDetailsByFabricIdByWarehouseId(
-                warehousesFabric.warehouse_id, warehousesFabric.dyed_fabric_id
-            ))
-            callArray.push(weExecuteOrderRequisitionDetailsQueries.selectFromWarehouseDetailsByWarehouseByFabric(
-                warehousesFabric.warehouse_id, warehousesFabric.dyed_fabric_id
-            ))
-            callArray.push(weExecuteOrderRequisitionDetailsQueries.selectToWarehouseDetailsByWarehouseByFabric(
-                warehousesFabric.warehouse_id, warehousesFabric.dyed_fabric_id
-            ))
-            callArray.push(weTransitionBetweenOrdersRequisitionDetailsQueries.selectFromOrderDetailsByFabricIdByWarehouseId(
-                warehousesFabric.warehouse_id, warehousesFabric.dyed_fabric_id
-            ))
-            callArray.push(weTransitionBetweenOrdersRequisitionDetailsQueries.selectToOrderDetailsByFabricIdByWarehouseId(
-                warehousesFabric.warehouse_id, warehousesFabric.dyed_fabric_id
-            ))
-            const requisitions = await Promise.all(callArray)
-            const sortedAsc = [...requisitions[0], ...requisitions[1],
-            ...requisitions[2], ...requisitions[3], ...requisitions[4],
-            ...requisitions[5], ...requisitions[6], ...requisitions[7],
-            ...requisitions[8], ...requisitions[9], ...requisitions[10],
-            ...requisitions[11]
-            ].sort(
-                (objA, objB) => moment(objA.date) - moment(objB.date)
-            );
+        // 🚀 حلقة واحدة - استدعاء جميع detail queries بـ parallel
+        const allDetailPromises = [];
+        
+        for (let i = 0; i < warehousesFabrics.length; i++) {
+            let item = warehousesFabrics[i];
             
-            // ✅ حساب إجمالي الإدخال والإخراج لكل Yarn
+            // تحديث الأسعار من الـ map
+            const priceData = priceMap.get(`${item.dyed_fabric_id}_${item.warehouse_id}`);
+            item.latest_price = priceData?.price || 0;
+            item.latest_price_dollar = priceData?.price_dollar || 0;
+            item.latest_dyeing_price = priceData?.dyeingPrice || 0;
+            item.latest_dyeing_price_dollar = priceData?.dyeingPriceDollar || 0;
+            
+            data.push(item);
+            
+            // تجميع جميع promises
+            allDetailPromises.push(weAddRequisitionDetailsQueries.selectDetailsByWarehouseByFabric(
+                item.warehouse_id, item.dyed_fabric_id));
+            allDetailPromises.push(weSellRequisitionDetailsQueries.selectDetailsByWarehouseByFabric(
+                item.warehouse_id, item.dyed_fabric_id));
+            allDetailPromises.push(weReturnRequisitionDetailsQueries.selectDetailsByWarehouseByFabric(
+                item.warehouse_id, item.dyed_fabric_id));
+            allDetailPromises.push(weReconciliationRequisitionDetailsQueries.selectDetailsByWarehouseByFabric(
+                item.warehouse_id, item.dyed_fabric_id));
+            allDetailPromises.push(weReturnSellRequisitionDetailsQueries.selectDetailsByWarehouseByFabric(
+                item.warehouse_id, item.dyed_fabric_id));
+            allDetailPromises.push(wdDyeingRequisitionDetailsQueries.selectDetailsDetailsByFabricByWarehouseForWe(
+                item.warehouse_id, item.dyed_fabric_id));
+            allDetailPromises.push(weTransitionBetweenWHRequisitionDetailsQueries.selectFromWarehouseDetailsByFabricIdByWarehouseId(
+                item.warehouse_id, item.dyed_fabric_id));
+            allDetailPromises.push(weTransitionBetweenWHRequisitionDetailsQueries.selectToWarehouseDetailsByFabricIdByWarehouseId(
+                item.warehouse_id, item.dyed_fabric_id));
+            allDetailPromises.push(weExecuteOrderRequisitionDetailsQueries.selectFromWarehouseDetailsByWarehouseByFabric(
+                item.warehouse_id, item.dyed_fabric_id));
+            allDetailPromises.push(weExecuteOrderRequisitionDetailsQueries.selectToWarehouseDetailsByWarehouseByFabric(
+                item.warehouse_id, item.dyed_fabric_id));
+            allDetailPromises.push(weTransitionBetweenOrdersRequisitionDetailsQueries.selectFromOrderDetailsByFabricIdByWarehouseId(
+                item.warehouse_id, item.dyed_fabric_id));
+            allDetailPromises.push(weTransitionBetweenOrdersRequisitionDetailsQueries.selectToOrderDetailsByFabricIdByWarehouseId(
+                item.warehouse_id, item.dyed_fabric_id));
+        }
+        
+        // استدعاء جميع queries مرة واحدة
+        const allResults = await Promise.all(allDetailPromises);
+        
+        // معالجة النتائج
+        let resultIndex = 0;
+        for (let i = 0; i < warehousesFabrics.length; i++) {
+            const requisitions = [
+                allResults[resultIndex++],
+                allResults[resultIndex++],
+                allResults[resultIndex++],
+                allResults[resultIndex++],
+                allResults[resultIndex++],
+                allResults[resultIndex++],
+                allResults[resultIndex++],
+                allResults[resultIndex++],
+                allResults[resultIndex++],
+                allResults[resultIndex++],
+                allResults[resultIndex++],
+                allResults[resultIndex++]
+            ];
+            
+            const sortedAsc = [...requisitions[0], ...requisitions[1],
+                ...requisitions[2], ...requisitions[3], ...requisitions[4],
+                ...requisitions[5], ...requisitions[6], ...requisitions[7],
+                ...requisitions[8], ...requisitions[9], ...requisitions[10],
+                ...requisitions[11]
+            ].sort((objA, objB) => moment(objA.date) - moment(objB.date));
+
             const totalInput = sortedAsc
-            .filter(d => d.input_output == 1) // الإدخالات فقط
-            .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+                .filter(d => d.input_output == 1)
+                .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
 
             const totalOutput = sortedAsc
-            .filter(d => d.input_output == 0) // الإخراجات فقط
-            .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+                .filter(d => d.input_output == 0)
+                .reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
 
-            // ✅ حفظ القيم داخل الكائن الأساسي
             data[i].input_quantity = parseFloat((totalInput).toFixed(2));
             data[i].output_quantity = parseFloat((totalOutput).toFixed(2));
-            
-            data[i].details = sortedAsc
-
+            data[i].details = sortedAsc;
         }
     }
 

@@ -490,9 +490,8 @@ exports.selectStoredWarehouseAndYarnAndYarnLot = async (whereCluseArray, isGreat
     `current_quantity`,
   ]
   await knex.select(columns).from(function () {
-        this.distinct(`${waAddRequisitionDetailsTableName}.id`)
-    .select([
-      `${waAddRequisitionDetailsTableName}.id as requisition_details_id`,
+    this.select([
+      `${waTableName}.wa_add_requisition_details_id as requisition_details_id`,
       `${yarnTableName}.id as yarn_id`,
       `${yarnTableName}.name as yarn_name`,
       `${yarnTableName}.code as yarn_code`,
@@ -502,23 +501,24 @@ exports.selectStoredWarehouseAndYarnAndYarnLot = async (whereCluseArray, isGreat
       `${consigmentYarnTableName}.number as consigment_yarn_number`,
       `${warehouseTableName}.id as warehouse_id`,
       `${warehouseTableName}.name as warehouse_name`,
-      `${waYarnOrderRequisitionTableName}.id as wa_yarn_order_requisition_id`,
+      `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`,
       `${waYarnOrderRequisitionTableName}.name as wa_yarn_order_requisition_name`,
-      `${waAddRequisitionTableName}.supplier_id`,
-      // `${waAddRequisitionDetailsTableName}.id as requisition_details_id`,
+      `${waTableName}.supplier_id`,
       `${waAddRequisitionDetailsTableName}.quantity`,
       `${bussinessmanTableName}.name as supplier_name`,
-        `${waTableName}.id as wa_id`,
+      `${waTableName}.id as wa_id`,
       `${waTableName}.current_quantity`
     ])
-    // .distinct(`${waAddRequisitionDetailsTableName}.id as requisition_details_id`)
-      .from(`${waAddRequisitionDetailsTableName}`)
+      .from(`${waTableName}`)
+      .innerJoin(`${waAddRequisitionDetailsTableName}`,
+        `${waAddRequisitionDetailsTableName}.id`,
+        `${waTableName}.wa_add_requisition_details_id`)
       .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`,
         `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`,
         `${waAddRequisitionDetailsTableName}.id`)
-        .innerJoin(`${waYarnOrderRequisitionTableName}`,
-          `${waYarnOrderRequisitionTableName}.id`,
-          `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`)
+      .innerJoin(`${waYarnOrderRequisitionTableName}`,
+        `${waYarnOrderRequisitionTableName}.id`,
+        `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`)
       .innerJoin(`${warehouseTableName}`,
         `${warehouseTableName}.id`,
         `${waAddRequisitionDetailsTableName}.warehouse_id`)
@@ -528,18 +528,12 @@ exports.selectStoredWarehouseAndYarnAndYarnLot = async (whereCluseArray, isGreat
       .innerJoin(`${yarnLotTableName}`,
         `${yarnLotTableName}.id`,
         `${waAddRequisitionDetailsTableName}.yarn_lot_id`)
-      .innerJoin(`${waTableName}`,
-        `${waTableName}.wa_add_requisition_details_id`,
-        `${waAddRequisitionDetailsTableName}.id`)
       .innerJoin(`${consigmentYarnTableName}`,
         `${consigmentYarnTableName}.id`,
         `${waAddRequisitionDetailsTableName}.consigment_yarn_id`)
-      .innerJoin(`${waAddRequisitionTableName}`,
-        `${waAddRequisitionTableName}.id`,
-        `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
-        .innerJoin(`${bussinessmanTableName}`,
+      .leftJoin(`${bussinessmanTableName}`,
         `${bussinessmanTableName}.id`,
-        `${waAddRequisitionTableName}.supplier_id`)
+        `${waTableName}.supplier_id`)
       .where(whereCluseArray[0])
       .andWhere((qb) => {
         if (isGreaterThanZero) {
@@ -551,8 +545,7 @@ exports.selectStoredWarehouseAndYarnAndYarnLot = async (whereCluseArray, isGreat
       // .groupBy(`${waAddRequisitionDetailsTableName}.yarn_id`)
       .as('t1')
       .union(function () {
-        this.distinct(`${waReconciliationRequisitionDetailsTableName}.id`)
-        .select([
+        this.select([
           `${waReconciliationRequisitionDetailsTableName}.id as requisition_details_id`,
           `${yarnTableName}.id as yarn_id`,
           `${yarnTableName}.name as yarn_name`,
@@ -565,14 +558,12 @@ exports.selectStoredWarehouseAndYarnAndYarnLot = async (whereCluseArray, isGreat
           `${warehouseTableName}.name as warehouse_name`,
           `${waYarnOrderRequisitionTableName}.id as wa_yarn_order_requisition_id`,
           `${waYarnOrderRequisitionTableName}.name as wa_yarn_order_requisition_name`,
-      `${waAddRequisitionTableName}.supplier_id`,
-      // `${waReconciliationRequisitionDetailsTableName}.id as requisition_details_id`,
+          `${waTableName}.supplier_id`,
           `${waReconciliationRequisitionDetailsTableName}.quantity`,
-      `${bussinessmanTableName}.name as supplier_name`,
+          `${bussinessmanTableName}.name as supplier_name`,
           `${waTableName}.id as wa_id`,
           `${waTableName}.current_quantity`
         ])
-    // .distinct(`${waReconciliationRequisitionDetailsTableName}.id as requisition_details_id`)
           .from(`${waReconciliationRequisitionDetailsTableName}`)
           .innerJoin(`${waYarnOrderRequisitionTableName}`,
             `${waYarnOrderRequisitionTableName}.id`,
@@ -598,18 +589,9 @@ exports.selectStoredWarehouseAndYarnAndYarnLot = async (whereCluseArray, isGreat
           .innerJoin(`${consigmentYarnTableName}`,
             `${consigmentYarnTableName}.id`,
             `${waReconciliationRequisitionDetailsTableName}.consigment_yarn_id`)
-          .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`,
-            `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`,
-            `${waReconciliationRequisitionDetailsTableName}.wa_yarn_order_requisition_id`)
-          .innerJoin(`${waAddRequisitionDetailsTableName}`,
-            `${waAddRequisitionDetailsTableName}.id`,
-            `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`)
-          .innerJoin(`${waAddRequisitionTableName}`,
-            `${waAddRequisitionTableName}.id`,
-            `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
-             .innerJoin(`${bussinessmanTableName}`,
-        `${bussinessmanTableName}.id`,
-        `${waAddRequisitionTableName}.supplier_id`)
+          .leftJoin(`${bussinessmanTableName}`,
+            `${bussinessmanTableName}.id`,
+            `${waTableName}.supplier_id`)
           .where(whereCluseArray[1])
           .andWhere(
             (qb) => {
@@ -619,12 +601,10 @@ exports.selectStoredWarehouseAndYarnAndYarnLot = async (whereCluseArray, isGreat
                 qb.where(`${waTableName}.current_quantity`, ">=", "0")
               }
             })
-        // .groupBy(`${waReconciliationRequisitionDetailsTableName}.yarn_id`)
 
       })
       .union(function () {
-        this.distinct(`${wbTransportRequisitionWbWaDetailsTableName}.id`)
-        .select([
+        this.select([
           `${wbTransportRequisitionWbWaDetailsTableName}.id as requisition_details_id`,
           `${yarnTableName}.id as yarn_id`,
           `${yarnTableName}.name as yarn_name`,
@@ -637,14 +617,12 @@ exports.selectStoredWarehouseAndYarnAndYarnLot = async (whereCluseArray, isGreat
           `${warehouseTableName}.name as warehouse_name`,
           `${waYarnOrderRequisitionTableName}.id as wa_yarn_order_requisition_id`,
           `${waYarnOrderRequisitionTableName}.name as wa_yarn_order_requisition_name`,
-      `${waAddRequisitionTableName}.supplier_id`,
-      // `${wbTransportRequisitionWbWaDetailsTableName}.id as requisition_details_id`,
+          `${waTableName}.supplier_id`,
           `${wbTransportRequisitionWbWaDetailsTableName}.quantity`,
-      `${bussinessmanTableName}.name as supplier_name`,
+          `${bussinessmanTableName}.name as supplier_name`,
           `${waTableName}.id as wa_id`,
           `${waTableName}.current_quantity`
         ])
-    // .distinct(`${wbTransportRequisitionWbWaDetailsTableName}.id as requisition_details_id`)
           .from(`${wbTransportRequisitionWbWaDetailsTableName}`)
           .innerJoin(`${waYarnOrderRequisitionTableName}`,
             `${waYarnOrderRequisitionTableName}.id`,
@@ -667,18 +645,9 @@ exports.selectStoredWarehouseAndYarnAndYarnLot = async (whereCluseArray, isGreat
           .innerJoin(`${consigmentYarnTableName}`,
             `${consigmentYarnTableName}.id`,
             `${wbTransportRequisitionWbWaDetailsTableName}.consigment_yarn_id`)
-                      .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`,
-            `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`,
-            `${wbTransportRequisitionWbWaDetailsTableName}.wa_yarn_order_requisition_id`)
-          .innerJoin(`${waAddRequisitionDetailsTableName}`,
-            `${waAddRequisitionDetailsTableName}.id`,
-            `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`)
-          .innerJoin(`${waAddRequisitionTableName}`,
-            `${waAddRequisitionTableName}.id`,
-            `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
-             .innerJoin(`${bussinessmanTableName}`,
-        `${bussinessmanTableName}.id`,
-        `${waAddRequisitionTableName}.supplier_id`)
+          .leftJoin(`${bussinessmanTableName}`,
+            `${bussinessmanTableName}.id`,
+            `${waTableName}.supplier_id`)
           .where(whereCluseArray[2])
           .andWhere(
             (qb) => {
@@ -690,8 +659,7 @@ exports.selectStoredWarehouseAndYarnAndYarnLot = async (whereCluseArray, isGreat
             })
       })
       .union(function () {
-        this.distinct(`${waTransitionBetweenWHRequisitionDetailsTableName}.id`)
-        .select([
+        this.select([
           `${waTransitionBetweenWHRequisitionDetailsTableName}.id as requisition_details_id`,
           `${yarnTableName}.id as yarn_id`,
           `${yarnTableName}.name as yarn_name`,
@@ -704,10 +672,9 @@ exports.selectStoredWarehouseAndYarnAndYarnLot = async (whereCluseArray, isGreat
           `${warehouseTableName}.name as warehouse_name`,
           `${waYarnOrderRequisitionTableName}.id as wa_yarn_order_requisition_id`,
           `${waYarnOrderRequisitionTableName}.name as wa_yarn_order_requisition_name`,
-      `${waAddRequisitionTableName}.supplier_id`,
-      // `${waTransitionBetweenWHRequisitionDetailsTableName}.id as requisition_details_id`,
+          `${waTableName}.supplier_id`,
           `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
-      `${bussinessmanTableName}.name as supplier_name`,
+          `${bussinessmanTableName}.name as supplier_name`,
           `${waTableName}.id as wa_id`,
           `${waTableName}.current_quantity`
         ])
@@ -727,24 +694,15 @@ exports.selectStoredWarehouseAndYarnAndYarnLot = async (whereCluseArray, isGreat
           .innerJoin(`${yarnLotTableName}`,
             `${yarnLotTableName}.id`,
             `${waTransitionBetweenWHRequisitionDetailsTableName}.yarn_lot_id`)
-    .innerJoin(`${waTableName}`,
-      `${waTableName}.wa_transition_between_wh_requisitions_details_id`,
-      `${waTransitionBetweenWHRequisitionDetailsTableName}.id`)
+          .innerJoin(`${waTableName}`,
+            `${waTableName}.wa_transition_between_wh_requisitions_details_id`,
+            `${waTransitionBetweenWHRequisitionDetailsTableName}.id`)
           .innerJoin(`${consigmentYarnTableName}`,
             `${consigmentYarnTableName}.id`,
             `${waTransitionBetweenWHRequisitionDetailsTableName}.consigment_yarn_id`)
-            .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`,
-            `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`,
-            `${waTransitionBetweenWHRequisitionDetailsTableName}.wa_yarn_order_requisition_id`)
-          .innerJoin(`${waAddRequisitionDetailsTableName}`,
-            `${waAddRequisitionDetailsTableName}.id`,
-            `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`)
-          .innerJoin(`${waAddRequisitionTableName}`,
-            `${waAddRequisitionTableName}.id`,
-            `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
-             .innerJoin(`${bussinessmanTableName}`,
-        `${bussinessmanTableName}.id`,
-        `${waAddRequisitionTableName}.supplier_id`)
+          .leftJoin(`${bussinessmanTableName}`,
+            `${bussinessmanTableName}.id`,
+            `${waTableName}.supplier_id`)
           .where(whereCluseArray[3])
           .andWhere(
             (qb) => {

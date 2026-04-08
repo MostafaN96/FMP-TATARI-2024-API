@@ -249,7 +249,6 @@ exports.selectDetailsByWarehouseByYarnByLot = async (
 ) => {
   let queryResults = [];
   let whereCluse = {};
-    whereCluse[`${waAddRequisitionTableName}.supplier_id`] = supplierId;
   whereCluse[`${waSellRequisitionTableName}.warehouse_id`] = warehouseId;
   whereCluse[`${waSellRequisitionDetailsTableName}.yarn_id`] = yarnId;
   whereCluse[`${waSellRequisitionDetailsTableName}.yarn_lot_id`] = yarnLotId;
@@ -259,7 +258,6 @@ exports.selectDetailsByWarehouseByYarnByLot = async (
   whereCluse[`${waSellRequisitionDetailsTableName}.is_active`] = 1;
 
   await knex.from(waSellRequisitionDetailsTableName)
-  .distinct(`${waSellRequisitionDetailsTableName}.id`)
     .select(
       [
         `${waSellRequisitionDetailsTableName}.price`,
@@ -273,15 +271,6 @@ exports.selectDetailsByWarehouseByYarnByLot = async (
     .innerJoin(`${waSellRequisitionTableName}`, 
       `${waSellRequisitionTableName}.id`, 
       `${waSellRequisitionDetailsTableName}.wa_sell_requisition_id`)
-    .innerJoin(`${waAddRequisitionDetailsYarnOrderTableName}`, 
-      `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`, 
-      `${waSellRequisitionDetailsTableName}.wa_yarn_order_requisition_id`)
-    .innerJoin(`${waAddRequisitionDetailsTableName}`, 
-      `${waAddRequisitionDetailsTableName}.id`, 
-      `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`)
-    .innerJoin(`${waAddRequisitionTableName}`, 
-      `${waAddRequisitionTableName}.id`, 
-      `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`)
     .where(whereCluse)
     .andWhere(`${waSellRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {

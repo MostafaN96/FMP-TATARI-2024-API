@@ -260,7 +260,7 @@ exports.selectFabricsByOrder = async (whereCluse, whereInWhereCluse) => {
   return queryResults;
 };
 
-exports.selectStoredFabricsWc = async (whereCluse, wcWhereCluse, warehouseId) => {
+exports.selectStoredFabricsWc = async (whereCluse, wcWhereCluse, warehouseId, fabricOrderIds) => {
   let queryResults = []
 
   await knex(fabricTableName)
@@ -280,6 +280,7 @@ exports.selectStoredFabricsWc = async (whereCluse, wcWhereCluse, warehouseId) =>
             `${wcAddRequisitionDetailsTableName}.id`)
         .where(`${wcTableName}.current_quantity`, ">", "0")
         .andWhere(wcWhereCluse)
+        .whereIn(`wc_fabric_order_requisition_id`, fabricOrderIds)
     })
     .orWhereIn(`${fabricTableName}.id`, function () {
       this.select(`${wcReconciliationRequisitionDetailsTableName}.fabric_id as id`)
@@ -295,6 +296,7 @@ exports.selectStoredFabricsWc = async (whereCluse, wcWhereCluse, warehouseId) =>
           `${wcReconciliationRequisitionDetailsWcTableName}.wc_id`)
         .where(`${wcTableName}.current_quantity`, ">", "0")
         .andWhere(wcWhereCluse)
+        .whereIn(`wc_fabric_order_requisition_id`, fabricOrderIds)
     })
     .orWhereIn(`${fabricTableName}.id`, function () {
       this.select(`${wdTransportRequisitionWdWcDetailsTableName}.fabric_id as id`)
@@ -307,6 +309,7 @@ exports.selectStoredFabricsWc = async (whereCluse, wcWhereCluse, warehouseId) =>
           `${wdTransportRequisitionWdWcDetailsTableName}.id`)
         .where(`${wcTableName}.current_quantity`, ">", "0")
         .andWhere(wcWhereCluse)
+        .whereIn(`wc_fabric_order_requisition_id`, fabricOrderIds)
     })
     .orWhereIn(`${fabricTableName}.id`, function () {
       this.select(`${wbManufacturingOutputTableName}.fabric_id as id`)
@@ -316,6 +319,7 @@ exports.selectStoredFabricsWc = async (whereCluse, wcWhereCluse, warehouseId) =>
           `${wbManufacturingOutputTableName}.id`)
         .where(`${wcTableName}.current_quantity`, ">", "0")
         .andWhere(wcWhereCluse)
+        .whereIn(`wc_fabric_order_requisition_id`, fabricOrderIds)
     })
     .orWhereIn(`${fabricTableName}.id`, function () {
       this.select(`${wcTransitionBetweenWHRequisitionDetailsTableName}.fabric_id as id`)
@@ -329,6 +333,7 @@ exports.selectStoredFabricsWc = async (whereCluse, wcWhereCluse, warehouseId) =>
         .where(`${wcTableName}.current_quantity`, ">", "0")
         .andWhere(`${wcTransitionBetweenWHRequisitionTableName}.to_warehouse_id`, warehouseId)
         .andWhere(wcWhereCluse)
+        .whereIn(`wc_fabric_order_requisition_id`, fabricOrderIds)
     })
     .orWhereIn(`${fabricTableName}.id`, function () {
       this.select(`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.fabric_id as id`)
@@ -342,6 +347,7 @@ exports.selectStoredFabricsWc = async (whereCluse, wcWhereCluse, warehouseId) =>
         .where(`${wcTableName}.current_quantity`, ">", "0")
         .andWhere(`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.warehouse_id`, warehouseId)
         .andWhere(wcWhereCluse)
+        .whereIn(`wc_fabric_order_requisition_id`, fabricOrderIds)
     })
     .andWhere(whereCluse)
     .groupBy(`${fabricTableName}.id`)
@@ -355,7 +361,7 @@ exports.selectStoredFabricsWc = async (whereCluse, wcWhereCluse, warehouseId) =>
   return queryResults
 }
 
-exports.selectByWarehouseWcForTransitionBetweenOrder = async (whereCluse, wcWhereCluse, warehouseId, toFabricOrderId) => {
+exports.selectByWarehouseWcForTransitionBetweenOrder = async (whereCluse, wcWhereCluse, warehouseId, fabricOrderIds, toFabricOrderIds) => {
   let queryResults = []
 
   await knex(fabricTableName)
@@ -378,7 +384,7 @@ exports.selectByWarehouseWcForTransitionBetweenOrder = async (whereCluse, wcWher
         .whereIn(`${fabricTableName}.id`, function () {
           this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
           .from(`${wcFabricOrderRequisitionDetailsTableName}`)
-          .where(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, `${toFabricOrderId}`)
+          .whereIn(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, toFabricOrderIds)
         })
     })
     .orWhereIn(`${fabricTableName}.id`, function () {
@@ -398,7 +404,7 @@ exports.selectByWarehouseWcForTransitionBetweenOrder = async (whereCluse, wcWher
         .whereIn(`${fabricTableName}.id`, function () {
           this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
           .from(`${wcFabricOrderRequisitionDetailsTableName}`)
-          .where(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, `${toFabricOrderId}`)
+          .whereIn(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, toFabricOrderIds)
         })
     })
     .orWhereIn(`${fabricTableName}.id`, function () {
@@ -415,7 +421,7 @@ exports.selectByWarehouseWcForTransitionBetweenOrder = async (whereCluse, wcWher
         .whereIn(`${fabricTableName}.id`, function () {
           this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
           .from(`${wcFabricOrderRequisitionDetailsTableName}`)
-          .where(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, `${toFabricOrderId}`)
+          .whereIn(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, toFabricOrderIds)
         })
     })
     .orWhereIn(`${fabricTableName}.id`, function () {
@@ -429,7 +435,7 @@ exports.selectByWarehouseWcForTransitionBetweenOrder = async (whereCluse, wcWher
         .whereIn(`${fabricTableName}.id`, function () {
           this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
           .from(`${wcFabricOrderRequisitionDetailsTableName}`)
-          .where(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, `${toFabricOrderId}`)
+          .whereIn(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, toFabricOrderIds)
         })
     })
     .orWhereIn(`${fabricTableName}.id`, function () {
@@ -447,7 +453,7 @@ exports.selectByWarehouseWcForTransitionBetweenOrder = async (whereCluse, wcWher
         .whereIn(`${fabricTableName}.id`, function () {
           this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
           .from(`${wcFabricOrderRequisitionDetailsTableName}`)
-          .where(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, `${toFabricOrderId}`)
+          .whereIn(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, toFabricOrderIds)
         })
     })
     .orWhereIn(`${fabricTableName}.id`, function () {
@@ -465,7 +471,7 @@ exports.selectByWarehouseWcForTransitionBetweenOrder = async (whereCluse, wcWher
         .whereIn(`${fabricTableName}.id`, function () {
           this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
           .from(`${wcFabricOrderRequisitionDetailsTableName}`)
-          .where(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, `${toFabricOrderId}`)
+          .whereIn(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, toFabricOrderIds)
         })
     })
     .andWhere(whereCluse)
@@ -474,7 +480,7 @@ exports.selectByWarehouseWcForTransitionBetweenOrder = async (whereCluse, wcWher
       queryResults = data
     })
     .catch(error => {
-      console.log("error selectByWarehouseWc :::: ", error);
+      console.log("error selectByWarehouseWcForTransitionBetweenOrder :::: ", error);
       queryResults = constants.errorPayload
     })
   return queryResults

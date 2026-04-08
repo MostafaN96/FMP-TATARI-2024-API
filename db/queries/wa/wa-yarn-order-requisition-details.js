@@ -296,6 +296,7 @@ exports.selectOneForUpdate = async (whereCluse) => {
     .select([
       `${waYarnOrderRequisitionDetailsTableName}.id`,
       `${waYarnOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_id`,
+      `${waYarnOrderRequisitionDetailsTableName}.orders_requisitions_id`,
       `${waYarnOrderRequisitionDetailsTableName}.initial_quantity`,
       `${waYarnOrderRequisitionDetailsTableName}.current_quantity`,
       // `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_details_id`,

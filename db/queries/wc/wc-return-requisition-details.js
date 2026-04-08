@@ -18,6 +18,8 @@ exports.insert = async (wcReturnRequisitionDetails, items) => {
       wc_return_requisition_id: wcReturnRequisitionDetails.id,
       fabric_id: items.fabricId,
       consigment_manufacturing_id: items.consigmentManufacturingId,
+      parent_wc_fabric_order_requisition_id: items.parentFabricOrderId || items.fabricOrderId,
+      parent_orders_requisitions_id: items.parentOrdersRequisitionsId || items.ordersRequisitionsId,
       price: items.price,
       price_dollar: items.priceDollar,
       fabric_piece: items.numberFabricPieces,

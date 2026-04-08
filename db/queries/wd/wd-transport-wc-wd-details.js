@@ -23,8 +23,11 @@ exports.insert = async (wdTransportWcWd, items) => {
       consigment_dyeing_id: items.consigmentDyeingId,
       consigment_manufacturing_id: items.consigmentManufacturingId,
       wc_fabric_order_requisition_details_id: items.wcFabricOrderRequisitionDetailsId,
-      wc_fabric_order_requisition_id: items.fabricOrderId,
+      wc_fabric_order_requisition_id: items.wcFabricOrderRequisitionId,
       orders_requisitions_id: items.ordersRequisitionsId,
+      parent_wc_fabric_order_requisition_details_id: items.parentWcFabricOrderRequisitionDetailsId || items.wcFabricOrderRequisitionDetailsId,
+      parent_wc_fabric_order_requisition_id: items.parentWcFabricOrderRequisitionId || items.wcFabricOrderRequisitionId,
+      parent_orders_requisitions_id: items.parentOrdersRequisitionsId || items.ordersRequisitionsId,
       price: items.price,
       price_dollar: items.priceDollar,
       quantity: items.quantity,
@@ -669,7 +672,9 @@ exports.selectDetailsByWarehouseByFabricByConsigmentManufacturing = async (wareh
         knex.raw('? as input_output', '0')
       ],
     )
-    .innerJoin(`${wdTransportWcWdTableName}`, `${wdTransportWcWdTableName}.id`, `${wdTransportWcWdDetailsTableName}.wd_transport_wc_wd_id`)
+    .innerJoin(`${wdTransportWcWdTableName}`, 
+      `${wdTransportWcWdTableName}.id`, 
+      `${wdTransportWcWdDetailsTableName}.wd_transport_wc_wd_id`)
     .where(whereCluse)
     .andWhere(`${wdTransportWcWdDetailsTableName}.quantity`, ">", 0)
     .then((data) => {

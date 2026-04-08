@@ -26,10 +26,84 @@ exports.login = async (request, response) => {
   }
 };
 
+exports.create = async (request, response) => {
+  const bodyPalod = request.body;
+
+  if (!userValidation.isValidCreate(bodyPalod)) {
+    return response.status(400).json(constants.invalidDataResponse);
+  }
+
+  const results = await userService.create(bodyPalod);
+
+  if (results === constants.duplicatedData) {
+    return response.status(200).json(constants.duplicatedData);
+  } else if (results === constants.insertError) {
+    return response.status(500).json(constants.insertError);
+  } else {
+    return response.status(201).json(results);
+  }
+};
+
+exports.update = async (request, response) => {
+  const { id } = request.params;
+  const bodyPalod = request.body;
+
+  if (!userValidation.isValidUpdate(bodyPalod)) {
+    return response.status(400).json(constants.invalidDataResponse);
+  }
+
+  bodyPalod.user_id = id;
+  const updateResults = await userService.update(bodyPalod);
+
+  switch (updateResults) {
+    case constants.itemNotFound:
+      return response.status(200).json(constants.itemNotFound);
+    case constants.duplicatedData:
+      return response.status(200).json(constants.duplicatedData);
+    case constants.updateError:
+      return response.status(500).json(constants.updateError);
+    case constants.updateSuccess:
+      return response.status(200).json(constants.updateSuccess);
+    default:
+      return response.status(200).json(updateResults);
+  }
+};
+
 exports.select = async (request, response) => {
   // logging
 
   // call service
   const results = await userService.select();
   response.status(200).json(results);
+};
+
+exports.selectDeleted = async (request, response) => {
+  const results = await userService.selectDeleted();
+  response.status(200).json(results);
+};
+
+exports.delete = async (request, response) => {
+  const bodyPalod = request.body;
+
+  const results = await userService.dalete(bodyPalod);
+  if (results === constants.deleteError) {
+    return response.status(500).json(constants.deleteError);
+  } else if (results === constants.itemNotFound) {
+    return response.status(404).json(constants.itemNotFound);
+  } else {
+    return response.status(200).json(constants.deleteSuccess);
+  }
+};
+
+exports.restore = async (request, response) => {
+  const bodyPalod = request.body;
+
+  const results = await userService.restore(bodyPalod);
+  if (results === constants.restoreError) {
+    return response.status(500).json(constants.restoreError);
+  } else if (results === constants.itemNotFound) {
+    return response.status(404).json(constants.itemNotFound);
+  }
+
+  return response.status(200).json(constants.restoreSuccess);
 };

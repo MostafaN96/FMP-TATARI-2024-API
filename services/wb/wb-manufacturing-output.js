@@ -13,7 +13,7 @@ const wbManufacturingInputQueries = require("../../db/queries/wb/wb-manufacturin
 // Services
 const wbManufacturingInputService = require("./wb-manufacturing-input");
 const wbService = require("./wb");
-const wcFabricOrderRequisitionDetailsService = require("../wc/wc-fabric-order-requisition-details");
+const wbManufacturingOutputAllocationService = require("./wb-manufacturing-output-allocation");
 
 // Helper
 const trans = require("../../helpers/transform");
@@ -29,7 +29,7 @@ const { wbManufacturingRequisitionTableName,
   wbManufacturingInputTableName
 } = require("../../util/database-tables-name");
 
-exports.create = async (wbManufacturingOutput) => {
+exports.create = async (wbManufacturingOutput, trx = null) => {
 
   if (wbManufacturingOutput.isNewConsigment) {
     wbManufacturingOutput.consigmentManufacturingId = trans.transform();
@@ -62,10 +62,7 @@ exports.create = async (wbManufacturingOutput) => {
     }
   }
 
-  // update order quantity
-  await wcFabricOrderRequisitionDetailsService.updateForDecrementQuantity(wbManufacturingOutput.wcFabricOrderRequisitionDetailsId, wbManufacturingOutput.fabricQuantity)
-
-  const results = await wbManufacturingOutputQueries.insert(wbManufacturingOutput);
+  const results = await wbManufacturingOutputQueries.insert(wbManufacturingOutput, null, trx);
   if (results) {
     return constants.insertSuccess;
   } else {
@@ -211,8 +208,13 @@ exports.update = async (wbManufacturingOutput) => {
       if (newQuantity > oldQuantity) {
         defferenceQuantity = parseFloat((newQuantity - oldQuantity).toFixed(3))
 
-        // update order quantity
-        await wcFabricOrderRequisitionDetailsService.updateForDecrementQuantity(isFound[0].wc_fabric_order_requisition_details_id, defferenceQuantity)
+        const adjustResult = await wbManufacturingOutputAllocationService.adjustAllocationsForOutput(
+          wbManufacturingOutput.id,
+          defferenceQuantity
+        );
+        if (adjustResult.status !== 200 && adjustResult.status !== 206 && adjustResult.status !== 404) {
+          return adjustResult;
+        }
 
         // Step 1 => Increment quantity in  wc
         await wcQueries.update({
@@ -235,8 +237,13 @@ exports.update = async (wbManufacturingOutput) => {
         // Check if has enough current quantity in wc
         if (currentQuantity >= defferenceQuantity) {
 
-          // update order quantity
-          await wcFabricOrderRequisitionDetailsService.updateForIncrementQuantity(isFound[0].wc_fabric_order_requisition_details_id, defferenceQuantity)
+          const adjustResult = await wbManufacturingOutputAllocationService.adjustAllocationsForOutput(
+            wbManufacturingOutput.id,
+            -defferenceQuantity
+          );
+          if (adjustResult.status !== 200 && adjustResult.status !== 206 && adjustResult.status !== 404) {
+            return adjustResult;
+          }
 
           // Step 1 => Decrement quantity in  wb_manufacturing_output
           await wbManufacturingOutputQueries.update({

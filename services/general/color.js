@@ -40,6 +40,11 @@ exports.selectByCategoryAndDeying = async (deyingId, colorCategoryId) => {
   return results;
 };
 
+exports.selectByCategoryAndDeyingByDyedFabricByFabricOrder = async (deyingId, colorCategoryId, dyedFabricId, fabricOrderId) => {
+  const results = await colorQueries.selectByCategoryAndDeyingByDyedFabricByFabricOrder(deyingId, colorCategoryId, dyedFabricId, fabricOrderId);
+  return results;
+};
+
 exports.selectByCategory = async (colorCategoryId) => {
   const results = await colorQueries.selectByCategory(colorCategoryId);
   return results;

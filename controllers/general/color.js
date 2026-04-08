@@ -43,6 +43,18 @@ exports.selectByCategoryAndDeying = async (request, response) => {
   response.status(200).json(results);
 };
 
+exports.selectByCategoryAndDeyingByDyedFabricByFabricOrder = async (request, response) => {
+  // logging
+  const { deyingId } = request.params;
+  const { colorCategoryId } = request.params;
+  const { dyedFabricId } = request.params;
+  const { fabricOrderId } = request.params;
+
+  // call service
+  const results = await colorService.selectByCategoryAndDeyingByDyedFabricByFabricOrder(deyingId, colorCategoryId, dyedFabricId, fabricOrderId);
+  response.status(200).json(results);
+};
+
 exports.selectByCategory = async (request, response) => {
   // logging
   const { colorCategoryId } = request.params;

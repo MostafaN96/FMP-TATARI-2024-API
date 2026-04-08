@@ -10,7 +10,9 @@ exports.insert = async (wcAddRequisitionDetailsFabricOrder, itemsOrder) => {
     .insert(wcAddRequisitionDetailsFabricOrderTableName, {
       wc_add_requisition_details_id: wcAddRequisitionDetailsFabricOrder.wcRequisitionDetailsId,
       wc_fabric_order_requisition_id: wcAddRequisitionDetailsFabricOrder.requisition_id,
+      parent_wc_fabric_order_requisition_id: wcAddRequisitionDetailsFabricOrder.parent_wc_fabric_order_requisition_id || wcAddRequisitionDetailsFabricOrder.requisition_id,
       orders_requisitions_id: itemsOrder.ordersRequisitionsId,
+      parent_orders_requisitions_id: itemsOrder.parentOrdersRequisitionsId || itemsOrder.ordersRequisitionsId,
       // quantity: itemsOrder.quantity,
       creator_id: wcAddRequisitionDetailsFabricOrder.personid,
       ip_address: wcAddRequisitionDetailsFabricOrder.ipaddress,

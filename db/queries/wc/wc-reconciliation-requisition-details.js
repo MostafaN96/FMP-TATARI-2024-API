@@ -18,8 +18,11 @@ exports.insert = async (wcReconciliationRequisitionDetails, items) => {
       id: items.wcReconciliationRequisitionDetailsId,
       wc_reconcilition_requisition_id: wcReconciliationRequisitionDetails.id,
       wc_fabric_order_requisition_details_id: items.wcFabricOrderRequisitionDetailsId,
+      parent_wc_fabric_order_requisition_details_id: items.parentWcFabricOrderRequisitionDetailsId,
       wc_fabric_order_requisition_id: items.fabricOrderId,
+      parent_wc_fabric_order_requisition_id: items.parentFabricOrderId,
       orders_requisitions_id: items.ordersRequisitionsId,
+      parent_orders_requisitions_id: items.parentOrdersRequisitionsId,
       fabric_id: items.fabricId,
       consigment_manufacturing_id: items.consigmentManufacturingId,
       price: items.price,
@@ -199,7 +202,7 @@ exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async
   whereCluse[`${wcReconciliationRequisitionTableName}.warehouse_id`] = warehouseId;
   whereCluse[`${wcReconciliationRequisitionDetailsTableName}.fabric_id`] = fabricId;
   whereCluse[`${wcReconciliationRequisitionDetailsTableName}.consigment_manufacturing_id`] = consigmentManufacturingId;
-  whereCluse[`${wcReconciliationRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
+  whereCluse[`${wcReconciliationRequisitionDetailsTableName}.parent_wc_fabric_order_requisition_id`] = fabricOrderId;
   whereCluse[`${wcReconciliationRequisitionDetailsTableName}.is_deleted`] = 0;
   whereCluse[`${wcReconciliationRequisitionDetailsTableName}.is_active`] = 1;
 
@@ -229,8 +232,8 @@ exports.selectDetailsDetailsByWarehouseByFabricByConsigmentManufacturing = async
     )
     .innerJoin(`${wcReconciliationRequisitionTableName}`, `${wcReconciliationRequisitionTableName}.id`, `${wcReconciliationRequisitionDetailsTableName}.wc_reconcilition_requisition_id`)
     .innerJoin(`${wcFabricOrderRequisitionTableName}`,
-      `${wcFabricOrderRequisitionTableName}.id`,
-      `${wcReconciliationRequisitionDetailsTableName}.wc_fabric_order_requisition_id`)
+      `${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id`,
+      `${wcReconciliationRequisitionDetailsTableName}.parent_wc_fabric_order_requisition_id`)
     .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${wcReconciliationRequisitionDetailsTableName}.fabric_id`)
     .innerJoin(`${consigmentManufacturingTableName}`, `${consigmentManufacturingTableName}.id`, `${wcReconciliationRequisitionDetailsTableName}.consigment_manufacturing_id`)
     .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${wcReconciliationRequisitionTableName}.warehouse_id`)

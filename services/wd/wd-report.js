@@ -68,66 +68,34 @@ exports.selectInventoryTotal = async (fabricReport) => {
             }
             // fabrics = [...fabrics, ...formFabrics]
         }
-        // console.log("fabrics ::: ", fabrics);
-        for (let i = 0; i < fabrics.length; i++) {
-            let fabric = fabrics[i];
-            let callArray = []
+        const processedFabrics = await Promise.all(fabrics.map(async (fabric) => {
+            const requisitionsPromise = Promise.all([
+                wdTransportRequisitionWcWdDetailsQueries.selectTotalByFabricIdByDyeingId(fabric.fabric_id, fabric.dyeing_id),
+                wdReconciliationRequisitionDetailsQueries.selectInputTotalByFabricIdByDyeingId(fabric.fabric_id, fabric.dyeing_id),
+                wdReconciliationRequisitionDetailsQueries.selectOutputTotalByFabricIdByDyeingId(fabric.fabric_id, fabric.dyeing_id),
+                wdTransportRequisitionWdWcDetailsQueries.selectTotalByFabricIdByDyeingId(fabric.fabric_id, fabric.dyeing_id),
+                wdTransitionBetweenDyersRequisitionDetailsQueries.selectFromDyeingTotalByFabricIdByDyeingId(fabric.fabric_id, fabric.dyeing_id),
+                wdTransitionBetweenDyersRequisitionDetailsQueries.selectToDyeingTotalByFabricIdByDyeingId(fabric.fabric_id, fabric.dyeing_id),
+                wdDyeingRequisitionDetailsQueries.selectTotalByFabricIdByDyeingId(fabric.fabric_id, fabric.dyeing_id),
+                wdFormDyeingRequisitionDetailsQueries.selectTotalByFabricIdByDyeingId(fabric.fabric_id, fabric.dyeing_id),
+                wdFormDyeingRequisitionDetailsQueries.selectTotalByFabricIdByDyeingIdPreparedDyeing(fabric.fabric_id, fabric.dyeing_id)
+            ]);
 
-            // Select Max Added Date
-            let maxDateWhereCluse = {};
-            maxDateWhereCluse[`${wdTableName}.dyeing_id`] = fabric.dyeing_id;
-            maxDateWhereCluse[`${wdTransportWcWdDetailsTableName}.fabric_id`] = fabric.fabric_id;
-            const selectMaxDate = await knex(wdTransportWcWdTableName)
-            .max({ date: 'date' })
-            .innerJoin(`${wdTransportWcWdDetailsTableName}`,
-                `${wdTransportWcWdDetailsTableName}.wd_transport_wc_wd_id`,
-                `${wdTransportWcWdTableName}.id`)
-                .innerJoin(`${wdTableName}`,
-                `${wdTableName}.wd_transport_wc_wd_details_id`,
-                `${wdTransportWcWdDetailsTableName}.id`)
-            .where(maxDateWhereCluse)
-            if (selectMaxDate[0] != null) {
-                // Select Latest Price
-                let wdTransportRequisitionWcWdDetailsWhereCluse = {};
-                wdTransportRequisitionWcWdDetailsWhereCluse[`${wdTableName}.dyeing_id`] = fabric.dyeing_id;
-                wdTransportRequisitionWcWdDetailsWhereCluse[`${wdTransportWcWdDetailsTableName}.fabric_id`] = fabric.fabric_id;
-                wdTransportRequisitionWcWdDetailsWhereCluse[`${wdTransportWcWdTableName}.date`] = selectMaxDate[0]?.date;
-                const latestPrice = await wdTransportRequisitionWcWdDetailsQueries.selectLatestPrice(wdTransportRequisitionWcWdDetailsWhereCluse)
-                if(latestPrice[0] != null) {
-                    fabric.latest_price = latestPrice[0]?.price
-                } else {
-                    fabric.latest_price = 0
-                }
-            } else {
-                fabric.latest_price = 0
-            }
-            // Get Sum Current Quantity Of fabric 
-            // const sumCurrentQuantity = await wbService.selectSumCurrentQuantityByIndustryByYarnInWb(fabric.dyeing_id, fabric.fabric_id)
-            // fabric.current_quantity = (sumCurrentQuantity[0].current_quantity != null) ? sumCurrentQuantity[0].current_quantity : 0
+            const latestPricePromise = selectLatestWdPriceByDyeingAndFabric(fabric.dyeing_id, fabric.fabric_id);
+            const [requisitions, latestPrice] = await Promise.all([requisitionsPromise, latestPricePromise]);
 
-            data.push(fabric)
+            const sortedAsc = mergeAndSortRequisitions(requisitions);
+            const totals = calculateInventoryTotals(sortedAsc);
 
-            callArray.push(wdTransportRequisitionWcWdDetailsQueries.selectTotalByFabricIdByDyeingId(fabric.fabric_id, fabric.dyeing_id))
-            callArray.push(wdReconciliationRequisitionDetailsQueries.selectInputTotalByFabricIdByDyeingId(fabric.fabric_id, fabric.dyeing_id))
-            callArray.push(wdReconciliationRequisitionDetailsQueries.selectOutputTotalByFabricIdByDyeingId(fabric.fabric_id, fabric.dyeing_id))
-            callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectTotalByFabricIdByDyeingId(fabric.fabric_id, fabric.dyeing_id))
-            callArray.push(wdTransitionBetweenDyersRequisitionDetailsQueries.selectFromDyeingTotalByFabricIdByDyeingId(fabric.fabric_id, fabric.dyeing_id))
-            callArray.push(wdTransitionBetweenDyersRequisitionDetailsQueries.selectToDyeingTotalByFabricIdByDyeingId(fabric.fabric_id, fabric.dyeing_id))
-            callArray.push(wdDyeingRequisitionDetailsQueries.selectTotalByFabricIdByDyeingId(fabric.fabric_id, fabric.dyeing_id))
-            callArray.push(wdFormDyeingRequisitionDetailsQueries.selectTotalByFabricIdByDyeingId(fabric.fabric_id, fabric.dyeing_id))
-            callArray.push(wdFormDyeingRequisitionDetailsQueries.selectTotalByFabricIdByDyeingIdPreparedDyeing(fabric.fabric_id, fabric.dyeing_id))
-            const requisitions = await Promise.all(callArray)
-            const sortedAsc = [...requisitions[0], ...requisitions[1],
-            ...requisitions[2], ...requisitions[3], ...requisitions[4],
-            ...requisitions[5], ...requisitions[6], ...requisitions[7],
-            ...requisitions[8]
-        ].sort(
-                (objA, objB) => moment(objA.date) - moment(objB.date)
-            );
-            data[i].details = sortedAsc
-            // console.log("data[i] ::: ", data[i]);
+            return {
+                ...fabric,
+                latest_price: latestPrice,
+                ...totals,
+                details: sortedAsc
+            };
+        }));
 
-        }
+        data = processedFabrics;
     }
 
     return data;
@@ -215,95 +183,65 @@ exports.selectInventoryDetails = async (fabricReport) => {
             }
         }
 
-        for (let i = 0; i < dyersFabricsLots.length; i++) {
-            let dyerFabricLots = dyersFabricsLots[i];
-            let callArray = []
+        const processedDyerFabricLots = await Promise.all(dyersFabricsLots.map(async (dyerFabricLots) => {
+            const requisitionsPromise = Promise.all([
+                wdTransportRequisitionWcWdDetailsQueries.selectDetailsByDyeingByFabricByConsigmentDyeing(
+                    dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
+                    dyerFabricLots.wc_fabric_order_requisition_id
+                ),
+                wdReconciliationRequisitionDetailsQueries.selectInputDetailsByDyeingByFabricByConsigmentDyeing(
+                    dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
+                    dyerFabricLots.wc_fabric_order_requisition_id
+                ),
+                wdReconciliationRequisitionDetailsQueries.selectOutputDetailsByDyeingByFabricByConsigmentDyeing(
+                    dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
+                    dyerFabricLots.wc_fabric_order_requisition_id
+                ),
+                wdTransportRequisitionWdWcDetailsQueries.selectDetailsByDyeingByFabricByConsigmentDyeing(
+                    dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
+                    dyerFabricLots.wc_fabric_order_requisition_id
+                ),
+                wdTransitionBetweenDyersRequisitionDetailsQueries.selectFromDyeingDetailsByDyeingByFabricByConsigmentDyeing(
+                    dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
+                    dyerFabricLots.wc_fabric_order_requisition_id
+                ),
+                wdTransitionBetweenDyersRequisitionDetailsQueries.selectToDyeingDetailsByDyeingByFabricByConsigmentDyeing(
+                    dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
+                    dyerFabricLots.wc_fabric_order_requisition_id
+                ),
+                wdDyeingRequisitionDetailsQueries.selectDetailsByDyeingByFabricByConsigmentDyeing(
+                    dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
+                    dyerFabricLots.wc_fabric_order_requisition_id
+                ),
+                wdFormDyeingRequisitionDetailsQueries.selectDetailsByDyeingByFabricByConsigmentDyeing(
+                    dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
+                    dyerFabricLots.wc_fabric_order_requisition_id
+                ),
+                wdFormDyeingRequisitionDetailsQueries.selectDetailsByDyeingByFabricByConsigmentDyeingPreparedDyeing(
+                    dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
+                    dyerFabricLots.wc_fabric_order_requisition_id
+                )
+            ]);
 
-            // Select Max Added Date
-            let maxDateWhereCluse = {};
-            maxDateWhereCluse[`${wdTableName}.dyeing_id`] = dyerFabricLots.dyeing_id;
-            maxDateWhereCluse[`${wdTransportWcWdDetailsTableName}.fabric_id`] = dyerFabricLots.fabric_id;
-            maxDateWhereCluse[`${wdTransportWcWdDetailsTableName}.consigment_dyeing_id`] = dyerFabricLots.consigment_dyeing_id;
-            const selectMaxDate = await knex(wdTransportWcWdTableName)
-            .max({ date: 'date' })
-            .innerJoin(`${wdTransportWcWdDetailsTableName}`,
-                `${wdTransportWcWdDetailsTableName}.wd_transport_wc_wd_id`,
-                `${wdTransportWcWdTableName}.id`)
-                .innerJoin(`${wdTableName}`,
-                `${wdTableName}.wd_transport_wc_wd_details_id`,
-                `${wdTransportWcWdDetailsTableName}.id`)
-            .where(maxDateWhereCluse)
-            if (selectMaxDate[0] != null) {
-                // Select Latest Price
-                let wdTransportRequisitionWcWdDetailsWhereCluse = {};
-                wdTransportRequisitionWcWdDetailsWhereCluse[`${wdTableName}.dyeing_id`] = dyerFabricLots.dyeing_id;
-                wdTransportRequisitionWcWdDetailsWhereCluse[`${wdTransportWcWdDetailsTableName}.fabric_id`] = dyerFabricLots.fabric_id;
-                wdTransportRequisitionWcWdDetailsWhereCluse[`${wdTransportWcWdDetailsTableName}.consigment_dyeing_id`] = dyerFabricLots.consigment_dyeing_id;
-                wdTransportRequisitionWcWdDetailsWhereCluse[`${wdTransportWcWdTableName}.date`] = selectMaxDate[0]?.date;
-                const latestPrice = await wdTransportRequisitionWcWdDetailsQueries.selectLatestPrice(wdTransportRequisitionWcWdDetailsWhereCluse)
-                if(latestPrice[0] != null) {
-                    dyerFabricLots.latest_price = latestPrice[0]?.price
-                } else {
-                    dyerFabricLots.latest_price = 0
-                }
-            } 
-            else {
-                dyerFabricLots.latest_price = 0
-            }
-            // Get Sum Current Quantity Of dyerFabricLots 
-            // const sumCurrentQuantity = await wbService.selectSumCurrentQuantityByIndustryByYarnByYarnLotInWb(dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id)
-            // dyerFabricLots.current_quantity = sumCurrentQuantity[0].current_quantity
-
-            data.push(dyerFabricLots)
-
-            callArray.push(wdTransportRequisitionWcWdDetailsQueries.selectDetailsByDyeingByFabricByConsigmentDyeing(
-                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
-                dyerFabricLots.wc_fabric_order_requisition_id
-            ))
-            callArray.push(wdReconciliationRequisitionDetailsQueries.selectInputDetailsByDyeingByFabricByConsigmentDyeing(
-                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
-                dyerFabricLots.wc_fabric_order_requisition_id
-            ))
-            callArray.push(wdReconciliationRequisitionDetailsQueries.selectOutputDetailsByDyeingByFabricByConsigmentDyeing(
-                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
-                dyerFabricLots.wc_fabric_order_requisition_id
-            ))
-            callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectDetailsByDyeingByFabricByConsigmentDyeing(
-                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
-                dyerFabricLots.wc_fabric_order_requisition_id
-            ))
-            callArray.push(wdTransitionBetweenDyersRequisitionDetailsQueries.selectFromDyeingDetailsByDyeingByFabricByConsigmentDyeing(
-                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
-                dyerFabricLots.wc_fabric_order_requisition_id
-            ))
-            callArray.push(wdTransitionBetweenDyersRequisitionDetailsQueries.selectToDyeingDetailsByDyeingByFabricByConsigmentDyeing(
-                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
-                dyerFabricLots.wc_fabric_order_requisition_id
-            ))
-            callArray.push(wdDyeingRequisitionDetailsQueries.selectDetailsByDyeingByFabricByConsigmentDyeing(
-                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
-                dyerFabricLots.wc_fabric_order_requisition_id
-            ))
-            callArray.push(wdFormDyeingRequisitionDetailsQueries.selectDetailsByDyeingByFabricByConsigmentDyeing(
-                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
-                dyerFabricLots.wc_fabric_order_requisition_id
-            ))
-            callArray.push(wdFormDyeingRequisitionDetailsQueries.selectDetailsByDyeingByFabricByConsigmentDyeingPreparedDyeing(
-                dyerFabricLots.dyeing_id, dyerFabricLots.fabric_id, dyerFabricLots.consigment_dyeing_id,
-                dyerFabricLots.wc_fabric_order_requisition_id
-            ))
-
-            const requisitions = await Promise.all(callArray)
-            const sortedAsc = [...requisitions[0], ...requisitions[1],
-            ...requisitions[2], ...requisitions[3], ...requisitions[4],
-            ...requisitions[5], ...requisitions[6], ...requisitions[7],
-            ...requisitions[8]
-        ].sort(
-                (objA, objB) => moment(objA.date) - moment(objB.date)
+            const latestPricePromise = selectLatestWdPriceByDyeingAndFabric(
+                dyerFabricLots.dyeing_id,
+                dyerFabricLots.fabric_id,
+                dyerFabricLots.consigment_dyeing_id
             );
-            data[i].details = sortedAsc
 
-        }
+            const [requisitions, latestPrice] = await Promise.all([requisitionsPromise, latestPricePromise]);
+            const sortedAsc = mergeAndSortRequisitions(requisitions);
+            const totals = calculateInventoryTotals(sortedAsc);
+
+            return {
+                ...dyerFabricLots,
+                latest_price: latestPrice,
+                ...totals,
+                details: sortedAsc
+            };
+        }));
+
+        data = processedDyerFabricLots;
     }
 
     return data;
@@ -616,6 +554,75 @@ function arrayUnique(array, leftColumn, rightColumn) {
     }
 
     return a;
+}
+
+async function selectLatestWdPriceByDyeingAndFabric(dyeingId, fabricId, consigmentDyeingId = null) {
+    let maxDateWhereCluse = {};
+    maxDateWhereCluse[`${wdTableName}.dyeing_id`] = dyeingId;
+    maxDateWhereCluse[`${wdTransportWcWdDetailsTableName}.fabric_id`] = fabricId;
+    if (consigmentDyeingId != null) {
+        maxDateWhereCluse[`${wdTransportWcWdDetailsTableName}.consigment_dyeing_id`] = consigmentDyeingId;
+    }
+
+    const selectMaxDate = await knex(wdTransportWcWdTableName)
+        .max({ date: 'date' })
+        .innerJoin(`${wdTransportWcWdDetailsTableName}`,
+            `${wdTransportWcWdDetailsTableName}.wd_transport_wc_wd_id`,
+            `${wdTransportWcWdTableName}.id`)
+        .innerJoin(`${wdTableName}`,
+            `${wdTableName}.wd_transport_wc_wd_details_id`,
+            `${wdTransportWcWdDetailsTableName}.id`)
+        .where(maxDateWhereCluse);
+
+    if (selectMaxDate[0] == null || selectMaxDate[0]?.date == null) {
+        return 0;
+    }
+
+    let wdTransportRequisitionWcWdDetailsWhereCluse = {};
+    wdTransportRequisitionWcWdDetailsWhereCluse[`${wdTableName}.dyeing_id`] = dyeingId;
+    wdTransportRequisitionWcWdDetailsWhereCluse[`${wdTransportWcWdDetailsTableName}.fabric_id`] = fabricId;
+    if (consigmentDyeingId != null) {
+        wdTransportRequisitionWcWdDetailsWhereCluse[`${wdTransportWcWdDetailsTableName}.consigment_dyeing_id`] = consigmentDyeingId;
+    }
+    wdTransportRequisitionWcWdDetailsWhereCluse[`${wdTransportWcWdTableName}.date`] = selectMaxDate[0]?.date;
+
+    const latestPrice = await wdTransportRequisitionWcWdDetailsQueries.selectLatestPrice(wdTransportRequisitionWcWdDetailsWhereCluse);
+    if (latestPrice[0] == null) {
+        return 0;
+    }
+
+    return latestPrice[0]?.price || 0;
+}
+
+function mergeAndSortRequisitions(requisitions) {
+    return requisitions.flat().sort((objA, objB) => moment(objA.date) - moment(objB.date));
+}
+
+function calculateInventoryTotals(sortedAsc) {
+    const totals = sortedAsc.reduce((accumulator, item) => {
+        const inputOutputType = parseInt(item.input_output);
+        if (inputOutputType === 1) {
+            accumulator.totalInput += parseFloat(item.quantity) || 0;
+        } else if (inputOutputType === 0) {
+            accumulator.totalOutput += parseFloat(item.quantity) || 0;
+        } else if (inputOutputType === 2) {
+            accumulator.totalFormQuantity += parseFloat(item.form_current_quantity) || 0;
+            accumulator.totalFormPrepareDyeingQuantity += parseFloat(item.form_prepare_dyeing_current_quantity) || 0;
+        }
+        return accumulator;
+    }, {
+        totalInput: 0,
+        totalOutput: 0,
+        totalFormQuantity: 0,
+        totalFormPrepareDyeingQuantity: 0
+    });
+
+    return {
+        input_quantity: parseFloat(totals.totalInput.toFixed(2)),
+        output_quantity: parseFloat(totals.totalOutput.toFixed(2)),
+        form_current_quantity: parseFloat(totals.totalFormQuantity.toFixed(2)),
+        form_prepare_dyeing_current_quantity: parseFloat(totals.totalFormPrepareDyeingQuantity.toFixed(2))
+    };
 }
 
 function arrayUniqueThreeColumn(array, 

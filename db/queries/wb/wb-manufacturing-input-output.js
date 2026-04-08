@@ -5,7 +5,7 @@ const knex = require("../../config/connection").getConnection();
 // Util
 const wbManufacturingInputOutputTableName = require("../../../util/database-tables-name").wbManufacturingInputOutputTableName;
 
-exports.insert = async (wbManufacturingInputOutput, items, isOrder) => {
+exports.insert = async (wbManufacturingInputOutput, items, isOrder, trx = null) => {
     let queryResults = false;
     await sqlFun
       .insert(wbManufacturingInputOutputTableName, {
@@ -13,12 +13,12 @@ exports.insert = async (wbManufacturingInputOutput, items, isOrder) => {
         wb_manufacturing_input_id: items.wbManufacturingInputId,
         wb_manufacturing_output_id: wbManufacturingInputOutput.wbManufacturingOutputId,
         wa_yarn_order_requisition_details_id: items.waYarnOrderRequisitionDetailsId,
-        wa_yarn_order_requisition_id: wbManufacturingInputOutput.yarnOrderId,
-        orders_requisitions_id: wbManufacturingInputOutput.ordersRequisitionsId,
+        wa_yarn_order_requisition_id: items.waYarnOrderRequisitionId || wbManufacturingInputOutput.yarnOrderId,
+        orders_requisitions_id: items.waYarnOrdersRequisitionsId || wbManufacturingInputOutput.ordersRequisitionsId,
         is_order: String(isOrder),
         creator_id: wbManufacturingInputOutput.personid,
         ip_address: wbManufacturingInputOutput.ipaddress,
-      })
+      }, trx)
       .then((data) => {
         queryResults = true;
       })

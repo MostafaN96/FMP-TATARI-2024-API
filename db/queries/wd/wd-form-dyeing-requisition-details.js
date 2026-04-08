@@ -36,8 +36,10 @@ exports.insert = async (wdFormDyeingRequisitionDetails, items) => {
       dyed_fabric_id: items.dyedFabricId,
       dyeing_colors_prices_id: items.dyeingColorsPricesId,
       wc_fabric_order_requisition_details_id: items.wcFabricOrderRequisitionDetailsId,
-      wc_fabric_order_requisition_id: items.fabricOrderId,
+      wc_fabric_order_requisition_id: items.wcFabricOrderRequisitionId,
       orders_requisitions_id: items.ordersRequisitionsId,
+      parent_wc_fabric_order_requisition_id: items.parentWcFabricOrderRequisitionId || items.wcFabricOrderRequisitionId,
+      parent_orders_requisitions_id: items.parentOrdersRequisitionsId || items.ordersRequisitionsId,
       price: items.price,
       price_dollar: items.priceDollar,
       quantity: items.quantity,
@@ -382,7 +384,7 @@ exports.selectByDyeing = async (dyeingId) => {
     .innerJoin(`${wdFormDyeingRequisitionTableName}`, `${wdFormDyeingRequisitionTableName}.id`, `${wdFormDyeingRequisitionDetailsTableName}.wd_form_dyeing_requisition_id`)
     .innerJoin(`${wcFabricOrderRequisitionTableName}`, 
       `${wcFabricOrderRequisitionTableName}.id`, 
-      `${wdFormDyeingRequisitionDetailsTableName}.wc_fabric_order_requisition_id`)
+      `${wdFormDyeingRequisitionDetailsTableName}.parent_wc_fabric_order_requisition_id`)
     .innerJoin(`${bussinessmanTableName}`, `${bussinessmanTableName}.id`, `${wdFormDyeingRequisitionTableName}.dyeing_id`)
     .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${wdFormDyeingRequisitionDetailsTableName}.fabric_id`)
     .innerJoin(`${fabricTableName} as dyed_fabric`, `dyed_fabric.id`, `${wdFormDyeingRequisitionDetailsTableName}.dyed_fabric_id`)

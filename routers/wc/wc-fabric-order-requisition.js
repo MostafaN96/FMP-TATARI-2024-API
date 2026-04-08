@@ -40,6 +40,31 @@ router.get("/by-dyeing-wd/:id",
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   wcFabricOrderRequisitionController.selectByDyeingWd);
 
+// جلب الطلبيات المدموجة تحت parent معين
+router.get("/merged-orders/:id",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  wcFabricOrderRequisitionController.selectMergedOrders);
+
+// جلب الطلبيات المفتوحة مع معلومات parent
+router.get("/with-parent-info/opened",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  wcFabricOrderRequisitionController.selectOrdersWithParentInfo);
+
+// جلب جميع الطلبيات مع معلومات parent
+router.get("/with-parent-info",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  wcFabricOrderRequisitionController.selectOrdersWithParentInfo);
+
+// جلب جميع الطلبيات مع معلومات الدمج (فقط parent و regular، بدون children)
+// Query params: ?status=opened أو ?status=closed (اختياري)
+router.get("/all-with-merge-info",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  wcFabricOrderRequisitionController.selectAllWithMergeInfo);
+
 // Post Queries
 router.post(
   "",
@@ -53,6 +78,22 @@ router.put(
   middleWeres.checkAuth(),
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   wcFabricOrderRequisitionController.closedOrderByRequisition
+);
+
+// دمج طلبيات متعددة
+router.put(
+  "/merge-orders",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  wcFabricOrderRequisitionController.mergeOrders
+);
+
+// فصل طلبية من parent
+router.put(
+  "/detach-order/:id",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  wcFabricOrderRequisitionController.detachOrder
 );
 
 module.exports = router;

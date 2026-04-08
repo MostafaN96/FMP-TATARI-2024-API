@@ -4,6 +4,11 @@ const userQueries = require("../../db/queries/general/user");
 
 // Util
 const constants = require("../../util/constants");
+const constantsPayloads = require("../../util/constants-payloads");
+
+// Helper
+const trans = require("../../helpers/transform");
+const bcrypt = require("bcrypt");
 
 // Services
 const checkPassword = require("./check-password");
@@ -12,6 +17,22 @@ const usersPermissionsService = require("./users-permissions");
 const jwt = require("jsonwebtoken");
 const userTypes = require("../../util/user-types");
 const { privilegesTableName, modulesTableName, pagesTableName } = require("../../util/database-tables-name");
+
+const hashPassword = async (plainText) => {
+  return new Promise((resolve, reject) => {
+    bcrypt.genSalt(10, (error, salt) => {
+      if (error) {
+        return reject(error);
+      }
+      bcrypt.hash(plainText, salt, (hashError, hash) => {
+        if (hashError) {
+          return reject(hashError);
+        }
+        resolve(hash);
+      });
+    });
+  });
+};
 
 const selectUserPrivileges = async (selectUserPrivilegesResults) => {
 
@@ -182,5 +203,103 @@ exports.login = async (user) => {
 exports.select = async () => {
   const results = await userQueries.select();
   return results;
+};
+
+exports.selectDeleted = async () => {
+  const results = await userQueries.selectDeleted();
+  return results;
+};
+
+exports.create = async (user) => {
+  user.user_id = trans.transform();
+
+  const selectOneResult = await userQueries.selectByUserEmail(user.userEmail);
+  if (selectOneResult[0] != null) {
+    return constants.duplicatedData;
+  }
+
+  user.userPassword = await hashPassword(user.user_password);
+
+  const results = await userQueries.insert(user);
+  if (results) {
+    return constants.insertSuccess;
+  } else {
+    return constants.insertError;
+  }
+};
+
+exports.update = async (user) => {
+
+
+  const duplicationCheck = await userQueries.selectByUserEmail(user.userEmail);
+  if (duplicationCheck[0] != null && duplicationCheck[0].user_id !== user.user_id) {
+    return constants.duplicatedData;
+  }
+
+  const payload = {
+    user_name: user.userName,
+    user_email: user.userEmail,
+    user_mobile: user.userMobile,
+  };
+
+  if (user.userPassword && `${user.userPassword}`.trim().length > 0) {
+    payload.user_password = await hashPassword(user.userPassword);
+  }
+
+  const updateResults = await userQueries.update(payload, {
+    user_id: user.user_id,
+  });
+
+  if (updateResults) {
+    return constants.updateSuccess;
+  } else {
+    return constants.updateError;
+  }
+};
+
+exports.dalete = async (users) => {  
+  for (let i = 0; i < users.length; i++) {
+    const userId = users[i].user_id;
+
+    const isItemAdded = await userQueries.selectOne({
+      ...constantsPayloads.deletePayload,
+      user_id: userId,
+    });
+
+    if (isItemAdded[0] != null) {
+      const results = await userQueries.delete(userId);
+      if (!results) {
+        return constants.deleteError;
+      }
+      else if (users.length - 1 == i) {
+        return results;
+      }
+    } else {
+      return constants.itemNotFound;
+    }
+  }
+};
+
+exports.restore = async (users) => {
+  for (let i = 0; i < users.length; i++) {
+    const userId = users[i].id;
+
+    const isItemdeleted = await userQueries.selectOne({
+      ...constantsPayloads.restorePayload,
+      user_id: userId,
+    });
+
+    if (isItemdeleted[0] != null) {
+      const results = await userQueries.restore(userId);
+      if (!results) {
+        return constants.restoreError;
+      }
+      else if (users.length - 1 == i) {
+        return results;
+      }
+    } else {
+      return constants.itemNotFound;
+    }
+  }
 };
 

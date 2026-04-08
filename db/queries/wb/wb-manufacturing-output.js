@@ -6,7 +6,7 @@ const knex = require("../../config/connection").getConnection();
 const constants = require("../../../util/constants");
 const { wbManufacturingOutputTableName, wbManufacturingRequisitionTableName, wbManufacturingInputOutputTableName, fabricTableName, circularKnittingMachineTableName, consigmentManufacturingTableName, circularKnittingMachineBussinessmanTableName, warehouseTableName, wbManufacturingOutputOrderTableName, wbManufacturingOrderRequisitionDetailsTableName, wbManufacturingOrderRequisitionTableName, bussinessmanTableName, wcTableName, wbManufacturingInputTableName, wcFabricOrderRequisitionTableName, wdTransportWcWdDetailsWcTableName, ordersRequisitionsTableName } = require("../../../util/database-tables-name");
 
-exports.insert = async (wbManufacturingOutput, items) => {
+exports.insert = async (wbManufacturingOutput, items, trx = null) => {
   let queryResults = false;
   await sqlFun
     .insert(wbManufacturingOutputTableName, {
@@ -28,7 +28,7 @@ exports.insert = async (wbManufacturingOutput, items) => {
       statement: wbManufacturingOutput.statement,
       creator_id: wbManufacturingOutput.personid,
       ip_address: wbManufacturingOutput.ipaddress,
-    })
+    }, trx)
     .then((data) => {
       queryResults = true;
     })
@@ -849,6 +849,49 @@ exports.selectRequisitionsForWcFabricOrderRequisition = async (whereCluse) => {
       .innerJoin(`${wbManufacturingInputOutputTableName}`, 
         `${wbManufacturingInputOutputTableName}.wb_manufacturing_output_id`, 
         `${wbManufacturingOutputTableName}.id`)
+    .innerJoin(`${wbManufacturingRequisitionTableName}`, 
+      `${wbManufacturingRequisitionTableName}.id`, 
+      `${wbManufacturingInputOutputTableName}.wb_manufacturing_requisition_id`)
+    .where(whereCluse)
+    .andWhere(`${wbManufacturingOutputTableName}.quantity`, ">", 0)
+    .andWhere(`${wdTransportWcWdDetailsWcTableName}.quantity`, ">", 0)
+    .groupBy(
+      `${wbManufacturingOutputTableName}.wc_fabric_order_requisition_id`,
+      `${wbManufacturingInputOutputTableName}.wb_manufacturing_requisition_id`
+    )
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.selectRequisitionsForWaYarnOrderRequisition = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.from(wdTransportWcWdDetailsWcTableName)
+    .select(
+      [
+        `${wbManufacturingRequisitionTableName}.number`,
+        `${wbManufacturingInputOutputTableName}.wb_manufacturing_requisition_id as requisition_id`,
+        `${wbManufacturingOutputTableName}.wc_fabric_order_requisition_id`,
+        `${wbManufacturingOutputTableName}.document`,
+        `${wbManufacturingInputTableName}.ratio`,
+        knex.raw('? as type_of_requisition', 'اذن تصنيع'),
+      ],
+    )
+    .innerJoin(`${wcTableName}`, 
+      `${wcTableName}.id`, 
+      `${wdTransportWcWdDetailsWcTableName}.wc_id`)
+    .innerJoin(`${wbManufacturingOutputTableName}`, 
+      `${wbManufacturingOutputTableName}.id`, 
+      `${wcTableName}.wb_manufacturing_output_id`)
+      .innerJoin(`${wbManufacturingInputOutputTableName}`, 
+        `${wbManufacturingInputOutputTableName}.wb_manufacturing_output_id`, 
+        `${wbManufacturingOutputTableName}.id`)
+      .innerJoin(`${wbManufacturingInputTableName}`, 
+        `${wbManufacturingInputTableName}.id`, 
+        `${wbManufacturingInputOutputTableName}.wb_manufacturing_input_id`)
     .innerJoin(`${wbManufacturingRequisitionTableName}`, 
       `${wbManufacturingRequisitionTableName}.id`, 
       `${wbManufacturingInputOutputTableName}.wb_manufacturing_requisition_id`)

@@ -16,10 +16,31 @@ const trans = require("../../helpers/transform");
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
+const knex = require("../../db/config/connection").getConnection();
 const { wcTransitionBetweenOrdersRequisitionDetailsTableName,
     wcTransitionBetweenOrdersRequisitionDetailsWcTableName,
-    wcFabricOrderRequisitionDetailsTableName
+    wcFabricOrderRequisitionDetailsTableName,
+    wcFabricOrderRequisitionTableName
 } = require("../../util/database-tables-name");
+
+const getMergedOrderIds = async (parentOrderId) => {
+    const mergedOrders = await knex(wcFabricOrderRequisitionTableName)
+        .select("id")
+        .where({
+            is_deleted: 0,
+            is_active: 1
+        })
+        .andWhere(function () {
+            this.where("id", parentOrderId)
+                .orWhere("parent_wc_fabric_order_requisition_id", parentOrderId);
+        })
+        .orderBy("date", "asc")
+        .orderBy("number", "asc");
+
+    return mergedOrders.length > 0
+        ? mergedOrders.map((order) => order.id)
+        : [parentOrderId];
+};
 
 exports.create = async (wcTransitionBetweenOrdersRequisitionDetails) => {
 
@@ -36,9 +57,14 @@ exports.create = async (wcTransitionBetweenOrdersRequisitionDetails) => {
             await consigmentManufacturingQueries.insertForWcExecuteOrder(wcTransitionBetweenOrdersRequisitionDetails, wcTransitionBetweenOrdersRequisitionDetails.items[i]);
         }
 
-        // Get fabric order requisitions details id
+        // Get merged order ids for both from and to orders
+        const toOrderIdsToSearch = await getMergedOrderIds(
+            wcTransitionBetweenOrdersRequisitionDetails.fabricOrderId
+        );
+
+        // Get fabric order requisitions details id for destination order
         let fabricOrderRequisitionDetailsWhereCluse = {};
-        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = wcTransitionBetweenOrdersRequisitionDetails.fabricOrderId;
+        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = toOrderIdsToSearch;
         fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.fabric_id`] = wcTransitionBetweenOrdersRequisitionDetails.items[i].fabricId;
         fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
         fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
@@ -49,10 +75,28 @@ exports.create = async (wcTransitionBetweenOrdersRequisitionDetails) => {
         
         if (Array.isArray(selectFabricOrderRequisitionDetailsResult) && selectFabricOrderRequisitionDetailsResult.length > 0) {
             wcTransitionBetweenOrdersRequisitionDetails.items[i].toWcFabricOrderRequisitionDetailsId = selectFabricOrderRequisitionDetailsResult[0].id
+            wcTransitionBetweenOrdersRequisitionDetails.fabricOrderId = selectFabricOrderRequisitionDetailsResult[0].wc_fabric_order_requisition_id
+            wcTransitionBetweenOrdersRequisitionDetails.items[i].toParentWcFabricOrderRequisitionDetailsId = selectFabricOrderRequisitionDetailsResult[0].parent_wc_fabric_order_requisition_details_id || selectFabricOrderRequisitionDetailsResult[0].id
+            wcTransitionBetweenOrdersRequisitionDetails.ordersRequisitionsId = selectFabricOrderRequisitionDetailsResult[0].orders_requisitions_id
+            
+            // Get parent fabric order id from wcFabricOrderRequisitionTableName
+            const selectToParentOrderResult = await knex(wcFabricOrderRequisitionTableName)
+                .select('parent_wc_fabric_order_requisition_id')
+                .where({ id: wcTransitionBetweenOrdersRequisitionDetails.fabricOrderId, is_deleted: 0, is_active: 1 })
+                .limit(1);
+            wcTransitionBetweenOrdersRequisitionDetails.parentFabricOrderId = selectToParentOrderResult.length > 0 && selectToParentOrderResult[0].parent_wc_fabric_order_requisition_id
+                ? selectToParentOrderResult[0].parent_wc_fabric_order_requisition_id
+                : wcTransitionBetweenOrdersRequisitionDetails.fabricOrderId;
+            wcTransitionBetweenOrdersRequisitionDetails.parentOrdersRequisitionsId = wcTransitionBetweenOrdersRequisitionDetails.ordersRequisitionsId;
 
-        // Get fabric order requisitions details id
+        // Get merged order ids for source order
+        const fromOrderIdsToSearch = await getMergedOrderIds(
+            wcTransitionBetweenOrdersRequisitionDetails.items[i].fromFabricOrderId
+        );
+
+        // Get fabric order requisitions details id for source order
         let fromFabricOrderRequisitionDetailsWhereCluse = {};
-        fromFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = wcTransitionBetweenOrdersRequisitionDetails.items[i].fromFabricOrderId;
+        fromFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = fromOrderIdsToSearch;
         fromFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.fabric_id`] = wcTransitionBetweenOrdersRequisitionDetails.items[i].fabricId;
         fromFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
         fromFabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
@@ -63,6 +107,19 @@ exports.create = async (wcTransitionBetweenOrdersRequisitionDetails) => {
 
         if (Array.isArray(selectFromFabricOrderRequisitionDetailsResult) && selectFromFabricOrderRequisitionDetailsResult.length > 0) {
             wcTransitionBetweenOrdersRequisitionDetails.items[i].fromWcFabricOrderRequisitionDetailsId = selectFromFabricOrderRequisitionDetailsResult[0].id
+            wcTransitionBetweenOrdersRequisitionDetails.items[i].fromFabricOrderId = selectFromFabricOrderRequisitionDetailsResult[0].wc_fabric_order_requisition_id
+            wcTransitionBetweenOrdersRequisitionDetails.items[i].fromParentWcFabricOrderRequisitionDetailsId = selectFromFabricOrderRequisitionDetailsResult[0].parent_wc_fabric_order_requisition_details_id || selectFromFabricOrderRequisitionDetailsResult[0].id
+            wcTransitionBetweenOrdersRequisitionDetails.items[i].fromOrdersRequisitionsId = selectFromFabricOrderRequisitionDetailsResult[0].orders_requisitions_id
+            
+            // Get parent fabric order id from wcFabricOrderRequisitionTableName
+            const selectFromParentOrderResult = await knex(wcFabricOrderRequisitionTableName)
+                .select('parent_wc_fabric_order_requisition_id')
+                .where({ id: wcTransitionBetweenOrdersRequisitionDetails.items[i].fromFabricOrderId, is_deleted: 0, is_active: 1 })
+                .limit(1);
+            wcTransitionBetweenOrdersRequisitionDetails.items[i].fromParentFabricOrderId = selectFromParentOrderResult.length > 0 && selectFromParentOrderResult[0].parent_wc_fabric_order_requisition_id
+                ? selectFromParentOrderResult[0].parent_wc_fabric_order_requisition_id
+                : wcTransitionBetweenOrdersRequisitionDetails.items[i].fromFabricOrderId;
+            wcTransitionBetweenOrdersRequisitionDetails.items[i].fromParentOrdersRequisitionsId = wcTransitionBetweenOrdersRequisitionDetails.items[i].fromOrdersRequisitionsId;
 
         const results = await wcTransitionBetweenOrdersRequisitionDetailsQueries.insert(wcTransitionBetweenOrdersRequisitionDetails, wcTransitionBetweenOrdersRequisitionDetails.items[i]);
         if (!results) {
@@ -70,52 +127,86 @@ exports.create = async (wcTransitionBetweenOrdersRequisitionDetails) => {
         } else {
             let newQuantity = parseFloat(wcTransitionBetweenOrdersRequisitionDetails.items[i].quantity)
 
-            // select Wc fabric for decrement current quantity
-            const fabricsStoredInWcResult = await wcService.selectByFabricForSell(
-                wcTransitionBetweenOrdersRequisitionDetails.items[i].warehouseId, 
-                wcTransitionBetweenOrdersRequisitionDetails.items[i].fabricId, 
-                wcTransitionBetweenOrdersRequisitionDetails.items[i].fromConsigmentManufacturingId,
-                wcTransitionBetweenOrdersRequisitionDetails.items[i].fromFabricOrderId
-            )
-            if (fabricsStoredInWcResult[0] != null) {
-                // console.log("fabricsStoredInWcResult ::::::::::::::::::::::: ", fabricsStoredInWcResult);
-                
+            // select Wc fabric for decrement current quantity using FIFO across merged orders
+            // orderIdsToConsume reuses fromOrderIdsToSearch resolved above
+            const orderIdsToConsume = fromOrderIdsToSearch;
+            let foundStock = false;
+            const originalQuantity = newQuantity;
+
+            for (let orderIndex = 0; orderIndex < orderIdsToConsume.length; orderIndex++) {
+                const currentOrderId = orderIdsToConsume[orderIndex];
+                if (newQuantity == 0) {
+                    break;
+                }
+
+                const fabricsStoredInWcResult = await wcService.selectByFabricForSell(
+                    wcTransitionBetweenOrdersRequisitionDetails.items[i].warehouseId,
+                    wcTransitionBetweenOrdersRequisitionDetails.items[i].fabricId,
+                    wcTransitionBetweenOrdersRequisitionDetails.items[i].fromConsigmentManufacturingId,
+                    currentOrderId
+                );
+
+                if (fabricsStoredInWcResult[0] == null) {
+                    continue;
+                }
+
+                foundStock = true;
 
                 for (let j = 0; j < fabricsStoredInWcResult.length; j++) {
                     const fabricStoredInWc = fabricsStoredInWcResult[j];
-                    let currentQuantity = fabricStoredInWc.current_quantity
-                    let updatedQuantity = 0
+                    let currentQuantity = fabricStoredInWc.current_quantity;
+                    let updatedQuantity = 0;
 
                     // decrement Wc fabric CurrentQuantity
-                    let returnedQuantityObj = await wcService.decrementWcCurrentQuantity(newQuantity, currentQuantity, fabricStoredInWc, updatedQuantity);
-                    newQuantity = returnedQuantityObj.newQuantity
-                    updatedQuantity = returnedQuantityObj.updatedQuantity
-                    wcTransitionBetweenOrdersRequisitionDetails.items[i].wcId = fabricStoredInWc.id
-                    wcTransitionBetweenOrdersRequisitionDetails.items[i].updatedQuantity = updatedQuantity
+                    let returnedQuantityObj = await wcService.decrementWcCurrentQuantity(
+                        newQuantity,
+                        currentQuantity,
+                        fabricStoredInWc,
+                        updatedQuantity
+                    );
+                    newQuantity = returnedQuantityObj.newQuantity;
+                    updatedQuantity = returnedQuantityObj.updatedQuantity;
+                    wcTransitionBetweenOrdersRequisitionDetails.items[i].wcId = fabricStoredInWc.id;
+                    wcTransitionBetweenOrdersRequisitionDetails.items[i].updatedQuantity = updatedQuantity;
 
                     // Add Wc fabric transition between wh Requisition Details Wc
-                    await wcTransitionBetweenOrdersRequisitionDetailsWcService.create(wcTransitionBetweenOrdersRequisitionDetails, wcTransitionBetweenOrdersRequisitionDetails.items[i])
+                    await wcTransitionBetweenOrdersRequisitionDetailsWcService.create(
+                        wcTransitionBetweenOrdersRequisitionDetails,
+                        wcTransitionBetweenOrdersRequisitionDetails.items[i]
+                    );
 
                     // update order quantity
-                    await wcFabricOrderRequisitionDetailsService.updateForDecrementQuantity(selectFabricOrderRequisitionDetailsResult[0].id, updatedQuantity)
+                    await wcFabricOrderRequisitionDetailsService.updateForDecrementQuantity(
+                        selectFabricOrderRequisitionDetailsResult[0].id,
+                        updatedQuantity
+                    );
 
                     // update order quantity
-                    await wcFabricOrderRequisitionDetailsService.updateForIncrementQuantity(wcTransitionBetweenOrdersRequisitionDetails.items[i].fromWcFabricOrderRequisitionDetailsId, updatedQuantity)
+                    await wcFabricOrderRequisitionDetailsService.updateForIncrementQuantity(
+                        wcTransitionBetweenOrdersRequisitionDetails.items[i].fromWcFabricOrderRequisitionDetailsId,
+                        updatedQuantity
+                    );
 
                     // Enter to if condition when stock runs out
                     if (newQuantity == 0) {
                         break;
                     }
                 }
-                // Insert WB
-                await wcQueries.insertForTransitionBetweenOrdersRequisition(wcTransitionBetweenOrdersRequisitionDetails, wcTransitionBetweenOrdersRequisitionDetails.items[i])
-            } else {
+            }
+
+            if (!foundStock || newQuantity > 0) {
                 return {
                     ...constants.wrongQuantity,
-                    spentQuantity: 0,
+                    spentQuantity: parseFloat((originalQuantity - newQuantity).toFixed(3)),
                     newQuantity: newQuantity
-                }
+                };
             }
+
+            // Insert WB
+            await wcQueries.insertForTransitionBetweenOrdersRequisition(
+                wcTransitionBetweenOrdersRequisitionDetails,
+                wcTransitionBetweenOrdersRequisitionDetails.items[i]
+            );
 
         }
     } else {
@@ -247,55 +338,76 @@ exports.update = async (wcTransitionBetweenOrdersRequisitionDetails) => {
                         await wcFabricOrderRequisitionDetailsService.updateForIncrementQuantity(isFound[0].from_wc_fabric_order_requisition_details_id, defferenceQuantity)
 
     
-                        // Step 3 => select from (WA yarn) Records for decrement current quantity
-                        const wcRecords = await wcService.selectByFabricForSell(
-                            isFound[0].warehouse_id, 
-                            isFound[0].fabric_id, 
-                            isFound[0].from_consigment_manufacturing_id,
-                            isFound[0].from_wc_fabric_order_requisition_id
-                            )
-                        if(wcRecords[0] != null) {
+                        // Step 3 => select from (WC fabric) Records for decrement current quantity using FIFO across merged orders
+                        const orderIdsToConsume = await getMergedOrderIds(isFound[0].from_wc_fabric_order_requisition_id);
+                        let foundStock = false;
+
+                        for (let orderIndex = 0; orderIndex < orderIdsToConsume.length; orderIndex++) {
+                            const currentOrderId = orderIdsToConsume[orderIndex];
+                            if (defferenceQuantity == 0) {
+                                break;
+                            }
+
+                            const wcRecords = await wcService.selectByFabricForSell(
+                                isFound[0].warehouse_id,
+                                isFound[0].fabric_id,
+                                isFound[0].from_consigment_manufacturing_id,
+                                currentOrderId
+                            );
+                            if (wcRecords[0] == null) {
+                                continue;
+                            }
+
+                            foundStock = true;
+
                             for (let i = 0; i < wcRecords.length; i++) {
                                 const wcRecord = wcRecords[i];
-                                let currentQuantity = wcRecord.current_quantity
-                                let updatedQuantity = 0
-    
+                                let currentQuantity = wcRecord.current_quantity;
+                                let updatedQuantity = 0;
+
                                 // decrement wc fabric CurrentQuantity
-                                let returnedQuantityObj =  await wcService.decrementWcCurrentQuantity(defferenceQuantity, currentQuantity, wcRecord, updatedQuantity);
-                                defferenceQuantity = returnedQuantityObj.newQuantity
-                                updatedQuantity = returnedQuantityObj.updatedQuantity
-    
+                                let returnedQuantityObj = await wcService.decrementWcCurrentQuantity(
+                                    defferenceQuantity,
+                                    currentQuantity,
+                                    wcRecord,
+                                    updatedQuantity
+                                );
+                                defferenceQuantity = returnedQuantityObj.newQuantity;
+                                updatedQuantity = returnedQuantityObj.updatedQuantity;
+
                                 // Step 4 => Check if wc_id existed in wa_sell_requisition_details_wa
                                 // that has same wc_transition_between_orders_requisitions_details_id
                                 const isExisitId = await wcTransitionBetweenOrdersRequisitionDetailsWcService.select({
                                     wc_transition_between_orders_requisitions_details_id: wcTransitionBetweenOrdersRequisitionDetails.id,
                                     wc_id: wcRecord.id
-                                })
-    
-                                if(isExisitId[0] != null) {
+                                });
+
+                                if (isExisitId[0] != null) {
                                     // Step 4.1 => Update Quantity in wa_sell_requisition_details_wa
                                     updateResults = await wcTransitionBetweenOrdersRequisitionDetailsWcQueries.update({
                                         quantity: isExisitId[0].quantity + updatedQuantity
                                     }, {
                                         wc_transition_between_orders_requisitions_details_id: wcTransitionBetweenOrdersRequisitionDetails.id,
                                         wc_id: isExisitId[0].wc_id
-                                    })
+                                    });
                                 } else {
                                     // Step 4.2 Add Record in wa_sell_requisition_details_wa
                                     updateResults = await wcTransitionBetweenOrdersRequisitionDetailsWcService.create(wcTransitionBetweenOrdersRequisitionDetails, {
                                         wcTransitionBetweenOrdersRequisitionDetailsId: wcTransitionBetweenOrdersRequisitionDetails.id,
                                         wcId: wcRecord.id,
                                         updatedQuantity
-                                    })
+                                    });
                                 }
-    
+
                                 // Enter to if condition when stock runs out
                                 if (defferenceQuantity == 0) {
                                     break;
                                 }
                             }
-                        } else {
-                            updateResults = false
+                        }
+
+                        if (!foundStock || defferenceQuantity > 0) {
+                            updateResults = false;
                         }
                     } else {
                         return {

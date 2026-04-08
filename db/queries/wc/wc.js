@@ -27,7 +27,7 @@ exports.insert = async (wc, items, id) => {
   return queryResults;
 };
 
-exports.insertForManufacturing = async (wc) => {
+exports.insertForManufacturing = async (wc, trx = null) => {
   let queryResults = false;
   await sqlFun
     .insert(wcTableName, {
@@ -37,7 +37,7 @@ exports.insertForManufacturing = async (wc) => {
       current_quantity: wc.fabricQuantity,
       creator_id: wc.personid,
       ip_address: wc.ipaddress,
-    })
+    }, trx)
     .then((data) => {
       queryResults = true;
     })
@@ -360,6 +360,19 @@ exports.selectConsigmentManufacturingQuantityByWarehouseByFabricWc = async (wher
     `number`,
     `current_quantity`
   ]
+  
+  // Helper function to apply where clauses, handling both single values and arrays
+  const applyWhereClauses = (query, whereCluse) => {
+    for (const [key, value] of Object.entries(whereCluse)) {
+      if (Array.isArray(value)) {
+        query.whereIn(key, value);
+      } else {
+        query.where(key, value);
+      }
+    }
+    return query;
+  };
+  
   await knex.select(columns).from(function () {
     this.select([
       `${consigmentManufacturingTableName}.id`,
@@ -379,7 +392,7 @@ exports.selectConsigmentManufacturingQuantityByWarehouseByFabricWc = async (wher
       .innerJoin(`${consigmentManufacturingTableName}`,
         `${consigmentManufacturingTableName}.id`,
         `${wcAddRequisitionDetailsTableName}.consigment_manufacturing_id`)
-      .where(whereCluseArray[0])
+      .modify((qb) => applyWhereClauses(qb, whereCluseArray[0]))
       .as('t1')
       .union(function () {
         this.select([
@@ -401,7 +414,7 @@ exports.selectConsigmentManufacturingQuantityByWarehouseByFabricWc = async (wher
           .innerJoin(`${consigmentManufacturingTableName}`,
             `${consigmentManufacturingTableName}.id`,
             `${wcReconciliationRequisitionDetailsTableName}.consigment_manufacturing_id`)
-          .where(whereCluseArray[1])
+          .modify((qb) => applyWhereClauses(qb, whereCluseArray[1]))
       })
       .union(function () {
         this.select([
@@ -419,7 +432,7 @@ exports.selectConsigmentManufacturingQuantityByWarehouseByFabricWc = async (wher
           .innerJoin(`${consigmentManufacturingTableName}`,
             `${consigmentManufacturingTableName}.id`,
             `${wdTransportRequisitionWdWcDetailsTableName}.consigment_manufacturing_id`)
-          .where(whereCluseArray[3])
+          .modify((qb) => applyWhereClauses(qb, whereCluseArray[3]))
       })
       .union(function () {
         this.select([
@@ -434,7 +447,7 @@ exports.selectConsigmentManufacturingQuantityByWarehouseByFabricWc = async (wher
           .innerJoin(`${consigmentManufacturingTableName}`,
             `${consigmentManufacturingTableName}.id`,
             `${wbManufacturingOutputTableName}.consigment_manufacturing_id`)
-          .where(whereCluseArray[4])
+          .modify((qb) => applyWhereClauses(qb, whereCluseArray[4]))
       })
       .union(function () {
         this.select([
@@ -452,7 +465,7 @@ exports.selectConsigmentManufacturingQuantityByWarehouseByFabricWc = async (wher
           .innerJoin(`${consigmentManufacturingTableName}`,
             `${consigmentManufacturingTableName}.id`,
             `${wcTransitionBetweenWHRequisitionDetailsTableName}.consigment_manufacturing_id`)
-          .where(whereCluseArray[5])
+          .modify((qb) => applyWhereClauses(qb, whereCluseArray[5]))
       })
       .union(function () {
         this.select([
@@ -470,7 +483,7 @@ exports.selectConsigmentManufacturingQuantityByWarehouseByFabricWc = async (wher
           .innerJoin(`${consigmentManufacturingTableName}`,
             `${consigmentManufacturingTableName}.id`,
             `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.consigment_manufacturing_id`)
-          .where(whereCluseArray[6])
+          .modify((qb) => applyWhereClauses(qb, whereCluseArray[6]))
       })
   }).as('temp')
     .sum(`current_quantity as current_quantity`)

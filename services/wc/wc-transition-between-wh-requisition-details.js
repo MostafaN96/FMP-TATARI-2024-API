@@ -16,10 +16,31 @@ const trans = require("../../helpers/transform");
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
+const knex = require("../../db/config/connection").getConnection();
 const { wcTransitionBetweenWHRequisitionDetailsTableName,
     wcTransitionBetweenWHRequisitionDetailsWcTableName,
-    wcFabricOrderRequisitionDetailsTableName
+    wcFabricOrderRequisitionDetailsTableName,
+    wcFabricOrderRequisitionTableName
 } = require("../../util/database-tables-name");
+
+const getMergedOrderIds = async (parentOrderId) => {
+    const mergedOrders = await knex(wcFabricOrderRequisitionTableName)
+        .select("id")
+        .where({
+            is_deleted: 0,
+            is_active: 1
+        })
+        .andWhere(function () {
+            this.where("id", parentOrderId)
+                .orWhere("parent_wc_fabric_order_requisition_id", parentOrderId);
+        })
+        .orderBy("date", "asc")
+        .orderBy("number", "asc");
+
+    return mergedOrders.length > 0
+        ? mergedOrders.map((order) => order.id)
+        : [parentOrderId];
+};
 
 exports.create = async (wcTransitionBetweenWHRequisitionDetails) => {
 
@@ -36,15 +57,22 @@ exports.create = async (wcTransitionBetweenWHRequisitionDetails) => {
             await consigmentManufacturingQueries.insertForWcExecuteOrder(wcTransitionBetweenWHRequisitionDetails, wcTransitionBetweenWHRequisitionDetails.items[i]);
         }
 
-        // Get fabric order requisitions details id
+        // Get merged order ids for searching fabric order requisition details
+        const orderIdsToSearch = await getMergedOrderIds(
+            wcTransitionBetweenWHRequisitionDetails.items[i].fabricOrderId
+        );
+
+        // Get fabric order requisitions details id for any of the merged orders
         let fabricOrderRequisitionDetailsWhereCluse = {};
-        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = wcTransitionBetweenWHRequisitionDetails.items[i].fabricOrderId;
+        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = orderIdsToSearch;
         fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.fabric_id`] = wcTransitionBetweenWHRequisitionDetails.items[i].fabricId;
         fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
         fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
         const selectFabricOrderRequisitionDetailsResult = await wcFabricOrderRequisitionDetailsService.selectOne(fabricOrderRequisitionDetailsWhereCluse)
         if (Array.isArray(selectFabricOrderRequisitionDetailsResult) && selectFabricOrderRequisitionDetailsResult.length > 0) {
             wcTransitionBetweenWHRequisitionDetails.items[i].wcFabricOrderRequisitionDetailsId = selectFabricOrderRequisitionDetailsResult[0].id
+            wcTransitionBetweenWHRequisitionDetails.items[i].fabricOrderId = selectFabricOrderRequisitionDetailsResult[0].wc_fabric_order_requisition_id
+            wcTransitionBetweenWHRequisitionDetails.items[i].ordersRequisitionsId = selectFabricOrderRequisitionDetailsResult[0].orders_requisitions_id
 
         const results = await wcTransitionBetweenWHRequisitionDetailsQueries.insert(wcTransitionBetweenWHRequisitionDetails, wcTransitionBetweenWHRequisitionDetails.items[i]);
         if (!results) {
@@ -52,44 +80,73 @@ exports.create = async (wcTransitionBetweenWHRequisitionDetails) => {
         } else {
             let newQuantity = parseFloat(wcTransitionBetweenWHRequisitionDetails.items[i].quantity)
 
-            // select Wc fabric for decrement current quantity
-            const fabricsStoredInWcResult = await wcService.selectByFabricForSell(
-                wcTransitionBetweenWHRequisitionDetails.items[i].fromWarehouseId, 
-                wcTransitionBetweenWHRequisitionDetails.items[i].fabricId, 
-                wcTransitionBetweenWHRequisitionDetails.items[i].fromConsigmentManufacturingId,
-                wcTransitionBetweenWHRequisitionDetails.items[i].fabricOrderId
-            )
-            if (fabricsStoredInWcResult[0] != null) {
+            // orderIdsToConsume already resolved above for searching fabricOrderRequisitionDetails
+            const orderIdsToConsume = orderIdsToSearch;
+            let foundStock = false;
+            const originalQuantity = newQuantity;
+
+            for (let orderIndex = 0; orderIndex < orderIdsToConsume.length; orderIndex++) {
+                const currentOrderId = orderIdsToConsume[orderIndex];
+                if (newQuantity == 0) {
+                    break;
+                }
+
+                const fabricsStoredInWcResult = await wcService.selectByFabricForSell(
+                    wcTransitionBetweenWHRequisitionDetails.items[i].fromWarehouseId,
+                    wcTransitionBetweenWHRequisitionDetails.items[i].fabricId,
+                    wcTransitionBetweenWHRequisitionDetails.items[i].fromConsigmentManufacturingId,
+                    currentOrderId
+                );
+
+                if (fabricsStoredInWcResult[0] == null) {
+                    continue;
+                }
+
+                foundStock = true;
 
                 for (let j = 0; j < fabricsStoredInWcResult.length; j++) {
                     const fabricStoredInWc = fabricsStoredInWcResult[j];
-                    let currentQuantity = fabricStoredInWc.current_quantity
-                    let updatedQuantity = 0
+                    let currentQuantity = fabricStoredInWc.current_quantity;
+                    let updatedQuantity = 0;
 
                     // decrement Wc fabric CurrentQuantity
-                    let returnedQuantityObj = await wcService.decrementWcCurrentQuantity(newQuantity, currentQuantity, fabricStoredInWc, updatedQuantity);
-                    newQuantity = returnedQuantityObj.newQuantity
-                    updatedQuantity = returnedQuantityObj.updatedQuantity
-                    wcTransitionBetweenWHRequisitionDetails.items[i].wcId = fabricStoredInWc.id
-                    wcTransitionBetweenWHRequisitionDetails.items[i].updatedQuantity = updatedQuantity
+                    let returnedQuantityObj = await wcService.decrementWcCurrentQuantity(
+                        newQuantity,
+                        currentQuantity,
+                        fabricStoredInWc,
+                        updatedQuantity
+                    );
+                    newQuantity = returnedQuantityObj.newQuantity;
+                    updatedQuantity = returnedQuantityObj.updatedQuantity;
+                    wcTransitionBetweenWHRequisitionDetails.items[i].wcId = fabricStoredInWc.id;
+                    wcTransitionBetweenWHRequisitionDetails.items[i].updatedQuantity = updatedQuantity;
 
                     // Add Wc fabric transition between wh Requisition Details Wc
-                    await wcTransitionBetweenWHRequisitionDetailsWcService.create(wcTransitionBetweenWHRequisitionDetails, wcTransitionBetweenWHRequisitionDetails.items[i])
+                    await wcTransitionBetweenWHRequisitionDetailsWcService.create(
+                        wcTransitionBetweenWHRequisitionDetails,
+                        wcTransitionBetweenWHRequisitionDetails.items[i]
+                    );
 
                     // Enter to if condition when stock runs out
                     if (newQuantity == 0) {
                         break;
                     }
                 }
-                // Insert WB
-                await wcQueries.insertForTransitionBetweenWhRequisition(wcTransitionBetweenWHRequisitionDetails, wcTransitionBetweenWHRequisitionDetails.items[i])
-            } else {
+            }
+
+            if (!foundStock || newQuantity > 0) {
                 return {
                     ...constants.wrongQuantity,
-                    spentQuantity: 0,
+                    spentQuantity: parseFloat((originalQuantity - newQuantity).toFixed(3)),
                     newQuantity: newQuantity
-                }
+                };
             }
+
+            // Insert WB
+            await wcQueries.insertForTransitionBetweenWhRequisition(
+                wcTransitionBetweenWHRequisitionDetails,
+                wcTransitionBetweenWHRequisitionDetails.items[i]
+            );
 
         }
     } else {
@@ -211,55 +268,77 @@ exports.update = async (wcTransitionBetweenWHRequisitionDetails) => {
                             id: selectOneWaRecord[0].id
                         })
     
-                        // Step 3 => select from (WA yarn) Records for decrement current quantity
-                        const wcRecords = await wcService.selectByFabricForSell(
-                            isFound[0].from_warehouse_id, 
-                            isFound[0].fabric_id, 
-                            isFound[0].from_consigment_manufacturing_id,
-                            isFound[0].wc_fabric_order_requisition_id
-                            )
-                        if(wcRecords[0] != null) {
+                        // Step 3 => select from (WC fabric) Records for decrement current quantity using FIFO across merged orders
+                        const orderIdsToConsume = await getMergedOrderIds(isFound[0].wc_fabric_order_requisition_id);
+                        let foundStock = false;
+
+                        for (let orderIndex = 0; orderIndex < orderIdsToConsume.length; orderIndex++) {
+                            const currentOrderId = orderIdsToConsume[orderIndex];
+                            if (defferenceQuantity == 0) {
+                                break;
+                            }
+
+                            const wcRecords = await wcService.selectByFabricForSell(
+                                isFound[0].from_warehouse_id,
+                                isFound[0].fabric_id,
+                                isFound[0].from_consigment_manufacturing_id,
+                                currentOrderId
+                            );
+
+                            if (wcRecords[0] == null) {
+                                continue;
+                            }
+
+                            foundStock = true;
+
                             for (let i = 0; i < wcRecords.length; i++) {
                                 const wcRecord = wcRecords[i];
-                                let currentQuantity = wcRecord.current_quantity
-                                let updatedQuantity = 0
-    
+                                let currentQuantity = wcRecord.current_quantity;
+                                let updatedQuantity = 0;
+
                                 // decrement wc fabric CurrentQuantity
-                                let returnedQuantityObj =  await wcService.decrementWcCurrentQuantity(defferenceQuantity, currentQuantity, wcRecord, updatedQuantity);
-                                defferenceQuantity = returnedQuantityObj.newQuantity
-                                updatedQuantity = returnedQuantityObj.updatedQuantity
-    
+                                let returnedQuantityObj = await wcService.decrementWcCurrentQuantity(
+                                    defferenceQuantity,
+                                    currentQuantity,
+                                    wcRecord,
+                                    updatedQuantity
+                                );
+                                defferenceQuantity = returnedQuantityObj.newQuantity;
+                                updatedQuantity = returnedQuantityObj.updatedQuantity;
+
                                 // Step 4 => Check if wc_id existed in wa_sell_requisition_details_wa
                                 // that has same wc_transition_between_wh_requisitions_details_id
                                 const isExisitId = await wcTransitionBetweenWHRequisitionDetailsWcService.select({
                                     wc_transition_between_wh_requisitions_details_id: wcTransitionBetweenWHRequisitionDetails.id,
                                     wc_id: wcRecord.id
-                                })
-    
-                                if(isExisitId[0] != null) {
+                                });
+
+                                if (isExisitId[0] != null) {
                                     // Step 4.1 => Update Quantity in wa_sell_requisition_details_wa
                                     updateResults = await wcTransitionBetweenWHRequisitionDetailsWcQueries.update({
                                         quantity: isExisitId[0].quantity + updatedQuantity
                                     }, {
                                         wc_transition_between_wh_requisitions_details_id: wcTransitionBetweenWHRequisitionDetails.id,
                                         wc_id: isExisitId[0].wc_id
-                                    })
+                                    });
                                 } else {
                                     // Step 4.2 Add Record in wa_sell_requisition_details_wa
                                     updateResults = await wcTransitionBetweenWHRequisitionDetailsWcService.create(wcTransitionBetweenWHRequisitionDetails, {
                                         wcTransitionBetweenWHRequisitionDetailsId: wcTransitionBetweenWHRequisitionDetails.id,
                                         wcId: wcRecord.id,
                                         updatedQuantity
-                                    })
+                                    });
                                 }
-    
+
                                 // Enter to if condition when stock runs out
                                 if (defferenceQuantity == 0) {
                                     break;
                                 }
                             }
-                        } else {
-                            updateResults = false
+                        }
+
+                        if (!foundStock || defferenceQuantity > 0) {
+                            updateResults = false;
                         }
                     } else {
                         return {

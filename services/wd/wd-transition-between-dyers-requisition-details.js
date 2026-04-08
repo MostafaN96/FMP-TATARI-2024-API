@@ -12,13 +12,17 @@ const wcFabricOrderRequisitionDetailsService = require("../wc/wc-fabric-order-re
 // Helper
 const trans = require("../../helpers/transform");
 
+// Config
+const knex = require("../../db/config/connection").getConnection();
+
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
 const { 
     wdTransitionBetweenDyersRequisitionDetailsTableName, 
     wdTransitionBetweenDyersRequisitionDetailsWdTableName, 
-    wcFabricOrderRequisitionDetailsTableName 
+    wcFabricOrderRequisitionDetailsTableName,
+    wcFabricOrderRequisitionTableName
 } = require("../../util/database-tables-name");
 
 exports.create = async (wdTransitionBetweenDyersRequisitionDetails) => {
@@ -27,13 +31,46 @@ exports.create = async (wdTransitionBetweenDyersRequisitionDetails) => {
         wdTransitionBetweenDyersRequisitionDetails.wdId = trans.transform();
         wdTransitionBetweenDyersRequisitionDetails.items[i].wdTransitionBetweenDyersRequisitionDetailsId = trans.transform();
 
-        // Get fabric order requisitions details id
-        let fabricOrderRequisitionDetailsWhereCluse = {};
-        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = wdTransitionBetweenDyersRequisitionDetails.items[i].fabricOrderId;
-        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.fabric_id`] = wdTransitionBetweenDyersRequisitionDetails.items[i].fabricId;
-        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
-        fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
-        const selectFabricOrderRequisitionDetailsResult = await wcFabricOrderRequisitionDetailsService.selectOne(fabricOrderRequisitionDetailsWhereCluse)
+        // Resolve parent/child orders to include all merged orders
+        const parentResult = await knex(wcFabricOrderRequisitionTableName)
+          .select("id", "parent_wc_fabric_order_requisition_id")
+          .where({ id: wdTransitionBetweenDyersRequisitionDetails.items[i].fabricOrderId, is_deleted: 0, is_active: 1 })
+          .limit(1);
+
+        const parentOrderId = parentResult && parentResult.length > 0
+          ? (parentResult[0].parent_wc_fabric_order_requisition_id || wdTransitionBetweenDyersRequisitionDetails.items[i].fabricOrderId)
+          : wdTransitionBetweenDyersRequisitionDetails.items[i].fabricOrderId;
+
+        const mergedOrders = await knex(wcFabricOrderRequisitionTableName)
+          .select("id")
+          .where({ is_deleted: 0, is_active: 1 })
+          .andWhere(function () {
+            this.where("id", parentOrderId)
+              .orWhere("parent_wc_fabric_order_requisition_id", parentOrderId);
+          })
+          .orderBy("date", "asc")
+          .orderBy("number", "asc");
+
+        const orderIdsToConsume = mergedOrders.length > 0
+          ? mergedOrders.map((order) => order.id)
+          : [parentOrderId];
+
+        // Get fabric order requisitions details id for one of the merged orders (first match)
+        let selectFabricOrderRequisitionDetailsResult = [];
+        for (let orderIndex = 0; orderIndex < orderIdsToConsume.length; orderIndex++) {
+            const currentOrderId = orderIdsToConsume[orderIndex];
+            let fabricOrderRequisitionDetailsWhereCluse = {};
+            fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = currentOrderId;
+            fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.fabric_id`] = wdTransitionBetweenDyersRequisitionDetails.items[i].fabricId;
+            fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+            fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+            const result = await wcFabricOrderRequisitionDetailsService.selectOne(fabricOrderRequisitionDetailsWhereCluse);
+            if (Array.isArray(result) && result.length > 0) {
+                selectFabricOrderRequisitionDetailsResult = result;
+                break;
+            }
+        }
+
         if (Array.isArray(selectFabricOrderRequisitionDetailsResult) && selectFabricOrderRequisitionDetailsResult.length > 0) {
             wdTransitionBetweenDyersRequisitionDetails.items[i].wcFabricOrderRequisitionDetailsId = selectFabricOrderRequisitionDetailsResult[0].id
 
@@ -42,49 +79,64 @@ exports.create = async (wdTransitionBetweenDyersRequisitionDetails) => {
             return constants.insertError;
         } else {
             let newQuantity = parseFloat(wdTransitionBetweenDyersRequisitionDetails.items[i].quantity)
+            const originalQuantity = newQuantity;
+            let foundStock = false;
 
-            // select wd for decrement current quantity
-            const fabricsStoredInWdResult = await wdService.selectRecordsByDyeingByFabricByConsigmentDyeing(
-                wdTransitionBetweenDyersRequisitionDetails.fromDyeingId,
-                wdTransitionBetweenDyersRequisitionDetails.items[i].fabricId,
-                wdTransitionBetweenDyersRequisitionDetails.items[i].consigmentDyeingId,
-                wdTransitionBetweenDyersRequisitionDetails.items[i].fabricOrderId
-            )
-            if (fabricsStoredInWdResult[0] != null) {
-
-                for (let j = 0; j < fabricsStoredInWdResult.length; j++) {
-                    const fabricStoredInWd = fabricsStoredInWdResult[j];
-                    let currentQuantity = fabricStoredInWd.current_quantity
-                    let updatedQuantity = 0
-
-                    // decrement wd CurrentQuantity
-                    let returnedQuantityObj = await wdService.decrementWdCurrentQuantity(newQuantity, currentQuantity, fabricStoredInWd, updatedQuantity);
-                    newQuantity = returnedQuantityObj.newQuantity
-                    updatedQuantity = returnedQuantityObj.updatedQuantity
-                    wdTransitionBetweenDyersRequisitionDetails.items[i].wdId = fabricStoredInWd.id
-                    wdTransitionBetweenDyersRequisitionDetails.items[i].updatedQuantity = updatedQuantity
-
-                    // Add wd Transition Between Dyers Requisition Details wd
-                    await wdTransitionBetweenDyersRequisitionDetailsWdService.create(wdTransitionBetweenDyersRequisitionDetails, wdTransitionBetweenDyersRequisitionDetails.items[i])
-
-                    // Enter to if condition when stock runs out
-                    if (newQuantity == 0) {
-                        break;
-                    }
+            // Iterate through merged orders to consume quantity
+            for (let orderIndex = 0; orderIndex < orderIdsToConsume.length; orderIndex++) {
+                const currentOrderId = orderIdsToConsume[orderIndex];
+                if (newQuantity == 0) {
+                    break;
                 }
-                // Insert wd
-                await wdQueries.insertForTransitionBetween(wdTransitionBetweenDyersRequisitionDetails, wdTransitionBetweenDyersRequisitionDetails.items[i])
-            } else {
-                return {
-                    ...constants.wrongQuantity,
-                    spentQuantity: 0,
-                    newQuantity: newQuantity
+
+                // select wd for decrement current quantity
+                const fabricsStoredInWdResult = await wdService.selectRecordsByDyeingByFabricByConsigmentDyeing(
+                    wdTransitionBetweenDyersRequisitionDetails.fromDyeingId,
+                    wdTransitionBetweenDyersRequisitionDetails.items[i].fabricId,
+                    wdTransitionBetweenDyersRequisitionDetails.items[i].consigmentDyeingId,
+                    currentOrderId
+                )
+                
+                if (fabricsStoredInWdResult[0] != null) {
+                    foundStock = true;
+
+                    for (let j = 0; j < fabricsStoredInWdResult.length; j++) {
+                        const fabricStoredInWd = fabricsStoredInWdResult[j];
+                        let currentQuantity = fabricStoredInWd.current_quantity
+                        let updatedQuantity = 0
+
+                        // decrement wd CurrentQuantity
+                        let returnedQuantityObj = await wdService.decrementWdCurrentQuantity(newQuantity, currentQuantity, fabricStoredInWd, updatedQuantity);
+                        newQuantity = returnedQuantityObj.newQuantity
+                        updatedQuantity = returnedQuantityObj.updatedQuantity
+                        wdTransitionBetweenDyersRequisitionDetails.items[i].wdId = fabricStoredInWd.id
+                        wdTransitionBetweenDyersRequisitionDetails.items[i].updatedQuantity = updatedQuantity
+
+                        // Add wd Transition Between Dyers Requisition Details wd
+                        await wdTransitionBetweenDyersRequisitionDetailsWdService.create(wdTransitionBetweenDyersRequisitionDetails, wdTransitionBetweenDyersRequisitionDetails.items[i])
+
+                        // Enter to if condition when stock runs out
+                        if (newQuantity == 0) {
+                            break;
+                        }
+                    }
                 }
             }
 
+            if (!foundStock || newQuantity > 0) {
+                return {
+                    ...constants.wrongQuantity,
+                    spentQuantity: parseFloat((originalQuantity - newQuantity).toFixed(3)),
+                    newQuantity: newQuantity
+                };
+            }
+
+            // Insert wd
+            await wdQueries.insertForTransitionBetween(wdTransitionBetweenDyersRequisitionDetails, wdTransitionBetweenDyersRequisitionDetails.items[i])
+
         }
     } else {
-
+        return constants.itemNotFound;
     }
     }
     return { ...constants.insertSuccess, ...{ id: wdTransitionBetweenDyersRequisitionDetails.id } };
