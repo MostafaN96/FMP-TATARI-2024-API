@@ -22,4 +22,11 @@ router.post(
   wdTransportWcWdController.create
 );
 
+router.post(
+  "/select-lazy",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  wdTransportWcWdController.selectAllLazy
+);
+
 module.exports = router;

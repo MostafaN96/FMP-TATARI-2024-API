@@ -37,6 +37,11 @@ exports.select = async (request, response) => {
     response.status(200).json(results);
   };
   
+exports.selectAllLazy = async (request, response) => {
+  const results = await weSellRequisitionService.selectAllLazy(request.body);
+  response.status(200).json(results);
+};
+
 exports.confirmReceived = async (request, response) => {
     // logging
     const { id } = request.params;

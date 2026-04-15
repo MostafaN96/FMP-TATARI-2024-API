@@ -193,12 +193,12 @@ exports.selectAllLazy = async (payload = {}) => {
     .distinct(`${wdFormDyeingRequisitionTableName}.work_order_number as value`)
     .then(r => r.map(x => x.value));
 
-  // ✅ الطلبية (إذا عندك هالفلتر بالواجهة)
-  availableFilters.wc_fabric_order_requisition_name = await buildBaseWithFiltersExcept('wc_fabric_order_requisition_name')
+  // ✅ الطلبية الأم
+  availableFilters.parent_wc_fabric_order_requisition_name = await buildBaseWithFiltersExcept('parent_wc_fabric_order_requisition_name')
     .clearSelect()
     .clearOrder()
     .clear('group')
-    .distinct(`${wcFabricOrderRequisitionTableName}.name as value`)
+    .distinct(`parent_wc_order.name as value`)
     .then(r => r.map(x => x.value));
 
   // ===== DETAILS FILTERS =====
@@ -318,7 +318,7 @@ function applyAgGridFilters(qb, filterModel) {
       date: `${wdFormDyeingRequisitionTableName}.date`,
       dyeing_name: `${bussinessmanTableName}.name`,
       work_order_number: `${wdFormDyeingRequisitionTableName}.work_order_number`,
-      wc_fabric_order_requisition_name: `${wcFabricOrderRequisitionTableName}.name`,
+      parent_wc_fabric_order_requisition_name: `parent_wc_order.name`,
       note: `${wdFormDyeingRequisitionTableName}.note`,
     };
     return m[colId];
@@ -501,7 +501,7 @@ function applyAgGridSort(qb, sortModel) {
       date: `${wdFormDyeingRequisitionTableName}.date`,
       dyeing_name: `${bussinessmanTableName}.name`,
       work_order_number: `${wdFormDyeingRequisitionTableName}.work_order_number`,
-      wc_fabric_order_requisition_name: `${wcFabricOrderRequisitionTableName}.name`,
+      parent_wc_fabric_order_requisition_name: `parent_wc_order.name`,
     };
     return m[colId];
   };

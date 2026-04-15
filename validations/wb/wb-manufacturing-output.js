@@ -11,6 +11,7 @@ exports.isValidUpdate = (wbManufacturingOutput) => {
         manufacturingFeeDollar:validations.joiText(1, 60),
         numberFabricPieces:validations.joiText(1, 60),
         document: validations.joiNotRequiredText(0, 10000),
+        storagePlace: validations.joiNotRequiredText(0, 255),
         statement: validations.joiNotRequiredText(0, 10000),
         personid: validations.joiText(3, 50),
         ipaddress: validations.joiText(3, 50),

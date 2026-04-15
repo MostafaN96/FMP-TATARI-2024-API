@@ -98,7 +98,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
       `${wdTableName}.dyeing_id`)
       .innerJoin(`${wcFabricOrderRequisitionTableName}`,
         `${wcFabricOrderRequisitionTableName}.id`,
-        `${wdTransportWcWdDetailsTableName}.wc_fabric_order_requisition_id`)
+        `${wdTransportWcWdDetailsTableName}.parent_wc_fabric_order_requisition_id`)
     .groupBy(
       `${wdTransportWcWdDetailsTableName}.id`,
       `${wdTransportWcWdDetailsTableName}.fabric_id`,
@@ -168,6 +168,55 @@ exports.selectByRequisitionId = async (requisitionId) => {
 //     .catch((error) => console.error(error));
 //   return queryResults;
 // };
+
+exports.selectByRequisitionIds = async (requisitionIds) => {
+  if (!requisitionIds || requisitionIds.length === 0) return {};
+  const data = await knex
+    .select([
+      `${wdTransportWcWdDetailsTableName}.wd_transport_wc_wd_id`,
+      `${wdTransportWcWdDetailsTableName}.document`,
+      `${wdTransportWcWdDetailsTableName}.fabric_piece`,
+      `${fabricTableName}.name as fabric_name`,
+      `${consigmentManufacturingTableName}.number as consigment_manufacturing_number`,
+      `${bussinessmanTableName}.name as dyer_name`,
+      `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
+    ])
+    .sum(`${wdTransportWcWdDetailsTableName}.quantity as quantity`)
+    .from(`${wdTransportWcWdDetailsTableName}`)
+    .innerJoin(`${wdTransportWcWdTableName}`,
+      `${wdTransportWcWdTableName}.id`,
+      `${wdTransportWcWdDetailsTableName}.wd_transport_wc_wd_id`)
+    .innerJoin(`${fabricTableName}`,
+      `${fabricTableName}.id`,
+      `${wdTransportWcWdDetailsTableName}.fabric_id`)
+    .innerJoin(`${consigmentManufacturingTableName}`,
+      `${consigmentManufacturingTableName}.id`,
+      `${wdTransportWcWdDetailsTableName}.consigment_manufacturing_id`)
+    .innerJoin(`${warehouseTableName}`,
+      `${warehouseTableName}.id`,
+      `${wdTransportWcWdTableName}.warehouse_id`)
+    .innerJoin(`${wdTableName}`,
+      `${wdTableName}.wd_transport_wc_wd_details_id`,
+      `${wdTransportWcWdDetailsTableName}.id`)
+    .innerJoin(`${bussinessmanTableName}`,
+      `${bussinessmanTableName}.id`,
+      `${wdTableName}.dyeing_id`)
+    .innerJoin(`${wcFabricOrderRequisitionTableName}`,
+      `${wcFabricOrderRequisitionTableName}.id`,
+      `${wdTransportWcWdDetailsTableName}.parent_wc_fabric_order_requisition_id`)
+    .where(`${wdTransportWcWdDetailsTableName}.is_deleted`, 0)
+    .where(`${wdTransportWcWdDetailsTableName}.is_active`, 1)
+    .whereIn(`${wdTransportWcWdDetailsTableName}.wd_transport_wc_wd_id`, requisitionIds)
+    .groupBy(`${wdTransportWcWdDetailsTableName}.id`)
+    .catch(err => { console.error(err); return []; });
+  const map = {};
+  (data || []).forEach(row => {
+    const pid = row.wd_transport_wc_wd_id;
+    if (!map[pid]) map[pid] = [];
+    map[pid].push(row);
+  });
+  return map;
+};
 
 exports.selectWdConsigmentsDyeing = async (whereCluse, consigmentsManufacturing) => {
   let queryResults = [];

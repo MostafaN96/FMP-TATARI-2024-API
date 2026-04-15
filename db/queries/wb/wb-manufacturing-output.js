@@ -182,6 +182,8 @@ exports.selectByRequisitionId = async (requisitionId) => {
             ELSE ''  
             END as status_name`),
         `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
+        `${wcTableName}.id as wc_id`,
+        `${wcTableName}.storage_place`,
         `${wcTableName}.current_quantity`,
   ])
     .distinct()
@@ -253,6 +255,8 @@ exports.selectByRequisitionIdForOrder = async (requisitionId) => {
     `${bussinessmanTableName}.name as seller_name`,
     `${wbManufacturingOrderRequisitionDetailsTableName}.id`,
     `${wbManufacturingOutputOrderTableName}.quantity`,
+    `${wcTableName}.id as wc_id`,
+    `${wcTableName}.storage_place`,
     `${wbManufacturingRequisitionTableName}.industry_id as manufacture_id`,
   ])
     .distinct()
@@ -278,6 +282,9 @@ exports.selectByRequisitionIdForOrder = async (requisitionId) => {
     .innerJoin(`${consigmentManufacturingTableName}`,
       `${consigmentManufacturingTableName}.id`,
       `${wbManufacturingOutputTableName}.consigment_manufacturing_id`)
+    .innerJoin(`${wcTableName}`,
+      `${wcTableName}.wb_manufacturing_output_id`,
+      `${wbManufacturingOutputTableName}.id`)
     .innerJoin(`${wbManufacturingOutputOrderTableName}`,
       `${wbManufacturingOutputOrderTableName}.wb_manufacturing_output_id`,
       `${wbManufacturingOutputTableName}.id`)

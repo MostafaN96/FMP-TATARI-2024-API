@@ -234,3 +234,23 @@ exports.selectDyedFabricsOrderRequisition = async (requisitionId) => {
     }
 
 }
+
+exports.selectDyedFabricsByWcFabricOrderIds = async (wcFabricOrderIds, dyedFabricId) => {
+    const results = await weDyedFabricOrderRequisitionQueries.selectByWcFabricOrderIds(wcFabricOrderIds, dyedFabricId);
+
+    if (Array.isArray(results) && results.length > 0) {
+        return results;
+    } else {
+        return [];
+    }
+};
+
+exports.selectDyedFabricsByOrdersRequisitionsIds = async (ordersRequisitionsIds) => {
+    const results = await weDyedFabricOrderRequisitionQueries.selectByOrdersRequisitionsIds(ordersRequisitionsIds);
+    
+    if (Array.isArray(results) && results.length > 0) {
+        return results;
+    } else {
+        return [];
+    }
+};

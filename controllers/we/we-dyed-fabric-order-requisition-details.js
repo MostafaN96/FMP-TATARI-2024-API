@@ -89,3 +89,14 @@ exports.selectOrdersBySeller = async (request, response) => {
   const results = await weDyedFabricOrderRequisitionDetailsService.selectOrdersBySeller(sellerId);
   response.status(200).json(results);
 };
+
+exports.getWasteRatio = async (request, response) => {
+  const { requisitionId, dyedFabricId } = request.query;
+  
+  if (!requisitionId || !dyedFabricId) {
+    return response.status(400).json({ error: 'requisitionId and dyedFabricId are required' });
+  }
+
+  const wasteRatio = await weDyedFabricOrderRequisitionDetailsService.getWasteRatioByRequisitionAndFabric(requisitionId, dyedFabricId);
+  response.status(200).json({ wasteRatio });
+};

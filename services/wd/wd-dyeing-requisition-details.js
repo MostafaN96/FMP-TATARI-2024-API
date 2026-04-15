@@ -31,21 +31,36 @@ exports.create = async (wdDyeingRequisitionDetails) => {
         wdDyeingRequisitionDetails.items[i].wdDyeingRequisitionDetailsId = trans.transform();
         wdDyeingRequisitionDetails.items[i].weId = trans.transform();
 
-        // Get we fabric order by order requisition id
+        // Get the WE dyed fabric order detail from the selected ready order first.
+        const selectedReadyOrderId = wdDyeingRequisitionDetails.items[i].dyedFabricOrderRequisitionId || wdDyeingRequisitionDetails.items[i].dyedFabricOrderId;
+
         let weDyedFabricOrderRequisitionDetailsWhereCluse = {};
         weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
         weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
-        // weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_order`] = 1;
-        weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`] = wdDyeingRequisitionDetails.items[i].ordersRequisitionsId;
         weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.dyed_fabric_id`] = wdDyeingRequisitionDetails.items[i].dyedFabricId;
 
+        if (selectedReadyOrderId) {
+            weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`] = selectedReadyOrderId;
+        } else {
+            weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`] = wdDyeingRequisitionDetails.items[i].ordersRequisitionsId;
+        }
+
         const selectWeDyedFabricOrderRequisitionDetailsResult = await weDyedFabricOrderRequisitionDetailsQueries.selectByRequisitionId(weDyedFabricOrderRequisitionDetailsWhereCluse)
-        // console.log("selectWeDyedFabricOrderRequisitionDetailsResult :::: ", selectWeDyedFabricOrderRequisitionDetailsResult);
-        // console.log("wdDyeingRequisitionDetails.items[i].ordersRequisitionsId :::: ", wdDyeingRequisitionDetails.items[i].ordersRequisitionsId);
-        
+
         if (Array.isArray(selectWeDyedFabricOrderRequisitionDetailsResult) && selectWeDyedFabricOrderRequisitionDetailsResult.length > 0) {
-            wdDyeingRequisitionDetails.items[i].weDyedFabricOrderRequisitionDetailsId = selectWeDyedFabricOrderRequisitionDetailsResult[0].id
-            wdDyeingRequisitionDetails.items[i].dyedFabricOrderId = selectWeDyedFabricOrderRequisitionDetailsResult[0].requisition_id
+            // Always bind the detail id from the same selected ready order.
+            let matchedWeDetail = null;
+
+            if (selectedReadyOrderId) {
+                matchedWeDetail = selectWeDyedFabricOrderRequisitionDetailsResult.find((row) =>
+                    String(row.requisition_id) === String(selectedReadyOrderId)
+                ) || selectWeDyedFabricOrderRequisitionDetailsResult[0];
+            } else {
+                matchedWeDetail = selectWeDyedFabricOrderRequisitionDetailsResult[0];
+            }
+
+            wdDyeingRequisitionDetails.items[i].weDyedFabricOrderRequisitionDetailsId = matchedWeDetail.id;
+            wdDyeingRequisitionDetails.items[i].dyedFabricOrderId = matchedWeDetail.requisition_id;
 
             let newQuantity = parseFloat(wdDyeingRequisitionDetails.items[i].quantity)
 

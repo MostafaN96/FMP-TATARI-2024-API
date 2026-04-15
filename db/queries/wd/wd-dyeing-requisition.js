@@ -63,6 +63,30 @@ exports.select = async () => {
   return queryResults;
 };
 
+exports.selectLazy = (whereCluse) => {
+  return knex
+    .select([
+      `${wdDyeingRequisitionTableName}.id`,
+      `${wdDyeingRequisitionTableName}.number`,
+      `${wdDyeingRequisitionTableName}.release_process`,
+      `${wdDyeingRequisitionTableName}.date`,
+      `${wdDyeingRequisitionTableName}.note`,
+      `${bussinessmanTableName}.id as dyeing_id`,
+      `${bussinessmanTableName}.name as dyeing_name`,
+      `${warehouseTableName}.name as warehouse_name`,
+    ])
+    .from(`${wdDyeingRequisitionTableName}`)
+    .innerJoin(`${bussinessmanTableName}`,
+      `${bussinessmanTableName}.id`,
+      `${wdDyeingRequisitionTableName}.dyeing_id`)
+    .innerJoin(`${warehouseTableName}`,
+      `${warehouseTableName}.id`,
+      `${wdDyeingRequisitionTableName}.warehouse_id`)
+    .where(whereCluse)
+    .orderBy(`${wdDyeingRequisitionTableName}.number`, 'desc')
+    .groupBy(`${wdDyeingRequisitionTableName}.id`)
+};
+
 exports.selectOne = async (whereCluse) => {
   let queryResults = false;
   await sqlFun

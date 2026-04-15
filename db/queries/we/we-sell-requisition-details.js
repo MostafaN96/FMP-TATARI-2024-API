@@ -533,6 +533,278 @@ exports.selectByRequisitionId = async (requisitionId) => {
   return queryResults;
 };
 
+exports.selectByRequisitionIds = async (requisitionIds) => {
+  if (!requisitionIds || requisitionIds.length === 0) return {};
+
+  let whereCluse = {};
+  whereCluse[`${weSellRequisitionDetailsTableName}.is_deleted`] = 0;
+  whereCluse[`${weSellRequisitionDetailsTableName}.is_active`] = 1;
+
+  const columns = [
+    'id',
+    'requisition_id',
+    'quantity',
+    'fabric_piece',
+    'document',
+    'dyed_fabric_name',
+    'color_name',
+    'work_order_number',
+    'grade_item_name',
+    'we_dyed_fabric_order_requisition_name',
+  ];
+
+  const data = await knex.select(columns).from(function () {
+    this.select([
+      `${weSellRequisitionDetailsTableName}.id`,
+      `${weSellRequisitionDetailsTableName}.quantity`,
+      `${weSellRequisitionDetailsTableName}.fabric_piece`,
+      `${weSellRequisitionDetailsTableName}.document`,
+      `${weSellRequisitionTableName}.id as requisition_id`,
+      `${fabricTableName}.name as dyed_fabric_name`,
+      `${colorTableName}.name as color_name`,
+      `${weAddRequisitionDetailsTableName}.work_order_number`,
+      `${gradeItemTableName}.name as grade_item_name`,
+      `${weDyedFabricOrderRequisitionTableName}.name as we_dyed_fabric_order_requisition_name`,
+    ])
+      .from(`${weSellRequisitionDetailsTableName}`)
+      .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
+      .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weSellRequisitionDetailsTableName}.dyed_fabric_id`)
+      .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weSellRequisitionDetailsTableName}.warehouse_id`)
+      .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
+        `${weSellRequisitionDetailsWeTableName}.we_sell_requisition_details_id`,
+        `${weSellRequisitionDetailsTableName}.id`)
+      .innerJoin(`${weTableName}`,
+        `${weTableName}.id`,
+        `${weSellRequisitionDetailsWeTableName}.we_id`)
+      .innerJoin(`${weAddRequisitionDetailsTableName}`,
+        `${weAddRequisitionDetailsTableName}.id`,
+        `${weTableName}.we_add_requisition_details_id`)
+      .innerJoin(`${colorTableName}`,
+        `${colorTableName}.id`,
+        `${weAddRequisitionDetailsTableName}.color_id`)
+      .innerJoin(`${gradeItemTableName}`,
+        `${gradeItemTableName}.id`,
+        `${weAddRequisitionDetailsTableName}.grade_item_id`)
+      .innerJoin(`${weDyedFabricOrderRequisitionTableName}`,
+        `${weDyedFabricOrderRequisitionTableName}.id`,
+        `${weSellRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`)
+      .where(whereCluse)
+      .andWhere(`${weSellRequisitionDetailsTableName}.quantity`, '>', 0)
+      .as('t1')
+      .union(function () {
+        this.select([
+          `${weSellRequisitionDetailsTableName}.id`,
+          `${weSellRequisitionDetailsTableName}.quantity`,
+          `${weSellRequisitionDetailsTableName}.fabric_piece`,
+          `${weSellRequisitionDetailsTableName}.document`,
+          `${weSellRequisitionTableName}.id as requisition_id`,
+          `${fabricTableName}.name as dyed_fabric_name`,
+          `${colorTableName}.name as color_name`,
+          `${weReconciliationRequisitionDetailsTableName}.work_order_number`,
+          `${gradeItemTableName}.name as grade_item_name`,
+          `${weDyedFabricOrderRequisitionTableName}.name as we_dyed_fabric_order_requisition_name`,
+        ])
+          .from(`${weSellRequisitionDetailsTableName}`)
+          .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
+          .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weSellRequisitionDetailsTableName}.dyed_fabric_id`)
+          .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weSellRequisitionDetailsTableName}.warehouse_id`)
+          .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
+            `${weSellRequisitionDetailsWeTableName}.we_sell_requisition_details_id`,
+            `${weSellRequisitionDetailsTableName}.id`)
+          .innerJoin(`${weTableName}`,
+            `${weTableName}.id`,
+            `${weSellRequisitionDetailsWeTableName}.we_id`)
+          .innerJoin(`${weReconciliationRequisitionDetailsWeTableName}`,
+            `${weReconciliationRequisitionDetailsWeTableName}.we_id`,
+            `${weTableName}.id`)
+          .innerJoin(`${weReconciliationRequisitionDetailsTableName}`,
+            `${weReconciliationRequisitionDetailsTableName}.id`,
+            `${weReconciliationRequisitionDetailsWeTableName}.we_reconcilition_requisition_details_id`)
+          .innerJoin(`${colorTableName}`,
+            `${colorTableName}.id`,
+            `${weReconciliationRequisitionDetailsTableName}.color_id`)
+          .innerJoin(`${gradeItemTableName}`,
+            `${gradeItemTableName}.id`,
+            `${weReconciliationRequisitionDetailsTableName}.grade_item_id`)
+          .innerJoin(`${weDyedFabricOrderRequisitionTableName}`,
+            `${weDyedFabricOrderRequisitionTableName}.id`,
+            `${weSellRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`)
+          .where(whereCluse)
+          .andWhere(`${weSellRequisitionDetailsTableName}.quantity`, '>', 0)
+          .andWhere(`${weReconciliationRequisitionDetailsTableName}.quantity`, '>', 0)
+      })
+      .union(function () {
+        this.select([
+          `${weSellRequisitionDetailsTableName}.id`,
+          `${weSellRequisitionDetailsTableName}.quantity`,
+          `${weSellRequisitionDetailsTableName}.fabric_piece`,
+          `${weSellRequisitionDetailsTableName}.document`,
+          `${weSellRequisitionTableName}.id as requisition_id`,
+          `${fabricTableName}.name as dyed_fabric_name`,
+          `${colorTableName}.name as color_name`,
+          `${wdDyeingRequisitionDetailsTableName}.work_order_number`,
+          `${gradeItemTableName}.name as grade_item_name`,
+          `${weDyedFabricOrderRequisitionTableName}.name as we_dyed_fabric_order_requisition_name`,
+        ])
+          .from(`${weSellRequisitionDetailsTableName}`)
+          .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
+          .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weSellRequisitionDetailsTableName}.dyed_fabric_id`)
+          .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weSellRequisitionDetailsTableName}.warehouse_id`)
+          .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
+            `${weSellRequisitionDetailsWeTableName}.we_sell_requisition_details_id`,
+            `${weSellRequisitionDetailsTableName}.id`)
+          .innerJoin(`${weTableName}`,
+            `${weTableName}.id`,
+            `${weSellRequisitionDetailsWeTableName}.we_id`)
+          .innerJoin(`${wdDyeingRequisitionDetailsTableName}`,
+            `${wdDyeingRequisitionDetailsTableName}.id`,
+            `${weTableName}.wd_dyeing_requisition_details_id`)
+          .innerJoin(`${wdFormDyeingRequisitionDetailsTableName}`,
+            `${wdFormDyeingRequisitionDetailsTableName}.id`,
+            `${wdDyeingRequisitionDetailsTableName}.wd_form_dyeing_requisition_details_id`)
+          .innerJoin(`${anointedColorsPricesTableName}`,
+            `${anointedColorsPricesTableName}.id`,
+            `${wdFormDyeingRequisitionDetailsTableName}.dyeing_colors_prices_id`)
+          .innerJoin(`${colorTableName}`,
+            `${colorTableName}.id`,
+            `${anointedColorsPricesTableName}.color_id`)
+          .innerJoin(`${gradeItemTableName}`,
+            `${gradeItemTableName}.id`,
+            `${wdDyeingRequisitionDetailsTableName}.grade_item_id`)
+          .innerJoin(`${weDyedFabricOrderRequisitionTableName}`,
+            `${weDyedFabricOrderRequisitionTableName}.id`,
+            `${weSellRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`)
+          .where(whereCluse)
+          .andWhere(`${weSellRequisitionDetailsTableName}.quantity`, '>', 0)
+      })
+      .union(function () {
+        this.select([
+          `${weSellRequisitionDetailsTableName}.id`,
+          `${weSellRequisitionDetailsTableName}.quantity`,
+          `${weSellRequisitionDetailsTableName}.fabric_piece`,
+          `${weSellRequisitionDetailsTableName}.document`,
+          `${weSellRequisitionTableName}.id as requisition_id`,
+          `${fabricTableName}.name as dyed_fabric_name`,
+          `${colorTableName}.name as color_name`,
+          `${weTransitionBetweenWHRequisitionDetailsTableName}.work_order_number`,
+          `${gradeItemTableName}.name as grade_item_name`,
+          `${weDyedFabricOrderRequisitionTableName}.name as we_dyed_fabric_order_requisition_name`,
+        ])
+          .from(`${weSellRequisitionDetailsTableName}`)
+          .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
+          .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weSellRequisitionDetailsTableName}.dyed_fabric_id`)
+          .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weSellRequisitionDetailsTableName}.warehouse_id`)
+          .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
+            `${weSellRequisitionDetailsWeTableName}.we_sell_requisition_details_id`,
+            `${weSellRequisitionDetailsTableName}.id`)
+          .innerJoin(`${weTableName}`,
+            `${weTableName}.id`,
+            `${weSellRequisitionDetailsWeTableName}.we_id`)
+          .innerJoin(`${weTransitionBetweenWHRequisitionDetailsTableName}`,
+            `${weTransitionBetweenWHRequisitionDetailsTableName}.id`,
+            `${weTableName}.we_transition_between_wh_requisitions_details_id`)
+          .innerJoin(`${colorTableName}`,
+            `${colorTableName}.id`,
+            `${weTransitionBetweenWHRequisitionDetailsTableName}.color_id`)
+          .innerJoin(`${gradeItemTableName}`,
+            `${gradeItemTableName}.id`,
+            `${weTransitionBetweenWHRequisitionDetailsTableName}.grade_item_id`)
+          .innerJoin(`${weDyedFabricOrderRequisitionTableName}`,
+            `${weDyedFabricOrderRequisitionTableName}.id`,
+            `${weSellRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`)
+          .where(whereCluse)
+          .andWhere(`${weSellRequisitionDetailsTableName}.quantity`, '>', 0)
+      })
+      .union(function () {
+        this.select([
+          `${weSellRequisitionDetailsTableName}.id`,
+          `${weSellRequisitionDetailsTableName}.quantity`,
+          `${weSellRequisitionDetailsTableName}.fabric_piece`,
+          `${weSellRequisitionDetailsTableName}.document`,
+          `${weSellRequisitionTableName}.id as requisition_id`,
+          `${fabricTableName}.name as dyed_fabric_name`,
+          `${colorTableName}.name as color_name`,
+          `${weTransitionBetweenOrdersRequisitionDetailsTableName}.work_order_number`,
+          `${gradeItemTableName}.name as grade_item_name`,
+          `${weDyedFabricOrderRequisitionTableName}.name as we_dyed_fabric_order_requisition_name`,
+        ])
+          .from(`${weSellRequisitionDetailsTableName}`)
+          .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
+          .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weSellRequisitionDetailsTableName}.dyed_fabric_id`)
+          .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weSellRequisitionDetailsTableName}.warehouse_id`)
+          .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
+            `${weSellRequisitionDetailsWeTableName}.we_sell_requisition_details_id`,
+            `${weSellRequisitionDetailsTableName}.id`)
+          .innerJoin(`${weTableName}`,
+            `${weTableName}.id`,
+            `${weSellRequisitionDetailsWeTableName}.we_id`)
+          .innerJoin(`${weTransitionBetweenOrdersRequisitionDetailsTableName}`,
+            `${weTransitionBetweenOrdersRequisitionDetailsTableName}.id`,
+            `${weTableName}.we_transition_between_orders_requisitions_details_id`)
+          .innerJoin(`${colorTableName}`,
+            `${colorTableName}.id`,
+            `${weTransitionBetweenOrdersRequisitionDetailsTableName}.color_id`)
+          .innerJoin(`${gradeItemTableName}`,
+            `${gradeItemTableName}.id`,
+            `${weTransitionBetweenOrdersRequisitionDetailsTableName}.grade_item_id`)
+          .innerJoin(`${weDyedFabricOrderRequisitionTableName}`,
+            `${weDyedFabricOrderRequisitionTableName}.id`,
+            `${weSellRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`)
+          .where(whereCluse)
+          .andWhere(`${weSellRequisitionDetailsTableName}.quantity`, '>', 0)
+      })
+      .union(function () {
+        this.select([
+          `${weSellRequisitionDetailsTableName}.id`,
+          `${weSellRequisitionDetailsTableName}.quantity`,
+          `${weSellRequisitionDetailsTableName}.fabric_piece`,
+          `${weSellRequisitionDetailsTableName}.document`,
+          `${weSellRequisitionTableName}.id as requisition_id`,
+          `${fabricTableName}.name as dyed_fabric_name`,
+          `${colorTableName}.name as color_name`,
+          `${weReturnSellRequisitionDetailsTableName}.work_order_number`,
+          `${gradeItemTableName}.name as grade_item_name`,
+          `${weDyedFabricOrderRequisitionTableName}.name as we_dyed_fabric_order_requisition_name`,
+        ])
+          .from(`${weSellRequisitionDetailsTableName}`)
+          .innerJoin(`${weSellRequisitionTableName}`, `${weSellRequisitionTableName}.id`, `${weSellRequisitionDetailsTableName}.we_sell_requisition_id`)
+          .innerJoin(`${fabricTableName}`, `${fabricTableName}.id`, `${weSellRequisitionDetailsTableName}.dyed_fabric_id`)
+          .innerJoin(`${warehouseTableName}`, `${warehouseTableName}.id`, `${weSellRequisitionDetailsTableName}.warehouse_id`)
+          .innerJoin(`${weSellRequisitionDetailsWeTableName}`,
+            `${weSellRequisitionDetailsWeTableName}.we_sell_requisition_details_id`,
+            `${weSellRequisitionDetailsTableName}.id`)
+          .innerJoin(`${weTableName}`,
+            `${weTableName}.id`,
+            `${weSellRequisitionDetailsWeTableName}.we_id`)
+          .innerJoin(`${weReturnSellRequisitionDetailsTableName}`,
+            `${weReturnSellRequisitionDetailsTableName}.id`,
+            `${weTableName}.we_return_sell_requisition_details_id`)
+          .innerJoin(`${colorTableName}`,
+            `${colorTableName}.id`,
+            `${weReturnSellRequisitionDetailsTableName}.color_id`)
+          .innerJoin(`${gradeItemTableName}`,
+            `${gradeItemTableName}.id`,
+            `${weReturnSellRequisitionDetailsTableName}.grade_item_id`)
+          .innerJoin(`${weDyedFabricOrderRequisitionTableName}`,
+            `${weDyedFabricOrderRequisitionTableName}.id`,
+            `${weSellRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`)
+          .where(whereCluse)
+          .andWhere(`${weSellRequisitionDetailsTableName}.quantity`, '>', 0)
+      })
+  }).as('temp')
+  .whereIn('requisition_id', requisitionIds)
+  .groupBy('id')
+  .catch(err => { console.error(err); return []; });
+
+  const map = {};
+  (data || []).forEach(row => {
+    const pid = row.requisition_id;
+    if (!map[pid]) map[pid] = [];
+    map[pid].push(row);
+  });
+  return map;
+};
+
 exports.selectTotalByFabricId = async (fabricId) => {
   let queryResults = [];
   let whereCluse = {};

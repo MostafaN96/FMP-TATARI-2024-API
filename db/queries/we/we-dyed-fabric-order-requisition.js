@@ -142,3 +142,74 @@ exports.update = async (weDyedFabricOrderRequisition, whereCluse) => {
         .catch((err) => console.log(err));
     return queryResults;
 };
+
+exports.selectByWcFabricOrderIds = async (wcFabricOrderIds, dyedFabricId) => {
+    let queryResults = [];
+    const wcFabricOrderRequisitionTableName = 'wc_fabric_order_requisition';
+
+    const query = knex(weDyedFabricOrderRequisitionTableName)
+        .distinct([
+            `${weDyedFabricOrderRequisitionTableName}.id`,
+            `${weDyedFabricOrderRequisitionTableName}.orders_requisitions_id`,
+            `${weDyedFabricOrderRequisitionTableName}.number`,
+            `${weDyedFabricOrderRequisitionTableName}.name`,
+            `${weDyedFabricOrderRequisitionTableName}.date`,
+            `${weDyedFabricOrderRequisitionTableName}.seller_id`
+        ])
+        .innerJoin(
+            wcFabricOrderRequisitionTableName,
+            `${wcFabricOrderRequisitionTableName}.orders_requisitions_id`,
+            `${weDyedFabricOrderRequisitionTableName}.orders_requisitions_id`
+        )
+        .innerJoin(
+            weDyedFabricOrderRequisitionDetailsTableName,
+            `${weDyedFabricOrderRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`,
+            `${weDyedFabricOrderRequisitionTableName}.id`
+        )
+        .whereIn(`${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id`, wcFabricOrderIds)
+        .where({
+            [`${weDyedFabricOrderRequisitionTableName}.is_deleted`]: 0,
+            [`${weDyedFabricOrderRequisitionTableName}.is_active`]: 1,
+            [`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`]: 0,
+            [`${weDyedFabricOrderRequisitionDetailsTableName}.is_active`]: 1,
+            [`${weDyedFabricOrderRequisitionDetailsTableName}.is_order`]: 1
+        });
+
+    if (dyedFabricId) {
+        query.andWhere(`${weDyedFabricOrderRequisitionDetailsTableName}.dyed_fabric_id`, dyedFabricId);
+    }
+
+    await query
+        .orderBy(`${weDyedFabricOrderRequisitionTableName}.date`, 'desc')
+        .then((data) => {
+            queryResults = data;
+        })
+        .catch((error) => console.error(error));
+
+    return queryResults;
+};
+
+exports.selectByOrdersRequisitionsIds = async (ordersRequisitionsIds) => {
+    let queryResults = [];
+
+    await knex(weDyedFabricOrderRequisitionTableName)
+        .distinct([
+            `${weDyedFabricOrderRequisitionTableName}.id`,
+            `${weDyedFabricOrderRequisitionTableName}.number`,
+            `${weDyedFabricOrderRequisitionTableName}.name`,
+            `${weDyedFabricOrderRequisitionTableName}.date`,
+            `${weDyedFabricOrderRequisitionTableName}.seller_id`
+        ])
+        .whereIn(`${weDyedFabricOrderRequisitionTableName}.orders_requisitions_id`, ordersRequisitionsIds)
+        .where({
+            [`${weDyedFabricOrderRequisitionTableName}.is_deleted`]: 0,
+            [`${weDyedFabricOrderRequisitionTableName}.is_active`]: 1
+        })
+        .orderBy(`${weDyedFabricOrderRequisitionTableName}.date`, 'desc')
+        .then((data) => {
+            queryResults = data;
+        })
+        .catch((error) => console.error(error));
+    
+    return queryResults;
+};

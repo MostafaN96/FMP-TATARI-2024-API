@@ -576,3 +576,25 @@ exports.selectOrdersBySeller = async (whereCluse) => {
         .catch((error) => console.error(error));
     return queryResults;
 };
+
+exports.getWasteRatioByRequisitionAndFabric = async (requisitionId, dyedFabricId) => {
+    let queryResults = null;
+
+    await knex(weDyedFabricOrderRequisitionDetailsTableName)
+        .select([
+            `${weDyedFabricOrderRequisitionDetailsTableName}.waste_ratio`
+        ])
+        .where({
+            we_dyed_fabric_order_requisition_id: requisitionId,
+            dyed_fabric_id: dyedFabricId,
+            is_deleted: 0,
+            is_active: 1
+        })
+        .limit(1)
+        .then((data) => {
+            queryResults = data;
+        })
+        .catch((error) => console.error(error));
+    
+    return queryResults;
+};

@@ -32,6 +32,16 @@ router.get("/opened-orders-for-purchase-wa",
     weDyedFabricOrderRequisitionController.selectDyedFabricsOrderRequisition);
 
 // Post Queries
+router.post("/by-wc-fabric-order-ids",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  weDyedFabricOrderRequisitionController.selectDyedFabricsByWcFabricOrderIds);
+
+router.post("/by-orders-requisitions-ids",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  weDyedFabricOrderRequisitionController.selectDyedFabricsByOrdersRequisitionsIds);
+
 router.post(
   "",
   middleWeres.checkAuth(),

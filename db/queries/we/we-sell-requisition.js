@@ -92,3 +92,29 @@ exports.update = async (weSellRequisition, whereCluse) => {
     .catch((err) => console.log(err));
   return queryResults;
 };
+
+exports.selectLazy = (whereCluse) => {
+  return knex(`${weSellRequisitionTableName}`)
+    .select([
+      `${weSellRequisitionTableName}.id`,
+      `${weSellRequisitionTableName}.number`,
+      `${weSellRequisitionTableName}.date`,
+      `${weSellRequisitionTableName}.note`,
+      `${weSellRequisitionTableName}.is_approved`,
+      `${weSellRequisitionTableName}.is_active`,
+      `${weSellRequisitionTableName}.is_direct`,
+      knex.raw(`CASE WHEN ${weSellRequisitionTableName}.is_approved = '1' THEN 'تم التسليم' ELSE 'بانتظار التسليم' END as approved_state`),
+      `${bussinessmanTableName}.name as seller_name`,
+      knex.raw(`CONCAT(${deliveryCarTableName}.drivers_name,
+        ' (', ${deliveryCarTableName}.plate_number, ')
+        ', ${deliveryCarTableName}.national_id) as delivery_car_name`),
+    ])
+    .innerJoin(`${bussinessmanTableName}`,
+      `${bussinessmanTableName}.id`,
+      `${weSellRequisitionTableName}.seller_id`)
+    .leftOuterJoin(`${deliveryCarTableName}`,
+      `${deliveryCarTableName}.id`,
+      `${weSellRequisitionTableName}.delivery_car_id`)
+    .where(whereCluse)
+    .orderBy(`${weSellRequisitionTableName}.number`, 'desc');
+};

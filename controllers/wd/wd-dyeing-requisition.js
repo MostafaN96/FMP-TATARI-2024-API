@@ -36,3 +36,9 @@ exports.select = async (request, response) => {
     const results = await wdDyeingRequisitionService.select();
     response.status(200).json(results);
   };
+
+exports.selectAllLazy = async (request, response) => {
+    const bodyPalod = request.body;
+    const results = await wdDyeingRequisitionService.selectAllLazy(bodyPalod);
+    response.status(200).json(results);
+  };

@@ -417,7 +417,7 @@ exports.selectStoredDyeingAndFabricAndConsigmentDyeing = async (whereCluseArray,
       .distinct(`${wdTransportWcWdDetailsTableName}.id as details_id`)
       .innerJoin(`${wcFabricOrderRequisitionTableName}`,
         `${wcFabricOrderRequisitionTableName}.id`,
-        `${wdTransportWcWdDetailsTableName}.wc_fabric_order_requisition_id`)
+        `${wdTransportWcWdDetailsTableName}.parent_wc_fabric_order_requisition_id`)
       .innerJoin(`${wdTableName}`,
         `${wdTableName}.wd_transport_wc_wd_details_id`,
         `${wdTransportWcWdDetailsTableName}.id`)
@@ -776,7 +776,7 @@ exports.selectQuantityByDyeingWd = async (whereCluseArray, groupBy) => {
         `${wdTransportWcWdDetailsTableName}.id`,
         `${wdTableName}.wd_transport_wc_wd_details_id`)
       .innerJoin(`${wcFabricOrderRequisitionTableName}`,
-        `${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id`,
+        `${wcFabricOrderRequisitionTableName}.id`,
         `${wdTransportWcWdDetailsTableName}.parent_wc_fabric_order_requisition_id`)
       .innerJoin(`${consigmentDyeingTableName}`,
         `${consigmentDyeingTableName}.id`,
@@ -815,7 +815,7 @@ exports.selectQuantityByDyeingWd = async (whereCluseArray, groupBy) => {
             `${wdReconciliationRequisitionDetailsTableName}.id`,
             `${wdReconciliationRequisitionDetailsWdTableName}.wd_reconcilition_requisition_details_id`)
             .innerJoin(`${wcFabricOrderRequisitionTableName}`,
-              `${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id`,
+              `${wcFabricOrderRequisitionTableName}.id`,
               `${wdReconciliationRequisitionDetailsTableName}.parent_wc_fabric_order_requisition_id`)
           .innerJoin(`${wdReconciliationRequisitionTableName}`,
             `${wdReconciliationRequisitionTableName}.id`,
@@ -855,7 +855,7 @@ exports.selectQuantityByDyeingWd = async (whereCluseArray, groupBy) => {
         `${wdTransitionBetweenDyersRequisitionDetailsTableName}.id`,
         `${wdTableName}.wd_transition_between_dyers_requisition_details_id`)
         .innerJoin(`${wcFabricOrderRequisitionTableName}`,
-          `${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id`,
+          `${wcFabricOrderRequisitionTableName}.id`,
           `${wdTransitionBetweenDyersRequisitionDetailsTableName}.parent_wc_fabric_order_requisition_id`)
       .innerJoin(`${consigmentDyeingTableName}`,
         `${consigmentDyeingTableName}.id`,

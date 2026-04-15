@@ -78,3 +78,29 @@ exports.selectDyedFabricsOrderRequisition = async (request, response) => {
     const results = await weDyedFabricOrderRequisitionService.selectDyedFabricsOrderRequisition(id);
     response.status(200).json(results);
   };
+
+exports.selectDyedFabricsByWcFabricOrderIds = async (request, response) => {
+    const { wcFabricOrderIds, dyedFabricId } = request.body;
+
+    // Validation
+    if (!wcFabricOrderIds || !Array.isArray(wcFabricOrderIds) || wcFabricOrderIds.length === 0) {
+        return response.status(400).json({ error: 'wcFabricOrderIds array is required' });
+    }
+
+    // call service
+    const results = await weDyedFabricOrderRequisitionService.selectDyedFabricsByWcFabricOrderIds(wcFabricOrderIds, dyedFabricId);
+    response.status(200).json(results);
+};
+
+exports.selectDyedFabricsByOrdersRequisitionsIds = async (request, response) => {
+    const { ordersRequisitionsIds } = request.body;
+
+    // Validation
+    if (!ordersRequisitionsIds || !Array.isArray(ordersRequisitionsIds) || ordersRequisitionsIds.length === 0) {
+        return response.status(400).json({ error: 'ordersRequisitionsIds array is required' });
+    }
+
+    // call service
+    const results = await weDyedFabricOrderRequisitionService.selectDyedFabricsByOrdersRequisitionsIds(ordersRequisitionsIds);
+    response.status(200).json(results);
+};

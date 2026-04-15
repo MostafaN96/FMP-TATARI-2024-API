@@ -22,6 +22,13 @@ router.post(
   weSellRequisitionController.create
 );
 
+router.post(
+  "/select-lazy",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  weSellRequisitionController.selectAllLazy
+);
+
 router.put(
   "/confirm-received/:id",
   middleWeres.checkAuth(),

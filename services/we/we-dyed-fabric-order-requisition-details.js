@@ -439,3 +439,11 @@ exports.update = async (weDyedFabricOrderRequisitionDetails) => {
         return constants.itemNotFound;
     }
 };
+
+exports.getWasteRatioByRequisitionAndFabric = async (requisitionId, dyedFabricId) => {
+    const results = await weDyedFabricOrderRequisitionDetailsQueries.getWasteRatioByRequisitionAndFabric(requisitionId, dyedFabricId);
+    if (Array.isArray(results) && results.length > 0) {
+        return results[0].waste_ratio || 0;
+    }
+    return 0;
+};

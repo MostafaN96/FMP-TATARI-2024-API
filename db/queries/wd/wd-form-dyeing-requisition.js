@@ -124,7 +124,7 @@ exports.selectLazy = (whereCluse) => {
       `${wdDyeingOrderRequisitionTableName}.work_order_number as order_number`,
       `seller.id as seller_id`,
       `seller.name as seller_name`,
-      `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
+      `parent_wc_order.name as parent_wc_fabric_order_requisition_name`,
     ])
     .sum(`${wdDyeingOrderRequisitionDetailsTableName}.quantity as quantity`)
     .sum(`${wdDyeingOrderRequisitionDetailsTableName}.form_current_quantity as form_current_quantity`)
@@ -138,6 +138,9 @@ exports.selectLazy = (whereCluse) => {
     .innerJoin(`${wcFabricOrderRequisitionTableName}`,
       `${wcFabricOrderRequisitionTableName}.id`,
       `${wdFormDyeingRequisitionDetailsTableName}.wc_fabric_order_requisition_id`)
+    .leftJoin(`${wcFabricOrderRequisitionTableName} as parent_wc_order`,
+      `parent_wc_order.id`,
+      `${wdFormDyeingRequisitionDetailsTableName}.parent_wc_fabric_order_requisition_id`)
     .leftOuterJoin(`${wdFormOrderDetailsWdFormDetailsTableName}`,
     `${wdFormOrderDetailsWdFormDetailsTableName}.wd_form_dyeing_requisition_details_id`,
     `${wdFormDyeingRequisitionDetailsTableName}.id`)

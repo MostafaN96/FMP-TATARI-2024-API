@@ -198,6 +198,12 @@ exports.update = async (wbManufacturingOutput) => {
     wcWhereCluse[`${wcTableName}.is_active`] = 1;
     const selectWcOneResult = await wcQueries.selectOne(wcWhereCluse)
     if (selectWcOneResult[0] != null) {
+      await wcQueries.update({
+        storage_place: wbManufacturingOutput.storagePlace
+      }, {
+        id: selectWcOneResult[0].id
+      })
+
       const currentQuantity = selectWcOneResult[0].current_quantity
 
       let oldQuantity = isFound[0].quantity
@@ -346,6 +352,12 @@ exports.updateForOrder = async (wbManufacturingOutput) => {
     wcWhereCluse[`${wcTableName}.is_active`] = 1;
     const selectWcOneResult = await wcQueries.selectOne(wcWhereCluse)
     if (selectWcOneResult[0] != null) {
+      await wcQueries.update({
+        storage_place: wbManufacturingOutput.storagePlace
+      }, {
+        id: selectWcOneResult[0].id
+      })
+
       let wbManufacturingOutputWhereCluse = {};
       wbManufacturingOutputWhereCluse[`${wbManufacturingOutputTableName}.id`] = isFound[0].wb_manufacturing_output_id;
       wbManufacturingOutputWhereCluse[`${wbManufacturingOutputTableName}.is_deleted`] = 0;

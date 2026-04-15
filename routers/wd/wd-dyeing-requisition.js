@@ -13,8 +13,12 @@ router.get("",
   middleWeres.checkIdentity(usersType.ADMIN_STR),
   wdDyeingRequisitionController.select);
 
-
 // Post Queries
+router.post("/select-lazy",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  wdDyeingRequisitionController.selectAllLazy);
+
 router.post(
   "",
   middleWeres.checkAuth(),

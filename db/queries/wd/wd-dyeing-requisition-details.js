@@ -202,6 +202,30 @@ exports.selectByRequisitionId = async (requisitionId) => {
   return queryResults;
 };
 
+exports.selectByRequisitionIds = async (requisitionIds) => {
+  if (!requisitionIds || requisitionIds.length === 0) return {};
+
+  const data = await knex.from(wdDyeingRequisitionDetailsTableName)
+    .select([
+      `${wdDyeingRequisitionDetailsTableName}.wd_dyeing_requisition_id`,
+      `${wdDyeingRequisitionDetailsTableName}.price`,
+      `${wdDyeingRequisitionDetailsTableName}.dyeing_fee`,
+      `${wdDyeingRequisitionDetailsTableName}.work_order_number`,
+      `${wdDyeingRequisitionDetailsTableName}.quantity`,
+    ])
+    .where(`${wdDyeingRequisitionDetailsTableName}.is_deleted`, 0)
+    .where(`${wdDyeingRequisitionDetailsTableName}.is_active`, 1)
+    .whereIn(`${wdDyeingRequisitionDetailsTableName}.wd_dyeing_requisition_id`, requisitionIds)
+    .catch((error) => { console.error(error); return []; });
+
+  const map = {};
+  (data || []).forEach(row => {
+    const pid = row.wd_dyeing_requisition_id;
+    if (!map[pid]) map[pid] = [];
+    map[pid].push(row);
+  });
+  return map;
+};
 
 exports.selectOne = async (whereCluse) => {
   let queryResults = false;

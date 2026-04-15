@@ -25,6 +25,11 @@ router.get("/orders-by-seller/:sellerId",
     middleWeres.checkIdentity(usersType.ADMIN_STR),
     weDyedFabricOrderRequisitionDetailsController.selectOrdersBySeller);
 
+router.get("/waste-ratio",
+    middleWeres.checkAuth(),
+    middleWeres.checkIdentity(usersType.ADMIN_STR),
+    weDyedFabricOrderRequisitionDetailsController.getWasteRatio);
+
 // router.get("/by-fabric-by-seller/:fabricId/:sellerId",
 //     middleWeres.checkAuth(),
 //     middleWeres.checkIdentity(usersType.ADMIN_STR),

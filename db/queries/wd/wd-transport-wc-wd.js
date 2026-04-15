@@ -86,3 +86,25 @@ exports.update = async (wdTransportWcWd, whereCluse) => {
     .catch((err) => console.log(err));
   return queryResults;
 };
+
+exports.selectLazy = (whereCluse) => {
+  return knex
+    .select([
+      `${wdTransportWcWdTableName}.id`,
+      `${wdTransportWcWdTableName}.number`,
+      `${wdTransportWcWdTableName}.date`,
+      `${wdTransportWcWdTableName}.note`,
+      `${warehouseTableName}.id as warehouse_id`,
+      `${warehouseTableName}.name as warehouse_name`,
+    ])
+    .from(`${wdTransportWcWdTableName}`)
+    .innerJoin(`${wdTransportWcWdDetailsTableName}`,
+      `${wdTransportWcWdDetailsTableName}.wd_transport_wc_wd_id`,
+      `${wdTransportWcWdTableName}.id`)
+    .innerJoin(`${warehouseTableName}`,
+      `${warehouseTableName}.id`,
+      `${wdTransportWcWdTableName}.warehouse_id`)
+    .where(whereCluse)
+    .orderBy(`${wdTransportWcWdTableName}.number`, 'desc')
+    .groupBy(`${wdTransportWcWdTableName}.id`)
+};

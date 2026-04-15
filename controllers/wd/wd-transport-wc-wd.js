@@ -36,3 +36,8 @@ exports.select = async (request, response) => {
     const results = await wdTransportWcWdService.select();
     response.status(200).json(results);
   };
+
+exports.selectAllLazy = async (request, response) => {
+  const results = await wdTransportWcWdService.selectAllLazy(request.body);
+  response.status(200).json(results);
+};
