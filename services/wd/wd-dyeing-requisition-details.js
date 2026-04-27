@@ -430,11 +430,17 @@ exports.getSumTotalCostOfDyeing = async (dataSourceSearchTabel) => {
     }
     let sum = 0
     const element = dataSourceSearchTabel;
-    sum = await this.getTotalCost(parseFloat(element.price), element.quantity, element.dyeingServices,
-        parseFloat(element.dyeing_fee), parseFloat(element.fabric_piece), element.added_cost) / element.dyeing_quantity
-            
-        // sum  = sum + (parseFloat(element.added_cost))
-    return parseFloat((sum).toFixed(3))
+    const dyeingQuantity = parseFloat(element.dyeing_quantity) || 0;
+
+    if (dyeingQuantity === 0) return 0;
+
+    const totalCost = await this.getTotalCost(parseFloat(element.price), element.quantity, element.dyeingServices,
+        parseFloat(element.dyeing_fee), parseFloat(element.fabric_piece), element.added_cost);
+
+    sum = totalCost / dyeingQuantity;
+
+    const result = isFinite(sum) ? parseFloat((sum).toFixed(3)) : 0;
+    return result;
 }
 
 exports.getTotalCost = async (price, quantity, services, dyeingFee, fabricPiece, addedCost) => {

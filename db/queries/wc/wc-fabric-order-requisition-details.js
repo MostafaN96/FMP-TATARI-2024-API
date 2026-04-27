@@ -491,3 +491,17 @@ exports.selectByFabricByOrderRequisitions = async (whereCluse) => {
     .catch((error) => console.error(error));
   return queryResults;
 };
+
+exports.selectIdsByParentId = async (fabricOrderId) => {
+  let queryResults = [];
+  await knex.select([
+    `${wcFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`,
+  ])
+    .from(`${wcFabricOrderRequisitionDetailsTableName}`)
+    .where(`${wcFabricOrderRequisitionDetailsTableName}.parent_orders_requisitions_id`, fabricOrderId)
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};

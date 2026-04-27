@@ -8,6 +8,7 @@ exports.isValid = (wdFormDyeingRequisition) => {
         personid: validations.joiText(3, 50),
         ipaddress: validations.joiText(3, 50),
         items:joi.array().items({
+            parentOrdersRequisitionsId: validations.joiText(15, 30),
             ordersRequisitionsId: validations.joiText(15, 30),
             fabricOrderId: validations.joiText(15, 30),
             fabricOrderName: validations.joiNotRequiredText(0, 10000),

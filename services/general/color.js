@@ -1,4 +1,5 @@
 const colorQueries = require("../../db/queries/general/color");
+const wcFabricOrderRequisitionDetailsQueries = require("../../db/queries/wc/wc-fabric-order-requisition-details");
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
 const trans = require("../../helpers/transform");
@@ -41,7 +42,9 @@ exports.selectByCategoryAndDeying = async (deyingId, colorCategoryId) => {
 };
 
 exports.selectByCategoryAndDeyingByDyedFabricByFabricOrder = async (deyingId, colorCategoryId, dyedFabricId, fabricOrderId) => {
-  const results = await colorQueries.selectByCategoryAndDeyingByDyedFabricByFabricOrder(deyingId, colorCategoryId, dyedFabricId, fabricOrderId);
+  const idsResult = await wcFabricOrderRequisitionDetailsQueries.selectIdsByParentId(fabricOrderId);
+  const ids = idsResult.map((r) => r.orders_requisitions_id);  
+  const results = await colorQueries.selectByCategoryAndDeyingByDyedFabricByFabricOrder(deyingId, colorCategoryId, dyedFabricId, ids);
   return results;
 };
 

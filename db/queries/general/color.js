@@ -203,7 +203,7 @@ exports.selectByCategoryAndDeyingByDyedFabricByFabricOrder = async (deyingId, co
     .whereIn(`${colorTableName}.id`, function () {
       this.select(`${weDyedFabricOrderRequisitionDetailsTableName}.color_id`)
         .from(`${weDyedFabricOrderRequisitionDetailsTableName}`)
-        .where(`${weDyedFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`, fabricOrderId)
+        .whereIn(`${weDyedFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`, fabricOrderId)
         .andWhere(`${weDyedFabricOrderRequisitionDetailsTableName}.dyed_fabric_id`, dyedFabricId)
     })
     .where(whereCluse)

@@ -21,6 +21,14 @@ const {
   weTableName,
   weAddRequisitionDetailsTableName,
   weDyedFabricOrderRequisitionTableName,
+  weReconciliationRequisitionDetailsTableName,
+  weReconciliationRequisitionDetailsWeTableName,
+  wdDyeingRequisitionDetailsTableName,
+  weTransitionBetweenWHRequisitionDetailsTableName,
+  weTransitionBetweenOrdersRequisitionDetailsTableName,
+  weReturnSellRequisitionDetailsTableName,
+  wdFormDyeingRequisitionDetailsTableName,
+  anointedColorsPricesTableName,
 } = require("../../util/database-tables-name");
 const knex = require("../../db/config/connection").getConnection();
 
@@ -163,31 +171,78 @@ exports.selectAllLazy = async (payload = {}) => {
     .whereIn('d2.we_sell_requisition_id', baseExceptOrder.clone().clearSelect().clearOrder().select(`${weSellRequisitionTableName}.id`))
     .then(r => r.map(x => x.value));
 
-  // details_color — اللون (عبر we_sell_req_details_we -> we -> we_add_req_details -> color)
+  // details_color — اللون (من جميع المصادر الـ 6)
   const baseExceptColor = buildBaseWithFiltersExcept('details_color');
-  availableFilters.details_color = await knex
-    .distinct('c.name as value')
-    .from(`${weSellRequisitionDetailsTableName} as d2`)
-    .innerJoin(`${weSellRequisitionDetailsWeTableName} as dwe`, 'dwe.we_sell_requisition_details_id', 'd2.id')
-    .innerJoin(`${weTableName} as we`, 'we.id', 'dwe.we_id')
-    .innerJoin(`${weAddRequisitionDetailsTableName} as wad`, 'wad.id', 'we.we_add_requisition_details_id')
-    .innerJoin(`${colorTableName} as c`, 'c.id', 'wad.color_id')
-    .where('d2.is_deleted', 0).where('d2.is_active', 1)
-    .whereIn('d2.we_sell_requisition_id', baseExceptColor.clone().clearSelect().clearOrder().select(`${weSellRequisitionTableName}.id`))
-    .then(r => r.map(x => x.value));
+  const colorBase = baseExceptColor.clone().clearSelect().clearOrder().select(`${weSellRequisitionTableName}.id`);
 
-  // details_work_order — أمر الشغل
+  const buildColorPath = (alias, joinFn, colorIdExpr) =>
+    knex.distinct(`c_col.name as value`)
+      .from(`${weSellRequisitionDetailsTableName} as d2`)
+      .innerJoin(`${weSellRequisitionDetailsWeTableName} as dwe_c`, 'dwe_c.we_sell_requisition_details_id', 'd2.id')
+      .innerJoin(`${weTableName} as we_c`, 'we_c.id', 'dwe_c.we_id')
+      .modify(joinFn)
+      .innerJoin(`${colorTableName} as c_col`, 'c_col.id', colorIdExpr)
+      .where('d2.is_deleted', 0).where('d2.is_active', 1)
+      .whereIn('d2.we_sell_requisition_id', colorBase.clone())
+      .whereNotNull(colorIdExpr)
+      .then(r => r.map(x => x.value).filter(Boolean));
+
+  const [col1, col2, col3, col4, col5, col6] = await Promise.all([
+    // Path 1: we_add_requisition_details
+    buildColorPath('wad_c', qb => qb.innerJoin(`${weAddRequisitionDetailsTableName} as wad_c`, 'wad_c.id', 'we_c.we_add_requisition_details_id'), 'wad_c.color_id'),
+    // Path 2: we_reconciliation_requisition_details
+    buildColorPath('wrec_c', qb => qb
+      .innerJoin(`${weReconciliationRequisitionDetailsWeTableName} as wrecdwe_c`, 'wrecdwe_c.we_id', 'we_c.id')
+      .innerJoin(`${weReconciliationRequisitionDetailsTableName} as wrec_c`, 'wrec_c.id', 'wrecdwe_c.we_reconcilition_requisition_details_id'), 'wrec_c.color_id'),
+    // Path 3: wd_dyeing_requisition_details -> wd_form_dyeing_req_details -> anointed_colors_prices
+    buildColorPath('acp_c', qb => qb
+      .innerJoin(`${wdDyeingRequisitionDetailsTableName} as wdd_c`, 'wdd_c.id', 'we_c.wd_dyeing_requisition_details_id')
+      .innerJoin(`${wdFormDyeingRequisitionDetailsTableName} as wfd_c`, 'wfd_c.id', 'wdd_c.wd_form_dyeing_requisition_details_id')
+      .innerJoin(`${anointedColorsPricesTableName} as acp_c`, 'acp_c.id', 'wfd_c.dyeing_colors_prices_id'), 'acp_c.color_id'),
+    // Path 4: we_transition_between_wh_requisition_details
+    buildColorPath('wtbwh_c', qb => qb.innerJoin(`${weTransitionBetweenWHRequisitionDetailsTableName} as wtbwh_c`, 'wtbwh_c.id', 'we_c.we_transition_between_wh_requisitions_details_id'), 'wtbwh_c.color_id'),
+    // Path 5: we_transition_between_orders_requisition_details
+    buildColorPath('wtbo_c', qb => qb.innerJoin(`${weTransitionBetweenOrdersRequisitionDetailsTableName} as wtbo_c`, 'wtbo_c.id', 'we_c.we_transition_between_orders_requisitions_details_id'), 'wtbo_c.color_id'),
+    // Path 6: we_return_sell_requisition_details
+    buildColorPath('wrsd_c', qb => qb.innerJoin(`${weReturnSellRequisitionDetailsTableName} as wrsd_c`, 'wrsd_c.id', 'we_c.we_return_sell_requisition_details_id'), 'wrsd_c.color_id'),
+  ]);
+
+  availableFilters.details_color = [...new Set([...col1, ...col2, ...col3, ...col4, ...col5, ...col6])];
+
+  // details_work_order — أمر الشغل (من جميع المصادر الـ 6)
   const baseExceptWO = buildBaseWithFiltersExcept('details_work_order');
-  availableFilters.details_work_order = await knex
-    .distinct('wad2.work_order_number as value')
-    .from(`${weSellRequisitionDetailsTableName} as d2`)
-    .innerJoin(`${weSellRequisitionDetailsWeTableName} as dwe2`, 'dwe2.we_sell_requisition_details_id', 'd2.id')
-    .innerJoin(`${weTableName} as we2`, 'we2.id', 'dwe2.we_id')
-    .innerJoin(`${weAddRequisitionDetailsTableName} as wad2`, 'wad2.id', 'we2.we_add_requisition_details_id')
-    .where('d2.is_deleted', 0).where('d2.is_active', 1)
-    .whereIn('d2.we_sell_requisition_id', baseExceptWO.clone().clearSelect().clearOrder().select(`${weSellRequisitionTableName}.id`))
-    .where(knex.raw('wad2.work_order_number IS NOT NULL'))
-    .then(r => r.map(x => x.value).filter(Boolean));
+  const woBase = baseExceptWO.clone().clearSelect().clearOrder().select(`${weSellRequisitionTableName}.id`);
+
+  const buildWoPath = (alias, joinFn) =>
+    knex.distinct(`${alias}.work_order_number as value`)
+      .from(`${weSellRequisitionDetailsTableName} as d2`)
+      .innerJoin(`${weSellRequisitionDetailsWeTableName} as dwe2`, 'dwe2.we_sell_requisition_details_id', 'd2.id')
+      .innerJoin(`${weTableName} as we2`, 'we2.id', 'dwe2.we_id')
+      .modify(joinFn)
+      .where('d2.is_deleted', 0).where('d2.is_active', 1)
+      .whereIn('d2.we_sell_requisition_id', woBase.clone())
+      .whereNotNull(`${alias}.work_order_number`)
+      .where(`${alias}.work_order_number`, '<>', '')
+      .then(r => r.map(x => x.value).filter(Boolean));
+
+  const [wo1, wo2, wo3, wo4, wo5, wo6] = await Promise.all([
+    // Path 1: we_add_requisition_details
+    buildWoPath('wad2', qb => qb.innerJoin(`${weAddRequisitionDetailsTableName} as wad2`, 'wad2.id', 'we2.we_add_requisition_details_id')),
+    // Path 2: we_reconciliation_requisition_details
+    buildWoPath('wrec', qb => qb
+      .innerJoin(`${weReconciliationRequisitionDetailsWeTableName} as wrecdwe`, 'wrecdwe.we_id', 'we2.id')
+      .innerJoin(`${weReconciliationRequisitionDetailsTableName} as wrec`, 'wrec.id', 'wrecdwe.we_reconcilition_requisition_details_id')),
+    // Path 3: wd_dyeing_requisition_details
+    buildWoPath('wdd', qb => qb.innerJoin(`${wdDyeingRequisitionDetailsTableName} as wdd`, 'wdd.id', 'we2.wd_dyeing_requisition_details_id')),
+    // Path 4: we_transition_between_wh_requisition_details
+    buildWoPath('wtbwh', qb => qb.innerJoin(`${weTransitionBetweenWHRequisitionDetailsTableName} as wtbwh`, 'wtbwh.id', 'we2.we_transition_between_wh_requisitions_details_id')),
+    // Path 5: we_transition_between_orders_requisition_details
+    buildWoPath('wtbo', qb => qb.innerJoin(`${weTransitionBetweenOrdersRequisitionDetailsTableName} as wtbo`, 'wtbo.id', 'we2.we_transition_between_orders_requisitions_details_id')),
+    // Path 6: we_return_sell_requisition_details
+    buildWoPath('wrsd', qb => qb.innerJoin(`${weReturnSellRequisitionDetailsTableName} as wrsd`, 'wrsd.id', 'we2.we_return_sell_requisition_details_id')),
+  ]);
+
+  availableFilters.details_work_order = [...new Set([...wo1, ...wo2, ...wo3, ...wo4, ...wo5, ...wo6])];
 
   // details_grade_item — نوع الدرجة
   const baseExceptGrade = buildBaseWithFiltersExcept('details_grade_item');
@@ -340,21 +395,72 @@ function applyDetailsIdsFilter(qb, filterObj, spec) {
       return;
     }
 
-    // الفلاتر التي تمر عبر we_sell_req_details_we -> we -> we_add_req_details
+    // we_work_order: يجب معالجته قبل الـ INNER JOINs لأن المصدر يأتي من 6 جداول مختلفة
+    if (spec.kind === 'we_work_order') {
+      const makeWoSub = (alias, joinFn) =>
+        knex.distinct('d_sub.id')
+          .from(`${weSellRequisitionDetailsTableName} as d_sub`)
+          .innerJoin(`${weSellRequisitionDetailsWeTableName} as dwe_sub`, 'dwe_sub.we_sell_requisition_details_id', 'd_sub.id')
+          .innerJoin(`${weTableName} as we_sub`, 'we_sub.id', 'dwe_sub.we_id')
+          .modify(joinFn)
+          .whereIn(`${alias}.work_order_number`, values);
+
+      builder.where(function () {
+        // Path 1: we_add_requisition_details
+        this.whereIn('d2.id', makeWoSub('wad_s', qb => qb.innerJoin(`${weAddRequisitionDetailsTableName} as wad_s`, 'wad_s.id', 'we_sub.we_add_requisition_details_id')))
+        // Path 2: we_reconciliation_requisition_details
+        .orWhereIn('d2.id', makeWoSub('wrec_s', qb => qb
+          .innerJoin(`${weReconciliationRequisitionDetailsWeTableName} as wrecdwe_s`, 'wrecdwe_s.we_id', 'we_sub.id')
+          .innerJoin(`${weReconciliationRequisitionDetailsTableName} as wrec_s`, 'wrec_s.id', 'wrecdwe_s.we_reconcilition_requisition_details_id')))
+        // Path 3: wd_dyeing_requisition_details
+        .orWhereIn('d2.id', makeWoSub('wdd_s', qb => qb.innerJoin(`${wdDyeingRequisitionDetailsTableName} as wdd_s`, 'wdd_s.id', 'we_sub.wd_dyeing_requisition_details_id')))
+        // Path 4: we_transition_between_wh_requisition_details
+        .orWhereIn('d2.id', makeWoSub('wtbwh_s', qb => qb.innerJoin(`${weTransitionBetweenWHRequisitionDetailsTableName} as wtbwh_s`, 'wtbwh_s.id', 'we_sub.we_transition_between_wh_requisitions_details_id')))
+        // Path 5: we_transition_between_orders_requisition_details
+        .orWhereIn('d2.id', makeWoSub('wtbo_s', qb => qb.innerJoin(`${weTransitionBetweenOrdersRequisitionDetailsTableName} as wtbo_s`, 'wtbo_s.id', 'we_sub.we_transition_between_orders_requisitions_details_id')))
+        // Path 6: we_return_sell_requisition_details
+        .orWhereIn('d2.id', makeWoSub('wrsd_s', qb => qb.innerJoin(`${weReturnSellRequisitionDetailsTableName} as wrsd_s`, 'wrsd_s.id', 'we_sub.we_return_sell_requisition_details_id')));
+      });
+      return;
+    }
+
+    // الفلاتر التي تمر عبر we_sell_req_details_we -> we -> we_add_req_details (للدرجة فقط)
+    if (spec.kind === 'we_color') {
+      // اللون يأتي من 6 مسارات مختلفة
+      const makeColorSub = (alias, joinFn, colorIdExpr) =>
+        knex.distinct('d_sub.id')
+          .from(`${weSellRequisitionDetailsTableName} as d_sub`)
+          .innerJoin(`${weSellRequisitionDetailsWeTableName} as dwe_sub`, 'dwe_sub.we_sell_requisition_details_id', 'd_sub.id')
+          .innerJoin(`${weTableName} as we_sub`, 'we_sub.id', 'dwe_sub.we_id')
+          .modify(joinFn)
+          .innerJoin(`${colorTableName} as c_sub`, `c_sub.id`, colorIdExpr)
+          .whereIn(`c_sub.${spec.column}`, values);
+
+      builder.where(function () {
+        // Path 1: we_add_requisition_details
+        this.whereIn('d2.id', makeColorSub('wad_fs', qb => qb.innerJoin(`${weAddRequisitionDetailsTableName} as wad_fs`, 'wad_fs.id', 'we_sub.we_add_requisition_details_id'), 'wad_fs.color_id'))
+        // Path 2: we_reconciliation_requisition_details
+        .orWhereIn('d2.id', makeColorSub('wrec_fs', qb => qb
+          .innerJoin(`${weReconciliationRequisitionDetailsWeTableName} as wrecdwe_fs`, 'wrecdwe_fs.we_id', 'we_sub.id')
+          .innerJoin(`${weReconciliationRequisitionDetailsTableName} as wrec_fs`, 'wrec_fs.id', 'wrecdwe_fs.we_reconcilition_requisition_details_id'), 'wrec_fs.color_id'))
+        // Path 3: wd_dyeing -> wd_form_dyeing -> anointed_colors_prices
+        .orWhereIn('d2.id', makeColorSub('acp_fs', qb => qb
+          .innerJoin(`${wdDyeingRequisitionDetailsTableName} as wdd_fs`, 'wdd_fs.id', 'we_sub.wd_dyeing_requisition_details_id')
+          .innerJoin(`${wdFormDyeingRequisitionDetailsTableName} as wfd_fs`, 'wfd_fs.id', 'wdd_fs.wd_form_dyeing_requisition_details_id')
+          .innerJoin(`${anointedColorsPricesTableName} as acp_fs`, 'acp_fs.id', 'wfd_fs.dyeing_colors_prices_id'), 'acp_fs.color_id'))
+        // Path 4: we_transition_between_wh_requisition_details
+        .orWhereIn('d2.id', makeColorSub('wtbwh_fs', qb => qb.innerJoin(`${weTransitionBetweenWHRequisitionDetailsTableName} as wtbwh_fs`, 'wtbwh_fs.id', 'we_sub.we_transition_between_wh_requisitions_details_id'), 'wtbwh_fs.color_id'))
+        // Path 5: we_transition_between_orders_requisition_details
+        .orWhereIn('d2.id', makeColorSub('wtbo_fs', qb => qb.innerJoin(`${weTransitionBetweenOrdersRequisitionDetailsTableName} as wtbo_fs`, 'wtbo_fs.id', 'we_sub.we_transition_between_orders_requisitions_details_id'), 'wtbo_fs.color_id'))
+        // Path 6: we_return_sell_requisition_details
+        .orWhereIn('d2.id', makeColorSub('wrsd_fs', qb => qb.innerJoin(`${weReturnSellRequisitionDetailsTableName} as wrsd_fs`, 'wrsd_fs.id', 'we_sub.we_return_sell_requisition_details_id'), 'wrsd_fs.color_id'));
+      });
+      return;
+    }
+
     builder.innerJoin(`${weSellRequisitionDetailsWeTableName} as dwe`, 'dwe.we_sell_requisition_details_id', 'd2.id')
            .innerJoin(`${weTableName} as we`, 'we.id', 'dwe.we_id')
            .innerJoin(`${weAddRequisitionDetailsTableName} as wad`, 'wad.id', 'we.we_add_requisition_details_id');
-
-    if (spec.kind === 'we_color') {
-      builder.innerJoin(`${colorTableName} as c`, 'c.id', 'wad.color_id')
-             .whereIn(`c.${spec.column}`, values);
-      return;
-    }
-
-    if (spec.kind === 'we_work_order') {
-      builder.whereIn(`wad.${spec.column}`, values);
-      return;
-    }
 
     if (spec.kind === 'we_grade') {
       builder.innerJoin(`${gradeItemTableName} as g`, 'g.id', 'wad.grade_item_id')
