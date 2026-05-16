@@ -43,8 +43,9 @@ exports.selectByCategoryAndDeying = async (deyingId, colorCategoryId) => {
 
 exports.selectByCategoryAndDeyingByDyedFabricByFabricOrder = async (deyingId, colorCategoryId, dyedFabricId, fabricOrderId) => {
   const idsResult = await wcFabricOrderRequisitionDetailsQueries.selectIdsByParentId(fabricOrderId);
-  const ids = idsResult.map((r) => r.orders_requisitions_id);  
-  const results = await colorQueries.selectByCategoryAndDeyingByDyedFabricByFabricOrder(deyingId, colorCategoryId, dyedFabricId, ids);
+  const ids = idsResult.map((r) => r.orders_requisitions_id);
+  const allIds = [...new Set([fabricOrderId, ...ids])];
+  const results = await colorQueries.selectByCategoryAndDeyingByDyedFabricByFabricOrder(deyingId, colorCategoryId, dyedFabricId, allIds);
   return results;
 };
 

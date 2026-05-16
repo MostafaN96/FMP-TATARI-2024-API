@@ -916,6 +916,7 @@ exports.selectTotalDetailsByYarnIdByWarehouseId = async (yarnId, warehouseId) =>
         `${wbTransportWaWbDetailsTableName}.id`,
         `${wbTransportWaWbDetailsTableName}.wa_yarn_order_requisition_details_id`,
         `${wbTransportWaWbDetailsTableName}.consigment_yarn_id`,
+        `${wbTransportWaWbDetailsTableName}.yarn_lot_id`,
         `${wbTransportWaWbDetailsTableName}.price`,
         `${wbTransportWaWbDetailsTableName}.price_dollar`,
         `${wbTransportWaWbDetailsTableName}.quantity`,
@@ -975,6 +976,7 @@ exports.selectTotalDetailsByYarnIdByWarehouseId = async (yarnId, warehouseId) =>
             wbManufacturingWhereCluse[`${wbManufacturingInputOutputTableName}.wa_yarn_order_requisition_details_id`] = element.wa_yarn_order_requisition_details_id;
             wbManufacturingWhereCluse[`${wbManufacturingInputTableName}.yarn_id`] = yarnId;
             wbManufacturingWhereCluse[`${wbManufacturingInputTableName}.consigment_yarn_id`] = element.consigment_yarn_id;
+            wbManufacturingWhereCluse[`${wbManufacturingInputTableName}.yarn_lot_id`] = element.yarn_lot_id;
             element.manufacturingDocuments = await wbManufacturingOutputQueries.selectRequisitionsForWaYarnOrderRequisition(wbManufacturingWhereCluse)
 
       }

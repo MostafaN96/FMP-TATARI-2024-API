@@ -176,6 +176,22 @@ exports.update = async (wbManufacturingOutput) => {
   if (isFound[0] != null) {
     let updateResults = false
 
+    // Check Circular Knitting Machine
+    const selectCircularKnittingMachineOneResult = await circularKnittingMachineBussinessmanQueries.selectOne({
+      id: wbManufacturingOutput.circularKnittingMachineId,
+    })
+    if (selectCircularKnittingMachineOneResult[0] != null) {
+      wbManufacturingOutput.circularKnittingMachineId = selectCircularKnittingMachineOneResult[0].id;
+    } else {
+      wbManufacturingOutput.circularKnittingMachineId = trans.transform();
+      const createCircularKnittingMachine = await circularKnittingMachineQueries.insertForManufacturingWb(wbManufacturingOutput);
+      if (createCircularKnittingMachine) {
+        wbManufacturingOutput.circularKnittingMachineBussinessmanId = trans.transform();
+        await circularKnittingMachineBussinessmanQueries.insertForManufacturingWb(wbManufacturingOutput);
+        wbManufacturingOutput.circularKnittingMachineId = wbManufacturingOutput.circularKnittingMachineBussinessmanId;
+      }
+    }
+
     // Update wb Manufacturing Output Without Quantity
     await wbManufacturingOutputQueries.update({
       circular_knitting_machine_bussiness_man_id: wbManufacturingOutput.circularKnittingMachineId,

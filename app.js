@@ -13,7 +13,12 @@ app.use(
   })
 );
 app.use(bodyparser.json());
-app.use(cors());
+app.use(cors({
+  origin: ["http://10.1.2.246", "http://localhost:4200", "http://localhost:3000"],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 
 // Routers
 // General

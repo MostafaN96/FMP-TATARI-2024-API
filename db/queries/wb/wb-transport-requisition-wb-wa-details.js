@@ -63,6 +63,7 @@ exports.selectByRequisitionId = async (requisitionId) => {
     `${wbTransportRequisitionWbWaDetailsTableName}.statement`,
     `${wbTransportRequisitionWbWaDetailsTableName}.price`,
     `${wbTransportRequisitionWbWaDetailsTableName}.price_dollar`,
+    `${waYarnOrderRequisitionTableName}.name as wa_yarn_order_requisition_name`,
     `${waTableName}.current_quantity`,
   ])
     .sum(`${wbTransportRequisitionWbWaDetailsTableName}.quantity as quantity`)
@@ -89,6 +90,9 @@ exports.selectByRequisitionId = async (requisitionId) => {
     .innerJoin(`${consigmentYarnTableName}`,
       `${consigmentYarnTableName}.id`,
       `${wbTransportRequisitionWbWaDetailsTableName}.consigment_yarn_id`)
+    .innerJoin(`${waYarnOrderRequisitionTableName}`,
+      `${waYarnOrderRequisitionTableName}.id`,
+      `${wbTransportRequisitionWbWaDetailsTableName}.wa_yarn_order_requisition_id`)
     .groupBy(`${wbTransportRequisitionWbWaDetailsTableName}.id`,
       `${wbTransportRequisitionWbWaDetailsTableName}.yarn_id`,
       `${bussinessmanTableName}.id`,

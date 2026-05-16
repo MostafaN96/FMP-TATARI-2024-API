@@ -119,10 +119,10 @@ exports.selectByRequisitionId = async (whereCluse) => {
         `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_transition_between_orders_requisitions_id`)
       .innerJoin(`${wcFabricOrderRequisitionTableName}`,
         `${wcFabricOrderRequisitionTableName}.id`,
-        `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.wc_fabric_order_requisition_id`)
+        `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.parent_wc_fabric_order_requisition_id`)
         .innerJoin(`${wcFabricOrderRequisitionTableName} as from_fabric_order_requisition`,
           `from_fabric_order_requisition.id`,
-          `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.from_wc_fabric_order_requisition_id`)
+          `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.from_parent_wc_fabric_order_requisition_id`)
       .innerJoin(`${warehouseTableName}`,
         `${warehouseTableName}.id`,
         `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.warehouse_id`)

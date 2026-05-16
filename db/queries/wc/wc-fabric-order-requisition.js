@@ -65,13 +65,16 @@ exports.selectOne = async (whereCluse) => {
     return queryResults;
 };
 
-exports.select = async (whereCluse, isOrder) => {
+exports.select = async (whereCluse, isOrder, onlyParents = false) => {
     let queryResults = [];
 
-    await knex(wcFabricOrderRequisitionTableName)
+    let query = knex(wcFabricOrderRequisitionTableName)
         .select([
             `${wcFabricOrderRequisitionTableName}.id`,
             `${wcFabricOrderRequisitionTableName}.orders_requisitions_id`,
+            `${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id`,
+            `${wcFabricOrderRequisitionTableName}.parent_orders_requisitions_id`,
+            `${wcFabricOrderRequisitionTableName}.is_parent`,
             `${wcFabricOrderRequisitionTableName}.number`,
             `${wcFabricOrderRequisitionTableName}.name`,
             `${wcFabricOrderRequisitionTableName}.date`,
@@ -90,10 +93,16 @@ exports.select = async (whereCluse, isOrder) => {
             this.select(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`)
                 .from(`${wcFabricOrderRequisitionDetailsTableName}`)
                 .where({ "is_order": isOrder })
-        })
-        .then((data) => {
-            queryResults = data;
-        })
+        });
+
+    if (onlyParents) {
+        query = query.whereRaw(
+            `${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id = ${wcFabricOrderRequisitionTableName}.id`
+        );
+    }
+
+    await query
+        .then((data) => { queryResults = data; })
         .catch((error) => console.error(error));
     return queryResults;
 };
@@ -105,6 +114,7 @@ exports.selectStoredFabricsWc = async (whereCluseArray, isGreaterThanZero = 1) =
         `id`,
         `name`,
         `number`,
+        `is_parent`,
         `requisition_details_id`,
         `quantity`
     ]
@@ -114,6 +124,7 @@ exports.selectStoredFabricsWc = async (whereCluseArray, isGreaterThanZero = 1) =
             `${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id as id`,
             `${wcFabricOrderRequisitionTableName}.name`,
             `${wcFabricOrderRequisitionTableName}.number`,
+            `${wcFabricOrderRequisitionTableName}.is_parent`,
             `${wcAddRequisitionDetailsTableName}.id as requisition_details_id`,
             `${wcAddRequisitionDetailsTableName}.quantity`,
             `${wcTableName}.current_quantity`
@@ -144,6 +155,7 @@ exports.selectStoredFabricsWc = async (whereCluseArray, isGreaterThanZero = 1) =
             `${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id as id`,
                     `${wcFabricOrderRequisitionTableName}.name`,
                     `${wcFabricOrderRequisitionTableName}.number`,
+                    `${wcFabricOrderRequisitionTableName}.is_parent`,
                     `${wcReconciliationRequisitionDetailsTableName}.id as requisition_details_id`,
                     `${wcReconciliationRequisitionDetailsTableName}.quantity`,
                     `${wcTableName}.current_quantity`
@@ -179,6 +191,7 @@ exports.selectStoredFabricsWc = async (whereCluseArray, isGreaterThanZero = 1) =
                     `${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id as id`,
                     `${wcFabricOrderRequisitionTableName}.name`,
                     `${wcFabricOrderRequisitionTableName}.number`,
+                    `${wcFabricOrderRequisitionTableName}.is_parent`,
                     `${wdTransportRequisitionWdWcDetailsTableName}.id as requisition_details_id`,
                     `${wdTransportRequisitionWdWcDetailsTableName}.quantity`,
                     `${wcTableName}.current_quantity`
@@ -209,6 +222,7 @@ exports.selectStoredFabricsWc = async (whereCluseArray, isGreaterThanZero = 1) =
                     `${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id as id`,
                     `parent_wc_fabric_order_requisition.name`,
                     `parent_wc_fabric_order_requisition.number`,
+                    `parent_wc_fabric_order_requisition.is_parent`,
                     `${wbManufacturingOutputTableName}.id as requisition_details_id`,
                     `${wbManufacturingOutputTableName}.quantity`,
                     `${wcTableName}.current_quantity`
@@ -239,6 +253,7 @@ exports.selectStoredFabricsWc = async (whereCluseArray, isGreaterThanZero = 1) =
                     `${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id as id`,
                     `${wcFabricOrderRequisitionTableName}.name`,
                     `${wcFabricOrderRequisitionTableName}.number`,
+                    `${wcFabricOrderRequisitionTableName}.is_parent`,
                     `${wcTransitionBetweenWHRequisitionDetailsTableName}.id as requisition_details_id`,
                     `${wcTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
                     `${wcTableName}.current_quantity`
@@ -269,6 +284,7 @@ exports.selectStoredFabricsWc = async (whereCluseArray, isGreaterThanZero = 1) =
                     `${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id as id`,
                     `${wcFabricOrderRequisitionTableName}.name`,
                     `${wcFabricOrderRequisitionTableName}.number`,
+                    `${wcFabricOrderRequisitionTableName}.is_parent`,
                     `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.id as requisition_details_id`,
                     `${wcTransitionBetweenOrdersRequisitionDetailsTableName}.quantity`,
                     `${wcTableName}.current_quantity`
@@ -296,6 +312,12 @@ exports.selectStoredFabricsWc = async (whereCluseArray, isGreaterThanZero = 1) =
     }).as('temp')
         .sum(`current_quantity as current_quantity`)
         .groupBy(`id`)
+        // .whereIn(`id`, function () {
+        //     this.select(`id`)
+        //         .from(wcFabricOrderRequisitionTableName)
+        //         .whereRaw(`${wcFabricOrderRequisitionTableName}.id = ${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id`)
+        //         .where({ is_deleted: 0, is_active: 1, is_parent: 1 })
+        // })
         .then(data => {
             queryResults = data
         })
@@ -389,6 +411,57 @@ exports.selectMergedOrders = async (parentOrderId) => {
         })
         .catch((error) => console.error(error));
     
+    return queryResults;
+};
+
+/**
+ * جلب جميع الطلبيات في مجموعة الدمج (الـ parent + جميع children)
+ * إذا الطلبية مدموجة (is_parent=1 أو parent_id != id) تُرجع جميع أفراد المجموعة
+ * إذا لم تكن مدموجة تُرجع مصفوفة فارغة
+ * @param {string} orderId - id الطلبية الحالية
+ * @returns {Array} - مصفوفة الطلبيات في المجموعة (بدون الطلبية الأصلية نفسها)
+ */
+exports.selectMergeGroupSiblings = async (orderId) => {
+    let queryResults = [];
+    // أولاً: اجلب بيانات الطلبية الحالية
+    const current = await knex(wcFabricOrderRequisitionTableName)
+        .select(
+            `${wcFabricOrderRequisitionTableName}.id`,
+            `${wcFabricOrderRequisitionTableName}.is_parent`,
+            `${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id`,
+            `${wcFabricOrderRequisitionTableName}.orders_requisitions_id`
+        )
+        .where({ [`${wcFabricOrderRequisitionTableName}.id`]: orderId, [`${wcFabricOrderRequisitionTableName}.is_deleted`]: 0 })
+        .first();
+
+    if (!current) return queryResults;
+    // إذا parent_id فارغ أو مساوٍ لـ own id وليست parent → طلبية مستقلة بدون دمج
+    if (!current.parent_wc_fabric_order_requisition_id ||
+        (current.is_parent != 1 && current.parent_wc_fabric_order_requisition_id === current.id)) {
+        return queryResults;
+    }
+
+    // الـ parent الفعلي للمجموعة
+    const groupParentId = (current.is_parent == 1)
+        ? current.id
+        : current.parent_wc_fabric_order_requisition_id;
+
+    // جلب جميع أفراد المجموعة ماعدا الطلبية الحالية
+    await knex(wcFabricOrderRequisitionTableName)
+        .select(
+            `${wcFabricOrderRequisitionTableName}.id`,
+            `${wcFabricOrderRequisitionTableName}.orders_requisitions_id`,
+            `${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id`
+        )
+        .where({
+            [`${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id`]: groupParentId,
+            [`${wcFabricOrderRequisitionTableName}.is_deleted`]: 0,
+            [`${wcFabricOrderRequisitionTableName}.is_active`]: 1,
+        })
+        .whereNot(`${wcFabricOrderRequisitionTableName}.id`, orderId)
+        .then((data) => { queryResults = data; })
+        .catch((error) => console.error(error));
+
     return queryResults;
 };
 

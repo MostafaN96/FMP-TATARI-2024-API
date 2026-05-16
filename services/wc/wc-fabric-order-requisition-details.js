@@ -26,12 +26,21 @@ const { wcFabricOrderRequisitionTableName, wcFabricOrderRequisitionDetailsTableN
     wdTransportRequisitionWdWcDetailsTableName,
     wdTransportWcWdDetailsTableName
 } = require("../../util/database-tables-name");
+const knex = require("../../db/config/connection").getConnection();
 
 exports.create = async (wcFabricOrderRequisitionDetails) => {
+    // جلب الـ parent_wc_fabric_order_requisition_id الفعلي من الـ DB
+    const orderRow = await knex(wcFabricOrderRequisitionTableName)
+        .select('parent_wc_fabric_order_requisition_id')
+        .where({ id: wcFabricOrderRequisitionDetails.id })
+        .first();
+    if (orderRow?.parent_wc_fabric_order_requisition_id) {
+        wcFabricOrderRequisitionDetails.parentWcFabricOrderRequisitionId = orderRow.parent_wc_fabric_order_requisition_id;
+    }
+
     for (let i = 0; i < wcFabricOrderRequisitionDetails.items.length; i++) {
         wcFabricOrderRequisitionDetails.items[i].wcFabricOrderRequisitionDetailsId = trans.transform();
-        
-        // Set parent ids to self if not provided (تفاصيل جديدة تكون parent لنفسها)
+
         if (!wcFabricOrderRequisitionDetails.items[i].parentWcFabricOrderRequisitionDetailsId) {
             wcFabricOrderRequisitionDetails.items[i].parentWcFabricOrderRequisitionDetailsId = wcFabricOrderRequisitionDetails.items[i].wcFabricOrderRequisitionDetailsId;
         }
@@ -46,10 +55,18 @@ exports.create = async (wcFabricOrderRequisitionDetails) => {
 };
 
 exports.createDetails = async (wcFabricOrderRequisitionDetails) => {
+    // جلب الـ parent_wc_fabric_order_requisition_id الفعلي من الـ DB
+    const orderRow = await knex(wcFabricOrderRequisitionTableName)
+        .select('parent_wc_fabric_order_requisition_id')
+        .where({ id: wcFabricOrderRequisitionDetails.id })
+        .first();
+    if (orderRow?.parent_wc_fabric_order_requisition_id) {
+        wcFabricOrderRequisitionDetails.parentWcFabricOrderRequisitionId = orderRow.parent_wc_fabric_order_requisition_id;
+    }
+
     for (let i = 0; i < wcFabricOrderRequisitionDetails.items.length; i++) {
         wcFabricOrderRequisitionDetails.items[i].wcFabricOrderRequisitionDetailsId = trans.transform();
-        
-        // Set parent ids to self if not provided
+
         if (!wcFabricOrderRequisitionDetails.items[i].parentWcFabricOrderRequisitionDetailsId) {
             wcFabricOrderRequisitionDetails.items[i].parentWcFabricOrderRequisitionDetailsId = wcFabricOrderRequisitionDetails.items[i].wcFabricOrderRequisitionDetailsId;
         }

@@ -87,7 +87,7 @@ exports.selectOpenedOrders = async () => {
     whereCluse[`${wcFabricOrderRequisitionTableName}.is_active`] = 1;
     const isOrder = 1
 
-    const results = await wcFabricOrderRequisitionQueries.select(whereCluse, isOrder);
+    const results = await wcFabricOrderRequisitionQueries.select(whereCluse, isOrder, true);
     if (Array.isArray(results) && results.length > 0) {
         for (let i = 0; i < results.length; i++) {
             const element = results[i];
@@ -104,7 +104,7 @@ exports.selectClosedOrders = async () => {
     whereCluse[`${wcFabricOrderRequisitionTableName}.is_active`] = 1;
     const isOrder = 0
 
-    const results = await wcFabricOrderRequisitionQueries.select(whereCluse, isOrder);
+    const results = await wcFabricOrderRequisitionQueries.select(whereCluse, isOrder, true);
     if (Array.isArray(results) && results.length > 0) {
         for (let i = 0; i < results.length; i++) {
             const element = results[i];
@@ -121,36 +121,42 @@ exports.selectByWarehouseWc = async (warehouseId) => {
     wcFabricWhereCluse[`${wcAddRequisitionDetailsTableName}.is_deleted`] = 0;
     wcFabricWhereCluse[`${wcAddRequisitionDetailsTableName}.is_active`] = 1;
     wcFabricWhereCluse[`${wcAddRequisitionDetailsTableName}.warehouse_id`] = warehouseId;
+    // wcFabricWhereCluse[`${wcFabricOrderRequisitionTableName}.is_parent`] = 1;
 
     let wcReconciliationWhereCluse = {};
     wcReconciliationWhereCluse[`${wcReconciliationRequisitionDetailsTableName}.is_deleted`] = 0;
     wcReconciliationWhereCluse[`${wcReconciliationRequisitionDetailsTableName}.is_active`] = 1;
     wcReconciliationWhereCluse[`${wcReconciliationRequisitionDetailsTableName}.input_output`] = 1;
     wcReconciliationWhereCluse[`${wcReconciliationRequisitionTableName}.warehouse_id`] = warehouseId;
+    // wcReconciliationWhereCluse[`${wcFabricOrderRequisitionTableName}.is_parent`] = 1;
 
     let wcTransportWdWcWhereCluse = {};
     wcTransportWdWcWhereCluse[`${wdTransportRequisitionWdWcDetailsTableName}.is_deleted`] = 0;
     wcTransportWdWcWhereCluse[`${wdTransportRequisitionWdWcDetailsTableName}.is_active`] = 1;
     wcTransportWdWcWhereCluse[`${wdTransportRequisitionWdWcTableName}.warehouse_id`] = warehouseId;
     wcTransportWdWcWhereCluse[`${wcTableName}.type`] = constantsPayloads.transportFromBToAType;
+    // wcTransportWdWcWhereCluse[`${wcFabricOrderRequisitionTableName}.is_parent`] = 1;
 
     let WcManufacturingOutputWhereCluse = {};
     WcManufacturingOutputWhereCluse[`${wbManufacturingOutputTableName}.is_deleted`] = 0;
     WcManufacturingOutputWhereCluse[`${wbManufacturingOutputTableName}.is_active`] = 1;
     WcManufacturingOutputWhereCluse[`${wbManufacturingOutputTableName}.warehouse_id`] = warehouseId;
     WcManufacturingOutputWhereCluse[`${wcTableName}.type`] = constantsPayloads.manufactruingType;
-    
+    // WcManufacturingOutputWhereCluse[`${wcFabricOrderRequisitionTableName}.is_parent`] = 1;
+
     let transitionBetweenWhWhereCluse = {};
     transitionBetweenWhWhereCluse[`${wcTableName}.is_deleted`] = 0;
     transitionBetweenWhWhereCluse[`${wcTableName}.is_active`] = 1;
     transitionBetweenWhWhereCluse[`${wcTableName}.type`] = constantsPayloads.transportBetweenType;
     transitionBetweenWhWhereCluse[`${wcTransitionBetweenWHRequisitionTableName}.to_warehouse_id`] = warehouseId;
-    
+    // transitionBetweenWhWhereCluse[`${wcFabricOrderRequisitionTableName}.is_parent`] = 1;
+
     let transitionBetweenOrdersWcWhereCluse = {};
     transitionBetweenOrdersWcWhereCluse[`${wcTableName}.is_deleted`] = 0;
     transitionBetweenOrdersWcWhereCluse[`${wcTableName}.is_active`] = 1;
     transitionBetweenOrdersWcWhereCluse[`${wcTableName}.type`] = constantsPayloads.transportBetweenOrdersType;
     transitionBetweenOrdersWcWhereCluse[`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.warehouse_id`] = warehouseId;
+    // transitionBetweenOrdersWcWhereCluse[`${wcFabricOrderRequisitionTableName}.is_parent`] = 1;
 
   let whereCluseArray = [
     wcFabricWhereCluse, 
