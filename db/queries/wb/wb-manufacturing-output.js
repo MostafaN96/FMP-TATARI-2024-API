@@ -4,7 +4,7 @@ const knex = require("../../config/connection").getConnection();
 
 // Util
 const constants = require("../../../util/constants");
-const { wbManufacturingOutputTableName, wbManufacturingRequisitionTableName, wbManufacturingInputOutputTableName, fabricTableName, circularKnittingMachineTableName, consigmentManufacturingTableName, circularKnittingMachineBussinessmanTableName, warehouseTableName, wbManufacturingOutputOrderTableName, wbManufacturingOrderRequisitionDetailsTableName, wbManufacturingOrderRequisitionTableName, bussinessmanTableName, wcTableName, wbManufacturingInputTableName, wcFabricOrderRequisitionTableName, wdTransportWcWdDetailsWcTableName, ordersRequisitionsTableName } = require("../../../util/database-tables-name");
+const { wbManufacturingOutputTableName, wbManufacturingRequisitionTableName, wbManufacturingInputOutputTableName, fabricTableName, circularKnittingMachineTableName, consigmentManufacturingTableName, circularKnittingMachineBussinessmanTableName, warehouseTableName, wbManufacturingOutputOrderTableName, wbManufacturingOrderRequisitionDetailsTableName, wbManufacturingOrderRequisitionTableName, bussinessmanTableName, wcTableName, wbManufacturingInputTableName, wcFabricOrderRequisitionTableName, wdTransportWcWdDetailsWcTableName, ordersRequisitionsTableName, wbManufacturingInputWbTableName, wbTableName } = require("../../../util/database-tables-name");
 
 exports.insert = async (wbManufacturingOutput, items, trx = null) => {
   let queryResults = false;
@@ -403,13 +403,14 @@ exports.selectLatestPrice = async (whereCluse) => {
   return queryResults;
 };
 
-exports.update = async (wbManufacturingOutput, whereCluse) => {
+exports.update = async (wbManufacturingOutput, whereCluse, trx = null) => {
   let queryResults = false;
   await sqlFun
     .update(
       wbManufacturingOutputTableName,
       wbManufacturingOutput,
-      whereCluse
+      whereCluse,
+      trx
     )
     .then((data) => {
       queryResults = true;
@@ -902,6 +903,12 @@ exports.selectRequisitionsForWaYarnOrderRequisition = async (whereCluse) => {
     .innerJoin(`${wbManufacturingRequisitionTableName}`, 
       `${wbManufacturingRequisitionTableName}.id`, 
       `${wbManufacturingInputOutputTableName}.wb_manufacturing_requisition_id`)
+    .innerJoin(`${wbManufacturingInputWbTableName}`, 
+      `${wbManufacturingInputWbTableName}.wb_manufacturing_input_id`, 
+      `${wbManufacturingInputTableName}.id`)
+    .innerJoin(`${wbTableName}`, 
+      `${wbTableName}.id`, 
+      `${wbManufacturingInputWbTableName}.wb_id`)
     .where(whereCluse)
     .andWhere(`${wbManufacturingOutputTableName}.quantity`, ">", 0)
     .andWhere(`${wdTransportWcWdDetailsWcTableName}.quantity`, ">", 0)

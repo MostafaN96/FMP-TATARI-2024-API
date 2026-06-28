@@ -160,13 +160,14 @@ exports.selectOne = async (whereCluse) => {
   return queryResults;
 };
 
-exports.update = async (wc, whereCluse) => {
+exports.update = async (wc, whereCluse, trx = null) => {
   let queryResults = false;
   await sqlFun
     .update(
       wcTableName,
       wc,
-      whereCluse
+      whereCluse,
+      trx
     )
     .then((data) => {
       queryResults = true;

@@ -81,7 +81,10 @@ exports.create = async (wdTransportRequisitionWdWcDetails) => {
         }
 
         if (Array.isArray(selectFabricOrderRequisitionDetailsResult) && selectFabricOrderRequisitionDetailsResult.length > 0) {
-            wdTransportRequisitionWdWcDetails.items[i].wcFabricOrderRequisitionDetailsId = selectFabricOrderRequisitionDetailsResult[0].id
+            const selectedFabricOrderDetail = selectFabricOrderRequisitionDetailsResult[0];
+            wdTransportRequisitionWdWcDetails.items[i].wcFabricOrderRequisitionDetailsId = selectedFabricOrderDetail.id;
+            wdTransportRequisitionWdWcDetails.items[i].fabricOrderId = selectedFabricOrderDetail.wc_fabric_order_requisition_id || wdTransportRequisitionWdWcDetails.items[i].fabricOrderId;
+            wdTransportRequisitionWdWcDetails.items[i].ordersRequisitionsId = selectedFabricOrderDetail.orders_requisitions_id || wdTransportRequisitionWdWcDetails.items[i].ordersRequisitionsId;
 
         const results = await wdTransportRequisitionWdWcDetailsQueries.insert(wdTransportRequisitionWdWcDetails, wdTransportRequisitionWdWcDetails.items[i]);
         if (!results) {

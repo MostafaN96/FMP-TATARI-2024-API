@@ -754,6 +754,7 @@ exports.selectQuantityByDyeingWd = async (whereCluseArray, groupBy) => {
     `orders_requisitions_id`,
     `parent_orders_requisitions_id`,
     `parent_wc_fabric_order_requisition_id`,
+    `wd_id`,
     `current_quantity`
   ]
   await knex.select(columns).from(function () {
@@ -773,6 +774,7 @@ exports.selectQuantityByDyeingWd = async (whereCluseArray, groupBy) => {
       `${wcFabricOrderRequisitionTableName}.orders_requisitions_id`,
       `${wcFabricOrderRequisitionTableName}.parent_orders_requisitions_id`,
       `${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id`,
+      `${wdTableName}.id as wd_id`,
       `${wdTableName}.current_quantity`,
     ])
       .from(`${wdTableName}`)
@@ -811,6 +813,7 @@ exports.selectQuantityByDyeingWd = async (whereCluseArray, groupBy) => {
           `${wcFabricOrderRequisitionTableName}.orders_requisitions_id`,
           `${wcFabricOrderRequisitionTableName}.parent_orders_requisitions_id`,
       `${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id`,
+      `${wdTableName}.id as wd_id`,
           `${wdTableName}.current_quantity`,
         ])
           .from(`${wdTableName}`)
@@ -856,6 +859,7 @@ exports.selectQuantityByDyeingWd = async (whereCluseArray, groupBy) => {
       `${wcFabricOrderRequisitionTableName}.orders_requisitions_id`,
       `${wcFabricOrderRequisitionTableName}.parent_orders_requisitions_id`,
       `${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id`,
+      `${wdTableName}.id as wd_id`,
       `${wdTableName}.current_quantity`,
     ])
       .from(`${wdTableName}`)

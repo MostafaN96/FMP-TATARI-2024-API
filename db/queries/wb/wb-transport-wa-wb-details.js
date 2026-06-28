@@ -973,10 +973,11 @@ exports.selectTotalDetailsByYarnIdByWarehouseId = async (yarnId, warehouseId) =>
             let wbManufacturingWhereCluse = {};
             wbManufacturingWhereCluse[`${wbManufacturingInputOutputTableName}.is_deleted`] = 0;
             wbManufacturingWhereCluse[`${wbManufacturingInputOutputTableName}.is_active`] = 1;
-            wbManufacturingWhereCluse[`${wbManufacturingInputOutputTableName}.wa_yarn_order_requisition_details_id`] = element.wa_yarn_order_requisition_details_id;
-            wbManufacturingWhereCluse[`${wbManufacturingInputTableName}.yarn_id`] = yarnId;
-            wbManufacturingWhereCluse[`${wbManufacturingInputTableName}.consigment_yarn_id`] = element.consigment_yarn_id;
-            wbManufacturingWhereCluse[`${wbManufacturingInputTableName}.yarn_lot_id`] = element.yarn_lot_id;
+            // wbManufacturingWhereCluse[`${wbManufacturingInputOutputTableName}.wa_yarn_order_requisition_details_id`] = element.wa_yarn_order_requisition_details_id;
+            // wbManufacturingWhereCluse[`${wbManufacturingInputTableName}.yarn_id`] = yarnId;
+            // wbManufacturingWhereCluse[`${wbManufacturingInputTableName}.consigment_yarn_id`] = element.consigment_yarn_id;
+            // wbManufacturingWhereCluse[`${wbManufacturingInputTableName}.yarn_lot_id`] = element.yarn_lot_id;
+            wbManufacturingWhereCluse[`${wbTableName}.wb_transport_wa_wb_details_id`] = element.id;
             element.manufacturingDocuments = await wbManufacturingOutputQueries.selectRequisitionsForWaYarnOrderRequisition(wbManufacturingWhereCluse)
 
       }

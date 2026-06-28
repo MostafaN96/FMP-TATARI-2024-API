@@ -35,8 +35,9 @@ exports.selectMaxValueWith2JoinCondition = async (tableName, atrributeMaxValue, 
   .where(whereCluse)
 }
 
-exports.update = async ( tableName, payload, whereCluse) => {
-  return knex(`${tableName}`).where(whereCluse).update(payload);
+exports.update = async (tableName, payload, whereCluse, trx = null) => {
+  const queryBuilder = trx || knex;
+  return queryBuilder(`${tableName}`).where(whereCluse).update(payload);
 };
 
 exports.delete = async ( tableName, whereCluse) => {

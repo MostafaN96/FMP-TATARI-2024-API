@@ -164,15 +164,10 @@ exports.adjustAllocationsForOutput = async (outputId, deltaQuantity, trx = null)
       return sum + (parseFloat(alloc.allocated_quantity) || 0);
     }, 0);
 
-    if (!isIncrease && remainingDelta > totalAllocated) {
-      return {
-        status: 400,
-        message: "الكمية المراد تخفيضها أكبر من المخصص",
-        data: null
-      };
-    }
+    // إذا الدلتا أكبر من المخصص نكمل بتخفيض كل المخصص (remaining سيكون > 0 فيرجع 206)
+    const cappedDelta = !isIncrease ? Math.min(remainingDelta, totalAllocated) : remainingDelta;
 
-    let remaining = remainingDelta;
+    let remaining = cappedDelta;
 
     let lastAllocation = null;
     for (const allocation of allocations) {

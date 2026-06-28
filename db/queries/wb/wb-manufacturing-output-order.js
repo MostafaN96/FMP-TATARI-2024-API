@@ -38,13 +38,14 @@ exports.selectOne = async (whereCluse) => {
   return queryResults;
 };
 
-exports.update = async (wbManufacturingOutputOrder, whereCluse) => {
+exports.update = async (wbManufacturingOutputOrder, whereCluse, trx = null) => {
     let queryResults = false;
     await sqlFun
       .update(
         wbManufacturingOutputOrderTableName,
         wbManufacturingOutputOrder,
-        whereCluse
+        whereCluse,
+        trx
       )
       .then((data) => {
         queryResults = true;

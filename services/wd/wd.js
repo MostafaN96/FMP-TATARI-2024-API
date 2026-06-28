@@ -43,7 +43,7 @@ exports.selectConsigmentDyeingQuantityByFabricByDyeingWd = async (fabricId, dyei
     whereCluse[`${wdTransportWcWdDetailsTableName}.is_deleted`] = 0;
     whereCluse[`${wdTransportWcWdDetailsTableName}.is_active`] = 1;
     whereCluse[`${wdTransportWcWdDetailsTableName}.fabric_id`] = fabricId;
-    whereCluse[`${wdTransportWcWdDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
+    whereCluse[`${wdTransportWcWdDetailsTableName}.parent_wc_fabric_order_requisition_id`] = fabricOrderId;
     whereCluse[`${wdTableName}.dyeing_id`] = dyeingId;
 
     let reconciliationWhereCluse = {};
@@ -52,7 +52,7 @@ exports.selectConsigmentDyeingQuantityByFabricByDyeingWd = async (fabricId, dyei
     reconciliationWhereCluse[`${wdTableName}.type`] = constantsPayloads.reconcilitionType;
     reconciliationWhereCluse[`${wdTableName}.dyeing_id`] = dyeingId;
     reconciliationWhereCluse[`${wdReconciliationRequisitionDetailsTableName}.fabric_id`] = fabricId;
-    reconciliationWhereCluse[`${wdReconciliationRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
+    reconciliationWhereCluse[`${wdReconciliationRequisitionDetailsTableName}.parent_wc_fabric_order_requisition_id`] = fabricOrderId;
 
     let transitionBetweenWhereCluse = {};
     transitionBetweenWhereCluse[`${wdTableName}.is_deleted`] = 0;
@@ -60,7 +60,7 @@ exports.selectConsigmentDyeingQuantityByFabricByDyeingWd = async (fabricId, dyei
     transitionBetweenWhereCluse[`${wdTableName}.type`] = constantsPayloads.transportBetweenType;
     transitionBetweenWhereCluse[`${wdTableName}.dyeing_id`] = dyeingId;
     transitionBetweenWhereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.fabric_id`] = fabricId;
-    transitionBetweenWhereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
+    transitionBetweenWhereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.parent_wc_fabric_order_requisition_id`] = fabricOrderId;
 
     let andWhereCluse = { whereTableName: `current_quantity`, operator: ">", value: "0" }
 
@@ -107,7 +107,7 @@ exports.selectQuantityByDyeingByFabricOrderWd = async (dyeingId, fabricOrderId, 
     let whereCluse = {};
     whereCluse[`${wdTransportWcWdDetailsTableName}.is_deleted`] = 0;
     whereCluse[`${wdTransportWcWdDetailsTableName}.is_active`] = 1;
-    whereCluse[`${wdTransportWcWdDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
+    whereCluse[`${wdTransportWcWdDetailsTableName}.parent_wc_fabric_order_requisition_id`] = fabricOrderId;
     whereCluse[`${wdTableName}.dyeing_id`] = dyeingId;
 
     let reconciliationWhereCluse = {};
@@ -115,14 +115,14 @@ exports.selectQuantityByDyeingByFabricOrderWd = async (dyeingId, fabricOrderId, 
     reconciliationWhereCluse[`${wdTableName}.is_active`] = 1;
     reconciliationWhereCluse[`${wdTableName}.type`] = constantsPayloads.reconcilitionType;
     reconciliationWhereCluse[`${wdTableName}.dyeing_id`] = dyeingId;
-    reconciliationWhereCluse[`${wdReconciliationRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
+    reconciliationWhereCluse[`${wdReconciliationRequisitionDetailsTableName}.parent_wc_fabric_order_requisition_id`] = fabricOrderId;
 
     let transitionBetweenWhereCluse = {};
     transitionBetweenWhereCluse[`${wdTableName}.is_deleted`] = 0;
     transitionBetweenWhereCluse[`${wdTableName}.is_active`] = 1;
     transitionBetweenWhereCluse[`${wdTableName}.type`] = constantsPayloads.transportBetweenType;
     transitionBetweenWhereCluse[`${wdTableName}.dyeing_id`] = dyeingId;
-    transitionBetweenWhereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = fabricOrderId;
+    transitionBetweenWhereCluse[`${wdTransitionBetweenDyersRequisitionDetailsTableName}.parent_wc_fabric_order_requisition_id`] = fabricOrderId;
 
     let andWhereCluse = { whereTableName: `current_quantity`, operator: ">", value: "0" }
 

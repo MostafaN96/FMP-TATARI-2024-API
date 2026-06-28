@@ -219,10 +219,10 @@ exports.selectStoredFabricsWc = async (whereCluseArray, isGreaterThanZero = 1) =
             .union(function () {
                 this.select([
                     `${wcFabricOrderRequisitionTableName}.parent_orders_requisitions_id as orders_requisitions_id`,
-                    `${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id as id`,
+                    `parent_wc_fabric_order_requisition.id as id`,
                     `parent_wc_fabric_order_requisition.name`,
                     `parent_wc_fabric_order_requisition.number`,
-                    `parent_wc_fabric_order_requisition.is_parent`,
+                    `${wcFabricOrderRequisitionTableName}.is_parent`,
                     `${wbManufacturingOutputTableName}.id as requisition_details_id`,
                     `${wbManufacturingOutputTableName}.quantity`,
                     `${wcTableName}.current_quantity`
@@ -237,6 +237,7 @@ exports.selectStoredFabricsWc = async (whereCluseArray, isGreaterThanZero = 1) =
                         .innerJoin(`${wcFabricOrderRequisitionTableName} as parent_wc_fabric_order_requisition`,
                         `parent_wc_fabric_order_requisition.id`,
                         `${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id`)
+                       
                     .where(whereCluseArray[3])
                     .andWhere(
                         (qb) => {

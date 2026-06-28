@@ -28,7 +28,7 @@ exports.insert = async (circularKnittingMachineBussinessman) => {
   return queryResults;
 };
 
-exports.insertForManufacturingWb = async (circularKnittingMachineBussinessman) => {
+exports.insertForManufacturingWb = async (circularKnittingMachineBussinessman, trx = null) => {
   let queryResults = false;
   await sqlFun
     .insert(circularKnittingMachineBussinessmanTableName, {
@@ -38,7 +38,7 @@ exports.insertForManufacturingWb = async (circularKnittingMachineBussinessman) =
       // fabric_id: circularKnittingMachineBussinessman.fabricId,
       creator_id: circularKnittingMachineBussinessman.personid,
       ip_address: circularKnittingMachineBussinessman.ipaddress
-    })
+    }, trx)
     .then((data) => {
       queryResults = true;
     })
