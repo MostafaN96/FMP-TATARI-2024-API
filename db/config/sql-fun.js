@@ -16,12 +16,14 @@ exports.selectMaxValueWithCondition = async (tableName, atrributeMaxValue, where
   .where(whereCluse)
 }
 
-exports.selectMaxValueWithJoinCondition = async (tableName, atrributeMaxValue, whereCluse, 
-  innerTable, innerTableAttribute, outerTableAttribute) => {
-  return knex(tableName)
-  .max(atrributeMaxValue)
-  .innerJoin(innerTable, innerTableAttribute, outerTableAttribute)
-  .where(whereCluse)
+exports.selectMaxValueWithJoinCondition = async (tableName, atrributeMaxValue, whereCluse,
+  innerTable, innerTableAttribute, outerTableAttribute, andWhereRaw = null) => {
+  let query = knex(tableName)
+    .max(atrributeMaxValue)
+    .innerJoin(innerTable, innerTableAttribute, outerTableAttribute)
+    .where(whereCluse)
+  if (andWhereRaw) query = query.andWhereRaw(andWhereRaw)
+  return query
 }
 
 exports.selectMaxValueWith2JoinCondition = async (tableName, atrributeMaxValue, whereCluse, 
@@ -228,13 +230,16 @@ exports.selectWithJionWithLimit = async (
   innerTable,
   innerTableAttribute,
   outerTableAttribute,
-  limit
+  limit,
+  andWhereRaw = null
 ) => {
-  return knex(tableName)
+  let query = knex(tableName)
     .innerJoin(innerTable, innerTableAttribute, outerTableAttribute)
     .select(atrributesArray)
     .where(whereCluse)
-    .limit(limit);
+    .limit(limit)
+  if (andWhereRaw) query = query.andWhereRaw(andWhereRaw)
+  return query
 };
 
 exports.selectWithJionByDate = async (

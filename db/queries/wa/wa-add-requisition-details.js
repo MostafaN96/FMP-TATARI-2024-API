@@ -344,6 +344,7 @@ exports.selectDetailsByWarehouseByYarnByLot = async (
   await knex.from(waAddRequisitionDetailsTableName)
     .select(
       [
+        `${waAddRequisitionDetailsTableName}.id`,
         `${waAddRequisitionDetailsTableName}.price`,
         `${waAddRequisitionDetailsTableName}.price_dollar`,
         `${waAddRequisitionDetailsTableName}.quantity`,
@@ -471,17 +472,19 @@ exports.selectPriceByYarnId = async (yarnId, consigmentYarnId) => {
 exports.selectLatestPrice = async (whereCluse) => {
   let queryResults = false;
   await sqlFun
-    .selectWithJionWithLimit(waAddRequisitionDetailsTableName, 
+    .selectWithJionWithLimit(waAddRequisitionDetailsTableName,
       [
-        "wa_add_requisition_details.id", 
-      "wa_add_requisition_details.price",
-      "wa_add_requisition_details.price_dollar",
-    ], 
+        "wa_add_requisition_details.id",
+        "wa_add_requisition_details.price",
+        "wa_add_requisition_details.price_dollar",
+      ],
       whereCluse,
-    waAddRequisitionTableName, 
-    `${waAddRequisitionTableName}.id`,
-     `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`,
-    1)
+      waAddRequisitionTableName,
+      `${waAddRequisitionTableName}.id`,
+      `${waAddRequisitionDetailsTableName}.wa_add_requisition_id`,
+      1,
+      'CAST(wa_add_requisition_details.price AS DECIMAL(12,3)) > 0'
+    )
     .then((data) => {
       queryResults = data;
     })

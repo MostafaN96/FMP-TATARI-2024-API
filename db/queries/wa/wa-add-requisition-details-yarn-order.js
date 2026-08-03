@@ -45,6 +45,30 @@ exports.select = async (whereCluse, groupBy) => {
   return queryResults;
 };
 
+exports.selectForAdd = async (whereCluse) => {
+  let queryResults = false;
+  await knex.from(waAddRequisitionDetailsYarnOrderTableName)
+    .select(
+      [
+        `${waAddRequisitionDetailsYarnOrderTableName}.supplier_id`,
+        `${waAddRequisitionDetailsYarnOrderTableName}.wa_add_requisition_id`,
+      ],
+    )
+    .innerJoin(`${waYarnOrderRequisitionDetailsTableName}`,
+      `${waYarnOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_id`,
+      `${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`)
+    .where(whereCluse)
+    .limit(1)
+      .then((data) => {
+          queryResults = data;
+      })
+      .catch((error) => {
+          console.log(error);
+      });
+
+  return queryResults;
+};
+
 exports.selectOne = async (whereCluse) => {
   let queryResults = false;
   await sqlFun

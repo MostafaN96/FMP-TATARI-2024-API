@@ -2,6 +2,9 @@
 const sqlFun = require("../../config/sql-fun");
 const knex = require("../../config/connection").getConnection();
 
+// Helper
+const trans = require("../../../helpers/transform");
+
 // Util
 const { weDyedFabricOrderRequisitionTableName, weDyedFabricOrderRequisitionDetailsTableName,
     fabricTableName, bussinessmanTableName,
@@ -58,6 +61,37 @@ exports.insertForPurchaseOrder = async (weDyedFabricOrderRequisition, weDyedFabr
             price: items.price,
             price_dollar: items.priceDollar,
             note: items.note,
+            creator_id: weDyedFabricOrderRequisition.personid,
+            ip_address: weDyedFabricOrderRequisition.ipaddress,
+        })
+        .then((data) => {
+            queryResults = true;
+        })
+        .catch((error) => {
+            console.log(error);
+        });
+    return queryResults;
+};
+
+exports.insertForDyeing = async (weDyedFabricOrderRequisition, items, data) => {
+    let queryResults = false;
+    await sqlFun
+        .insert(weDyedFabricOrderRequisitionDetailsTableName, {
+            id: trans.transform(),
+            we_dyed_fabric_order_requisition_id: data.requisition_id,
+            orders_requisitions_id: data.orders_requisitions_id,
+            color_category_id: items.colorCategoryId,
+            color_id: items.colorId,
+            dyed_fabric_id: items.dyedFabricId,
+            color_code: items.colorCode,
+            initial_quantity: '1',
+            current_quantity: '0',
+            waste_ratio: '0',
+            fabric_width: '',
+            fabric_quantity_m2: '',
+            price: '0',
+            price_dollar: '0',
+            note: '',
             creator_id: weDyedFabricOrderRequisition.personid,
             ip_address: weDyedFabricOrderRequisition.ipaddress,
         })

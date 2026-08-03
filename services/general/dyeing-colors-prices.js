@@ -7,6 +7,9 @@ const { anointedColorsPricesTableName } = require("../../util/database-tables-na
 exports.create = async (dyeingColorsPrices) => {
   let results = false
 
+  console.log("dyeingColorsPrices ::: ", dyeingColorsPrices);
+  
+
   for (let i = 0; i < dyeingColorsPrices.items.length; i++) {
     const dyeingColorPrice = dyeingColorsPrices.items[i];
     dyeingColorPrice.id = trans.transform();

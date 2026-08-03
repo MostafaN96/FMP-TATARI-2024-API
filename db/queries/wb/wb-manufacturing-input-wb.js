@@ -6,7 +6,9 @@ const knex = require("../../config/connection").getConnection();
 const { 
   wbManufacturingRequisitionTableName, 
   wbManufacturingInputOutputTableName, 
-  wbManufacturingInputWbTableName, 
+  wbManufacturingInputWbTableName,
+  wbManufacturingInputTableName,
+  wbManufacturingOutputTableName, 
 } = require("../../../util/database-tables-name");
 
 exports.insert = async (wbManufacturingInputWb, items, trx = null) => {
@@ -97,6 +99,43 @@ exports.selectManufacturingRequisitionsForTransportWaWb = async (whereCluse) => 
     .innerJoin(`${wbManufacturingInputWbTableName}`,
       `${wbManufacturingInputWbTableName}.wb_manufacturing_input_id`,
       `${wbManufacturingInputOutputTableName}.wb_manufacturing_input_id`)
+    .where(whereCluse)
+    .andWhere(`${wbManufacturingInputWbTableName}.quantity`, ">", 0)
+    .groupBy(
+      `${wbManufacturingRequisitionTableName}.id`
+    )
+    .then((data) => {
+      queryResults = data;
+    })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
+exports.selectManufacturingRequisitionsForTransportWaWbForReportWa = async (whereCluse) => {
+  let queryResults = [];
+
+  await knex.from(wbManufacturingRequisitionTableName)
+    .select(
+      [
+        `${wbManufacturingRequisitionTableName}.number`,
+        `${wbManufacturingRequisitionTableName}.id as requisition_id`,
+        knex.raw('? as type_of_requisition', 'اذن تصنيع'),
+        `${wbManufacturingOutputTableName}.document`,
+        `${wbManufacturingInputTableName}.ratio`,
+      ],
+    )
+    .innerJoin(`${wbManufacturingInputOutputTableName}`,
+      `${wbManufacturingInputOutputTableName}.wb_manufacturing_requisition_id`,
+      `${wbManufacturingRequisitionTableName}.id`)
+    .innerJoin(`${wbManufacturingInputWbTableName}`,
+      `${wbManufacturingInputWbTableName}.wb_manufacturing_input_id`,
+      `${wbManufacturingInputOutputTableName}.wb_manufacturing_input_id`)
+          .innerJoin(`${wbManufacturingOutputTableName}`, 
+      `${wbManufacturingOutputTableName}.id`, 
+      `${wbManufacturingInputOutputTableName}.wb_manufacturing_output_id`)
+      .innerJoin(`${wbManufacturingInputTableName}`, 
+        `${wbManufacturingInputTableName}.id`, 
+        `${wbManufacturingInputOutputTableName}.wb_manufacturing_input_id`)
     .where(whereCluse)
     .andWhere(`${wbManufacturingInputWbTableName}.quantity`, ">", 0)
     .groupBy(

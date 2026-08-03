@@ -16,7 +16,7 @@ const { wdTransportWcWdDetailsTableName, fabricTableName,
   wdFormDyeingRequisitionDetailsTableName,
   wcFabricOrderRequisitionTableName} = require("../../../util/database-tables-name");
 
-exports.insert = async (wd, items) => {
+exports.insert = async (wd, items, trx = null) => {
   let queryResults = false;
   await sqlFun
     .insert(wdTableName, {
@@ -27,7 +27,7 @@ exports.insert = async (wd, items) => {
       current_quantity: items.quantity,
       creator_id: wd.personid,
       ip_address: wd.ipaddress,
-    })
+    }, trx)
     .then((data) => {
       queryResults = true;
     })

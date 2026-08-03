@@ -83,6 +83,7 @@ exports.create = async (wdFormDyeingRequisitionDetails) => {
         if (!results) {
             return constants.insertError;
         } else {
+
             let newQuantity = parseFloat(wdFormDyeingRequisitionDetails.items[i].quantity)
             const originalQuantity = newQuantity;
             let foundStock = false;

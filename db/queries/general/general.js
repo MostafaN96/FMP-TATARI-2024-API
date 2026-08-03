@@ -29,11 +29,11 @@ exports.selectMaxValueWithCondition = async (fromTableName, atrributeMaxValue, w
     return queryResults
 }
 
-exports.selectMaxValueWithJoinCondition = async (fromTableName, atrributeMaxValue, whereCluse, 
-    innerTable, innerTableAttribute, outerTableAttribute) => {
+exports.selectMaxValueWithJoinCondition = async (fromTableName, atrributeMaxValue, whereCluse,
+    innerTable, innerTableAttribute, outerTableAttribute, andWhereRaw = null) => {
     let queryResults = []
-    await sqlFun.selectMaxValueWithJoinCondition(fromTableName, atrributeMaxValue, whereCluse, 
-        innerTable, innerTableAttribute, outerTableAttribute)
+    await sqlFun.selectMaxValueWithJoinCondition(fromTableName, atrributeMaxValue, whereCluse,
+        innerTable, innerTableAttribute, outerTableAttribute, andWhereRaw)
         .then(data => {
             queryResults = data
         })

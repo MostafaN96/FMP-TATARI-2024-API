@@ -329,13 +329,14 @@ exports.selectStoredFabricsWc = async (whereCluseArray, isGreaterThanZero = 1) =
     return queryResults
 }
 
-exports.update = async (wcFabricOrderRequisition, whereCluse) => {
+exports.update = async (wcFabricOrderRequisition, whereCluse, trx = null) => {
     let queryResults = false;
     await sqlFun
         .update(
             wcFabricOrderRequisitionTableName,
             wcFabricOrderRequisition,
-            whereCluse
+            whereCluse,
+            trx
         )
         .then((data) => {
             queryResults = true;

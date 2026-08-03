@@ -4,9 +4,9 @@ const wdTransportWcWdRequisitionDetailsWcQueries = require("../../db/queries/wd/
 // Util
 const constants = require("../../util/constants");
 
-exports.create = async (wdTransportWcWdRequisitionDetailsWc, items) => {
-  
-    const results = await wdTransportWcWdRequisitionDetailsWcQueries.insert(wdTransportWcWdRequisitionDetailsWc, items);
+exports.create = async (wdTransportWcWdRequisitionDetailsWc, items, trx = null) => {
+
+    const results = await wdTransportWcWdRequisitionDetailsWcQueries.insert(wdTransportWcWdRequisitionDetailsWc, items, trx);
     if (results) {
       return constants.insertSuccess;
     } else {

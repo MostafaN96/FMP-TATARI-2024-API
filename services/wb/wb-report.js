@@ -22,7 +22,7 @@ const wbManufacturingInputQueries = require("../../db/queries/wb/wb-manufacturin
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
-const { wbTransportWaWbTableName, bussinessmanTableName, wbTransportRequisitionWbWaDetailsTableName, wbTransitionBetweenIndustriesRequisitionDetailsTableName, wbManufacturingInputTableName } = require("../../util/database-tables-name");
+const { wbTransportWaWbTableName, bussinessmanTableName, wbTransportRequisitionWbWaDetailsTableName, wbTransitionBetweenIndustriesRequisitionDetailsTableName, wbTransitionBetweenIndustriesRequisitionTableName, wbManufacturingInputTableName } = require("../../util/database-tables-name");
 const yarnTableName = require("../../util/database-tables-name").yarnTableName;
 const wbTableName = require("../../util/database-tables-name").wbTableName;
 const wbReconciliationRequisitionDetailsTableName = require("../../util/database-tables-name").wbReconciliationRequisitionDetailsTableName;
@@ -334,41 +334,79 @@ exports.selectPriceWb = async (yarnId, manufacturerId) => {
     callArray.push(wbManufacturingInputQueries.selectPriceByYarnIdByIndustryId(yarnId, manufacturerId))
     const requisitions = await Promise.all(callArray)
     const sortedAsc = [...requisitions[0], ...requisitions[1],
-    ...requisitions[2], ...requisitions[3], ...requisitions[4]].sort(
+    ...requisitions[2], ...requisitions[3], ...requisitions[4],
+    ...requisitions[5]].sort(
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );
 
-    // Select Max Added Date
-    let maxDateWhereCluse = {};
-            maxDateWhereCluse[`${wbTableName}.industry_id`] = manufacturerId;
-            maxDateWhereCluse[`${wbTransportWaWbDetailsTableName}.yarn_id`] = yarnId;
-            const selectMaxDate = await knex(wbTransportWaWbTableName)
+    // Get max dates from all inflow sources in parallel (with price > 0)
+    const [selectMaxDateWaWb, selectMaxDateTransitionTo] = await Promise.all([
+        knex(wbTransportWaWbTableName)
             .max({ date: 'date' })
             .innerJoin(`${wbTransportWaWbDetailsTableName}`,
                 `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`,
                 `${wbTransportWaWbTableName}.id`)
-                .innerJoin(`${wbTableName}`,
+            .innerJoin(`${wbTableName}`,
                 `${wbTableName}.wb_transport_wa_wb_details_id`,
                 `${wbTransportWaWbDetailsTableName}.id`)
-            .where(maxDateWhereCluse)
-            .andWhere(`${wbTransportWaWbDetailsTableName}.price`, "<>", "0")
-    if (selectMaxDate[0] != null) {
-        // Select Latest Price
-        let wbTransportRequisitionWaWbDetailsWhereCluse = {};
-        wbTransportRequisitionWaWbDetailsWhereCluse[`${wbTableName}.industry_id`] = manufacturerId;
-        wbTransportRequisitionWaWbDetailsWhereCluse[`${wbTransportWaWbDetailsTableName}.yarn_id`] = yarnId;
-        wbTransportRequisitionWaWbDetailsWhereCluse[`${wbTransportWaWbTableName}.date`] = selectMaxDate[0]?.date;
-        const latestPrice = await wbTransportRequisitionWaWbDetailsQueries.selectLatestPrice(wbTransportRequisitionWaWbDetailsWhereCluse)
-        if(latestPrice[0] != null) {
-            sortedAsc[0].latest_price = latestPrice[0].price
-            sortedAsc[0].latest_price_dollar = latestPrice[0].price_dollar
-        } else {
-            sortedAsc[0].latest_price = 0
-            sortedAsc[0].latest_price_dollar = 0
+            .where({
+                [`${wbTableName}.industry_id`]: manufacturerId,
+                [`${wbTransportWaWbDetailsTableName}.yarn_id`]: yarnId,
+            })
+            .andWhereRaw(`CAST(${wbTransportWaWbDetailsTableName}.price AS DECIMAL(12,3)) > 0`),
+        knex(wbTransitionBetweenIndustriesRequisitionTableName)
+            .max({ date: 'date' })
+            .innerJoin(wbTransitionBetweenIndustriesRequisitionDetailsTableName,
+                `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.wb_transition_between_industries_requisition_id`,
+                `${wbTransitionBetweenIndustriesRequisitionTableName}.id`)
+            .innerJoin(wbTableName,
+                `${wbTableName}.wb_transition_between_industries_requisition_details_id`,
+                `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.id`)
+            .where({
+                [`${wbTableName}.industry_id`]: manufacturerId,
+                [`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.yarn_id`]: yarnId,
+                [`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.is_deleted`]: 0,
+                [`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.is_active`]: 1,
+            })
+            .andWhereRaw(`CAST(${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price AS DECIMAL(12,3)) > 0`),
+    ])
+
+    if (sortedAsc[0] != null) {
+        const dateCandidates = [
+            { date: selectMaxDateWaWb[0]?.date, source: 'wa_wb' },
+            { date: selectMaxDateTransitionTo[0]?.date, source: 'transition_to' },
+        ].filter(c => c.date != null)
+         .sort((a, b) => moment(b.date) - moment(a.date));
+
+        let priceResolved = false;
+        for (const candidate of dateCandidates) {
+            let latestPrice;
+            if (candidate.source === 'wa_wb') {
+                let whereCluse = {};
+                whereCluse[`${wbTableName}.industry_id`] = manufacturerId;
+                whereCluse[`${wbTransportWaWbDetailsTableName}.yarn_id`] = yarnId;
+                whereCluse[`${wbTransportWaWbTableName}.date`] = candidate.date;
+                latestPrice = await wbTransportRequisitionWaWbDetailsQueries.selectLatestPrice(whereCluse);
+            } else if (candidate.source === 'transition_to') {
+                let whereCluse = {};
+                whereCluse[`${wbTableName}.industry_id`] = manufacturerId;
+                whereCluse[`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.yarn_id`] = yarnId;
+                whereCluse[`${wbTransitionBetweenIndustriesRequisitionTableName}.date`] = candidate.date;
+                whereCluse[`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.is_deleted`] = 0;
+                whereCluse[`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.is_active`] = 1;
+                latestPrice = await wbTransitionBetweenIndustriesRequisitionDetailsQueries.selectLatestPrice(whereCluse);
+            }
+            if (latestPrice?.[0]?.price && latestPrice[0].price != 0) {
+                sortedAsc[0].latest_price = latestPrice[0].price;
+                sortedAsc[0].latest_price_dollar = latestPrice[0]?.price_dollar ?? 0;
+                priceResolved = true;
+                break;
+            }
         }
-    } else {
-        sortedAsc[0].latest_price = 0
-        sortedAsc[0].latest_price_dollar = 0
+        if (!priceResolved) {
+            sortedAsc[0].latest_price = 0;
+            sortedAsc[0].latest_price_dollar = 0;
+        }
     }
     return sortedAsc;
 };
@@ -384,42 +422,81 @@ exports.selectPriceByYarnIdByIndustryIdByConsigmentWb = async (yarnId, manufactu
     callArray.push(wbManufacturingInputQueries.selectPriceByYarnIdByIndustryId(yarnId, manufacturerId))
     const requisitions = await Promise.all(callArray)
     const sortedAsc = [...requisitions[0], ...requisitions[1],
-    ...requisitions[2], ...requisitions[3], ...requisitions[4]].sort(
+    ...requisitions[2], ...requisitions[3], ...requisitions[4],
+    ...requisitions[5]].sort(
         (objA, objB) => moment(objA.date) - moment(objB.date)
     );
 
-    // Select Max Added Date
-    let maxDateWhereCluse = {};
-            maxDateWhereCluse[`${wbTableName}.industry_id`] = manufacturerId;
-            maxDateWhereCluse[`${wbTransportWaWbDetailsTableName}.yarn_id`] = yarnId;
-            maxDateWhereCluse[`${wbTransportWaWbDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
-            const selectMaxDate = await knex(wbTransportWaWbTableName)
+    // Get max dates from all inflow sources in parallel (with price > 0)
+    const [selectMaxDateWaWb, selectMaxDateTransitionTo] = await Promise.all([
+        knex(wbTransportWaWbTableName)
             .max({ date: 'date' })
             .innerJoin(`${wbTransportWaWbDetailsTableName}`,
                 `${wbTransportWaWbDetailsTableName}.wb_transport_wa_wb_id`,
                 `${wbTransportWaWbTableName}.id`)
-                .innerJoin(`${wbTableName}`,
+            .innerJoin(`${wbTableName}`,
                 `${wbTableName}.wb_transport_wa_wb_details_id`,
                 `${wbTransportWaWbDetailsTableName}.id`)
-            .where(maxDateWhereCluse)
-    if (selectMaxDate[0] != null) {
-        // Select Latest Price
-        let wbTransportRequisitionWaWbDetailsWhereCluse = {};
-        wbTransportRequisitionWaWbDetailsWhereCluse[`${wbTableName}.industry_id`] = manufacturerId;
-        wbTransportRequisitionWaWbDetailsWhereCluse[`${wbTransportWaWbDetailsTableName}.yarn_id`] = yarnId;
-        wbTransportRequisitionWaWbDetailsWhereCluse[`${wbTransportWaWbDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
-        wbTransportRequisitionWaWbDetailsWhereCluse[`${wbTransportWaWbTableName}.date`] = selectMaxDate[0]?.date;
-        const latestPrice = await wbTransportRequisitionWaWbDetailsQueries.selectLatestPrice(wbTransportRequisitionWaWbDetailsWhereCluse)
-        if(latestPrice[0] != null) {
-            sortedAsc[0].latest_price = latestPrice[0].price
-            sortedAsc[0].latest_price_dollar = latestPrice[0].price_dollar
-        } else {
-            sortedAsc[0].latest_price = 0
-            sortedAsc[0].latest_price_dollar = 0
+            .where({
+                [`${wbTableName}.industry_id`]: manufacturerId,
+                [`${wbTransportWaWbDetailsTableName}.yarn_id`]: yarnId,
+                [`${wbTransportWaWbDetailsTableName}.consigment_yarn_id`]: consigmentYarnId,
+            })
+            .andWhereRaw(`CAST(${wbTransportWaWbDetailsTableName}.price AS DECIMAL(12,3)) > 0`),
+        knex(wbTransitionBetweenIndustriesRequisitionTableName)
+            .max({ date: 'date' })
+            .innerJoin(wbTransitionBetweenIndustriesRequisitionDetailsTableName,
+                `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.wb_transition_between_industries_requisition_id`,
+                `${wbTransitionBetweenIndustriesRequisitionTableName}.id`)
+            .innerJoin(wbTableName,
+                `${wbTableName}.wb_transition_between_industries_requisition_details_id`,
+                `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.id`)
+            .where({
+                [`${wbTableName}.industry_id`]: manufacturerId,
+                [`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.yarn_id`]: yarnId,
+                [`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.is_deleted`]: 0,
+                [`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.is_active`]: 1,
+            })
+            .andWhereRaw(`CAST(${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price AS DECIMAL(12,3)) > 0`),
+    ])
+
+    if (sortedAsc[0] != null) {
+        const dateCandidates = [
+            { date: selectMaxDateWaWb[0]?.date, source: 'wa_wb' },
+            { date: selectMaxDateTransitionTo[0]?.date, source: 'transition_to' },
+        ].filter(c => c.date != null)
+         .sort((a, b) => moment(b.date) - moment(a.date));
+
+        let priceResolved = false;
+        for (const candidate of dateCandidates) {
+            let latestPrice;
+            if (candidate.source === 'wa_wb') {
+                let whereCluse = {};
+                whereCluse[`${wbTableName}.industry_id`] = manufacturerId;
+                whereCluse[`${wbTransportWaWbDetailsTableName}.yarn_id`] = yarnId;
+                whereCluse[`${wbTransportWaWbDetailsTableName}.consigment_yarn_id`] = consigmentYarnId;
+                whereCluse[`${wbTransportWaWbTableName}.date`] = candidate.date;
+                latestPrice = await wbTransportRequisitionWaWbDetailsQueries.selectLatestPrice(whereCluse);
+            } else if (candidate.source === 'transition_to') {
+                let whereCluse = {};
+                whereCluse[`${wbTableName}.industry_id`] = manufacturerId;
+                whereCluse[`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.yarn_id`] = yarnId;
+                whereCluse[`${wbTransitionBetweenIndustriesRequisitionTableName}.date`] = candidate.date;
+                whereCluse[`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.is_deleted`] = 0;
+                whereCluse[`${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.is_active`] = 1;
+                latestPrice = await wbTransitionBetweenIndustriesRequisitionDetailsQueries.selectLatestPrice(whereCluse);
+            }
+            if (latestPrice?.[0]?.price && latestPrice[0].price != 0) {
+                sortedAsc[0].latest_price = latestPrice[0].price;
+                sortedAsc[0].latest_price_dollar = latestPrice[0]?.price_dollar ?? 0;
+                priceResolved = true;
+                break;
+            }
         }
-    } else {
-        sortedAsc[0].latest_price = 0
-        sortedAsc[0].latest_price_dollar = 0
+        if (!priceResolved) {
+            sortedAsc[0].latest_price = 0;
+            sortedAsc[0].latest_price_dollar = 0;
+        }
     }
     return sortedAsc;
 };

@@ -3,7 +3,7 @@ const sqlFun = require("../../config/sql-fun");
 // Util
 const wdTransportWcWdDetailsWcTableName = require("../../../util/database-tables-name").wdTransportWcWdDetailsWcTableName;
 
-exports.insert = async (wdTransportWcWdDetailsWc, items) => {
+exports.insert = async (wdTransportWcWdDetailsWc, items, trx = null) => {
     let queryResults = false;
     await sqlFun
       .insert(wdTransportWcWdDetailsWcTableName, {
@@ -12,7 +12,7 @@ exports.insert = async (wdTransportWcWdDetailsWc, items) => {
         quantity: items.updatedQuantity,
         creator_id: wdTransportWcWdDetailsWc.personid,
         ip_address: wdTransportWcWdDetailsWc.ipaddress,
-      })
+      }, trx)
       .then((data) => {
         queryResults = true;
       })

@@ -200,12 +200,15 @@ exports.selectByCategoryAndDeyingByDyedFabricByFabricOrder = async (deyingId, co
     .innerJoin(`${anointedColorsPricesTableName}`, 
     `${anointedColorsPricesTableName}.color_id`, 
     `${colorTableName}.id`)
-    .whereIn(`${colorTableName}.id`, function () {
-      this.select(`${weDyedFabricOrderRequisitionDetailsTableName}.color_id`)
-        .from(`${weDyedFabricOrderRequisitionDetailsTableName}`)
-        .whereIn(`${weDyedFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`, fabricOrderId)
-        .andWhere(`${weDyedFabricOrderRequisitionDetailsTableName}.dyed_fabric_id`, dyedFabricId)
-    })
+    // -----------------// تم توقيفها بشكل مؤقت لامكانية النقل ل اي خامة 26-7-2026 -------------------
+    // .whereIn(`${colorTableName}.id`, function () {
+    //   this.select(`${weDyedFabricOrderRequisitionDetailsTableName}.color_id`)
+    //     .from(`${weDyedFabricOrderRequisitionDetailsTableName}`)
+    //     .whereIn(`${weDyedFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`, fabricOrderId)
+    //     .andWhere(`${weDyedFabricOrderRequisitionDetailsTableName}.dyed_fabric_id`, dyedFabricId)
+    // })
+    // -----------------// تم توقيفها بشكل مؤقت لامكانية النقل ل اي خامة 26-7-2026 -------------------
+    
     .where(whereCluse)
     .orderBy(`${colorTableName}.name`)
     .then((data) => {

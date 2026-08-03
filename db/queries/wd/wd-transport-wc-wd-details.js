@@ -13,7 +13,7 @@ const { wdTransportWcWdTableName, wdTransportWcWdDetailsTableName,
   ordersRequisitionsTableName} = require("../../../util/database-tables-name");
   const constantsPayloads = require("../../../util/constants-payloads");
 
-exports.insert = async (wdTransportWcWd, items) => {
+exports.insert = async (wdTransportWcWd, items, trx = null) => {
   let queryResults = false;
   await sqlFun
     .insert(wdTransportWcWdDetailsTableName, {
@@ -36,7 +36,7 @@ exports.insert = async (wdTransportWcWd, items) => {
       statement: items.statement ?? '',
       creator_id: wdTransportWcWd.personid,
       ip_address: wdTransportWcWd.ipaddress,
-    })
+    }, trx)
     .then((data) => {
       queryResults = true;
     })

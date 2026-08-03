@@ -371,39 +371,31 @@ exports.filterOrderFabricsArray = async (data) => {
  * @returns {Object} - نتيجة العملية
  */
 exports.mergeOrders = async (orderIds, parentOrderId) => {
+    const knex = require("../../db/config/connection").getConnection();
     try {
-        // التحقق من وجود الطلبية الأم
+        // التحقق من وجود الطلبية الأم (قبل الـ transaction)
         const parentOrderWhereCluse = {};
         parentOrderWhereCluse[`${wcFabricOrderRequisitionTableName}.id`] = parentOrderId;
         parentOrderWhereCluse[`${wcFabricOrderRequisitionTableName}.is_deleted`] = 0;
         parentOrderWhereCluse[`${wcFabricOrderRequisitionTableName}.is_active`] = 1;
-        
+
         const parentOrderResult = await wcFabricOrderRequisitionQueries.selectOne(parentOrderWhereCluse);
         if (!parentOrderResult || parentOrderResult.length === 0) {
             return { ...constants.itemNotFound, message: 'Parent order not found' };
         }
 
-        // الحصول على معلومات الطلبية الأم
         const parentOrder = parentOrderResult[0];
-        // دائماً نستخدم parentOrderId نفسه كـ parent key
-        // (لو استخدمنا parentOrder.parent_wc_fabric_order_requisition_id ممكن يكون مشير لـ parent قديم)
         const parentWcFabricOrderRequisitionId = parentOrderId;
         const parentOrdersRequisitionsId = parentOrder.orders_requisitions_id;
-
-        // الترتيب: الطلبية الأم (parent) أولاً، ثم باقي الطلبيات
         const sortedOrderIds = [parentOrderId, ...orderIds.filter(id => id !== parentOrderId)];
 
-        const knex = require("../../db/config/connection").getConnection();
-
-        // جلب جميع الـ children الموجودين مسبقاً لكل طلبية في المجموعة
-        // (أي طلبية كانت parent قبل هذا الدمج ولها children مدموجة تحتها)
+        // جلب الـ children الموجودين مسبقاً (قبل الـ transaction)
         const existingChildrenRows = await knex(wcFabricOrderRequisitionTableName)
             .select('id', 'parent_wc_fabric_order_requisition_id')
             .whereIn('parent_wc_fabric_order_requisition_id', sortedOrderIds)
-            .whereNotIn('id', sortedOrderIds) // استثناء الـ self-reference والطلبيات المحددة أصلاً
+            .whereNotIn('id', sortedOrderIds)
             .where({ is_deleted: 0, is_active: 1 });
 
-        // تجميع الـ children لكل parent في Map
         const childrenByParent = new Map();
         for (const row of existingChildrenRows) {
             const pid = row.parent_wc_fabric_order_requisition_id;
@@ -411,16 +403,13 @@ exports.mergeOrders = async (orderIds, parentOrderId) => {
             childrenByParent.get(pid).push(row.id);
         }
 
-        // بناء قائمة IDs مرتبة للأسماء:
-        // parent → children of parent → next order → children of next order → ...
+        // بناء الاسم المدموج (قبل الـ transaction)
         const orderedIdsForNames = [];
         for (const oid of sortedOrderIds) {
             orderedIdsForNames.push(oid);
-            const kids = childrenByParent.get(oid) || [];
-            orderedIdsForNames.push(...kids);
+            orderedIdsForNames.push(...(childrenByParent.get(oid) || []));
         }
 
-        // جلب أسماء جميع الطلبيات (المحددة + children) دفعة واحدة
         const allOrdersData = await knex(wcFabricOrderRequisitionTableName + ' as o')
             .select('o.id', 'o.number', 'or.name as original_name')
             .leftJoin('orders_requisitions as or', 'or.id', 'o.orders_requisitions_id')
@@ -428,8 +417,6 @@ exports.mergeOrders = async (orderIds, parentOrderId) => {
             .where({ 'o.is_deleted': 0, 'o.is_active': 1 });
 
         const ordersMap = new Map(allOrdersData.map(o => [o.id, o]));
-
-        // بناء الأسماء بالترتيب الصحيح
         const orderNames = orderedIdsForNames.map(oid => {
             const order = ordersMap.get(oid);
             if (!order) return null;
@@ -438,70 +425,51 @@ exports.mergeOrders = async (orderIds, parentOrderId) => {
                 : (order.number ? `طلبية #${order.number}` : `طلبية ${oid.substring(0, 8)}`);
         }).filter(name => name !== null);
 
-        // الاسم النهائي: اسم الأولى + الثانية + الثالثة ...
         const mergedName = orderNames.length > 0 ? orderNames.join(' + ') : 'Merged Order';
-
         console.log('Merged name:', mergedName);
 
-        // تحديث جميع الطلبيات المراد دمجها (المحددة + children القديمين)
-        for (let i = 0; i < orderIds.length; i++) {
-            const orderId = orderIds[i];
+        // تنفيذ جميع الكتابات داخل transaction
+        await knex.transaction(async (trx) => {
+            for (const orderId of orderIds) {
+                if (orderId === parentOrderId) continue;
 
-            // تخطي الطلبية الأم
-            if (orderId === parentOrderId) continue;
-
-            // تحديث الطلبية لتشير إلى parent
-            await wcFabricOrderRequisitionQueries.update({
-                parent_wc_fabric_order_requisition_id: parentWcFabricOrderRequisitionId,
-                parent_orders_requisitions_id: parentOrdersRequisitionsId,
-                is_parent: 0
-            }, { id: orderId, is_deleted: 0, is_active: 1 });
-
-            // تحديث تفاصيل الطلبية
-            await wcFabricOrderRequisitionDetailsQueries.update({
-                parent_wc_fabric_order_requisition_id: parentWcFabricOrderRequisitionId,
-                parent_orders_requisitions_id: parentOrdersRequisitionsId
-            }, { wc_fabric_order_requisition_id: orderId, is_deleted: 0, is_active: 1 });
-
-            // إذا كانت هذه الطلبية parent مسبقاً، نحدّث children القدام ليشيروا للـ parent الجديد
-            const existingKids = childrenByParent.get(orderId) || [];
-            for (const childId of existingKids) {
                 await wcFabricOrderRequisitionQueries.update({
                     parent_wc_fabric_order_requisition_id: parentWcFabricOrderRequisitionId,
                     parent_orders_requisitions_id: parentOrdersRequisitionsId,
                     is_parent: 0
-                }, { id: childId, is_deleted: 0, is_active: 1 });
+                }, { id: orderId, is_deleted: 0, is_active: 1 }, trx);
 
                 await wcFabricOrderRequisitionDetailsQueries.update({
                     parent_wc_fabric_order_requisition_id: parentWcFabricOrderRequisitionId,
                     parent_orders_requisitions_id: parentOrdersRequisitionsId
-                }, { wc_fabric_order_requisition_id: childId, is_deleted: 0, is_active: 1 });
+                }, { wc_fabric_order_requisition_id: orderId, is_deleted: 0, is_active: 1 }, trx);
 
-                console.log(`✅ تم تحديث child القديم: ${childId} → parent: ${parentWcFabricOrderRequisitionId}`);
+                const existingKids = childrenByParent.get(orderId) || [];
+                for (const childId of existingKids) {
+                    await wcFabricOrderRequisitionQueries.update({
+                        parent_wc_fabric_order_requisition_id: parentWcFabricOrderRequisitionId,
+                        parent_orders_requisitions_id: parentOrdersRequisitionsId,
+                        is_parent: 0
+                    }, { id: childId, is_deleted: 0, is_active: 1 }, trx);
+
+                    await wcFabricOrderRequisitionDetailsQueries.update({
+                        parent_wc_fabric_order_requisition_id: parentWcFabricOrderRequisitionId,
+                        parent_orders_requisitions_id: parentOrdersRequisitionsId
+                    }, { wc_fabric_order_requisition_id: childId, is_deleted: 0, is_active: 1 }, trx);
+                }
             }
-        }
 
-        // تحديث اسم الطلبية الأم بالأسماء المدموجة وتعيين is_parent = 1
-        const updateParentWhereCluse = {
-            id: parentOrderId,
-            is_deleted: 0,
-            is_active: 1
-        };
-        
-        await wcFabricOrderRequisitionQueries.update({
-            name: mergedName,
-            is_parent: 1,  // الطلبية الأم تصبح parent
-            parent_wc_fabric_order_requisition_id: parentOrderId,  // دائماً parent لنفسها
-            parent_orders_requisitions_id: parentOrdersRequisitionsId
-        }, updateParentWhereCluse);
-        
-        console.log('✅ تم تحديث الطلبية الأم:', {
-            id: parentOrderId,
-            name: mergedName,
-            is_parent: 1
+            await wcFabricOrderRequisitionQueries.update({
+                name: mergedName,
+                is_parent: 1,
+                parent_wc_fabric_order_requisition_id: parentOrderId,
+                parent_orders_requisitions_id: parentOrdersRequisitionsId
+            }, { id: parentOrderId, is_deleted: 0, is_active: 1 }, trx);
         });
 
-        return { 
+        console.log('✅ تم تحديث الطلبية الأم:', { id: parentOrderId, name: mergedName, is_parent: 1 });
+
+        return {
             status: 1,
             message: `تم دمج ${orderIds.length} طلبيات بنجاح تحت الطلبية الأم`,
             parentOrderId: parentWcFabricOrderRequisitionId,
@@ -522,122 +490,94 @@ exports.mergeOrders = async (orderIds, parentOrderId) => {
  */
 exports.detachOrder = async (orderId) => {
     const knex = require('../../db/config/connection').getConnection();
-    
+
     try {
-        console.log('🔓 بدء عملية فصل الطلبية:', orderId);
-        
-        // جلب معلومات الطلبية الأم
+        // جلب معلومات الطلبية (قبل الـ transaction)
         const orderResult = await knex(wcFabricOrderRequisitionTableName)
             .select('id', 'orders_requisitions_id', 'parent_wc_fabric_order_requisition_id', 'number')
             .where({ id: orderId, is_deleted: 0, is_active: 1 })
             .limit(1);
-        
+
         if (!orderResult || orderResult.length === 0) {
-            console.log('❌ الطلبية غير موجودة:', orderId);
             return constants.itemNotFound;
         }
 
         const order = orderResult[0];
-        console.log('📋 معلومات الطلبية:', order);
 
-        // جلب جميع الطلبيات المدموجة تحت هذا الـ parent (بما فيها الـ parent نفسه)
-        // كل طلبية parent_wc_fabric_order_requisition_id = orderId
         const allOrders = await knex(wcFabricOrderRequisitionTableName + ' as o')
-            .select(
-                'o.id',
-                'o.orders_requisitions_id',
-                'o.number',
-                'or.name as original_name'
-            )
+            .select('o.id', 'o.orders_requisitions_id', 'o.number', 'or.name as original_name')
             .leftJoin('orders_requisitions as or', 'or.id', 'o.orders_requisitions_id')
-            .where({
-                'o.parent_wc_fabric_order_requisition_id': orderId,
-                'o.is_deleted': 0,
-                'o.is_active': 1
-            });
+            .where({ 'o.parent_wc_fabric_order_requisition_id': orderId, 'o.is_deleted': 0, 'o.is_active': 1 });
 
-        console.log(`📊 إجمالي الطلبيات للفصل (بما فيها الـ parent): ${allOrders.length}`);
-
-        // فصل كل طلبية: كل واحدة تصبح parent لنفسها
-        for (const o of allOrders) {
-            const oOrdersRequisitionsId = o.orders_requisitions_id;
-            const oOriginalName = (o.original_name && o.original_name.trim())
-                ? o.original_name.trim()
-                : `طلبية #${o.number}`;
-
-            // تحديث الطلبية: parent_id = id الخاص بها
-            await knex(wcFabricOrderRequisitionTableName)
-                .where({ id: o.id, is_deleted: 0, is_active: 1 })
-                .update({
-                    parent_wc_fabric_order_requisition_id: o.id,
-                    parent_orders_requisitions_id: oOrdersRequisitionsId,
-                    is_parent: 0,
-                    name: oOriginalName
-                });
-
-            console.log(`✅ فُصلت الطلبية: id=${o.id}, name=${oOriginalName}`);
-
-            // تحديث تفاصيل هذه الطلبية
-            const details = await knex(wcFabricOrderRequisitionDetailsTableName)
-                .select('id')
-                .where({
-                    wc_fabric_order_requisition_id: o.id,
-                    is_deleted: 0,
-                    is_active: 1
-                });
-
-            for (const detail of details) {
-                await wcFabricOrderRequisitionDetailsQueries.update({
-                    parent_wc_fabric_order_requisition_id: o.id,
-                    parent_wc_fabric_order_requisition_details_id: detail.id,
-                    parent_orders_requisitions_id: oOrdersRequisitionsId
-                }, { id: detail.id });
-            }
-        }
-
-        // حالة خاصة: لو كانت الطلبية نفسها child (parent_id ≠ id)
-        // نحدث اسم الـ parent القديم إذا تبقت له طلبيات
+        // جمع بيانات الـ parent القديم قبل الـ transaction
+        let oldParentId = null;
+        let remainingOrders = null;
+        let oldParentData = null;
         if (order.parent_wc_fabric_order_requisition_id &&
             order.parent_wc_fabric_order_requisition_id !== orderId) {
 
-            const oldParentId = order.parent_wc_fabric_order_requisition_id;
-            const remaining = await knex(wcFabricOrderRequisitionTableName + ' as rc')
+            oldParentId = order.parent_wc_fabric_order_requisition_id;
+            remainingOrders = await knex(wcFabricOrderRequisitionTableName + ' as rc')
                 .select('rc.id', 'rc.number', 'or4.name as original_name')
                 .leftJoin('orders_requisitions as or4', 'or4.id', 'rc.orders_requisitions_id')
-                .where({
-                    'rc.parent_wc_fabric_order_requisition_id': oldParentId,
-                    'rc.is_deleted': 0,
-                    'rc.is_active': 1
-                })
+                .where({ 'rc.parent_wc_fabric_order_requisition_id': oldParentId, 'rc.is_deleted': 0, 'rc.is_active': 1 })
                 .whereNot('rc.id', orderId)
                 .orderBy('rc.created_at', 'asc');
 
-            if (remaining.length > 0) {
-                const newParentName = remaining.map(c =>
-                    (c.original_name && c.original_name.trim()) ? c.original_name.trim() : `طلبية #${c.number}`
-                ).join(' + ');
-                await wcFabricOrderRequisitionQueries.update({ name: newParentName }, { id: oldParentId });
-                console.log('✅ تم تحديث اسم الـ parent القديم:', newParentName);
-            } else {
-                const oldParentData = await knex(wcFabricOrderRequisitionTableName + ' as po')
+            if (remainingOrders.length === 0) {
+                oldParentData = await knex(wcFabricOrderRequisitionTableName + ' as po')
                     .select('po.number', 'or5.name as original_name')
                     .leftJoin('orders_requisitions as or5', 'or5.id', 'po.orders_requisitions_id')
                     .where({ 'po.id': oldParentId })
                     .limit(1);
-                if (oldParentData && oldParentData.length > 0) {
-                    const parentOriginalName = (oldParentData[0].original_name && oldParentData[0].original_name.trim())
-                        ? oldParentData[0].original_name.trim()
-                        : `طلبية #${oldParentData[0].number}`;
-                    await wcFabricOrderRequisitionQueries.update({
-                        name: parentOriginalName,
-                        is_parent: 0
-                    }, { id: oldParentId });
-                    console.log('✅ تم إرجاع اسم الـ parent القديم:', parentOriginalName);
-                }
             }
         }
 
-        console.log('🎉 تمت عملية الفصل بنجاح');
+        // تنفيذ جميع الكتابات داخل transaction
+        await knex.transaction(async (trx) => {
+            for (const o of allOrders) {
+                const oOrdersRequisitionsId = o.orders_requisitions_id;
+                const oOriginalName = (o.original_name && o.original_name.trim())
+                    ? o.original_name.trim()
+                    : `طلبية #${o.number}`;
+
+                await trx(wcFabricOrderRequisitionTableName)
+                    .where({ id: o.id, is_deleted: 0, is_active: 1 })
+                    .update({
+                        parent_wc_fabric_order_requisition_id: o.id,
+                        parent_orders_requisitions_id: oOrdersRequisitionsId,
+                        is_parent: 0,
+                        name: oOriginalName
+                    });
+
+                const details = await trx(wcFabricOrderRequisitionDetailsTableName)
+                    .select('id')
+                    .where({ wc_fabric_order_requisition_id: o.id, is_deleted: 0, is_active: 1 });
+
+                for (const detail of details) {
+                    await wcFabricOrderRequisitionDetailsQueries.update({
+                        parent_wc_fabric_order_requisition_id: o.id,
+                        parent_wc_fabric_order_requisition_details_id: detail.id,
+                        parent_orders_requisitions_id: oOrdersRequisitionsId
+                    }, { id: detail.id }, trx);
+                }
+            }
+
+            if (oldParentId) {
+                if (remainingOrders && remainingOrders.length > 0) {
+                    const newParentName = remainingOrders.map(c =>
+                        (c.original_name && c.original_name.trim()) ? c.original_name.trim() : `طلبية #${c.number}`
+                    ).join(' + ');
+                    await wcFabricOrderRequisitionQueries.update({ name: newParentName }, { id: oldParentId }, trx);
+                } else if (oldParentData && oldParentData.length > 0) {
+                    const parentOriginalName = (oldParentData[0].original_name && oldParentData[0].original_name.trim())
+                        ? oldParentData[0].original_name.trim()
+                        : `طلبية #${oldParentData[0].number}`;
+                    await wcFabricOrderRequisitionQueries.update({ name: parentOriginalName, is_parent: 0 }, { id: oldParentId }, trx);
+                }
+            }
+        });
+
         return { status: 1, message: 'تم فصل جميع الطلبيات بنجاح' };
 
     } catch (error) {

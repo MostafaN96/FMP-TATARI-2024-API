@@ -521,6 +521,18 @@ exports.selectManufacturingRequisitionsForTransportWaWb = async (wbId) => {
     return requisitions
 };
 
+exports.selectManufacturingRequisitionsForTransportWaWbForReportWa = async (wbId) => {
+    let callArray = []
+
+    let whereCluse = {};
+    whereCluse[`${wbManufacturingInputWbTableName}.wb_id`] = wbId;
+    callArray.push(wbManufacturingInputWbQueries.selectManufacturingRequisitionsForTransportWaWbForReportWa(whereCluse))
+
+    let requisitions = await Promise.all(callArray)    
+    requisitions = [...new Set([].concat(...requisitions.map((o) => o)))]   
+    return requisitions
+};
+
 exports.updateFabricToBeManufactured = async (wb) => {
 
     // Check is found

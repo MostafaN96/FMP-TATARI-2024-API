@@ -361,6 +361,8 @@ exports.selectStoredFabricsWc = async (whereCluse, wcWhereCluse, warehouseId, fa
   return queryResults
 }
 
+
+// تم توقيفها بشكل مؤقت لامكانية النقل ل اي خامة 26-7-2026
 exports.selectByWarehouseWcForTransitionBetweenOrder = async (whereCluse, wcWhereCluse, warehouseId, fabricOrderIds, toFabricOrderIds) => {
   let queryResults = []
 
@@ -381,11 +383,12 @@ exports.selectByWarehouseWcForTransitionBetweenOrder = async (whereCluse, wcWher
             `${wcAddRequisitionDetailsTableName}.id`)
         .where(`${wcTableName}.current_quantity`, ">", "0")
         .andWhere(wcWhereCluse)
-        .whereIn(`${fabricTableName}.id`, function () {
-          this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
-          .from(`${wcFabricOrderRequisitionDetailsTableName}`)
-          .whereIn(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, toFabricOrderIds)
-        })
+        // تم توقيفها بشكل مؤقت لامكانية النقل ل اي خامة 26-7-2026
+        // .whereIn(`${fabricTableName}.id`, function () {
+        //   this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
+        //   .from(`${wcFabricOrderRequisitionDetailsTableName}`)
+        //   .whereIn(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, toFabricOrderIds)
+        // })
     })
     .orWhereIn(`${fabricTableName}.id`, function () {
       this.select(`${wcReconciliationRequisitionDetailsTableName}.fabric_id as id`)
@@ -401,11 +404,12 @@ exports.selectByWarehouseWcForTransitionBetweenOrder = async (whereCluse, wcWher
           `${wcReconciliationRequisitionDetailsWcTableName}.wc_id`)
         .where(`${wcTableName}.current_quantity`, ">", "0")
         .andWhere(wcWhereCluse)
-        .whereIn(`${fabricTableName}.id`, function () {
-          this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
-          .from(`${wcFabricOrderRequisitionDetailsTableName}`)
-          .whereIn(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, toFabricOrderIds)
-        })
+        // تم توقيفها بشكل مؤقت لامكانية النقل ل اي خامة 26-7-2026
+        // .whereIn(`${fabricTableName}.id`, function () {
+        //   this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
+        //   .from(`${wcFabricOrderRequisitionDetailsTableName}`)
+        //   .whereIn(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, toFabricOrderIds)
+        // })
     })
     .orWhereIn(`${fabricTableName}.id`, function () {
       this.select(`${wdTransportRequisitionWdWcDetailsTableName}.fabric_id as id`)
@@ -418,11 +422,12 @@ exports.selectByWarehouseWcForTransitionBetweenOrder = async (whereCluse, wcWher
           `${wdTransportRequisitionWdWcDetailsTableName}.id`)
         .where(`${wcTableName}.current_quantity`, ">", "0")
         .andWhere(wcWhereCluse)
-        .whereIn(`${fabricTableName}.id`, function () {
-          this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
-          .from(`${wcFabricOrderRequisitionDetailsTableName}`)
-          .whereIn(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, toFabricOrderIds)
-        })
+        // تم توقيفها بشكل مؤقت لامكانية النقل ل اي خامة 26-7-2026
+        // .whereIn(`${fabricTableName}.id`, function () {
+        //   this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
+        //   .from(`${wcFabricOrderRequisitionDetailsTableName}`)
+        //   .whereIn(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, toFabricOrderIds)
+        // })
     })
     .orWhereIn(`${fabricTableName}.id`, function () {
       this.select(`${wbManufacturingOutputTableName}.fabric_id as id`)
@@ -432,11 +437,12 @@ exports.selectByWarehouseWcForTransitionBetweenOrder = async (whereCluse, wcWher
           `${wbManufacturingOutputTableName}.id`)
         .where(`${wcTableName}.current_quantity`, ">", "0")
         .andWhere(wcWhereCluse)
-        .whereIn(`${fabricTableName}.id`, function () {
-          this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
-          .from(`${wcFabricOrderRequisitionDetailsTableName}`)
-          .whereIn(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, toFabricOrderIds)
-        })
+        // تم توقيفها بشكل مؤقت لامكانية النقل ل اي خامة 26-7-2026
+        // .whereIn(`${fabricTableName}.id`, function () {
+        //   this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
+        //   .from(`${wcFabricOrderRequisitionDetailsTableName}`)
+        //   .whereIn(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, toFabricOrderIds)
+        // })
     })
     .orWhereIn(`${fabricTableName}.id`, function () {
       this.select(`${wcTransitionBetweenWHRequisitionDetailsTableName}.fabric_id as id`)
@@ -450,11 +456,12 @@ exports.selectByWarehouseWcForTransitionBetweenOrder = async (whereCluse, wcWher
         .where(`${wcTableName}.current_quantity`, ">", "0")
         .andWhere(`${wcTransitionBetweenWHRequisitionTableName}.to_warehouse_id`, warehouseId)
         .andWhere(wcWhereCluse)
-        .whereIn(`${fabricTableName}.id`, function () {
-          this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
-          .from(`${wcFabricOrderRequisitionDetailsTableName}`)
-          .whereIn(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, toFabricOrderIds)
-        })
+        // تم توقيفها بشكل مؤقت لامكانية النقل ل اي خامة 26-7-2026
+        // .whereIn(`${fabricTableName}.id`, function () {
+        //   this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
+        //   .from(`${wcFabricOrderRequisitionDetailsTableName}`)
+        //   .whereIn(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, toFabricOrderIds)
+        // })
     })
     .orWhereIn(`${fabricTableName}.id`, function () {
       this.select(`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.fabric_id as id`)
@@ -468,11 +475,12 @@ exports.selectByWarehouseWcForTransitionBetweenOrder = async (whereCluse, wcWher
         .where(`${wcTableName}.current_quantity`, ">", "0")
         .andWhere(`${wcTransitionBetweenOrdersRequisitionDetailsTableName}.warehouse_id`, warehouseId)
         .andWhere(wcWhereCluse)
-        .whereIn(`${fabricTableName}.id`, function () {
-          this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
-          .from(`${wcFabricOrderRequisitionDetailsTableName}`)
-          .whereIn(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, toFabricOrderIds)
-        })
+        // تم توقيفها بشكل مؤقت لامكانية النقل ل اي خامة 26-7-2026
+        // .whereIn(`${fabricTableName}.id`, function () {
+        //   this.select(`${wcFabricOrderRequisitionDetailsTableName}.fabric_id as id`)
+        //   .from(`${wcFabricOrderRequisitionDetailsTableName}`)
+        //   .whereIn(`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`, toFabricOrderIds)
+        // })
     })
     .andWhere(whereCluse)
     .groupBy(`${fabricTableName}.id`)

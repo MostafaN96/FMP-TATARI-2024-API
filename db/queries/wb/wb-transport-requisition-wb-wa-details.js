@@ -708,6 +708,7 @@ exports.selectPriceByYarnId = async (yarnId, consigmentYarnId) => {
   await knex.from(wbTransportRequisitionWbWaDetailsTableName)
     .select(
       [
+        `${wbTransportRequisitionWbWaDetailsTableName}.id`,
         `${wbTransportRequisitionWbWaDetailsTableName}.price`,
         `${wbTransportRequisitionWbWaDetailsTableName}.price_dollar`,
         `${wbTransportRequisitionWbWaDetailsTableName}.quantity`,
@@ -726,6 +727,25 @@ exports.selectPriceByYarnId = async (yarnId, consigmentYarnId) => {
   return queryResults;
 };
 
+exports.selectLatestPrice = async (whereCluse) => {
+  let queryResults = [];
+  await knex.from(wbTransportRequisitionWbWaDetailsTableName)
+    .select([
+      `${wbTransportRequisitionWbWaDetailsTableName}.price`,
+      `${wbTransportRequisitionWbWaDetailsTableName}.price_dollar`,
+    ])
+    .innerJoin(
+      `${wbTransportRequisitionWbWaTableName}`,
+      `${wbTransportRequisitionWbWaTableName}.id`,
+      `${wbTransportRequisitionWbWaDetailsTableName}.wb_transport_requisition_wb_wa_id`
+    )
+    .where(whereCluse)
+    .andWhereRaw(`CAST(${wbTransportRequisitionWbWaDetailsTableName}.price AS DECIMAL(12,3)) > 0`)
+    .limit(1)
+    .then((data) => { queryResults = data; })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
 
 exports.selectTotalDetailsByDate = async (bodyPalod) => {
   let queryResults = [];

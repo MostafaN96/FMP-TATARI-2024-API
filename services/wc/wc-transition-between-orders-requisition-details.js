@@ -5,6 +5,11 @@ const wcTransitionBetweenOrdersRequisitionQueries = require("../../db/queries/wc
 const wcQueries = require("../../db/queries/wc/wc");
 const consigmentManufacturingQueries = require("../../db/queries/general/consigment-manufacturing");
 
+// -----------------// تم توقيفها بشكل مؤقت لامكانية النقل ل اي خامة 26-7-2026 -------------------
+const wcFabricOrderRequisitionDetailsQueries = require("../../db/queries/wc/wc-fabric-order-requisition-details");
+const dyedFabricQueries = require("../../db/queries/general/dyed-fabric");
+//--------------------------------------------------------------
+
 // Services
 const wcTransitionBetweenOrdersRequisitionDetailsWcService = require("./wc-transition-between-orders-requisition-details-wc");
 const wcService = require("./wc");
@@ -20,7 +25,8 @@ const knex = require("../../db/config/connection").getConnection();
 const { wcTransitionBetweenOrdersRequisitionDetailsTableName,
     wcTransitionBetweenOrdersRequisitionDetailsWcTableName,
     wcFabricOrderRequisitionDetailsTableName,
-    wcFabricOrderRequisitionTableName
+    wcFabricOrderRequisitionTableName,
+    weDyedFabricOrderRequisitionDetailsTableName
 } = require("../../util/database-tables-name");
 
 const getMergedOrderIds = async (parentOrderId) => {
@@ -61,6 +67,11 @@ exports.create = async (wcTransitionBetweenOrdersRequisitionDetails) => {
         const toOrderIdsToSearch = await getMergedOrderIds(
             wcTransitionBetweenOrdersRequisitionDetails.fabricOrderId
         );
+
+        // -----------------// تم توقيفها بشكل مؤقت لامكانية النقل ل اي خامة 26-7-2026 -------------------
+        // Get fabric order requisitions details id for destination order
+        await AddWcAndFabricOrderForTransitionBetweenOrders(toOrderIdsToSearch, wcTransitionBetweenOrdersRequisitionDetails, i);
+        // ------------------------------------------------------------------------------------ //
 
         // Get fabric order requisitions details id for destination order
         let fabricOrderRequisitionDetailsWhereCluse = {};
@@ -551,3 +562,31 @@ exports.update = async (wcTransitionBetweenOrdersRequisitionDetails) => {
         return constants.itemNotFound;
     }
 };
+
+async function AddWcAndFabricOrderForTransitionBetweenOrders(toOrderIdsToSearch, wcTransitionBetweenOrdersRequisitionDetails, i) {
+
+    // Get fabric order requisitions details id for destination order
+    let fabricOrderRequisitionDetailsWhereCluse = {};
+    fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = toOrderIdsToSearch;
+    fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.fabric_id`] = wcTransitionBetweenOrdersRequisitionDetails.items[i].fabricId;
+    fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+    fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+    const selectFabricOrderRequisitionDetailsResult = await wcFabricOrderRequisitionDetailsService.selectOne(fabricOrderRequisitionDetailsWhereCluse)
+    // console.log("wcTransitionBetweenOrdersRequisitionDetails.fabricOrderId :::: ", wcTransitionBetweenOrdersRequisitionDetails.fabricOrderId);
+    // console.log("wcTransitionBetweenOrdersRequisitionDetails.items[i].fabricId :::: ", wcTransitionBetweenOrdersRequisitionDetails.items[i].fabricId);
+    // console.log("selectFabricOrderRequisitionDetailsResult :::: ", selectFabricOrderRequisitionDetailsResult);
+
+    if (Array.isArray(selectFabricOrderRequisitionDetailsResult) && selectFabricOrderRequisitionDetailsResult.length > 0) {
+        return
+    }
+    let fabricOrderRequisitionDetailsWhereCluse2 = {};
+    fabricOrderRequisitionDetailsWhereCluse2[`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = toOrderIdsToSearch;
+    fabricOrderRequisitionDetailsWhereCluse2[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+    fabricOrderRequisitionDetailsWhereCluse2[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+    const selectFabricOrderRequisitionDetailsResult2 = await wcFabricOrderRequisitionDetailsService.selectOne(fabricOrderRequisitionDetailsWhereCluse2)
+    if (Array.isArray(selectFabricOrderRequisitionDetailsResult2) && selectFabricOrderRequisitionDetailsResult2.length > 0) {
+        await wcFabricOrderRequisitionDetailsQueries.insertForTransitionBetweenOrders(wcTransitionBetweenOrdersRequisitionDetails, wcTransitionBetweenOrdersRequisitionDetails.items[i], selectFabricOrderRequisitionDetailsResult2[0]);
+    }
+
+}
+

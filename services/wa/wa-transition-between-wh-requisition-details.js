@@ -42,10 +42,11 @@ exports.create = async (waTransitionBetweenWHRequisitionDetails) => {
 
             // Get wa_yarn_order_requisition_id supplier_id
             let waAddRequisitionDetailsYarnOrderWhereCluse = {};
-            waAddRequisitionDetailsYarnOrderWhereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.wa_yarn_order_requisition_id`] = waTransitionBetweenWHRequisitionDetails.items[i].yarnOrderId;
+            waAddRequisitionDetailsYarnOrderWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.id`] = waTransitionBetweenWHRequisitionDetails.items[i].waYarnOrderRequisitionDetailsId;
+            waAddRequisitionDetailsYarnOrderWhereCluse[`${waYarnOrderRequisitionDetailsTableName}.wa_yarn_order_requisition_id`] = waTransitionBetweenWHRequisitionDetails.items[i].yarnOrderId;
             waAddRequisitionDetailsYarnOrderWhereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.is_deleted`] = 0;
             waAddRequisitionDetailsYarnOrderWhereCluse[`${waAddRequisitionDetailsYarnOrderTableName}.is_active`] = 1;
-            const selectWaAddRequisitionDetailsYarnOrderResult = await waYarnOrderRequisitionDetailsYarnOrderQueries.selectOne(waAddRequisitionDetailsYarnOrderWhereCluse)
+            const selectWaAddRequisitionDetailsYarnOrderResult = await waYarnOrderRequisitionDetailsYarnOrderQueries.selectForAdd(waAddRequisitionDetailsYarnOrderWhereCluse)
             if (Array.isArray(selectWaAddRequisitionDetailsYarnOrderResult) && selectWaAddRequisitionDetailsYarnOrderResult.length > 0) {
                 waTransitionBetweenWHRequisitionDetails.items[i].supplierId = selectWaAddRequisitionDetailsYarnOrderResult[0].supplier_id
                 waTransitionBetweenWHRequisitionDetails.items[i].waAddRequisitionId = selectWaAddRequisitionDetailsYarnOrderResult[0].wa_add_requisition_id

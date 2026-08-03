@@ -40,7 +40,7 @@ exports.insertForAdd = async (consigmentDyeing, items) => {
   return queryResults;
 };
 
-exports.insertForTransport = async (consigmentDyeing, items) => {
+exports.insertForTransport = async (consigmentDyeing, items, trx = null) => {
   let queryResults = false;
   await sqlFun
     .insert(consigmentDyeingTableName, {
@@ -48,7 +48,7 @@ exports.insertForTransport = async (consigmentDyeing, items) => {
       number: items.consigmentDyeingNumber,
       creator_id: consigmentDyeing.personid,
       ip_address: consigmentDyeing.ipaddress
-    })
+    }, trx)
     .then((data) => {
       queryResults = true;
     })

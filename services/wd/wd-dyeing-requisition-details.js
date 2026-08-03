@@ -31,8 +31,14 @@ exports.create = async (wdDyeingRequisitionDetails) => {
         wdDyeingRequisitionDetails.items[i].wdDyeingRequisitionDetailsId = trans.transform();
         wdDyeingRequisitionDetails.items[i].weId = trans.transform();
 
+
         // Get the WE dyed fabric order detail from the selected ready order first.
         const selectedReadyOrderId = wdDyeingRequisitionDetails.items[i].dyedFabricOrderRequisitionId || wdDyeingRequisitionDetails.items[i].dyedFabricOrderId;
+
+        // -----------------// تم توقيفها بشكل مؤقت لامكانية النقل ل اي خامة 26-7-2026 -------------------
+        // Get fabric order requisitions details id for destination order
+        await AddWeDyedFabricOrderForDyeingRequisition(selectedReadyOrderId, wdDyeingRequisitionDetails, i);
+        // ------------------------------------------------------------------------------------ //
 
         let weDyedFabricOrderRequisitionDetailsWhereCluse = {};
         weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
@@ -465,4 +471,32 @@ exports.getTotalCost = async (price, quantity, services, dyeingFee, fabricPiece,
     console.log(sum);
     
     return sum
+}
+
+
+async function AddWeDyedFabricOrderForDyeingRequisition(toOrderIdsToSearch, wdDyeingRequisitionDetails, i) {
+
+    // Get fabric order requisitions details id for destination order
+    let weDyedFabricOrderRequisitionDetailsWhereCluse = {};
+    weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`] = toOrderIdsToSearch;
+    weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.dyed_fabric_id`] = wdDyeingRequisitionDetails.items[i].dyedFabricId;
+    weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+    weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+    const selectWeDyedFabricOrderRequisitionDetailsResult = await weDyedFabricOrderRequisitionDetailsQueries.selectByRequisitionId(weDyedFabricOrderRequisitionDetailsWhereCluse)
+    console.log("selectWeDyedFabricOrderRequisitionDetailsResult ::: ", selectWeDyedFabricOrderRequisitionDetailsResult);
+
+    if (Array.isArray(selectWeDyedFabricOrderRequisitionDetailsResult) && selectWeDyedFabricOrderRequisitionDetailsResult.length > 0) {
+        return
+    }
+    let weDyedFabricOrderRequisitionDetailsWhereCluse2 = {};
+    weDyedFabricOrderRequisitionDetailsWhereCluse2[`${weDyedFabricOrderRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`] = toOrderIdsToSearch;
+    weDyedFabricOrderRequisitionDetailsWhereCluse2[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+    weDyedFabricOrderRequisitionDetailsWhereCluse2[`${weDyedFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+    const selectWeDyedFabricOrderRequisitionDetailsResult2 = await weDyedFabricOrderRequisitionDetailsQueries.selectByRequisitionId(weDyedFabricOrderRequisitionDetailsWhereCluse2)
+    console.log("selectWeDyedFabricOrderRequisitionDetailsResult2 ::: ", selectWeDyedFabricOrderRequisitionDetailsResult2);
+    
+    if (Array.isArray(selectWeDyedFabricOrderRequisitionDetailsResult2) && selectWeDyedFabricOrderRequisitionDetailsResult2.length > 0) {
+        await weDyedFabricOrderRequisitionDetailsQueries.insertForDyeing(wdDyeingRequisitionDetails, wdDyeingRequisitionDetails.items[i], selectWeDyedFabricOrderRequisitionDetailsResult2[0]);
+    }
+
 }

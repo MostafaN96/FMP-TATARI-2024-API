@@ -26,28 +26,35 @@ const {
 } = require("../../util/database-tables-name");
 
 exports.create = async (wdTransportWcWdRequisitionDetails) => {
-    for (let i = 0; i < wdTransportWcWdRequisitionDetails.items.length; i++) {
-        wdTransportWcWdRequisitionDetails.items[i].wdTransportWcWdDetailsId = trans.transform();
-        wdTransportWcWdRequisitionDetails.items[i].wdId = trans.transform();
 
-        // Check Consigment Dyeing Dupplication
-        const selectConsigmentDyeingOneResult = await consigmentDyeingQueries.selectOne({ number: wdTransportWcWdRequisitionDetails.items[i].consigmentDyeingNumber })
+    // Phase 1: All reads — validate each item and build a consumption plan (no writes yet)
+    const itemPlans = [];
+
+    for (let i = 0; i < wdTransportWcWdRequisitionDetails.items.length; i++) {
+        const item = wdTransportWcWdRequisitionDetails.items[i];
+        item.wdTransportWcWdDetailsId = trans.transform();
+        item.wdId = trans.transform();
+
+        // Check consigment dyeing duplication
+        const selectConsigmentDyeingOneResult = await consigmentDyeingQueries.selectOne({ number: item.consigmentDyeingNumber });
+        let isNewConsigment = false;
         if (selectConsigmentDyeingOneResult[0] != null) {
-            wdTransportWcWdRequisitionDetails.items[i].consigmentDyeingId = selectConsigmentDyeingOneResult[0].id;
+            item.consigmentDyeingId = selectConsigmentDyeingOneResult[0].id;
         } else {
-            wdTransportWcWdRequisitionDetails.items[i].consigmentDyeingId = trans.transform();
-            await consigmentDyeingQueries.insertForTransport(wdTransportWcWdRequisitionDetails, wdTransportWcWdRequisitionDetails.items[i]);
+            item.consigmentDyeingId = trans.transform();
+            isNewConsigment = true;
         }
-        
+
         // Resolve parent/child orders to include all merged orders
         const parentResult = await knex(wcFabricOrderRequisitionTableName)
           .select("id", "parent_wc_fabric_order_requisition_id")
-          .where({ id: wdTransportWcWdRequisitionDetails.items[i].fabricOrderId, is_deleted: 0, is_active: 1 })
+          .where({ id: item.fabricOrderId, is_deleted: 0, is_active: 1 })
           .limit(1);
 
         const parentOrderId = parentResult && parentResult.length > 0
-          ? (parentResult[0].parent_wc_fabric_order_requisition_id || wdTransportWcWdRequisitionDetails.items[i].fabricOrderId)
-          : wdTransportWcWdRequisitionDetails.items[i].fabricOrderId;
+          ? (parentResult[0].parent_wc_fabric_order_requisition_id || item.fabricOrderId)
+          : item.fabricOrderId;
+        console.log("parentOrderId ::: ", parentOrderId);
 
         const mergedOrders = await knex(wcFabricOrderRequisitionTableName)
           .select("id")
@@ -58,18 +65,20 @@ exports.create = async (wdTransportWcWdRequisitionDetails) => {
           })
           .orderBy("date", "asc")
           .orderBy("number", "asc");
+        console.log("mergedOrders ::: ", mergedOrders);
 
-        const orderIdsToConsume = mergedOrders.length > 0
+        let orderIdsToConsume = mergedOrders.length > 0
           ? mergedOrders.map((order) => order.id)
           : [parentOrderId];
+        console.log("orderIdsToConsume ::: ", orderIdsToConsume);
 
-        // Get fabric order requisitions details id for one of the merged orders (first match)
+        // Get fabric order requisition details (first match across merged orders)
         let selectFabricOrderRequisitionDetailsResult = [];
         for (let orderIndex = 0; orderIndex < orderIdsToConsume.length; orderIndex++) {
             const currentOrderId = orderIdsToConsume[orderIndex];
             let fabricOrderRequisitionDetailsWhereCluse = {};
             fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = currentOrderId;
-            fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.fabric_id`] = wdTransportWcWdRequisitionDetails.items[i].fabricId;
+            fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.fabric_id`] = item.fabricId;
             fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
             fabricOrderRequisitionDetailsWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
             const result = await wcFabricOrderRequisitionDetailsService.selectOne(fabricOrderRequisitionDetailsWhereCluse);
@@ -78,108 +87,141 @@ exports.create = async (wdTransportWcWdRequisitionDetails) => {
                 break;
             }
         }
-        if (Array.isArray(selectFabricOrderRequisitionDetailsResult) && selectFabricOrderRequisitionDetailsResult.length > 0) {
-            wdTransportWcWdRequisitionDetails.items[i].wcFabricOrderRequisitionDetailsId = selectFabricOrderRequisitionDetailsResult[0].id
-            wdTransportWcWdRequisitionDetails.items[i].wcFabricOrderRequisitionId = selectFabricOrderRequisitionDetailsResult[0].wc_fabric_order_requisition_id
-            wdTransportWcWdRequisitionDetails.items[i].fabricOrderId = selectFabricOrderRequisitionDetailsResult[0].wc_fabric_order_requisition_id
-            wdTransportWcWdRequisitionDetails.items[i].ordersRequisitionsId = selectFabricOrderRequisitionDetailsResult[0].orders_requisitions_id
-            wdTransportWcWdRequisitionDetails.items[i].parentWcFabricOrderRequisitionDetailsId = selectFabricOrderRequisitionDetailsResult[0].parent_wc_fabric_order_requisition_details_id
-            wdTransportWcWdRequisitionDetails.items[i].parentWcFabricOrderRequisitionId = selectFabricOrderRequisitionDetailsResult[0].parent_wc_fabric_order_requisition_id
-            wdTransportWcWdRequisitionDetails.items[i].parentOrdersRequisitionsId = selectFabricOrderRequisitionDetailsResult[0].parent_orders_requisitions_id
-            if (!wdTransportWcWdRequisitionDetails.items[i].wcFabricOrderRequisitionId) {
-                return constants.itemNotFound;
-            }
 
-            // Verify composite key exists to avoid FK violation
-            const compositeCheckWhereCluse = {};
-            compositeCheckWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.id`] = wdTransportWcWdRequisitionDetails.items[i].wcFabricOrderRequisitionDetailsId;
-            compositeCheckWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = wdTransportWcWdRequisitionDetails.items[i].wcFabricOrderRequisitionId;
-            compositeCheckWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`] = wdTransportWcWdRequisitionDetails.items[i].ordersRequisitionsId;
-            compositeCheckWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
-            compositeCheckWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
-            const compositeCheckResult = await wcFabricOrderRequisitionDetailsService.selectOne(compositeCheckWhereCluse);
-            if (!Array.isArray(compositeCheckResult) || compositeCheckResult.length < 1) {
-                return constants.itemNotFound;
-            }
-
-        const results = await wdTransportWcWdDetailsQueries.insert(wdTransportWcWdRequisitionDetails, wdTransportWcWdRequisitionDetails.items[i]);
-        if (!results) {
-            return constants.insertError;
-        } else {
-            let newQuantity = parseFloat(wdTransportWcWdRequisitionDetails.items[i].quantity)
-
-            let foundStock = false;
-            const originalQuantity = newQuantity;
-
-            for (let orderIndex = 0; orderIndex < orderIdsToConsume.length; orderIndex++) {
-                const currentOrderId = orderIdsToConsume[orderIndex];
-                if (newQuantity == 0) {
-                    break;
-                }
-
-                const fabricsStoredInWcResult = await wcService.selectByFabricForSell(
-                    wdTransportWcWdRequisitionDetails.warehouseId,
-                    wdTransportWcWdRequisitionDetails.items[i].fabricId,
-                    wdTransportWcWdRequisitionDetails.items[i].consigmentManufacturingId,
-                    currentOrderId
-                );
-
-                if (fabricsStoredInWcResult[0] == null) {
-                    continue;
-                }
-
-                foundStock = true;
-
-                for (let j = 0; j < fabricsStoredInWcResult.length; j++) {
-                    const fabricStoredInWc = fabricsStoredInWcResult[j];
-                    let currentQuantity = fabricStoredInWc.current_quantity;
-                    let updatedQuantity = 0;
-
-                    // decrement Wc CurrentQuantity
-                    let returnedQuantityObj = await wcService.decrementWcCurrentQuantity(
-                        newQuantity,
-                        currentQuantity,
-                        fabricStoredInWc,
-                        updatedQuantity
-                    );
-                    newQuantity = returnedQuantityObj.newQuantity;
-                    updatedQuantity = returnedQuantityObj.updatedQuantity;
-                    wdTransportWcWdRequisitionDetails.items[i].wcId = fabricStoredInWc.id;
-                    wdTransportWcWdRequisitionDetails.items[i].updatedQuantity = updatedQuantity;
-
-                    // Add wdTransportWcWdRequisitionDetailsWc
-                    await wdTransportWcWdRequisitionDetailsWcService.create(
-                        wdTransportWcWdRequisitionDetails,
-                        wdTransportWcWdRequisitionDetails.items[i]
-                    );
-
-                    // update order quantity
-                    // await wcFabricOrderRequisitionDetailsService.updateForDecrementQuantity(selectFabricOrderRequisitionDetailsResult[0].id, updatedQuantity)
-
-                    // Enter to if condition when stock runs out
-                    if (newQuantity == 0) {
-                        break;
-                    }
-                }
-            }
-
-            if (!foundStock || newQuantity > 0) {
-                return {
-                    ...constants.wrongQuantity,
-                    spentQuantity: parseFloat((originalQuantity - newQuantity).toFixed(3)),
-                    newQuantity: newQuantity
-                };
-            }
-
-            // Insert WD
-            await wdQueries.insert(wdTransportWcWdRequisitionDetails, wdTransportWcWdRequisitionDetails.items[i]);
-
+        if (!Array.isArray(selectFabricOrderRequisitionDetailsResult) || selectFabricOrderRequisitionDetailsResult.length === 0) {
+            return constants.itemNotFound;
         }
-    } else {
+        console.log("selectFabricOrderRequisitionDetailsResult ::: ", selectFabricOrderRequisitionDetailsResult);
 
+        // Expand merged orders using the DETAILS parent if HEADER had no parent
+        const detailsParentId = selectFabricOrderRequisitionDetailsResult[0].parent_wc_fabric_order_requisition_id;
+        if (detailsParentId && detailsParentId !== parentOrderId) {
+            const reMergedOrders = await knex(wcFabricOrderRequisitionTableName)
+              .select("id")
+              .where({ is_deleted: 0, is_active: 1 })
+              .andWhere(function () {
+                this.where("id", detailsParentId)
+                  .orWhere("parent_wc_fabric_order_requisition_id", detailsParentId);
+              })
+              .orderBy("date", "asc")
+              .orderBy("number", "asc");
+            if (reMergedOrders.length > 0) {
+                const extraIds = reMergedOrders.map((order) => order.id);
+                orderIdsToConsume = [...new Set([...orderIdsToConsume, ...extraIds])];
+                console.log("orderIdsToConsume (merged with details parent) ::: ", orderIdsToConsume);
+            }
+        }
+
+        item.wcFabricOrderRequisitionDetailsId = selectFabricOrderRequisitionDetailsResult[0].id;
+        item.wcFabricOrderRequisitionId = selectFabricOrderRequisitionDetailsResult[0].wc_fabric_order_requisition_id;
+        item.fabricOrderId = selectFabricOrderRequisitionDetailsResult[0].wc_fabric_order_requisition_id;
+        item.ordersRequisitionsId = selectFabricOrderRequisitionDetailsResult[0].orders_requisitions_id;
+        if (detailsParentId && detailsParentId !== parentOrderId) {
+            // HEADER and DETAILS disagree on parent → trust HEADER (parentOrderId)
+            item.parentWcFabricOrderRequisitionId = parentOrderId;
+            // parentWcFabricOrderRequisitionDetailsId and parentOrdersRequisitionsId left undefined
+            // → insert will fallback to wcFabricOrderRequisitionDetailsId / ordersRequisitionsId (self)
+        } else {
+            item.parentWcFabricOrderRequisitionDetailsId = selectFabricOrderRequisitionDetailsResult[0].parent_wc_fabric_order_requisition_details_id;
+            item.parentWcFabricOrderRequisitionId = detailsParentId || parentOrderId;
+            item.parentOrdersRequisitionsId = selectFabricOrderRequisitionDetailsResult[0].parent_orders_requisitions_id;
+        }
+
+        if (!item.wcFabricOrderRequisitionId) {
+            return constants.itemNotFound;
+        }
+
+        // Verify composite key exists to avoid FK violation
+        const compositeCheckWhereCluse = {};
+        compositeCheckWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.id`] = item.wcFabricOrderRequisitionDetailsId;
+        compositeCheckWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`] = item.wcFabricOrderRequisitionId;
+        compositeCheckWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`] = item.ordersRequisitionsId;
+        compositeCheckWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
+        compositeCheckWhereCluse[`${wcFabricOrderRequisitionDetailsTableName}.is_active`] = 1;
+        const compositeCheckResult = await wcFabricOrderRequisitionDetailsService.selectOne(compositeCheckWhereCluse);
+        if (!Array.isArray(compositeCheckResult) || compositeCheckResult.length < 1) {
+            return constants.itemNotFound;
+        }
+
+        // Pre-scan stock: compute exactly which WC records to consume and how much
+        let scanQuantity = parseFloat(item.quantity);
+        let foundStock = false;
+        const originalQuantity = scanQuantity;
+        const consumptionPlan = [];
+
+        for (let orderIndex = 0; orderIndex < orderIdsToConsume.length; orderIndex++) {
+            if (scanQuantity == 0) break;
+            const currentOrderId = orderIdsToConsume[orderIndex];
+
+            const fabricsStoredInWcResult = await wcService.selectByFabricForSell(
+                wdTransportWcWdRequisitionDetails.warehouseId,
+                item.fabricId,
+                item.consigmentManufacturingId,
+                currentOrderId
+            );
+
+            if (fabricsStoredInWcResult[0] == null) continue;
+            foundStock = true;
+
+            for (let j = 0; j < fabricsStoredInWcResult.length; j++) {
+                if (scanQuantity == 0) break;
+                const wc = fabricsStoredInWcResult[j];
+                const wcCurrentQty = wc.current_quantity;
+                let consumeAmount, newWcQty;
+
+                if (scanQuantity >= wcCurrentQty) {
+                    consumeAmount = wcCurrentQty;
+                    newWcQty = 0;
+                    scanQuantity = parseFloat((scanQuantity - wcCurrentQty).toFixed(3));
+                } else {
+                    consumeAmount = scanQuantity;
+                    newWcQty = parseFloat((wcCurrentQty - scanQuantity).toFixed(3));
+                    scanQuantity = 0;
+                }
+
+                consumptionPlan.push({ wcRecord: wc, consumeAmount, newWcQty });
+            }
+        }
+
+        if (!foundStock || scanQuantity > 0) {
+            return {
+                ...constants.wrongQuantity,
+                spentQuantity: parseFloat((originalQuantity - scanQuantity).toFixed(3)),
+                newQuantity: scanQuantity
+            };
+        }
+
+        itemPlans.push({ item, isNewConsigment, consumptionPlan });
     }
+
+    // Phase 2: Transaction — all writes; rolls back everything if any step fails
+    try {
+        return await knex.transaction(async (trx) => {
+            for (const { item, isNewConsigment, consumptionPlan } of itemPlans) {
+
+                if (isNewConsigment) {
+                    await consigmentDyeingQueries.insertForTransport(wdTransportWcWdRequisitionDetails, item, trx);
+                }
+
+                const insertResult = await wdTransportWcWdDetailsQueries.insert(wdTransportWcWdRequisitionDetails, item, trx);
+                if (!insertResult) throw new Error('insert wd_transport_wc_wd_details failed');
+
+                for (const plan of consumptionPlan) {
+                    await wcQueries.update({ current_quantity: plan.newWcQty }, { id: plan.wcRecord.id }, trx);
+                    item.wcId = plan.wcRecord.id;
+                    item.updatedQuantity = plan.consumeAmount;
+                    await wdTransportWcWdRequisitionDetailsWcService.create(wdTransportWcWdRequisitionDetails, item, trx);
+                }
+
+                await wdQueries.insert(wdTransportWcWdRequisitionDetails, item, trx);
+            }
+
+            return { ...constants.insertSuccess, id: wdTransportWcWdRequisitionDetails.id };
+        });
+    } catch (err) {
+        console.error('[create] UNEXPECTED ERROR - rolling back:', err);
+        return constants.insertError;
     }
-    return { ...constants.insertSuccess, ...{ id: wdTransportWcWdRequisitionDetails.id } };
 };
 
 exports.selectByRequisitionId = async (requisitionId) => {

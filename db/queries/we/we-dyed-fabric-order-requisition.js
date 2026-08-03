@@ -145,6 +145,9 @@ exports.update = async (weDyedFabricOrderRequisition, whereCluse) => {
 
 exports.selectByWcFabricOrderIds = async (wcFabricOrderIds, dyedFabricId) => {
     let queryResults = [];
+    console.log("wcFabricOrderIds ::: ", wcFabricOrderIds);
+    console.log("dyedFabricId ::: ", dyedFabricId);
+
     const wcFabricOrderRequisitionTableName = 'wc_fabric_order_requisition';
 
     const query = knex(weDyedFabricOrderRequisitionTableName)
@@ -166,7 +169,7 @@ exports.selectByWcFabricOrderIds = async (wcFabricOrderIds, dyedFabricId) => {
             `${weDyedFabricOrderRequisitionDetailsTableName}.we_dyed_fabric_order_requisition_id`,
             `${weDyedFabricOrderRequisitionTableName}.id`
         )
-        .whereIn(`${wcFabricOrderRequisitionTableName}.parent_wc_fabric_order_requisition_id`, wcFabricOrderIds)
+        .whereIn(`${wcFabricOrderRequisitionTableName}.id`, wcFabricOrderIds)
         .where({
             [`${weDyedFabricOrderRequisitionTableName}.is_deleted`]: 0,
             [`${weDyedFabricOrderRequisitionTableName}.is_active`]: 1,
@@ -175,13 +178,16 @@ exports.selectByWcFabricOrderIds = async (wcFabricOrderIds, dyedFabricId) => {
             [`${weDyedFabricOrderRequisitionDetailsTableName}.is_order`]: 1
         });
 
-    if (dyedFabricId) {
-        query.andWhere(`${weDyedFabricOrderRequisitionDetailsTableName}.dyed_fabric_id`, dyedFabricId);
-    }
-
+    // -----------------// تم توقيفها بشكل مؤقت لامكانية النقل ل اي خامة 26-7-2026 -------------------
+    // if (dyedFabricId) {
+    //     query.andWhere(`${weDyedFabricOrderRequisitionDetailsTableName}.dyed_fabric_id`, dyedFabricId);
+    // }
+// -----------------// تم توقيفها بشكل مؤقت لامكانية النقل ل اي خامة 26-7-2026 -------------------
     await query
         .orderBy(`${weDyedFabricOrderRequisitionTableName}.date`, 'desc')
         .then((data) => {
+            console.log("data ::: ", data);
+            
             queryResults = data;
         })
         .catch((error) => console.error(error));

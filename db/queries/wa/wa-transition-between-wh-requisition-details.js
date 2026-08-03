@@ -198,13 +198,15 @@ exports.selectOne = async (whereCluse) => {
 exports.selectLatestPrice = async (whereCluse) => {
   let queryResults = false;
   await sqlFun
-    .selectWithJionWithLimit(waTransitionBetweenWHRequisitionDetailsTableName, 
-      ["wa_transition_between_wh_requisitions_details.id", "wa_transition_between_wh_requisitions_details.price"], 
+    .selectWithJionWithLimit(waTransitionBetweenWHRequisitionDetailsTableName,
+      ["wa_transition_between_wh_requisitions_details.id", "wa_transition_between_wh_requisitions_details.price", "wa_transition_between_wh_requisitions_details.price_dollar"],
       whereCluse,
-      waTransitionBetweenWHRequisitionTableName, 
-    `${waTransitionBetweenWHRequisitionTableName}.id`,
-     `${waTransitionBetweenWHRequisitionDetailsTableName}.wa_transition_between_wh_requisitions_id`,
-    1)
+      waTransitionBetweenWHRequisitionTableName,
+      `${waTransitionBetweenWHRequisitionTableName}.id`,
+      `${waTransitionBetweenWHRequisitionDetailsTableName}.wa_transition_between_wh_requisitions_id`,
+      1,
+      'CAST(wa_transition_between_wh_requisitions_details.price AS DECIMAL(12,3)) > 0'
+    )
     .then((data) => {
       queryResults = data;
     })
@@ -483,6 +485,7 @@ exports.selectFromWarehouseDetailsByWarehouseByYarnByLot = async (
   await knex.from(waTransitionBetweenWHRequisitionDetailsTableName)
     .select(
       [
+        `${waTransitionBetweenWHRequisitionDetailsTableName}.id`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
@@ -494,6 +497,9 @@ exports.selectFromWarehouseDetailsByWarehouseByYarnByLot = async (
     .innerJoin(`${waTransitionBetweenWHRequisitionTableName}`,
       `${waTransitionBetweenWHRequisitionTableName}.id`,
       `${waTransitionBetweenWHRequisitionDetailsTableName}.wa_transition_between_wh_requisitions_id`)
+      .innerJoin(`${warehouseTableName}`,
+      `${warehouseTableName}.id`,
+      `${waTransitionBetweenWHRequisitionDetailsTableName}.from_warehouse_id`)
     .where(whereCluse)
     .andWhere(`${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {
@@ -522,6 +528,7 @@ exports.selectToWarehouseDetailsByWarehouseByYarnByLot = async (
   await knex.from(waTransitionBetweenWHRequisitionDetailsTableName)
     .select(
       [
+        `${waTransitionBetweenWHRequisitionDetailsTableName}.id`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.price_dollar`,
         `${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`,
@@ -533,6 +540,9 @@ exports.selectToWarehouseDetailsByWarehouseByYarnByLot = async (
     .innerJoin(`${waTransitionBetweenWHRequisitionTableName}`,
       `${waTransitionBetweenWHRequisitionTableName}.id`,
       `${waTransitionBetweenWHRequisitionDetailsTableName}.wa_transition_between_wh_requisitions_id`)
+          .innerJoin(`${waTableName}`,
+      `${waTableName}.wa_transition_between_wh_requisitions_details_id`,
+      `${waTransitionBetweenWHRequisitionDetailsTableName}.id`)
     .where(whereCluse)
     .andWhere(`${waTransitionBetweenWHRequisitionDetailsTableName}.quantity`, ">", 0)
     .then((data) => {

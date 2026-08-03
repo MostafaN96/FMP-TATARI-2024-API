@@ -576,6 +576,31 @@ exports.selectToIndustryPriceByYarnIdByIndustryId = async (yarnId, manufacturerI
   return queryResults;
 };
 
+exports.selectLatestPrice = async (whereCluse) => {
+  let queryResults = [];
+  await knex.from(wbTransitionBetweenIndustriesRequisitionDetailsTableName)
+    .select([
+      `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price`,
+      `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price_dollar`,
+    ])
+    .innerJoin(
+      wbTransitionBetweenIndustriesRequisitionTableName,
+      `${wbTransitionBetweenIndustriesRequisitionTableName}.id`,
+      `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.wb_transition_between_industries_requisition_id`
+    )
+    .innerJoin(
+      wbTableName,
+      `${wbTableName}.wb_transition_between_industries_requisition_details_id`,
+      `${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.id`
+    )
+    .where(whereCluse)
+    .andWhereRaw(`CAST(${wbTransitionBetweenIndustriesRequisitionDetailsTableName}.price AS DECIMAL(12,3)) > 0`)
+    .limit(1)
+    .then((data) => { queryResults = data; })
+    .catch((error) => console.error(error));
+  return queryResults;
+};
+
 exports.selectFromIndustryTotalDetailsByDate = async (bodyPaylod) => {
   let queryResults = [];
 

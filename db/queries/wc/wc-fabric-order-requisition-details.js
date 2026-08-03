@@ -2,6 +2,9 @@
 const sqlFun = require("../../config/sql-fun");
 const knex = require("../../config/connection").getConnection();
 
+// Helper
+const trans = require("../../../helpers/transform");
+
 // Util
 const { wcFabricOrderRequisitionTableName, 
   wcFabricOrderRequisitionDetailsTableName, 
@@ -67,6 +70,42 @@ exports.insertForPurchaseOrder = async (wcFabricOrderRequisition, wcFabricOrderR
     });
   return queryResults;
 };
+
+      `${wcFabricOrderRequisitionDetailsTableName}.id`,
+      `${wcFabricOrderRequisitionDetailsTableName}.wc_fabric_order_requisition_id`,
+      `${wcFabricOrderRequisitionDetailsTableName}.orders_requisitions_id`,
+      `${wcFabricOrderRequisitionDetailsTableName}.parent_wc_fabric_order_requisition_details_id`,
+      `${wcFabricOrderRequisitionDetailsTableName}.parent_wc_fabric_order_requisition_id`,
+      `${wcFabricOrderRequisitionDetailsTableName}.parent_orders_requisitions_id`,
+// -----------------// تم توقيفها بشكل مؤقت لامكانية النقل ل اي خامة 26-7-2026 -------------------
+exports.insertForTransitionBetweenOrders = async (wcFabricOrderRequisition, wcFabricOrderRequisitionDetails, data) => {
+  let queryResults = false;
+  await sqlFun
+    .insert(wcFabricOrderRequisitionDetailsTableName, {
+      id: trans.transform(),
+      parent_wc_fabric_order_requisition_details_id: data.parent_wc_fabric_order_requisition_details_id,
+      parent_wc_fabric_order_requisition_id: data.parent_wc_fabric_order_requisition_id,
+      parent_orders_requisitions_id: data.parent_orders_requisitions_id,
+      wc_fabric_order_requisition_id: data.wc_fabric_order_requisition_id,
+      orders_requisitions_id: data.orders_requisitions_id,
+      fabric_id: wcFabricOrderRequisitionDetails.fabricId,
+      initial_quantity: '1',
+      current_quantity: '0',
+      fabric_width: '0',
+      fabric_quantity_m2: '0',
+      note: '',
+      creator_id: wcFabricOrderRequisition.personid,
+      ip_address: wcFabricOrderRequisition.ipaddress,
+    })
+    .then((data) => {
+      queryResults = true;
+    })
+    .catch((error) => {
+      console.log(error);
+    });
+  return queryResults;
+};
+// --------------------------------------------------------------------------
 
 exports.selectByRequisitionId = async (whereCluse) => {
   let queryResults = [];
@@ -355,7 +394,7 @@ exports.selectOne = async (whereCluse) => {
     .modify((qb) => applyWhereClauses(qb, whereCluse))
     .limit(1)
     .then((data) => {
-      // console.log("data ::: ", data);
+      console.log("wc-fabric-order-requisition-details ==> selectOne ==> data ::: ", data);
       queryResults = data;
     })
     .catch((error) => {
@@ -390,13 +429,14 @@ exports.selectOneForUpdate = async (whereCluse) => {
   return queryResults;
 };
 
-exports.update = async (wcFabricOrderRequisitionDetails, whereCluse) => {
+exports.update = async (wcFabricOrderRequisitionDetails, whereCluse, trx = null) => {
   let queryResults = false;
   await sqlFun
     .update(
       wcFabricOrderRequisitionDetailsTableName,
       wcFabricOrderRequisitionDetails,
-      whereCluse
+      whereCluse,
+      trx
     )
     .then((data) => {
       queryResults = true;

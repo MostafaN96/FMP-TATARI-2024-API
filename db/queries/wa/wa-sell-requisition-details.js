@@ -174,6 +174,7 @@ exports.selectTotalByYarnByWarehouseId = async (yarnId, warehouseId) => {
   await knex.from(waSellRequisitionDetailsTableName)
     .select(
       [
+        `${waSellRequisitionDetailsTableName}.id`,
         `${waSellRequisitionDetailsTableName}.price`,
         `${waSellRequisitionDetailsTableName}.price_dollar`,
         `${waSellRequisitionDetailsTableName}.quantity`,
