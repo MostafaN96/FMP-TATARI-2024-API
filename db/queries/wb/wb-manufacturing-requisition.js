@@ -4,14 +4,18 @@ const knex = require("../../config/connection").getConnection();
 
 // Util
 const constants = require("../../../util/constants");
-const { 
-  wbManufacturingRequisitionTableName, bussinessmanTableName, 
-  fabricTableName, wbManufacturingInputOutputTableName, 
-  wbManufacturingOutputTableName, wbManufacturingOutputOrderTableName, 
-  wbManufacturingOrderRequisitionTableName, 
+const {
+  wbManufacturingRequisitionTableName, bussinessmanTableName,
+  fabricTableName, wbManufacturingInputOutputTableName,
+  wbManufacturingOutputTableName, wbManufacturingOutputOrderTableName,
+  wbManufacturingOrderRequisitionTableName,
+  wbManufacturingOrderRequisitionDetailsTableName,
   wcFabricOrderRequisitionTableName,
   circularKnittingMachineTableName,
-  circularKnittingMachineBussinessmanTableName
+  circularKnittingMachineBussinessmanTableName,
+  warehouseTableName,
+  consigmentManufacturingTableName,
+  wcTableName,
 } = require("../../../util/database-tables-name");
 
 exports.insert = async (wbManufacturingRequisition) => {
@@ -210,6 +214,101 @@ exports.selectOrders = async () => {
     })
     .catch((error) => console.error(error));
   return queryResults;
+};
+
+exports.selectLazy = (whereCluse) => {
+  return knex
+    .select([
+      `${wbManufacturingRequisitionTableName}.id`,
+      `${wbManufacturingRequisitionTableName}.number`,
+      `${wbManufacturingRequisitionTableName}.status`,
+      `${wbManufacturingRequisitionTableName}.date`,
+      `${wbManufacturingRequisitionTableName}.note`,
+      `${wbManufacturingRequisitionTableName}.is_order`,
+      `${wbManufacturingOutputTableName}.id as wb_manufacturing_output_id`,
+      `${wbManufacturingOutputTableName}.document`,
+      `${wbManufacturingOutputTableName}.is_approved`,
+      knex.raw(
+        `CASE
+        WHEN ${wbManufacturingOutputTableName}.is_approved = '0' THEN '${constants.wb_manufacturing_requisition_status_is_approved_0}'
+        WHEN ${wbManufacturingOutputTableName}.is_approved = '1' THEN '${constants.wb_manufacturing_requisition_status_is_approved_1}'
+        ELSE '' END as is_approved_status_name`),
+      `${bussinessmanTableName}.id as manufacture_id`,
+      `${bussinessmanTableName}.name as manufacture_name`,
+      `${fabricTableName}.id as fabric_id`,
+      `${fabricTableName}.name as fabric_name`,
+      `${fabricTableName}.code as fabric_code`,
+      `${wbManufacturingOrderRequisitionTableName}.number as order_number`,
+      `seller.id as seller_id`,
+      `seller.name as seller_name`,
+      knex.raw(
+        `CASE
+        WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_new}' THEN '${constants.wb_manufacturing_requisition_status_new_trans}'
+        WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_good_after_check}' THEN '${constants.wb_manufacturing_requisition_status_good_after_check_trans}'
+        WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_not_good_after_check}' THEN '${constants.wb_manufacturing_requisition_status_not_good_after_check_trans}'
+        WHEN ${wbManufacturingRequisitionTableName}.status = '${constants.wb_manufacturing_requisition_status_white}' THEN '${constants.wb_manufacturing_requisition_status_white_trans}'
+        ELSE '' END as status_name`),
+      `${wcFabricOrderRequisitionTableName}.name as wc_fabric_order_requisition_name`,
+      knex.raw(`CONCAT(${circularKnittingMachineTableName}.type, ' - طراز (', ${circularKnittingMachineTableName}.model, ')') as circular_knitting_machine_name`),
+      `${wbManufacturingOutputTableName}.quantity`,
+      `${wbManufacturingOutputTableName}.fabric_piece`,
+      `${wbManufacturingOutputTableName}.price`,
+      `${wbManufacturingOutputTableName}.price_dollar`,
+      `${wbManufacturingOutputTableName}.manufacturing_fee`,
+      `${wbManufacturingOutputTableName}.manufacturing_fee_dollar`,
+      `${wbManufacturingOutputTableName}.consigment_manufacturing_id`,
+      `${wcTableName}.id as wc_id`,
+      `${wcTableName}.storage_place`,
+      `${wcTableName}.current_quantity`,
+      `${consigmentManufacturingTableName}.number as consigment_number`,
+      `${warehouseTableName}.name as warehouse_name`,
+      `${wbManufacturingOrderRequisitionDetailsTableName}.id as manufacturing_order_requisition_details_wb_id`,
+    ])
+    .from(`${wbManufacturingRequisitionTableName}`)
+    .innerJoin(`${wbManufacturingInputOutputTableName}`,
+      `${wbManufacturingInputOutputTableName}.wb_manufacturing_requisition_id`,
+      `${wbManufacturingRequisitionTableName}.id`)
+    .innerJoin(`${wbManufacturingOutputTableName}`,
+      `${wbManufacturingOutputTableName}.id`,
+      `${wbManufacturingInputOutputTableName}.wb_manufacturing_output_id`)
+    .innerJoin(`${fabricTableName}`,
+      `${fabricTableName}.id`,
+      `${wbManufacturingOutputTableName}.fabric_id`)
+    .innerJoin(`${bussinessmanTableName}`,
+      `${bussinessmanTableName}.id`,
+      `${wbManufacturingRequisitionTableName}.industry_id`)
+    .innerJoin(`${wcFabricOrderRequisitionTableName}`,
+      `${wcFabricOrderRequisitionTableName}.id`,
+      `${wbManufacturingOutputTableName}.wc_fabric_order_requisition_id`)
+    .innerJoin(`${circularKnittingMachineBussinessmanTableName}`,
+      `${circularKnittingMachineBussinessmanTableName}.id`,
+      `${wbManufacturingOutputTableName}.circular_knitting_machine_bussiness_man_id`)
+    .innerJoin(`${circularKnittingMachineTableName}`,
+      `${circularKnittingMachineTableName}.id`,
+      `${circularKnittingMachineBussinessmanTableName}.circular_knitting_machine_id`)
+    .innerJoin(`${wcTableName}`,
+      `${wcTableName}.wb_manufacturing_output_id`,
+      `${wbManufacturingOutputTableName}.id`)
+    .innerJoin(`${consigmentManufacturingTableName}`,
+      `${consigmentManufacturingTableName}.id`,
+      `${wbManufacturingOutputTableName}.consigment_manufacturing_id`)
+    .innerJoin(`${warehouseTableName}`,
+      `${warehouseTableName}.id`,
+      `${wbManufacturingOutputTableName}.warehouse_id`)
+    .leftOuterJoin(`${wbManufacturingOutputOrderTableName}`,
+      `${wbManufacturingOutputOrderTableName}.wb_manufacturing_output_id`,
+      `${wbManufacturingOutputTableName}.id`)
+    .leftOuterJoin(`${wbManufacturingOrderRequisitionDetailsTableName}`,
+      `${wbManufacturingOrderRequisitionDetailsTableName}.id`,
+      `${wbManufacturingOutputOrderTableName}.wb_manufacturing_order_requisition_details_id`)
+    .leftOuterJoin(`${wbManufacturingOrderRequisitionTableName}`,
+      `${wbManufacturingOrderRequisitionTableName}.id`,
+      `${wbManufacturingOrderRequisitionDetailsTableName}.wb_manufacturing_order_requisition_id`)
+    .leftOuterJoin(`${bussinessmanTableName} as seller`,
+      `seller.id`,
+      `${wbManufacturingOrderRequisitionTableName}.seller_id`)
+    .where(whereCluse)
+    .groupBy(`${wbManufacturingRequisitionTableName}.id`);
 };
 
 exports.selectOne = async (whereCluse) => {

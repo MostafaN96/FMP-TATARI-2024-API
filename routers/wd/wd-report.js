@@ -75,6 +75,13 @@ router.get(
   wdReportController.dyeingOrdersDetailsReport
 );
 
+router.get(
+  "/select-all-movements-by-consigment-dyeing/:consigmentDyeingId",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  wdReportController.selectAllMovementsByConsigmentDyeing
+);
+
 router.post(
   "/form-report-by-fabric",
   middleWeres.checkAuth(),

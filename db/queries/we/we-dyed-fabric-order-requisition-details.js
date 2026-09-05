@@ -538,13 +538,14 @@ exports.selectOneForUpdate = async (whereCluse) => {
 };
 
 
-exports.update = async (weDyedFabricOrderRequisitionDetails, whereCluse) => {
+exports.update = async (weDyedFabricOrderRequisitionDetails, whereCluse, trx = null) => {
     let queryResults = false;
     await sqlFun
         .update(
             weDyedFabricOrderRequisitionDetailsTableName,
             weDyedFabricOrderRequisitionDetails,
-            whereCluse
+            whereCluse,
+            trx
         )
         .then((data) => {
             queryResults = true;

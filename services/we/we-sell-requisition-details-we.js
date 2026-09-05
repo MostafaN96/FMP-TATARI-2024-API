@@ -4,9 +4,9 @@ const weSellRequisitionDetailsWeQueries = require("../../db/queries/we/we-sell-r
 // Util
 const constants = require("../../util/constants");
 
-exports.create = async (weSellRequisitionDetailsWe, items) => {
-  
-    const results = await weSellRequisitionDetailsWeQueries.insert(weSellRequisitionDetailsWe, items);
+exports.create = async (weSellRequisitionDetailsWe, items, trx = null) => {
+
+    const results = await weSellRequisitionDetailsWeQueries.insert(weSellRequisitionDetailsWe, items, trx);
     if (results) {
       return constants.insertSuccess;
     } else {

@@ -587,6 +587,240 @@ exports.detachOrder = async (orderId) => {
 };
 
 /**
+ * تغيير الطلبية الأم — تصبح الأم الحالية طفلاً تحت الأم الجديدة
+ * @param {String} currentParentId - ID الطلبية الأم الحالية
+ * @param {String} newParentId     - ID الطلبية المراد تحويلها إلى أم جديدة
+ */
+exports.changeParent = async (currentParentId, newParentId) => {
+    const knex = require('../../db/config/connection').getConnection();
+
+    try {
+        // التحقق من الطلبية الأم الحالية
+        const currentParentRows = await knex(wcFabricOrderRequisitionTableName + ' as o')
+            .select('o.id', 'o.orders_requisitions_id', 'o.number', 'o.is_parent', 'or.name as original_name')
+            .leftJoin('orders_requisitions as or', 'or.id', 'o.orders_requisitions_id')
+            .where({ 'o.id': currentParentId, 'o.is_deleted': 0, 'o.is_active': 1 })
+            .limit(1);
+
+        if (!currentParentRows || currentParentRows.length === 0) {
+            return { status: 0, message: 'الطلبية الأم الحالية غير موجودة' };
+        }
+        const currentParent = currentParentRows[0];
+
+        if (!currentParent.is_parent) {
+            return { status: 0, message: 'هذه الطلبية ليست أماً' };
+        }
+
+        // التحقق من الطلبية الجديدة
+        const newParentRows = await knex(wcFabricOrderRequisitionTableName + ' as o')
+            .select('o.id', 'o.orders_requisitions_id', 'o.number', 'or.name as original_name')
+            .leftJoin('orders_requisitions as or', 'or.id', 'o.orders_requisitions_id')
+            .where({
+                'o.id': newParentId,
+                'o.parent_wc_fabric_order_requisition_id': currentParentId,
+                'o.is_deleted': 0,
+                'o.is_active': 1
+            })
+            .limit(1);
+
+        if (!newParentRows || newParentRows.length === 0) {
+            return { status: 0, message: 'الطلبية الجديدة ليست طفلاً تحت الأم الحالية' };
+        }
+        const newParent = newParentRows[0];
+
+        // جلب باقي الأطفال (بدون الأم الحالية ولا الأم الجديدة)
+        const otherChildren = await knex(wcFabricOrderRequisitionTableName + ' as rc')
+            .select('rc.id', 'rc.number', 'or2.name as original_name')
+            .leftJoin('orders_requisitions as or2', 'or2.id', 'rc.orders_requisitions_id')
+            .where({ 'rc.parent_wc_fabric_order_requisition_id': currentParentId, 'rc.is_deleted': 0, 'rc.is_active': 1 })
+            .whereNot('rc.id', currentParentId)
+            .whereNot('rc.id', newParentId)
+            .orderBy('rc.created_at', 'asc');
+
+        // بناء الاسم المدموج الجديد للأم الجديدة
+        const allForName = [newParent, currentParent, ...otherChildren];
+        const mergedName = allForName.map(o =>
+            (o.original_name && o.original_name.trim()) ? o.original_name.trim() : `طلبية #${o.number}`
+        ).join(' + ');
+
+        // الاسم الأصلي للأم الحالية (ستصبح طفلاً)
+        const currentParentOriginalName = (currentParent.original_name && currentParent.original_name.trim())
+            ? currentParent.original_name.trim()
+            : `طلبية #${currentParent.number}`;
+
+        await knex.transaction(async (trx) => {
+            // 1. الأم الجديدة تصبح parent
+            await trx(wcFabricOrderRequisitionTableName)
+                .where({ id: newParentId, is_deleted: 0, is_active: 1 })
+                .update({
+                    parent_wc_fabric_order_requisition_id: newParentId,
+                    parent_orders_requisitions_id: newParent.orders_requisitions_id,
+                    is_parent: 1,
+                    name: mergedName
+                });
+
+            // تفاصيل الأم الجديدة تشير لنفسها
+            const newParentDetails = await trx(wcFabricOrderRequisitionDetailsTableName)
+                .select('id')
+                .where({ wc_fabric_order_requisition_id: newParentId, is_deleted: 0, is_active: 1 });
+
+            for (const detail of newParentDetails) {
+                await wcFabricOrderRequisitionDetailsQueries.update({
+                    parent_wc_fabric_order_requisition_id: newParentId,
+                    parent_wc_fabric_order_requisition_details_id: detail.id,
+                    parent_orders_requisitions_id: newParent.orders_requisitions_id
+                }, { id: detail.id }, trx);
+            }
+
+            // 2. الأم الحالية تصبح طفلاً تحت الأم الجديدة
+            await trx(wcFabricOrderRequisitionTableName)
+                .where({ id: currentParentId, is_deleted: 0, is_active: 1 })
+                .update({
+                    parent_wc_fabric_order_requisition_id: newParentId,
+                    parent_orders_requisitions_id: newParent.orders_requisitions_id,
+                    is_parent: 0,
+                    name: currentParentOriginalName
+                });
+
+            const currentParentDetails = await trx(wcFabricOrderRequisitionDetailsTableName)
+                .select('id')
+                .where({ wc_fabric_order_requisition_id: currentParentId, is_deleted: 0, is_active: 1 });
+
+            for (const detail of currentParentDetails) {
+                await wcFabricOrderRequisitionDetailsQueries.update({
+                    parent_wc_fabric_order_requisition_id: newParentId,
+                    parent_wc_fabric_order_requisition_details_id: detail.id,
+                    parent_orders_requisitions_id: newParent.orders_requisitions_id
+                }, { id: detail.id }, trx);
+            }
+
+            // 3. باقي الأطفال يتحولون للأم الجديدة
+            for (const child of otherChildren) {
+                await wcFabricOrderRequisitionQueries.update({
+                    parent_wc_fabric_order_requisition_id: newParentId,
+                    parent_orders_requisitions_id: newParent.orders_requisitions_id
+                }, { id: child.id, is_deleted: 0, is_active: 1 }, trx);
+
+                await wcFabricOrderRequisitionDetailsQueries.update({
+                    parent_wc_fabric_order_requisition_id: newParentId,
+                    parent_orders_requisitions_id: newParent.orders_requisitions_id
+                }, { wc_fabric_order_requisition_id: child.id, is_deleted: 0, is_active: 1 }, trx);
+            }
+        });
+
+        return { status: 1, message: 'تم تغيير الطلبية الأم بنجاح' };
+
+    } catch (error) {
+        console.error('❌ Error in changeParent:', error);
+        return constants.updateError;
+    }
+};
+
+/**
+ * فصل طلبية واحدة فقط من الدمج دون المساس بباقي الطلبيات
+ * @param {String} childOrderId - ID الطلبية المراد فصلها
+ */
+exports.detachSingleOrder = async (childOrderId) => {
+    const knex = require('../../db/config/connection').getConnection();
+
+    try {
+        // جلب بيانات الطلبية المراد فصلها
+        const childRows = await knex(wcFabricOrderRequisitionTableName + ' as o')
+            .select('o.id', 'o.orders_requisitions_id', 'o.parent_wc_fabric_order_requisition_id', 'o.number', 'or.name as original_name')
+            .leftJoin('orders_requisitions as or', 'or.id', 'o.orders_requisitions_id')
+            .where({ 'o.id': childOrderId, 'o.is_deleted': 0, 'o.is_active': 1 })
+            .limit(1);
+
+        if (!childRows || childRows.length === 0) {
+            return constants.itemNotFound;
+        }
+
+        const child = childRows[0];
+        const parentId = child.parent_wc_fabric_order_requisition_id;
+
+        // التحقق أنها فعلاً child وليست standalone
+        if (!parentId || parentId === childOrderId) {
+            return { status: 0, message: 'هذه الطلبية ليست مدموجة تحت طلبية أم' };
+        }
+
+        // جلب الأشقاء المتبقين بعد فصل هذه الطلبية
+        // نستثني الطلبية المفصولة والطلبية الأم نفسها (لأن الأم تشير لنفسها parent=parentId)
+        const remainingSiblings = await knex(wcFabricOrderRequisitionTableName + ' as rc')
+            .select('rc.id', 'rc.number', 'or2.name as original_name')
+            .leftJoin('orders_requisitions as or2', 'or2.id', 'rc.orders_requisitions_id')
+            .where({ 'rc.parent_wc_fabric_order_requisition_id': parentId, 'rc.is_deleted': 0, 'rc.is_active': 1 })
+            .whereNot('rc.id', childOrderId)
+            .whereNot('rc.id', parentId)
+            .orderBy('rc.created_at', 'asc');
+
+        // جلب بيانات الطلبية الأم (للاسم الأصلي في حالة لم يبق أشقاء)
+        let parentData = null;
+        if (remainingSiblings.length === 0) {
+            const parentRows = await knex(wcFabricOrderRequisitionTableName + ' as po')
+                .select('po.number', 'or3.name as original_name')
+                .leftJoin('orders_requisitions as or3', 'or3.id', 'po.orders_requisitions_id')
+                .where({ 'po.id': parentId })
+                .limit(1);
+            parentData = parentRows.length > 0 ? parentRows[0] : null;
+        }
+
+        // الاسم الأصلي للطلبية المفصولة
+        const childOriginalName = (child.original_name && child.original_name.trim())
+            ? child.original_name.trim()
+            : `طلبية #${child.number}`;
+
+        // تنفيذ جميع الكتابات داخل transaction
+        await knex.transaction(async (trx) => {
+            // استعادة الطلبية المفصولة كـ standalone
+            await trx(wcFabricOrderRequisitionTableName)
+                .where({ id: childOrderId, is_deleted: 0, is_active: 1 })
+                .update({
+                    parent_wc_fabric_order_requisition_id: childOrderId,
+                    parent_orders_requisitions_id: child.orders_requisitions_id,
+                    is_parent: 0,
+                    name: childOriginalName
+                });
+
+            // تحديث تفاصيل الطلبية المفصولة
+            const childDetails = await trx(wcFabricOrderRequisitionDetailsTableName)
+                .select('id')
+                .where({ wc_fabric_order_requisition_id: childOrderId, is_deleted: 0, is_active: 1 });
+
+            for (const detail of childDetails) {
+                await wcFabricOrderRequisitionDetailsQueries.update({
+                    parent_wc_fabric_order_requisition_id: childOrderId,
+                    parent_wc_fabric_order_requisition_details_id: detail.id,
+                    parent_orders_requisitions_id: child.orders_requisitions_id
+                }, { id: detail.id }, trx);
+            }
+
+            // تحديث اسم الطلبية الأم
+            if (remainingSiblings.length > 0) {
+                // لا تزال هناك أشقاء → حدّث اسم الأم فقط
+                const newParentName = remainingSiblings.map(s =>
+                    (s.original_name && s.original_name.trim()) ? s.original_name.trim() : `طلبية #${s.number}`
+                ).join(' + ');
+                await wcFabricOrderRequisitionQueries.update({ name: newParentName }, { id: parentId }, trx);
+            } else {
+                // لا يوجد أشقاء → الأم تصبح standalone
+                const parentOriginalName = parentData && parentData.original_name && parentData.original_name.trim()
+                    ? parentData.original_name.trim()
+                    : (parentData ? `طلبية #${parentData.number}` : null);
+                const updatePayload = { is_parent: 0 };
+                if (parentOriginalName) updatePayload.name = parentOriginalName;
+                await wcFabricOrderRequisitionQueries.update(updatePayload, { id: parentId }, trx);
+            }
+        });
+
+        return { status: 1, message: 'تم فصل الطلبية بنجاح' };
+
+    } catch (error) {
+        console.error('❌ Error in detachSingleOrder:', error);
+        return constants.updateError;
+    }
+};
+
+/**
  * جلب الطلبيات المدموجة تحت parent معين
  * @param {String} parentOrderId - ID الطلبية الأم
  * @returns {Array} - مصفوفة الطلبيات المدموجة

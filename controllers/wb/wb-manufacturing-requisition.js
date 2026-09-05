@@ -52,12 +52,14 @@ exports.createForOrder = async (request, response) => {
 };
 
 exports.select = async (request, response) => {
-    // logging
-  
-    // call service
     const results = await wbManufacturingRequisitionService.select();
     response.status(200).json(results);
-  };
+};
+
+exports.selectAllLazy = async (request, response) => {
+    const results = await wbManufacturingRequisitionService.selectAllLazy(request.body);
+    response.status(200).json(results);
+};
 
 exports.selectOrders = async (request, response) => {
     // logging

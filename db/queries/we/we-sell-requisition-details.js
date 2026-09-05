@@ -27,7 +27,7 @@ const { consigmentManufacturingTableName, weSellRequisitionDetailsTableName,
   weDyedFabricOrderRequisitionTableName
 } = require("../../../util/database-tables-name");
 
-exports.insert = async (weSellRequisitionDetails, items) => {
+exports.insert = async (weSellRequisitionDetails, items, trx = null) => {
   let queryResults = false;
   await sqlFun
     .insert(weSellRequisitionDetailsTableName, {
@@ -47,7 +47,7 @@ exports.insert = async (weSellRequisitionDetails, items) => {
       statement: items.statement,
       creator_id: weSellRequisitionDetails.personid,
       ip_address: weSellRequisitionDetails.ipaddress,
-    })
+    }, trx)
     .then((data) => {
       queryResults = true;
     })

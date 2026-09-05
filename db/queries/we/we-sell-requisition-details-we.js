@@ -5,7 +5,7 @@ const knex = require("../../config/connection").getConnection();
 // Util
 const weSellRequisitionDetailsWeTableName = require("../../../util/database-tables-name").weSellRequisitionDetailsWeTableName;
 
-exports.insert = async (weSellRequisitionDetailsWe, items) => {
+exports.insert = async (weSellRequisitionDetailsWe, items, trx = null) => {
     let queryResults = false;
     await sqlFun
       .insert(weSellRequisitionDetailsWeTableName, {
@@ -14,7 +14,7 @@ exports.insert = async (weSellRequisitionDetailsWe, items) => {
         quantity: items.updatedQuantity,
         creator_id: weSellRequisitionDetailsWe.personid,
         ip_address: weSellRequisitionDetailsWe.ipaddress,
-      })
+      }, trx)
       .then((data) => {
         queryResults = true;
       })

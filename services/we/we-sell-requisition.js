@@ -38,20 +38,20 @@ const trans = require("../../helpers/transform");
 exports.create = async (weSellRequisition) => {
     weSellRequisition.id = trans.transform();
 
-    // Select Max Number Of Requisition
+    // Select Max Number Of Requisition (outside trx — read-only)
     const selectMaxRequisitionNumber = await generalQueries.selectMaxValue(weSellRequisitionTableName, { number: 'number' })
     if (selectMaxRequisitionNumber[0].number == null) {
         selectMaxRequisitionNumber[0].number = 0
     }
     weSellRequisition.number = selectMaxRequisitionNumber[0].number + 1
 
-    // Check Duplication Data
+    // Check Duplication Data (outside trx — read-only)
     const selectOneResult = await weSellRequisitionQueries.selectOne({ number: weSellRequisition.number });
     if (selectOneResult[0] != null) {
         return constants.duplicatedData;
     }
 
-    // Check Delivery Car
+    // Check Delivery Car (outside trx — read-only)
     const selectOneDeliveryCarResult = await deliveryCarQueries.selectOne({ id: weSellRequisition.deliveryCarId });
     if (Array.isArray(selectOneDeliveryCarResult) && selectOneDeliveryCarResult.length > 0) {
       //
@@ -59,10 +59,25 @@ exports.create = async (weSellRequisition) => {
       weSellRequisition.deliveryCarId = null
     }
 
-    const results = await weSellRequisitionQueries.insert(weSellRequisition);
-    if (results) {
-        return await weSellRequisitionDetailsService.create(weSellRequisition);
-    } else {
+    const trx = await knex.transaction();
+    try {
+        const inserted = await weSellRequisitionQueries.insert(weSellRequisition, trx);
+        if (!inserted) {
+            await trx.rollback();
+            return constants.insertError;
+        }
+
+        const detailsResult = await weSellRequisitionDetailsService.create(weSellRequisition, trx);
+        if (detailsResult?.status !== constants.insertSuccess?.status) {
+            await trx.rollback();
+            return detailsResult;
+        }
+
+        await trx.commit();
+        return detailsResult;
+    } catch (error) {
+        await trx.rollback();
+        console.error('we-sell-requisition create trx error:', error);
         return constants.insertError;
     }
 };

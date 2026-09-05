@@ -96,4 +96,20 @@ router.put(
   wcFabricOrderRequisitionController.detachOrder
 );
 
+// فصل طلبية واحدة فقط من الدمج
+router.put(
+  "/detach-single-order/:id",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  wcFabricOrderRequisitionController.detachSingleOrder
+);
+
+// تغيير الطلبية الأم
+router.put(
+  "/change-parent",
+  middleWeres.checkAuth(),
+  middleWeres.checkIdentity(usersType.ADMIN_STR),
+  wcFabricOrderRequisitionController.changeParent
+);
+
 module.exports = router;

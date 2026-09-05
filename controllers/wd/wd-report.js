@@ -89,6 +89,12 @@ exports.selectInventoryTotal = async (request, response) => {
     response.status(200).json(results);
   };
   
+  exports.selectAllMovementsByConsigmentDyeing = async (request, response) => {
+    const { consigmentDyeingId } = request.params;
+    const results = await wdReportService.selectAllMovementsByConsigmentDyeing(consigmentDyeingId);
+    response.status(200).json(results);
+  };
+
   exports.formReportByFabric = async (request, response) => {
         // logging
     const bodyPalod = request.body;

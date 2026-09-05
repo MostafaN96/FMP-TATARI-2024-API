@@ -12,7 +12,8 @@ app.use(
     extended: false,
   })
 );
-app.use(bodyparser.json());
+app.use(bodyparser.json({ limit: '10mb' }));
+app.use(bodyparser.urlencoded({ extended: false, limit: '10mb' }));
 app.use(cors({
   origin: ["http://10.1.2.246", "http://localhost:4200", "http://localhost:3000"],
   credentials: true,
@@ -45,6 +46,7 @@ const consigmentYarnRouter = require("./routers/general/consigment-yarn")
 const usersPermissionsRouter = require("./routers/general/users-permissions")
 const exchangeRateRouter = require("./routers/general/exchange-rate");
 const gradeItemRouter = require("./routers/general/grade-item");
+const scanReceiptRouter = require("./routers/general/scan-receipt");
 
 // WA
 const waRouter = require("./routers/wa/wa");
@@ -229,6 +231,7 @@ app.use('/api/consigment-yarn', consigmentYarnRouter)
 app.use('/api/user-permissions', usersPermissionsRouter)
 app.use("/api/exchange-rate", exchangeRateRouter);
 app.use("/api/grade-item", gradeItemRouter);
+app.use("/api/scan-receipt", scanReceiptRouter);
 
 // WA Yarn
 app.use("/api/wa", waRouter);

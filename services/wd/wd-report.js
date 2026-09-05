@@ -102,21 +102,7 @@ exports.selectInventoryTotal = async (fabricReport) => {
 };
 
 exports.selectInventoryTotalByFabricByDyeing = async (fabricId, dyeingId) => {
-    let callArray = []
-    
-    callArray.push(wdTransportRequisitionWcWdDetailsQueries.selectTotalDetailsByFabricIdByDyeingId(fabricId, dyeingId))
-    callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectTotalDetailsByFabricIdByDyeingId(fabricId, dyeingId))
-    callArray.push(wdReconciliationRequisitionDetailsQueries.selectTotalDetailsByFabricIdByDyeingId(fabricId, dyeingId))
-    callArray.push(wdTransitionBetweenDyersRequisitionDetailsQueries.selectFromDyeingTotalDetailsByFabricIdByDyeingId(fabricId, dyeingId))
-    callArray.push(wdTransitionBetweenDyersRequisitionDetailsQueries.selectToDyeingTotalDetailsByFabricIdByDyeingId(fabricId, dyeingId))
-    callArray.push(wdDyeingRequisitionDetailsQueries.selectTotalDetailsByFabricIdByDyeingId(fabricId, dyeingId))
-    callArray.push(wdFormDyeingRequisitionDetailsQueries.selectTotalDetailsByFabricIdByDyeingId(fabricId, dyeingId))
-    const requisitions = await Promise.all(callArray)
-    const sortedAsc = [...requisitions[0], ...requisitions[1],
-    ...requisitions[2], ...requisitions[3], ...requisitions[4],
-    ...requisitions[5], ...requisitions[6]].sort(
-        (objA, objB) => moment(objA.date) - moment(objB.date)
-    );
+    const sortedAsc = await wdReportQueries.selectAllMovementsTotalByFabricByDyeing(fabricId, dyeingId);
 
     // Select Max Added Date
     let maxDateWhereCluse = {};
@@ -248,21 +234,7 @@ exports.selectInventoryDetails = async (fabricReport) => {
 };
 
 exports.selectInventoryDetailsByDyeingByFabricByConsigmentDyeing = async (dyeingId, fabricId, consigmentDyeingId, fabricOrderId) => {
-    let callArray = []
-
-    callArray.push(wdTransportRequisitionWcWdDetailsQueries.selectDetailsDetailsByDyeingByFabricByConsigmentDyeing(dyeingId, fabricId, consigmentDyeingId, fabricOrderId))
-    callArray.push(wdTransportRequisitionWdWcDetailsQueries.selectDetailsDetailsByDyeingByFabricByConsigmentDyeing(dyeingId, fabricId, consigmentDyeingId, fabricOrderId))
-    callArray.push(wdReconciliationRequisitionDetailsQueries.selectDetailsDetailsByDyeingByFabricByConsigmentDyeing(dyeingId, fabricId, consigmentDyeingId, fabricOrderId))
-    callArray.push(wdTransitionBetweenDyersRequisitionDetailsQueries.selectFromDyeingDetailsDetailsByDyeingByFabricByConsigmentDyeing(dyeingId, fabricId, consigmentDyeingId, fabricOrderId))
-    callArray.push(wdTransitionBetweenDyersRequisitionDetailsQueries.selectToDyeingDetailsDetailsByDyeingByFabricByConsigmentDyeing(dyeingId, fabricId, consigmentDyeingId, fabricOrderId))
-    callArray.push(wdFormDyeingRequisitionDetailsQueries.selectDetailsDetailsByDyeingByFabricByConsigmentDyeing(dyeingId, fabricId, consigmentDyeingId, fabricOrderId))
-    callArray.push(wdDyeingRequisitionDetailsQueries.selectDetailsDetailsByDyeingByFabricByConsigmentDyeing(dyeingId, fabricId, consigmentDyeingId, fabricOrderId))
-    const requisitions = await Promise.all(callArray)
-    const sortedAsc = [...requisitions[0], ...requisitions[1],
-    ...requisitions[2], ...requisitions[3], ...requisitions[4],
-    ...requisitions[5], ...requisitions[6]].sort(
-        (objA, objB) => moment(objA.date) - moment(objB.date)
-    );
+    const sortedAsc = await wdReportQueries.selectAllMovementsByDyeingByFabricByConsigmentDyeing(dyeingId, fabricId, consigmentDyeingId, fabricOrderId);
 
     // Select Max Added Date
     let maxDateWhereCluse = {};
@@ -284,6 +256,10 @@ exports.selectInventoryDetailsByDyeingByFabricByConsigmentDyeing = async (dyeing
         sortedAsc[0].latest_price = 0
     }
     return sortedAsc;
+};
+
+exports.selectAllMovementsByConsigmentDyeing = async (consigmentDyeingId) => {
+    return await wdReportQueries.selectAllMovementsByConsigmentDyeing(consigmentDyeingId);
 };
 
 exports.selectPriceWd = async (fabricId, dyeingId) => {

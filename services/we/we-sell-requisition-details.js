@@ -15,6 +15,9 @@ const weDyedFabricOrderRequisitionDetailsService = require("./we-dyed-fabric-ord
 // Helper
 const trans = require("../../helpers/transform");
 
+// DB
+const knex = require("../../db/config/connection").getConnection();
+
 // Util
 const constants = require("../../util/constants");
 const constantsPayloads = require("../../util/constants-payloads");
@@ -35,7 +38,7 @@ const { weSellRequisitionDetailsTableName,
     weTransitionBetweenOrdersRequisitionDetailsTableName
 } = require("../../util/database-tables-name");
 
-exports.create = async (weSellRequisitionDetails) => {
+async function _createItems(weSellRequisitionDetails, trx) {
     for (let i = 0; i < weSellRequisitionDetails.items.length; i++) {
         weSellRequisitionDetails.items[i].weSellRequisitionDetailsId = trans.transform();
 
@@ -52,7 +55,7 @@ exports.create = async (weSellRequisitionDetails) => {
         if (Array.isArray(selectWeDyedFabricOrderRequisitionDetailsResult) && selectWeDyedFabricOrderRequisitionDetailsResult.length > 0) {
             weSellRequisitionDetails.items[i].weDyedFabricOrderRequisitionDetailsId = selectWeDyedFabricOrderRequisitionDetailsResult[0].id
 
-            const results = await weSellRequisitionDetailsQueries.insert(weSellRequisitionDetails, weSellRequisitionDetails.items[i]);
+            const results = await weSellRequisitionDetailsQueries.insert(weSellRequisitionDetails, weSellRequisitionDetails.items[i], trx);
             if (!results) {
                 return constants.insertError;
             } else {
@@ -70,17 +73,17 @@ exports.create = async (weSellRequisitionDetails) => {
                         let updatedQuantity = 0
 
                         // decrement we fabric CurrentQuantity
-                        let returnedQuantityObj = await weService.decrementWeCurrentQuantity(newQuantity, currentQuantity, fabricStoredInWe, updatedQuantity);
+                        let returnedQuantityObj = await weService.decrementWeCurrentQuantity(newQuantity, currentQuantity, fabricStoredInWe, updatedQuantity, trx);
                         newQuantity = returnedQuantityObj.newQuantity
                         updatedQuantity = returnedQuantityObj.updatedQuantity
                         weSellRequisitionDetails.items[i].weId = fabricStoredInWe.id
                         weSellRequisitionDetails.items[i].updatedQuantity = updatedQuantity
 
                         // Add we Sell Requisition Details we
-                        await weSellRequisitionDetailsWeService.create(weSellRequisitionDetails, weSellRequisitionDetails.items[i])
+                        await weSellRequisitionDetailsWeService.create(weSellRequisitionDetails, weSellRequisitionDetails.items[i], trx)
 
                         // update order quantity
-                        await weDyedFabricOrderRequisitionDetailsService.updateForDecrementQuantity(selectWeDyedFabricOrderRequisitionDetailsResult[0].id, updatedQuantity)
+                        await weDyedFabricOrderRequisitionDetailsService.updateForDecrementQuantity(selectWeDyedFabricOrderRequisitionDetailsResult[0].id, updatedQuantity, trx)
 
                         // Enter to if condition when stock runs out
                         if (newQuantity == 0) {
@@ -101,6 +104,29 @@ exports.create = async (weSellRequisitionDetails) => {
         }
     }
     return { ...constants.insertSuccess, ...{ id: weSellRequisitionDetails.id } };
+}
+
+exports.create = async (weSellRequisitionDetails, externalTrx = null) => {
+    if (externalTrx) {
+        // called from parent transaction (e.g. we-sell-requisition.create)
+        return await _createItems(weSellRequisitionDetails, externalTrx);
+    }
+
+    // called standalone (e.g. add-sell-requisition-form-we) — manage own transaction
+    const trx = await knex.transaction();
+    try {
+        const result = await _createItems(weSellRequisitionDetails, trx);
+        if (result?.status === constants.insertSuccess?.status) {
+            await trx.commit();
+        } else {
+            await trx.rollback();
+        }
+        return result;
+    } catch (error) {
+        await trx.rollback();
+        console.error('we-sell-requisition-details create trx error:', error);
+        return constants.insertError;
+    }
 };
 
 exports.createForConfirmDirect = async (weSellRequisitionDetails) => {

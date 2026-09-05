@@ -366,13 +366,13 @@ exports.selectRequisitionsForWeDyedFabricOrderRequisitionFordyedFabricOrder = as
     return requisitions
 };
 
-exports.decrementWeCurrentQuantity = async (newQuantity, currentQuantity, fabricStoredInWe, updatedQuantity) => {
+exports.decrementWeCurrentQuantity = async (newQuantity, currentQuantity, fabricStoredInWe, updatedQuantity, trx = null) => {
     if (newQuantity > currentQuantity) {
         await weQueries.update({
             current_quantity: 0
         }, {
             id: fabricStoredInWe.id
-        });
+        }, trx);
         newQuantity = parseFloat((newQuantity - currentQuantity).toFixed(3));
         updatedQuantity = currentQuantity;
     } else {
@@ -381,7 +381,7 @@ exports.decrementWeCurrentQuantity = async (newQuantity, currentQuantity, fabric
                 current_quantity: 0
             }, {
                 id: fabricStoredInWe.id
-            });
+            }, trx);
             newQuantity = 0;
             updatedQuantity = currentQuantity;
         } else {
@@ -389,7 +389,7 @@ exports.decrementWeCurrentQuantity = async (newQuantity, currentQuantity, fabric
                 current_quantity: currentQuantity - newQuantity
             }, {
                 id: fabricStoredInWe.id
-            });
+            }, trx);
             updatedQuantity = newQuantity;
             newQuantity = 0;
         }

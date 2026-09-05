@@ -2,7 +2,7 @@ const joi = require("joi");
 const validations = require("../../helpers/validations");
 exports.isValid = (bussinessman) => {
   const bussinessmanSchema = joi.object({
-    name: validations.joiText(3, 90),
+    name: validations.joiText(2, 90),
     phone: validations.joiNotRequiredText(0, 1000),
     address: validations.joiNotRequiredText(0, 1000),
     is_supplier: validations.joiNumberAny,

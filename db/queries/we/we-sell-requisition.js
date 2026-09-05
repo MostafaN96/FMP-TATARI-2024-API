@@ -6,7 +6,7 @@ const knex = require("../../config/connection").getConnection();
 const { warehouseTableName, weSellRequisitionTableName, 
   bussinessmanTableName, deliveryCarTableName } = require("../../../util/database-tables-name");
 
-exports.insert = async (weSellRequisition) => {
+exports.insert = async (weSellRequisition, trx = null) => {
   let queryResults = false;
   await sqlFun
     .insert(weSellRequisitionTableName, {
@@ -18,7 +18,7 @@ exports.insert = async (weSellRequisition) => {
       note: weSellRequisition.note,
       creator_id: weSellRequisition.personid,
       ip_address: weSellRequisition.ipaddress,
-    })
+    }, trx)
     .then((data) => {
       queryResults = true;
     })

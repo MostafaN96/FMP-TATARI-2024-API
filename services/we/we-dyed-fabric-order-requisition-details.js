@@ -239,7 +239,7 @@ exports.updateForIncrementQuantity = async (weDyedFabricOrderRequisitionDetailsI
     }
 }
 
-exports.updateForDecrementQuantity = async (weDyedFabricOrderRequisitionDetailsId, newQuantity) => {
+exports.updateForDecrementQuantity = async (weDyedFabricOrderRequisitionDetailsId, newQuantity, trx = null) => {
     let weDyedFabricOrderRequisitionDetailsWhereCluse = {}
     weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.id`] = weDyedFabricOrderRequisitionDetailsId;
     weDyedFabricOrderRequisitionDetailsWhereCluse[`${weDyedFabricOrderRequisitionDetailsTableName}.is_deleted`] = 0;
@@ -250,7 +250,7 @@ exports.updateForDecrementQuantity = async (weDyedFabricOrderRequisitionDetailsI
             current_quantity: selectWeDyedFabricOrderRequisitionDetailsQueriesOneResult[0].current_quantity - parseFloat(newQuantity)
         }, {
             id: weDyedFabricOrderRequisitionDetailsId
-        })
+        }, trx)
         return true
     }
 }

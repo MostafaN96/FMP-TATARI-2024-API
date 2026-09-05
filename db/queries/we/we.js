@@ -163,13 +163,14 @@ exports.createForReturnSell = async (we, items) => {
   return queryResults;
 };
 
-exports.update = async (we, whereCluse) => {
+exports.update = async (we, whereCluse, trx = null) => {
   let queryResults = false;
   await sqlFun
     .update(
       weTableName,
       we,
-      whereCluse
+      whereCluse,
+      trx
     )
     .then((data) => {
       queryResults = true;

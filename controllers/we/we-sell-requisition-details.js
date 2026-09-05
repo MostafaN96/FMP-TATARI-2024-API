@@ -18,10 +18,10 @@ exports.create = async (request, response) => {
   //   send data to service
   const results = await weSellRequisitionDetailsService.create(bodyPalod);
 
-  if (results === constants.insertError) {
+  if (results?.status === constants.insertError?.status) {
       return response.status(500).json(results);
-  }  else if (results === constants.invalidDataResponse) {
-      return response.status(400).json(constants.invalidDataResponse);
+  } else if (results?.status === constants.wrongQuantity?.status) {
+      return response.status(400).json(results);
   } else {
       return response.status(201).json(results);
   }
