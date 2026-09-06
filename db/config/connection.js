@@ -10,10 +10,10 @@ DatabaseConnection.getConnection = function () {
     DatabaseConnection.knex = require("knex")({
       client: "mysql",
       connection: {
-        host: process.env.HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
+        host: process.env.HOST || "localhost",
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || 'hossam8989',
+        database: process.env.DB_NAME || 'fmp_textilia_2025',
       }
     });
   }

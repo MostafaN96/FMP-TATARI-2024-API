@@ -1,26 +1,23 @@
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const knex = require('../../db/config/connection').getConnection();
 
-const OLLAMA_URL        = process.env.OLLAMA_URL        || 'http://localhost:11434';
-const OLLAMA_OCR_MODEL  = process.env.OLLAMA_OCR_MODEL  || 'deepseek-ocr';
-const OLLAMA_TEXT_MODEL = process.env.OLLAMA_TEXT_MODEL || 'qwen2.5:1.5b';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const stripHtml = (html) =>
-    html.replace(/<\|[^|]*\|>/g, '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-
-const buildJsonPrompt = (ocrText) =>
-`You are extracting data from an Arabic textile receipt. Read the text below and return ONLY a JSON object.
-Use JSON null (not the string "null") for any field not clearly present in the text.
-
-Receipt text:
-"""
-${ocrText}
-"""
-
-Return this JSON with values extracted from the text above (no invented values):
-{"date":null,"document":null,"orderNumber":null,"manufacturerName":null,"fabricName":null,"quantity":null,"numberFabricPieces":null,"notes":null,"yarns":[]}`;
+const CANDIDATE_MODELS = [
+    ...new Set([
+        process.env.GEMINI_MODEL,
+        'gemini-3.7-flash',
+        'gemini-3.6-flash',
+        'gemini-3.5-flash',
+        'gemini-3.5-flash-lite'
+    ].filter(Boolean))
+];
 
 const cleanNulls = (obj) => {
-    if (typeof obj === 'string' && obj.trim().toLowerCase() === 'null') return null;
+    if (typeof obj === 'string' && (obj.trim().toLowerCase() === 'null' || obj.trim() === '-' || obj.trim() === '')) return null;
     if (Array.isArray(obj)) return obj.map(cleanNulls).filter(
         item => item !== null && !(typeof item === 'object' && Object.values(item).every(v => v === null))
     );
@@ -29,39 +26,128 @@ const cleanNulls = (obj) => {
     return obj;
 };
 
+const buildVisionReceiptPrompt = () =>
+`أنت خبير فائق الدقة في قراءة وتحليل إيصالات وجداول مصانع النسيج والتريكو والغزل باللغة العربية.
+اقرأ جدول الإيصال المكتوب بخط اليد بدقة شديدة واستخرج الحقول التالية وأرجع كائن JSON صالح فقط بدون أي شروح:
+
+قواعد الاستخراج الدقيقة:
+1. date: التاريخ من خانة "التاريخ" بأرقام إنجليزية YYYY-MM-DD (مثال: "2024-08-24").
+2. document: نوع الإيصال أو السند المطبوع في الأعلى (مثال: "إيصال تسليم").
+3. orderNumber: النص بجانب "طلبية" أو "رقم الطلبية" (مثال: "ستراوس 058 هـ").
+4. manufacturerName: اسم العميل بجانب "اسم العميل" أو "المصنع" (مثال: "قطري مصر").
+5. fabricName: اسم أو نوع القماش المكتوب تحت خانة "نوع البضاعة" (مثال: "فليس قطن عادي").
+6. quantity: القيمة الرقمية للوزن الخامي المكتوبة تحت خانة "الوزن الخامي" (مثال: "1217.45").
+7. numberFabricPieces: القيمة الرقمية لعدد الأثواب المكتوبة تحت خانة "عدد الأثواب" (مثال: "51").
+8. notes: أي ملاحظات أو لون مكتوب (مثل "ليموني أحمر").
+9. yarns: مصفوفة بالخيوط/الغزول المكتوبة في منتصف الجدول ومطابقتها لأعمدة الخيوط (خيط 1، خيط 2، خيط 3) مع نسبها المئوية بتنسيق:
+   [
+     { "yarnName": "1/30 مشط", "ratio": "49%" },
+     { "yarnName": "70 بوليستر", "ratio": "15%" },
+     { "yarnName": "1/16 مخلوط", "ratio": "38%" }
+   ]
+
+تنبيه هام: حوّل جميع الأرقام المشرقية (٠١٢٣٤٥٦٧٨٩) إلى أرقام إنجليزية (0123456789).
+
+أرجع هذا الهيكل بدقة:
+{"date":null,"document":null,"orderNumber":null,"manufacturerName":null,"fabricName":null,"quantity":null,"numberFabricPieces":null,"notes":null,"yarns":[]}`;
+
 const extractJson = (text) => {
-    const clean = text.replace(/<\|[^|]*\|>/g, '').replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    let clean = text
+        .replace(/<\|[^|]*\|>/g, '')
+        .replace(/```json\s*/gi, '')
+        .replace(/```\s*/g, '')
+        .trim();
+
+    clean = clean
+        .replace(/:\s*None\b/g, ': null')
+        .replace(/:\s*True\b/g, ': true')
+        .replace(/:\s*False\b/g, ': false');
+
     const start = clean.indexOf('{');
     const end   = clean.lastIndexOf('}');
-    if (start === -1 || end === -1) throw new Error(`No JSON found: ${clean.slice(0, 300)}`);
-    return cleanNulls(JSON.parse(clean.slice(start, end + 1)));
+    if (start !== -1 && end !== -1 && end > start) {
+        let jsonStr = clean.slice(start, end + 1).replace(/,\s*([}\]])/g, '$1');
+        const parsed = cleanNulls(JSON.parse(jsonStr));
+        if (!Array.isArray(parsed.yarns)) parsed.yarns = [];
+        return parsed;
+    }
+    throw new Error(`لم يتم العثور على كائن JSON في استجابة النموذج: ${clean.slice(0, 300)}`);
 };
 
-const ollamaChat = async (model, messages, options = {}) => {
-    const res = await fetch(`${OLLAMA_URL}/api/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model, messages, stream: false, options: { temperature: 0.1, ...options } })
-    });
-    if (!res.ok) throw new Error(`Ollama ${res.status}: ${await res.text().catch(() => '')}`);
-    return ((await res.json())?.message?.content || '').trim();
-};
+exports.scanReceipt = async (imageBase64, mimeType = 'image/jpeg') => {
+    const apiKey = GEMINI_API_KEY;
+    if (!apiKey) {
+        throw new Error('يرجى ضبط متغير البيئة GEMINI_API_KEY أو GOOGLE_API_KEY لاستخدام نموذج Gemini.');
+    }
 
-exports.scanReceipt = async (imageBase64, mimeType) => {
-    // Step 1: deepseek-ocr يحوّل الصورة لنص
-    const ocrRaw  = await ollamaChat(OLLAMA_OCR_MODEL, [
-        { role: 'user', content: 'Extract all text from this document image.', images: [imageBase64] }
-    ]);
-    const ocrText = stripHtml(ocrRaw);
-    console.log('[OCR text]', ocrText.slice(0, 400));
-    if (!ocrText) throw new Error('deepseek-ocr returned empty content');
+    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+    const requestBody = {
+        contents: [
+            {
+                parts: [
+                    { text: buildVisionReceiptPrompt() },
+                    {
+                        inline_data: {
+                            mime_type: mimeType || 'image/jpeg',
+                            data: base64Data
+                        }
+                    }
+                ]
+            }
+        ],
+        generationConfig: {
+            response_mime_type: 'application/json',
+            temperature: 0.1
+        }
+    };
 
-    // Step 2: qwen2.5:1.5b يحوّل النص لـ JSON
-    const jsonRaw = await ollamaChat(OLLAMA_TEXT_MODEL, [
-        { role: 'user', content: buildJsonPrompt(ocrText) }
-    ], { num_predict: 300 });
-    console.log('[JSON raw]', jsonRaw.slice(0, 400));
-    return extractJson(jsonRaw);
+    let lastError = null;
+
+    for (const model of CANDIDATE_MODELS) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+        for (let attempt = 1; attempt <= 2; attempt++) {
+            try {
+                console.log(`[Gemini] Scanning receipt with model: ${model} (attempt ${attempt}/${2})...`);
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!res.ok) {
+                    const errText = await res.text().catch(() => '');
+                    const isRetryable = [429, 500, 502, 503, 504].includes(res.status);
+                    console.warn(`[Gemini warning] Model ${model} returned HTTP ${res.status}: ${errText.slice(0, 250)}`);
+                    
+                    lastError = new Error(`Gemini API error (${res.status}): ${errText}`);
+                    if (isRetryable && attempt < 2) {
+                        await sleep(1000 * attempt);
+                        continue;
+                    }
+                    // Try next fallback model
+                    break;
+                }
+
+                const responseData = await res.json();
+                const rawResponse = responseData?.candidates?.[0]?.content?.parts?.map(p => p.text || '').filter(Boolean).join('') || '';
+                console.log(`[Gemini output (${model})]`, rawResponse.slice(0, 500));
+                if (!rawResponse) throw new Error('لم يتم استلام أي رد من Gemini');
+
+                const extracted = extractJson(rawResponse);
+                console.log('[Extracted Receipt Data]', extracted);
+                return extracted;
+            } catch (err) {
+                lastError = err;
+                console.warn(`[Gemini error] Model ${model} failed on attempt ${attempt}:`, err.message);
+                if (attempt < 2) {
+                    await sleep(1000 * attempt);
+                }
+            }
+        }
+    }
+
+    throw lastError || new Error('فشل في معالجة الإيصال عبر الذكاء الاصطناعي');
 };
 
 exports.enrichScanData = async ({ manufacturerName, fabricName, orderNumber }) => {
