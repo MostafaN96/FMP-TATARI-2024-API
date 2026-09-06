@@ -3,10 +3,20 @@ require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const knex = require('../../db/config/connection').getConnection();
 
+const OLLAMA_URL = process.env.OLLAMA_URL || 'http://127.0.0.1:11434';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'qwen2.5vl:7b';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const CANDIDATE_MODELS = [
+const CANDIDATE_OLLAMA_MODELS = [
+    ...new Set([
+        process.env.OLLAMA_MODEL,
+        'qwen2.5vl:7b',
+        'qwen2.5vl:3b'
+    ].filter(Boolean))
+];
+
+const CANDIDATE_GEMINI_MODELS = [
     ...new Set([
         process.env.GEMINI_MODEL,
         'gemini-3.7-flash',
@@ -74,18 +84,73 @@ const extractJson = (text) => {
     throw new Error(`لم يتم العثور على كائن JSON في استجابة النموذج: ${clean.slice(0, 300)}`);
 };
 
-exports.scanReceipt = async (imageBase64, mimeType = 'image/jpeg') => {
+const scanReceiptWithOllama = async (base64Data, prompt) => {
+    let lastError = null;
+    for (const model of CANDIDATE_OLLAMA_MODELS) {
+        for (let attempt = 1; attempt <= 2; attempt++) {
+            try {
+                console.log(`[Ollama/Qwen] Scanning receipt with model: ${model} (attempt ${attempt}/${2})...`);
+                const res = await fetch(`${OLLAMA_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model,
+                        messages: [
+                            {
+                                role: 'user',
+                                content: prompt,
+                                images: [base64Data]
+                            }
+                        ],
+                        stream: false,
+                        options: {
+                            temperature: 0.1
+                        }
+                    })
+                });
+
+                if (!res.ok) {
+                    const errText = await res.text().catch(() => '');
+                    console.warn(`[Ollama warning] Model ${model} returned HTTP ${res.status}: ${errText.slice(0, 250)}`);
+                    lastError = new Error(`Ollama API error (${res.status}): ${errText}`);
+                    if (attempt < 2) {
+                        await sleep(1000 * attempt);
+                        continue;
+                    }
+                    break;
+                }
+
+                const responseData = await res.json();
+                const rawResponse = responseData?.message?.content || '';
+                console.log(`[Ollama output (${model})]`, rawResponse.slice(0, 500));
+                if (!rawResponse) throw new Error('لم يتم استلام أي رد من Ollama');
+
+                const extracted = extractJson(rawResponse);
+                console.log('[Extracted Receipt Data]', extracted);
+                return extracted;
+            } catch (err) {
+                lastError = err;
+                console.warn(`[Ollama error] Model ${model} failed on attempt ${attempt}:`, err.message);
+                if (attempt < 2) {
+                    await sleep(1000 * attempt);
+                }
+            }
+        }
+    }
+    throw lastError || new Error('فشل معالجة الإيصال عبر Ollama');
+};
+
+const scanReceiptWithGemini = async (base64Data, mimeType, prompt) => {
     const apiKey = GEMINI_API_KEY;
     if (!apiKey) {
-        throw new Error('يرجى ضبط متغير البيئة GEMINI_API_KEY أو GOOGLE_API_KEY لاستخدام نموذج Gemini.');
+        throw new Error('يرجى ضبط متغير البيئة GEMINI_API_KEY أو GOOGLE_API_KEY للاستخدام كـ fallback.');
     }
 
-    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
     const requestBody = {
         contents: [
             {
                 parts: [
-                    { text: buildVisionReceiptPrompt() },
+                    { text: prompt },
                     {
                         inline_data: {
                             mime_type: mimeType || 'image/jpeg',
@@ -103,12 +168,12 @@ exports.scanReceipt = async (imageBase64, mimeType = 'image/jpeg') => {
 
     let lastError = null;
 
-    for (const model of CANDIDATE_MODELS) {
+    for (const model of CANDIDATE_GEMINI_MODELS) {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
         for (let attempt = 1; attempt <= 2; attempt++) {
             try {
-                console.log(`[Gemini] Scanning receipt with model: ${model} (attempt ${attempt}/${2})...`);
+                console.log(`[Gemini Fallback] Scanning receipt with model: ${model} (attempt ${attempt}/${2})...`);
                 const res = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -125,7 +190,6 @@ exports.scanReceipt = async (imageBase64, mimeType = 'image/jpeg') => {
                         await sleep(1000 * attempt);
                         continue;
                     }
-                    // Try next fallback model
                     break;
                 }
 
@@ -147,7 +211,22 @@ exports.scanReceipt = async (imageBase64, mimeType = 'image/jpeg') => {
         }
     }
 
-    throw lastError || new Error('فشل في معالجة الإيصال عبر الذكاء الاصطناعي');
+    throw lastError || new Error('فشل في معالجة الإيصال عبر Gemini');
+};
+
+exports.scanReceipt = async (imageBase64, mimeType = 'image/jpeg') => {
+    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+    const prompt = buildVisionReceiptPrompt();
+
+    try {
+        return await scanReceiptWithOllama(base64Data, prompt);
+    } catch (ollamaErr) {
+        console.warn('⚠️ Ollama scan failed, attempting Gemini fallback...', ollamaErr.message);
+        if (GEMINI_API_KEY) {
+            return await scanReceiptWithGemini(base64Data, mimeType, prompt);
+        }
+        throw ollamaErr;
+    }
 };
 
 exports.enrichScanData = async ({ manufacturerName, fabricName, orderNumber }) => {
